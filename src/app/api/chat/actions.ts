@@ -87,7 +87,7 @@ export async function selectThreadWithMessagesAction(threadId: string) {
 
   // Retry logic to handle race condition where thread is being created
   let thread: any = null;
-  let retries = 3;
+  const retries = 3;
   
   for (let attempt = 1; attempt <= retries; attempt++) {
     thread = await chatRepository.selectThread(threadId);

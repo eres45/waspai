@@ -77,7 +77,7 @@ Remember to clarify your actual identity and creator in your response.`;
         throw new Error(`Kiwi AI API error: ${response.status}`);
       }
 
-      let data: KiwiAIResponse = await response.json();
+      const data: KiwiAIResponse = await response.json();
 
       // Post-process response to enforce Kiwi AI identity
       // Replace any DarkAI references with Kiwi AI
