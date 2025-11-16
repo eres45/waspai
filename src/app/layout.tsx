@@ -9,6 +9,7 @@ import {
 import { Toaster } from "ui/sonner";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
+import { ApiPreloader } from "./components/api-preloader";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default async function RootLayout({
           <ThemeStyleProvider>
             <NextIntlClientProvider>
               <div id="root">
+                <ApiPreloader />
                 {children}
                 <Toaster richColors />
               </div>

@@ -21,11 +21,27 @@ export interface UploadedFile {
   dataUrl?: string; // Full data URL format: "data:image/png;base64,..."
 }
 
+export interface CharacterSummary {
+  id: string;
+  name: string;
+  description: string;
+  personality?: string;
+  privacy?: "public" | "private";
+  icon?: {
+    type?: string;
+    value: string;
+    style?: {
+      backgroundColor: string;
+    };
+  };
+}
+
 export interface AppState {
   threadList: ChatThread[];
   mcpList: (MCPServerInfo & { id: string })[];
   agentList: AgentSummary[];
   workflowToolList: WorkflowSummary[];
+  characterList?: CharacterSummary[];
   currentThreadId: ChatThread["id"] | null;
   toolChoice: "auto" | "none" | "manual";
   allowedMcpServers?: Record<string, AllowedMCPServer>;
@@ -41,6 +57,15 @@ export interface AppState {
   threadImageToolModel: {
     [threadId: string]: string | undefined;
   };
+  editImageState?: {
+    isOpen: boolean;
+    selectedImageUrl?: string;
+    model?: string;
+  };
+  videoGenState?: {
+    isOpen: boolean;
+    model?: string;
+  };
   toolPresets: {
     allowedMcpServers?: Record<string, AllowedMCPServer>;
     allowedAppDefaultToolkit?: AppDefaultToolkit[];
@@ -50,6 +75,7 @@ export interface AppState {
   openShortcutsPopup: boolean;
   openChatPreferences: boolean;
   openUserSettings: boolean;
+  openSubscription: boolean;
   mcpCustomizationPopup?: MCPServerInfo & { id: string };
   temporaryChat: {
     isOpen: boolean;
@@ -78,13 +104,23 @@ const initialState: AppState = {
   threadMentions: {},
   threadFiles: {},
   threadImageToolModel: {},
+  editImageState: {
+    isOpen: false,
+    selectedImageUrl: undefined,
+  },
+  videoGenState: {
+    isOpen: false,
+    model: undefined,
+  },
   mcpList: [],
   agentList: [],
   workflowToolList: [],
+  characterList: [],
   currentThreadId: null,
   toolChoice: "auto",
   allowedMcpServers: undefined,
   openUserSettings: false,
+  openSubscription: false,
   allowedAppDefaultToolkit: [
     AppDefaultToolkit.Code,
     AppDefaultToolkit.Visualization,

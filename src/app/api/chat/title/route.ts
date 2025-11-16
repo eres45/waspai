@@ -8,6 +8,7 @@ import { chatRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { handleError } from "../shared.chat";
+import { createReverseModelMapping } from "../models/route";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Title API: `),
@@ -36,8 +37,20 @@ export async function POST(request: Request) {
       `chatModel: ${chatModel?.provider}/${chatModel?.model}, threadId: ${threadId}`,
     );
 
+    // Convert display names back to backend names
+    const { models: modelReverseMapping, providers: providerReverseMapping } = createReverseModelMapping();
+    let modelToUse = chatModel;
+    if (modelToUse) {
+      const backendProvider = providerReverseMapping[modelToUse.provider] || modelToUse.provider;
+      const backendModel = modelReverseMapping[modelToUse.model] || modelToUse.model;
+      modelToUse = {
+        provider: backendProvider,
+        model: backendModel,
+      };
+    }
+
     const result = streamText({
-      model: customModelProvider.getModel(chatModel),
+      model: customModelProvider.getModel(modelToUse),
       system: CREATE_THREAD_TITLE_PROMPT,
       experimental_transform: smoothStream({ chunking: "word" }),
       prompt: message,

@@ -59,6 +59,16 @@ const UserSettingsPopup = dynamic(
   },
 );
 
+const SubscriptionPopup = dynamic(
+  () =>
+    import("@/components/subscription-popup").then(
+      (mod) => mod.SubscriptionPopup,
+    ),
+  {
+    ssr: false,
+  },
+);
+
 export function AppPopupProvider({
   userSettingsComponent,
 }: {
@@ -69,6 +79,7 @@ export function AppPopupProvider({
       <KeyboardShortcutsPopup />
       <ChatPreferencesPopup />
       <UserSettingsPopup userSettingsComponent={userSettingsComponent} />
+      <SubscriptionPopup />
       <ChatBotVoice />
       <ChatBotTemporary />
       <McpCustomizationPopup />

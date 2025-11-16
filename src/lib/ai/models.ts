@@ -1,102 +1,123 @@
 import "server-only";
 
-import { createOllama } from "ollama-ai-provider-v2";
-import { openai } from "@ai-sdk/openai";
-import { google } from "@ai-sdk/google";
-import { anthropic } from "@ai-sdk/anthropic";
-import { xai } from "@ai-sdk/xai";
-import { LanguageModelV2, openrouter } from "@openrouter/ai-sdk-provider";
-import { createGroq } from "@ai-sdk/groq";
 import { LanguageModel } from "ai";
-import {
-  createOpenAICompatibleModels,
-  openaiCompatibleModelsSafeParse,
-} from "./create-openai-compatiable";
+import { createPollinationsModels } from "./pollinations";
+import { createGptOssModels } from "./gpt-oss";
+import { createGrokModels } from "./grok";
+import { createQWENModels } from "./qwen";
+import { createDeepSeekModels } from "./deepseek";
+import { createDeepSeekV1Models } from "./deepseek-v1";
+import { createGemmaModels } from "./gemma";
+import { createGeminiDarkModels } from "./gemini-dark";
+import { createOpenAIFreeModels } from "./openai-free";
+import { createKiwiAIModels, KIWI_AI_SYSTEM_PROMPT } from "./kiwi-ai";
+import { createSonnetFreeModels } from "./sonnet-free";
+import { createWormGPTModels } from "./wormgpt";
 import { ChatModel } from "app-types/chat";
 import {
   DEFAULT_FILE_PART_MIME_TYPES,
-  OPENAI_FILE_MIME_TYPES,
   GEMINI_FILE_MIME_TYPES,
-  ANTHROPIC_FILE_MIME_TYPES,
-  XAI_FILE_MIME_TYPES,
 } from "./file-support";
 
-const ollama = createOllama({
-  baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/api",
-});
-const groq = createGroq({
-  baseURL: process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1",
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Pollinations AI models - Free tier with 10 requests per minute
+const pollinationsModels = createPollinationsModels();
+
+// GPT-OSS models - Free tier
+const gptOssModels = createGptOssModels();
+
+// Grok models - Free tier
+const grokModels = createGrokModels();
+
+// QWEN models - Free tier (top 10 models)
+const qwenModels = createQWENModels();
+
+// DeepSeek models - Free tier
+const deepseekModels = createDeepSeekModels();
+const deepseekV1Models = createDeepSeekV1Models();
+
+// Gemma models - Free tier
+const gemmaModels = createGemmaModels();
+
+// Gemini Dark models - Free tier
+const geminiDarkModels = createGeminiDarkModels();
+
+// OpenAI Free models - Free tier
+const openAIFreeModels = createOpenAIFreeModels();
+
+// Kiwi AI models - Free tier
+const kiwiAIModels = createKiwiAIModels();
+
+// Anthropic Claude models - Free tier (specialized endpoints)
+const anthropicModels = createSonnetFreeModels();
+
+// WormGPT AI models - Free tier
+const wormgptModels = createWormGPTModels();
 
 const staticModels = {
-  openai: {
-    "gpt-4.1": openai("gpt-4.1"),
-    "gpt-4.1-mini": openai("gpt-4.1-mini"),
-    "o4-mini": openai("o4-mini"),
-    o3: openai("o3"),
-    "gpt-5-chat": openai("gpt-5-chat-latest"),
-    "gpt-5": openai("gpt-5"),
-    "gpt-5-mini": openai("gpt-5-mini"),
-    "gpt-5-codex": openai("gpt-5-codex"),
-    "gpt-5-nano": openai("gpt-5-nano"),
-  },
+  // Reorganize Pollinations models under their actual provider names
   google: {
-    "gemini-2.5-flash-lite": google("gemini-2.5-flash-lite"),
-    "gemini-2.5-flash": google("gemini-2.5-flash"),
-    "gemini-2.5-pro": google("gemini-2.5-pro"),
+    ...pollinationsModels.gemini && { gemini: pollinationsModels.gemini },
+    ...pollinationsModels["gemini-search"] && { "gemini-search": pollinationsModels["gemini-search"] },
+    ...geminiDarkModels,
   },
-  anthropic: {
-    "sonnet-4.5": anthropic("claude-sonnet-4-5"),
-    "haiku-4.5": anthropic("claude-haiku-4-5"),
-    "opus-4.1": anthropic("claude-opus-4-1"),
+  mistral: {
+    ...pollinationsModels.mistral && { mistral: pollinationsModels.mistral },
   },
-  xai: {
-    "grok-4-fast": xai("grok-4-fast-non-reasoning"),
-    "grok-4": xai("grok-4"),
-    "grok-3": xai("grok-3"),
-    "grok-3-mini": xai("grok-3-mini"),
+  "openai-free": {
+    ...openAIFreeModels,
+    ...pollinationsModels.openai && { "openai-pollinations": pollinationsModels.openai },
+    ...pollinationsModels["openai-fast"] && { "openai-fast-pollinations": pollinationsModels["openai-fast"] },
+    ...pollinationsModels["openai-large"] && { "openai-large-pollinations": pollinationsModels["openai-large"] },
+    ...pollinationsModels["openai-reasoning"] && { "openai-reasoning-pollinations": pollinationsModels["openai-reasoning"] },
   },
-  ollama: {
-    "gemma3:1b": ollama("gemma3:1b"),
-    "gemma3:4b": ollama("gemma3:4b"),
-    "gemma3:12b": ollama("gemma3:12b"),
+  "gpt-oss": gptOssModels,
+  grok: grokModels,
+  qwen: qwenModels,
+  deepseek: {
+    ...deepseekModels,
+    ...deepseekV1Models,
   },
-  groq: {
-    "kimi-k2-instruct": groq("moonshotai/kimi-k2-instruct"),
-    "llama-4-scout-17b": groq("meta-llama/llama-4-scout-17b-16e-instruct"),
-    "gpt-oss-20b": groq("openai/gpt-oss-20b"),
-    "gpt-oss-120b": groq("openai/gpt-oss-120b"),
-    "qwen3-32b": groq("qwen/qwen3-32b"),
-  },
-  openRouter: {
-    "gpt-oss-20b:free": openrouter("openai/gpt-oss-20b:free"),
-    "qwen3-8b:free": openrouter("qwen/qwen3-8b:free"),
-    "qwen3-14b:free": openrouter("qwen/qwen3-14b:free"),
-    "qwen3-coder:free": openrouter("qwen/qwen3-coder:free"),
-    "deepseek-r1:free": openrouter("deepseek/deepseek-r1-0528:free"),
-    "deepseek-v3:free": openrouter("deepseek/deepseek-chat-v3-0324:free"),
-    "gemini-2.0-flash-exp:free": openrouter("google/gemini-2.0-flash-exp:free"),
-  },
+  gemma: gemmaModels,
+  "kiwi-ai": kiwiAIModels,
+  anthropic: anthropicModels,
+  wormgpt: wormgptModels,
 };
 
-const staticUnsupportedModels = new Set([
-  staticModels.openai["o4-mini"],
-  staticModels.ollama["gemma3:1b"],
-  staticModels.ollama["gemma3:4b"],
-  staticModels.ollama["gemma3:12b"],
-  staticModels.openRouter["gpt-oss-20b:free"],
-  staticModels.openRouter["qwen3-8b:free"],
-  staticModels.openRouter["qwen3-14b:free"],
-  staticModels.openRouter["deepseek-r1:free"],
-  staticModels.openRouter["gemini-2.0-flash-exp:free"],
+const staticUnsupportedModels = new Set<LanguageModel>([
+  // gemini-search doesn't support tool calling
+  pollinationsModels["gemini-search"],
+  // GPT-OSS models don't support tool calling
+  gptOssModels["gpt-oss-120b"],
+  gptOssModels["gpt-4-117b"],
+  // Grok models don't support tool calling
+  grokModels["grok-4"],
+  // QWEN models don't support tool calling
+  ...Object.values(qwenModels),
+  // DeepSeek models don't support tool calling
+  ...Object.values(deepseekModels),
+  // DeepSeek v1 models don't support tool calling
+  ...Object.values(deepseekV1Models),
+  // Gemma models don't support tool calling
+  ...Object.values(gemmaModels),
+  // Gemini Dark models don't support tool calling
+  ...Object.values(geminiDarkModels),
+  // OpenAI Free models don't support tool calling
+  ...Object.values(openAIFreeModels),
+  // Kiwi AI models don't support tool calling
+  ...Object.values(kiwiAIModels),
+  // Anthropic Claude models don't support tool calling
+  ...Object.values(anthropicModels),
+  // WormGPT models don't support tool calling
+  ...Object.values(wormgptModels),
 ]);
 
 const staticSupportImageInputModels = {
-  ...staticModels.google,
-  ...staticModels.xai,
-  ...staticModels.openai,
-  ...staticModels.anthropic,
+  gemini: pollinationsModels.gemini,
+  "gemini-search": pollinationsModels["gemini-search"],
+  openai: pollinationsModels.openai,
+  "openai-fast": pollinationsModels["openai-fast"],
+  "openai-large": pollinationsModels["openai-large"],
+  "openai-reasoning": pollinationsModels["openai-reasoning"],
 };
 
 const staticFilePartSupportByModel = new Map<
@@ -112,59 +133,17 @@ const registerFileSupport = (
   staticFilePartSupportByModel.set(model, Array.from(mimeTypes));
 };
 
-registerFileSupport(staticModels.openai["gpt-4.1"], OPENAI_FILE_MIME_TYPES);
-registerFileSupport(
-  staticModels.openai["gpt-4.1-mini"],
-  OPENAI_FILE_MIME_TYPES,
-);
-registerFileSupport(staticModels.openai["gpt-5"], OPENAI_FILE_MIME_TYPES);
-registerFileSupport(staticModels.openai["gpt-5-mini"], OPENAI_FILE_MIME_TYPES);
-registerFileSupport(staticModels.openai["gpt-5-nano"], OPENAI_FILE_MIME_TYPES);
+// Register image support for models that support it
+registerFileSupport(pollinationsModels.gemini, GEMINI_FILE_MIME_TYPES);
+registerFileSupport(pollinationsModels["gemini-search"], GEMINI_FILE_MIME_TYPES);
+registerFileSupport(pollinationsModels.openai, DEFAULT_FILE_PART_MIME_TYPES);
+registerFileSupport(pollinationsModels["openai-fast"], DEFAULT_FILE_PART_MIME_TYPES);
+registerFileSupport(pollinationsModels["openai-large"], DEFAULT_FILE_PART_MIME_TYPES);
+registerFileSupport(pollinationsModels["openai-reasoning"], DEFAULT_FILE_PART_MIME_TYPES);
 
-registerFileSupport(
-  staticModels.google["gemini-2.5-flash-lite"],
-  GEMINI_FILE_MIME_TYPES,
-);
-registerFileSupport(
-  staticModels.google["gemini-2.5-flash"],
-  GEMINI_FILE_MIME_TYPES,
-);
-registerFileSupport(
-  staticModels.google["gemini-2.5-pro"],
-  GEMINI_FILE_MIME_TYPES,
-);
-
-registerFileSupport(
-  staticModels.anthropic["sonnet-4.5"],
-  ANTHROPIC_FILE_MIME_TYPES,
-);
-registerFileSupport(
-  staticModels.anthropic["opus-4.1"],
-  ANTHROPIC_FILE_MIME_TYPES,
-);
-
-registerFileSupport(staticModels.xai["grok-4-fast"], XAI_FILE_MIME_TYPES);
-registerFileSupport(staticModels.xai["grok-4"], XAI_FILE_MIME_TYPES);
-registerFileSupport(staticModels.xai["grok-3"], XAI_FILE_MIME_TYPES);
-registerFileSupport(staticModels.xai["grok-3-mini"], XAI_FILE_MIME_TYPES);
-registerFileSupport(
-  staticModels.openRouter["gemini-2.0-flash-exp:free"],
-  GEMINI_FILE_MIME_TYPES,
-);
-
-const openaiCompatibleProviders = openaiCompatibleModelsSafeParse(
-  process.env.OPENAI_COMPATIBLE_DATA,
-);
-
-const {
-  providers: openaiCompatibleModels,
-  unsupportedModels: openaiCompatibleUnsupportedModels,
-} = createOpenAICompatibleModels(openaiCompatibleProviders);
-
-const allModels = { ...openaiCompatibleModels, ...staticModels };
+const allModels = staticModels;
 
 const allUnsupportedModels = new Set([
-  ...openaiCompatibleUnsupportedModels,
   ...staticUnsupportedModels,
 ]);
 
@@ -172,7 +151,7 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return allUnsupportedModels.has(model);
 };
 
-const isImageInputUnsupportedModel = (model: LanguageModelV2) => {
+const isImageInputUnsupportedModel = (model: LanguageModel) => {
   return !Object.values(staticSupportImageInputModels).includes(model);
 };
 
@@ -180,48 +159,43 @@ export const getFilePartSupportedMimeTypes = (model: LanguageModel) => {
   return staticFilePartSupportByModel.get(model) ?? [];
 };
 
-const fallbackModel = staticModels.openai["gpt-4.1"];
-
 export const customModelProvider = {
   modelsInfo: Object.entries(allModels).map(([provider, models]) => ({
     provider,
-    models: Object.entries(models).map(([name, model]) => ({
-      name,
-      isToolCallUnsupported: isToolCallUnsupportedModel(model),
-      isImageInputUnsupported: isImageInputUnsupportedModel(model),
-      supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
-    })),
+    // Filter out gemini-search from the model menu (it's used automatically for search queries)
+    models: Object.entries(models)
+      .filter(([name]) => name !== "gemini-search")
+      .map(([name, model]) => ({
+        name,
+        isToolCallUnsupported: isToolCallUnsupportedModel(model),
+        isImageInputUnsupported: isImageInputUnsupportedModel(model),
+        supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
+      })),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
   })),
   getModel: (model?: ChatModel): LanguageModel => {
-    if (!model) return fallbackModel;
-    return allModels[model.provider]?.[model.model] || fallbackModel;
+    if (!model) {
+      throw new Error("No model specified");
+    }
+    const selectedModel = allModels[model.provider]?.[model.model];
+    if (!selectedModel) {
+      console.warn(
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: openai-free/gpt-4o-mini`
+      );
+      // Fallback to a reliable free model
+      const fallbackModel = allModels["openai-free"]?.["gpt-4o-mini"];
+      if (!fallbackModel) {
+        throw new Error(
+          `Model not found: ${model.provider}/${model.model}. Please select a valid model.`
+        );
+      }
+      return fallbackModel;
+    }
+    return selectedModel;
   },
 };
 
 function checkProviderAPIKey(provider: keyof typeof staticModels) {
-  let key: string | undefined;
-  switch (provider) {
-    case "openai":
-      key = process.env.OPENAI_API_KEY;
-      break;
-    case "google":
-      key = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-      break;
-    case "anthropic":
-      key = process.env.ANTHROPIC_API_KEY;
-      break;
-    case "xai":
-      key = process.env.XAI_API_KEY;
-      break;
-    case "groq":
-      key = process.env.GROQ_API_KEY;
-      break;
-    case "openRouter":
-      key = process.env.OPENROUTER_API_KEY;
-      break;
-    default:
-      return true; // assume the provider has an API key
-  }
-  return !!key && key != "****";
+  // Pollinations AI doesn't require an API key for free tier
+  return true;
 }

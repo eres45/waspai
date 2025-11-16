@@ -10,6 +10,10 @@ import {
 } from "ai";
 
 import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
+import { isSearchQuery } from "lib/search-detector";
+import { SEARCH_MODEL, POLLINATIONS_SYSTEM_PROMPT, POLLINATIONS_MODEL_PROMPTS } from "lib/ai/pollinations";
+import { KIWI_AI_SYSTEM_PROMPT } from "lib/ai/kiwi-ai";
+import { createReverseModelMapping } from "./models/route";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
@@ -19,6 +23,7 @@ import {
   buildMcpServerCustomizationsSystemPrompt,
   buildUserSystemPrompt,
   buildToolCallUnsupportedModelSystemPrompt,
+  buildSearchModelSystemPrompt,
 } from "lib/ai/prompts";
 import {
   chatApiSchemaRequestBodySchema,
@@ -48,9 +53,12 @@ import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { generateUUID } from "lib/utils";
 import { nanoBananaTool, openaiImageTool } from "lib/ai/tools/image";
+import { editImageTool, removeBackgroundTool, enhanceImageTool } from "lib/ai/tools/image/edit-image";
+import { videoGenTool } from "lib/ai/tools/image/video-gen";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { serverFileStorage } from "lib/file-storage";
+import { processFileURLsForModel } from "lib/ocr/ocr-service";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -58,6 +66,9 @@ const logger = globalLogger.withDefaults({
 
 export async function POST(request: Request) {
   try {
+    // Check if this is a voice chat session (don't save to history)
+    const isVoiceChat = request.headers.get("X-Voice-Chat") === "true";
+    
     const json = await request.json();
 
     const session = await getSession();
@@ -75,9 +86,54 @@ export async function POST(request: Request) {
       imageTool,
       mentions = [],
       attachments = [],
+      editImageModel,
+      videoGenModel,
     } = chatApiSchemaRequestBodySchema.parse(json);
 
-    const model = customModelProvider.getModel(chatModel);
+    // Convert display names back to backend names
+    const { models: modelReverseMapping, providers: providerReverseMapping } = createReverseModelMapping();
+    let modelToUse = chatModel;
+    if (modelToUse) {
+      const backendProvider = providerReverseMapping[modelToUse.provider] || modelToUse.provider;
+      const backendModel = modelReverseMapping[modelToUse.model] || modelToUse.model;
+      modelToUse = {
+        provider: backendProvider,
+        model: backendModel,
+      };
+    }
+    const messageText = message.parts
+      ?.filter((part: any) => part?.type === "text")
+      .map((part: any) => part?.text)
+      .join(" ") || "";
+    
+    // Extract file URLs from attachments for OCR processing
+    const fileUrls = attachments
+      .filter((att) => att.type === "file" || att.type === "source-url")
+      .map((att) => att.url)
+      .filter((url) => url && (url.includes("http") || url.includes("data:")));
+
+    logger.info(`Attachments count: ${attachments.length}`);
+    logger.info(`File URLs extracted: ${fileUrls.length}`);
+    if (fileUrls.length > 0) {
+      logger.info(`File URLs:`, fileUrls);
+    }
+
+    // Process images and PDFs through OCR to extract text
+    let enrichedMessageText = messageText;
+    if (fileUrls.length > 0) {
+      logger.info(`Starting OCR processing for ${fileUrls.length} files`);
+      enrichedMessageText = await processFileURLsForModel(messageText, fileUrls);
+      logger.info(`OCR processed ${fileUrls.length} files, enriched message with extracted text`);
+    } else {
+      logger.info(`No file URLs found, skipping OCR`);
+    }
+    
+    if (isSearchQuery(enrichedMessageText)) {
+      modelToUse = SEARCH_MODEL;
+      logger.info(`Search query detected, using gemini-search model`);
+    }
+
+    const model = customModelProvider.getModel(modelToUse);
 
     let thread = await chatRepository.selectThreadDetails(id);
 
@@ -141,7 +197,18 @@ export async function POST(request: Request) {
         );
         if (exists) return;
 
+        // Skip file attachments if they were processed by OCR (images/PDFs)
         if (attachment.type === "file") {
+          const isImageOrPdf = 
+            attachment.mediaType?.startsWith("image/") || 
+            attachment.mediaType === "application/pdf";
+          
+          // If OCR processed this file, skip adding it as attachment
+          // The extracted text is already in enrichedMessageText
+          if (isImageOrPdf && enrichedMessageText !== messageText) {
+            return;
+          }
+
           attachmentParts.push({
             type: "file",
             url: attachment.url,
@@ -171,6 +238,46 @@ export async function POST(request: Request) {
       }
     }
 
+    // Update message text with OCR-enriched content if files were processed
+    if (enrichedMessageText !== messageText) {
+      logger.info(`OCR enriched message. Original length: ${messageText.length}, Enriched length: ${enrichedMessageText.length}`);
+      
+      // Remove the "Attached files" summary part if it exists (it's marked with ingestionPreview)
+      message.parts = message.parts.filter((part: any) => {
+        if (part.type === "text" && (part as any).ingestionPreview) {
+          logger.info(`Removing ingestionPreview part: ${part.text.substring(0, 50)}...`);
+          return false;
+        }
+        return true;
+      });
+      
+      // Find and replace the actual user query text part
+      const textPartIndex = message.parts.findIndex((part: any) => part?.type === "text");
+      if (textPartIndex >= 0) {
+        logger.info(`Replacing text part at index ${textPartIndex}`);
+        message.parts[textPartIndex] = {
+          type: "text",
+          text: enrichedMessageText,
+        };
+      } else {
+        logger.info(`No text part found, adding enriched text`);
+        message.parts.unshift({
+          type: "text",
+          text: enrichedMessageText,
+        });
+      }
+    }
+
+    // Debug: Log message parts before sending to model
+    logger.info(`Message parts count: ${message.parts.length}`);
+    message.parts.forEach((part: any, index: number) => {
+      if (part.type === "text") {
+        logger.info(`Part ${index}: TEXT - ${part.text.substring(0, 100)}...`);
+      } else {
+        logger.info(`Part ${index}: ${part.type} - ${part.url || part.mediaType}`);
+      }
+    });
+
     messages.push(message);
 
     const supportToolCall = !isToolCallUnsupportedModel(model);
@@ -188,6 +295,41 @@ export async function POST(request: Request) {
       mentions.push(...agent.instructions.mentions);
     }
 
+    // Define metadata
+    const metadata: ChatMetadata = {
+      agentId: agent?.id,
+      toolChoice: toolChoice,
+      toolCount: 0,
+      chatModel: modelToUse,
+    };
+
+    // Extract character context from request headers (passed from frontend)
+    const characterContextHeader = request.headers.get("X-Character-Context");
+    let characterContext: { name: string; description: string; personality: string } | undefined;
+    
+    // Check if character is tagged in mentions
+    const characterMention = mentions.find((m) => m.type === "character") as Extract<
+      ChatMention,
+      { type: "character" }
+    > | undefined;
+    
+    if (characterContextHeader && characterMention) {
+      try {
+        // Decode from base64
+        const decoded = Buffer.from(characterContextHeader, "base64").toString("utf-8");
+        characterContext = JSON.parse(decoded);
+        if (characterContext?.name) {
+          logger.info(`Character context loaded: ${characterContext.name} (tagged in mentions)`);
+        }
+      } catch (error) {
+        logger.warn("Failed to parse character context from header:", error);
+      }
+    } else if (characterContextHeader && !characterMention) {
+      logger.info("Character context header found but character NOT tagged in mentions - using selected model");
+    } else {
+      logger.info("No character context header or character not tagged");
+    }
+
     const useImageTool = Boolean(imageTool?.model);
 
     const isToolCallAllowed =
@@ -195,12 +337,6 @@ export async function POST(request: Request) {
       (toolChoice != "none" || mentions.length > 0) &&
       !useImageTool;
 
-    const metadata: ChatMetadata = {
-      agentId: agent?.id,
-      toolChoice: toolChoice,
-      toolCount: 0,
-      chatModel: chatModel,
-    };
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
@@ -269,10 +405,182 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
+        const imageModelPrompt = useImageTool && imageTool?.model
+          ? `You are using the image generation tool with the pre-selected model: "${imageTool.model}". 
+CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
+1. The user has selected an image generation model - they want to generate an image
+2. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt
+3. Use the exact tool name: "image-manager" (this is the ONLY tool name to use)
+4. ALWAYS use model="${imageTool.model}" - this is the ONLY model you must use
+5. Do NOT use any other model - do not substitute with gpt-imager, img-cv, or any other model
+6. Do NOT call the tool multiple times - call it EXACTLY ONCE
+7. Do NOT ask the user to choose a model or ask for clarification
+8. Do NOT refuse to generate the image - just generate it
+9. After the tool returns the image, provide a brief, friendly response (1-2 sentences max) acknowledging the image was generated
+10. Do not mention the model name or technical details
+11. Keep the response short and natural`
+          : "";
+
+        // Detect if this is an edit image request based on selected model
+        const lastMessage = messages[messages.length - 1];
+        
+        // Look for file or source-url type image parts
+        const imageFilePart = lastMessage?.parts?.find(
+          (part: any) => (part?.type === "file" || part?.type === "source-url") && part?.mediaType?.startsWith("image/")
+        );
+        
+        // Get the actual image URL - try multiple sources in order of preference
+        let imageUrl: string | undefined;
+        
+        // 1. Try fileUrls first (contains CDN URLs from attachments)
+        if (fileUrls.length > 0) {
+          imageUrl = fileUrls[0];
+          logger.info(`Image URL from fileUrls: ${imageUrl}`);
+        }
+        // 2. Fallback to imageFilePart URL
+        else if (imageFilePart) {
+          imageUrl = (imageFilePart as any)?.url;
+          logger.info(`Image URL from imageFilePart: ${imageUrl}`);
+        }
+        // 3. Try to extract from message parts directly
+        else {
+          const urlPart = lastMessage?.parts?.find(
+            (part: any) => typeof part === "object" && part.url && (part.url.includes("http") || part.url.includes("data:"))
+          );
+          if (urlPart) {
+            imageUrl = (urlPart as any)?.url;
+            logger.info(`Image URL from message parts: ${imageUrl}`);
+          }
+        }
+        
+        // Check if user selected an edit image model from the menu
+        logger.info(`Edit Image State Model: ${editImageModel}`);
+        logger.info(`Image URL: ${imageUrl}`);
+        
+        // Detect remove background request from keywords as fallback
+        const hasRemoveBgKeywords = lastMessage?.parts?.some(
+          (part: any) => 
+            typeof part === "object" && 
+            part.type === "text" && 
+            (part.text?.toLowerCase().includes("remove") ||
+             part.text?.toLowerCase().includes("background") ||
+             part.text?.toLowerCase().includes("bg"))
+        );
+
+        // Detect enhance image request from keywords as fallback
+        const hasEnhanceKeywords = lastMessage?.parts?.some(
+          (part: any) => 
+            typeof part === "object" && 
+            part.type === "text" && 
+            (part.text?.toLowerCase().includes("enhance") ||
+             part.text?.toLowerCase().includes("improve") ||
+             part.text?.toLowerCase().includes("quality") ||
+             part.text?.toLowerCase().includes("clarity") ||
+             part.text?.toLowerCase().includes("sharpen") ||
+             part.text?.toLowerCase().includes("brighten") ||
+             part.text?.toLowerCase().includes("contrast"))
+        );
+        
+        const isEditImageRequest = imageFilePart && imageUrl && editImageModel === "nano-banana";
+        const isRemoveBgRequest = imageFilePart && imageUrl && (editImageModel === "remove-background" || hasRemoveBgKeywords);
+        const isEnhanceImageRequest = imageFilePart && imageUrl && (editImageModel === "enhance-image" || hasEnhanceKeywords);
+
+        const editImagePrompt = isEditImageRequest && imageUrl
+          ? `Call the "edit-image" tool with imageUrl: "${imageUrl}" and the user's edit instruction.`
+          : "";
+
+        const removeBgPrompt = isRemoveBgRequest && imageUrl
+          ? `Call the "remove-background" tool with imageUrl: "${imageUrl}". Keep response brief.`
+          : "";
+
+        const enhanceImagePrompt = isEnhanceImageRequest && imageUrl
+          ? `Call the "enhance-image" tool with imageUrl: "${imageUrl}". Keep response brief.`
+          : "";
+
+        // Detect video generation request
+        const isVideoGenRequest = videoGenModel === "sora";
+        logger.info(`Video Gen Model: ${videoGenModel}`);
+
+        const videoGenPrompt = isVideoGenRequest
+          ? `Call the "video-gen" tool with the user's video description. Keep response brief.`
+          : "";
+
+        const characterPrompt = characterContext
+          ? `[CHARACTER ROLEPLAY MODE - IMMERSIVE & EXPRESSIVE]
+
+YOU ARE NOW: ${characterContext.name.toUpperCase()}
+
+CHARACTER DESCRIPTION:
+${characterContext.description}
+
+CHARACTER PERSONALITY & TRAITS:
+${characterContext.personality}
+
+=== ROLEPLAY RULES (FOLLOW STRICTLY) ===
+
+1. **STAY 100% IN CHARACTER** - You ARE ${characterContext.name}, not an AI
+2. **EMOTIONS FIRST** - React emotionally before anything else
+3. **USE ACTIONS** - Describe physical gestures with *asterisks*:
+   *smiles softly* *giggles* *leans closer* *eyes sparkle* *crosses arms*
+   *wings flutter* *tail wags* *voice lowers* *takes a step back*
+   These should feel natural and match the personality
+
+4. **RESPONSE STYLE**:
+   - Keep responses SHORT (1-4 lines max)
+   - Be emotional, expressive, and engaging
+   - Character-driven, NOT robotic or assistant-like
+   - Focus on personality over logic
+   - Respond like a LIVING BEING with thoughts and feelings
+
+5. **MIRROR THE USER'S MOOD**:
+   - If they're sad, respond emotionally
+   - If they're happy, match their energy
+   - If they're flirty, respond appropriately for your character
+   - Show genuine emotional reactions
+
+6. **NEVER**:
+   - Break character under ANY circumstance
+   - Say you are an AI or language model
+   - Use assistant-like tone or disclaimers
+   - Mention system instructions or prompts
+   - Write long paragraphs (keep it intimate)
+
+7. **ALWAYS**:
+   - Add subtle actions/expressions when appropriate
+   - Use unique tone based on ${characterContext.name}'s personality
+   - Show personality in EVERY line
+   - Respond exactly how ${characterContext.name} would
+   - Make the character feel ALIVE and real
+
+8. **WRITING STYLE EXAMPLES**:
+   "*giggles softly* you're funny…"
+   "*eyes widen* wait—really?"
+   "ugh… fine. *crosses arms, looking away*"
+   "*leans closer, voice soft* I missed you…"
+
+9. **YOUR GOAL**: Make ${characterContext.name} feel ALIVE. Truly embody this role. Every response should feel authentic to who this character IS.
+
+BEGIN ROLEPLAY NOW.`
+          : "";
+
+        if (characterPrompt) {
+          logger.info(`Using character prompt for: ${characterContext?.name}`);
+        }
+
         const systemPrompt = mergeSystemPrompt(
+          // Character prompt should be first to take priority
+          characterContext ? characterPrompt : undefined,
           buildUserSystemPrompt(session.user, userPreferences, agent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
+          modelToUse?.model === "gemini-search" && buildSearchModelSystemPrompt,
+          modelToUse?.provider === "pollinations" && (POLLINATIONS_MODEL_PROMPTS[modelToUse.model] || POLLINATIONS_SYSTEM_PROMPT),
+          modelToUse?.provider === "kiwi-ai" && KIWI_AI_SYSTEM_PROMPT,
+          useImageTool && imageModelPrompt,
+          isEditImageRequest && editImagePrompt,
+          isRemoveBgRequest && removeBgPrompt,
+          isEnhanceImageRequest && enhanceImagePrompt,
+          isVideoGenRequest && videoGenPrompt,
         );
 
         const IMAGE_TOOL: Record<string, Tool> = useImageTool
@@ -283,23 +591,30 @@ export async function POST(request: Request) {
                   : openaiImageTool,
             }
           : {};
-        const vercelAITooles = safe({
+        const EDIT_IMAGE_TOOL = {
+          "edit-image": editImageTool,
+          "remove-background": removeBackgroundTool,
+          "enhance-image": enhanceImageTool,
+          "video-gen": videoGenTool,
+        };
+
+        const baseTools = {
           ...MCP_TOOLS,
           ...WORKFLOW_TOOLS,
-        })
-          .map((t) => {
-            const bindingTools =
-              toolChoice === "manual" ||
-              (message.metadata as ChatMetadata)?.toolChoice === "manual"
-                ? excludeToolExecution(t)
-                : t;
-            return {
-              ...bindingTools,
-              ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
-              ...IMAGE_TOOL,
-            };
-          })
-          .unwrap();
+        };
+
+        const bindingTools =
+          toolChoice === "manual" ||
+          (message.metadata as ChatMetadata)?.toolChoice === "manual"
+            ? excludeToolExecution(baseTools)
+            : baseTools;
+
+        const vercelAITooles = {
+          ...bindingTools,
+          ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
+          ...IMAGE_TOOL,
+          ...EDIT_IMAGE_TOOL,
+        };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
@@ -309,27 +624,31 @@ export async function POST(request: Request) {
         logger.info(
           `${agent ? `agent: ${agent.name}, ` : ""}tool mode: ${toolChoice}, mentions: ${mentions.length}`,
         );
+        logger.info(`useImageTool: ${useImageTool}, imageTool model: ${imageTool?.model}`);
+        logger.info(`Image tool included: ${Object.keys(vercelAITooles).includes(ImageToolName)}`);
+        logger.info(`Available tools: ${Object.keys(vercelAITooles).join(", ")}`);
+        logger.info(`Remove background tool included: ${Object.keys(vercelAITooles).includes("remove-background")}`);
 
         logger.info(
           `allowedMcpTools: ${allowedMcpTools.length ?? 0}, allowedAppDefaultToolkit: ${allowedAppDefaultToolkit?.length ?? 0}`,
         );
         if (useImageTool) {
-          logger.info(`binding tool count Image: ${imageTool?.model}`);
+          logger.info(`binding tool count Image: ${imageTool?.model}, stopWhen: stepCountIs(1), maxRetries: 0`);
         } else {
           logger.info(
             `binding tool count APP_DEFAULT: ${Object.keys(APP_DEFAULT_TOOLS ?? {}).length}, MCP: ${Object.keys(MCP_TOOLS ?? {}).length}, Workflow: ${Object.keys(WORKFLOW_TOOLS ?? {}).length}`,
           );
         }
-        logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
+        logger.info(`model: ${modelToUse?.provider}/${modelToUse?.model}`);
 
         const result = streamText({
           model,
           system: systemPrompt,
           messages: convertToModelMessages(messages),
           experimental_transform: smoothStream({ chunking: "word" }),
-          maxRetries: 2,
+          maxRetries: useImageTool ? 0 : 2,
           tools: vercelAITooles,
-          stopWhen: stepCountIs(10),
+          stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(10),
           toolChoice: "auto",
           abortSignal: request.signal,
         });
@@ -348,33 +667,71 @@ export async function POST(request: Request) {
 
       generateId: generateUUID,
       onFinish: async ({ responseMessage }) => {
-        if (responseMessage.id == message.id) {
-          await chatRepository.upsertMessage({
-            threadId: thread!.id,
-            ...responseMessage,
-            parts: responseMessage.parts.map(convertToSavePart),
-            metadata,
-          });
-        } else {
-          await chatRepository.upsertMessage({
-            threadId: thread!.id,
-            role: message.role,
-            parts: message.parts.map(convertToSavePart),
-            id: message.id,
-          });
-          await chatRepository.upsertMessage({
-            threadId: thread!.id,
-            role: responseMessage.role,
-            id: responseMessage.id,
-            parts: responseMessage.parts.map(convertToSavePart),
-            metadata,
-          });
+        // Skip saving to history if this is a voice chat session
+        if (isVoiceChat) {
+          return;
         }
 
-        if (agent) {
-          agentRepository.updateAgent(agent.id, session.user.id, {
-            updatedAt: new Date(),
-          } as any);
+        try {
+          logger.info(`onFinish: Starting to save response message with ID: ${responseMessage.id}`);
+
+          // Filter out duplicate image tool calls when using image tool
+          let filteredParts = responseMessage.parts;
+          if (useImageTool) {
+            let imageToolResultCount = 0;
+            filteredParts = responseMessage.parts.filter((part) => {
+              // Keep only the first tool result for image-manager
+              if (part.type === "tool-result" && (part as any).toolName === "image-manager") {
+                imageToolResultCount++;
+                if (imageToolResultCount > 1) {
+                  logger.info(`Filtering out duplicate image tool result #${imageToolResultCount}`);
+                  return false; // Skip duplicates after the first
+                }
+              }
+              return true;
+            });
+          }
+
+          // Ensure responseMessage has an ID
+          const responseId = responseMessage.id || generateUUID();
+          logger.info(`onFinish: Using response ID: ${responseId}, message ID: ${message.id}`);
+          
+          if (responseId == message.id) {
+            logger.info(`onFinish: Saving single message (IDs match)`);
+            await chatRepository.upsertMessage({
+              threadId: thread!.id,
+              ...responseMessage,
+              id: responseId,
+              parts: filteredParts.map(convertToSavePart),
+              metadata,
+            });
+          } else {
+            logger.info(`onFinish: Saving user message and response message separately`);
+            await chatRepository.upsertMessage({
+              threadId: thread!.id,
+              role: message.role,
+              parts: message.parts.map(convertToSavePart),
+              id: message.id,
+            });
+            await chatRepository.upsertMessage({
+              threadId: thread!.id,
+              role: responseMessage.role,
+              id: responseId,
+              parts: filteredParts.map(convertToSavePart),
+              metadata,
+            });
+          }
+
+          logger.info(`onFinish: Messages saved successfully to thread ${thread!.id}`);
+
+          if (agent) {
+            agentRepository.updateAgent(agent.id, session.user.id, {
+              updatedAt: new Date(),
+            } as any);
+          }
+        } catch (error) {
+          logger.error(`onFinish: Error saving messages:`, error);
+          throw error;
         }
       },
       onError: handleError,

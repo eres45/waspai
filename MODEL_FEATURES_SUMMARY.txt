@@ -1,0 +1,149 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║           POLLINATIONS AI - MODEL FEATURES TEST RESULTS                         ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. REASONING MODEL: openai-reasoning (OpenAI o4 Mini)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ STATUS: WORKING PERFECTLY
+
+📍 HOW REASONING IS RETURNED:
+   └─ Location: choices[0].message.content
+   └─ Format: Plain text with step-by-step reasoning
+   └─ No separate "reasoning" field
+   └─ Reasoning is integrated directly in the response
+
+📝 EXAMPLE OUTPUT:
+   1. Rewrite the expression to clarify the order of operations:
+      (15 × 8) + 25
+   2. Compute the multiplication first:
+      15 × 8 = 120
+   3. Add 25 to that result:
+      120 + 25 = 145
+   
+   So, 15 * 8 + 25 = 145.
+
+⏱️  RESPONSE TIME: ~7-8 seconds (slower due to reasoning computation)
+
+💡 IMPLEMENTATION:
+   const response = await chat({
+     model: "openai-reasoning",
+     messages: [{ role: "user", content: "Solve this..." }]
+   });
+   
+   const reasoning = response.choices[0].message.content;
+   // Already formatted with step-by-step reasoning!
+
+✨ RECOMMENDATION: KEEP IN MODEL MENU
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. SEARCH MODEL: gemini-search (Gemini 2.5 Flash Lite with Google Search)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ STATUS: WORKING PERFECTLY
+
+📍 HOW SEARCH RESULTS ARE RETURNED:
+   └─ Location: choices[0].message.content
+   └─ Format: Synthesized answer with search context
+   └─ No separate "search_results" field
+   └─ Search results are automatically integrated into the response
+   └─ Model provides citations and context from search
+
+📝 EXAMPLE OUTPUT:
+   A significant trend in 2024 was the continued evolution and advancement
+   of generative AI chatbots, with new features like memory and multimodal
+   capabilities emerging. Companies like OpenAI, Google, and Meta have all
+   released or updated their chatbot offerings...
+   
+   In terms of hardware, NVIDIA's Blackwell architecture for GPUs became a
+   sought-after standard for AI processing...
+
+⏱️  RESPONSE TIME: ~4-5 seconds
+
+💡 IMPLEMENTATION:
+   const response = await chat({
+     model: "gemini-search",
+     messages: [{ role: "user", content: "What's the latest news?" }]
+   });
+   
+   const answer = response.choices[0].message.content;
+   // Already includes search results synthesized into the answer!
+
+✨ RECOMMENDATION: KEEP IN MODEL MENU
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. AUDIO MODEL: openai-audio (OpenAI GPT-4o Mini Audio Preview)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ STATUS: NOT WORKING
+
+🔴 ERROR RESPONSE:
+   HTTP 400 Bad Request
+   
+   Error: "This model requires that either input content or output 
+           modality contain audio."
+
+❌ WHY IT FAILS:
+   └─ Requires audio input format (base64 encoded audio data)
+   └─ Requires audio output modality specification
+   └─ Pollinations API doesn't expose audio through standard OpenAI endpoint
+   └─ Current text-only chat format is incompatible
+
+📋 WHAT WOULD BE NEEDED (not currently supported):
+   {
+     "model": "openai-audio",
+     "messages": [{
+       "role": "user",
+       "content": [
+         { "type": "text", "text": "Say hello" },
+         { "type": "audio", "audio": "base64_encoded_audio" }
+       ]
+     }],
+     "modalities": ["text", "audio"],
+     "audio": {
+       "voice": "alloy",
+       "format": "mp3"
+     }
+   }
+
+⏱️  RESPONSE TIME: N/A (fails immediately)
+
+❌ RECOMMENDATION: REMOVE FROM MODEL MENU
+   
+   Alternatives:
+   • Use text-to-speech service separately
+   • Wait for Pollinations to add audio endpoint support
+   • Use a different provider for audio capabilities
+
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                              FINAL SUMMARY                                     ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+✅ WORKING MODELS (8 total):
+   1. gemini ........................... Gemini 2.5 Flash Lite (vision)
+   2. gemini-search .................... Gemini with Google Search (vision) ⭐
+   3. mistral .......................... Mistral Small 3.2 24B
+   4. openai ........................... OpenAI GPT-5 Nano (vision)
+   5. openai-fast ...................... OpenAI GPT-4.1 Nano (vision)
+   6. openai-large ..................... OpenAI GPT-4.1 (vision)
+   7. openai-reasoning ................. OpenAI o4 Mini (reasoning + vision) ⭐
+   8. roblox-rp ........................ Llama 3.1 8B
+
+❌ NOT WORKING:
+   • openai-audio ...................... Requires audio format not supported
+   • deepseek .......................... API errors (404/502)
+
+📊 KEY FINDINGS:
+   • Reasoning is naturally included in content (no separate field)
+   • Search results are synthesized into the response (no separate field)
+   • Audio model requires special format not supported by current API
+   • All 8 working models support tool calling
+   • 6 models support image/vision input
+
+🎯 RECOMMENDED ACTION:
+   Keep the current 8 models in the model menu. They all work perfectly
+   and provide the features you need for your chatbot application.

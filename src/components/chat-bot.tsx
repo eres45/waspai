@@ -95,6 +95,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     threadMentions,
     pendingThreadMention,
     threadImageToolModel,
+    editImageState,
   ] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -106,6 +107,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
       state.threadMentions,
       state.pendingThreadMention,
       state.threadImageToolModel,
+      state.editImageState,
     ]),
   );
 
@@ -116,6 +118,11 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
   const [showParticles, setShowParticles] = useState(isFirstTime);
 
   const onFinish = useCallback(() => {
+    // Ensure URL is correct after message is finished
+    if (window.location.pathname !== `/chat/${threadId}`) {
+      window.history.replaceState({}, "", `/chat/${threadId}`);
+    }
+
     const messages = latestRef.current.messages;
     const prevThread = latestRef.current.threadList.find(
       (v) => v.id === threadId,
@@ -141,7 +148,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     } else if (latestRef.current.threadList[0]?.id !== threadId) {
       mutate("/api/thread");
     }
-  }, []);
+  }, [threadId]);
 
   const [input, setInput] = useState("");
 
@@ -158,10 +165,6 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     transport: new DefaultChatTransport({
       prepareSendMessagesRequest: ({ messages, body, id }) => {
-        if (window.location.pathname !== `/chat/${threadId}`) {
-          console.log("replace-state");
-          window.history.replaceState({}, "", `/chat/${threadId}`);
-        }
         const lastMessage = messages.at(-1)!;
         // Filter out UI-only parts (e.g., source-url) so the model doesn't receive unknown parts
         const attachments: ChatAttachment[] = lastMessage.parts.reduce(
@@ -194,6 +197,9 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           (p) => (p as any)?.type === "file",
         );
 
+        // Use the stored editImageModel from the ref (persists after editImageState is cleared)
+        const editImageModel = editImageModelRef.current;
+
         const requestBody: ChatApiSchemaRequestBody = {
           ...body,
           id,
@@ -213,8 +219,35 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             model: latestRef.current.threadImageToolModel[threadId],
           },
           attachments,
+          editImageModel,
         };
-        return { body: requestBody };
+
+        // Clear the ref after using it
+        editImageModelRef.current = undefined;
+
+        // Get character context from sessionStorage if available
+        const characterContextStr = typeof window !== "undefined" 
+          ? sessionStorage.getItem(`character_${id}`)
+          : null;
+        
+        // Check if character is tagged in current mentions
+        const hasCharacterMention = requestBody.mentions?.some(
+          (mention: any) => mention.type === "character"
+        );
+        
+        const headers: Record<string, string> = {};
+        // Only send character context if character is tagged in mentions
+        if (characterContextStr && hasCharacterMention) {
+          // Encode as base64 to avoid header encoding issues with special characters
+          try {
+            const encoded = btoa(unescape(encodeURIComponent(characterContextStr)));
+            headers["X-Character-Context"] = encoded;
+          } catch (error) {
+            console.warn("Failed to encode character context:", error);
+          }
+        }
+
+        return { body: requestBody, headers };
       },
     }),
     messages: initialMessages,
@@ -245,6 +278,16 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     mentions: threadMentions[threadId],
     threadImageToolModel,
   });
+
+  // Store editImageModel in a ref so it persists when editImageState is cleared
+  const editImageModelRef = useRef<string | undefined>(undefined);
+
+  // Update the ref whenever editImageState changes
+  useEffect(() => {
+    if (editImageState?.isOpen && editImageState?.model) {
+      editImageModelRef.current = editImageState.model;
+    }
+  }, [editImageState?.isOpen, editImageState?.model]);
 
   const isLoading = useMemo(
     () => status === "streaming" || status === "submitted",

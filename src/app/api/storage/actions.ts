@@ -11,7 +11,7 @@ export async function getStorageInfoAction() {
   return {
     type: storageDriver,
     supportsDirectUpload:
-      storageDriver === "vercel-blob" || storageDriver === "s3",
+      storageDriver === "vercel-blob" || storageDriver === "s3" || storageDriver === "supabase" || storageDriver === "snapzion",
   };
 }
 
@@ -74,15 +74,58 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
     return { isValid: true };
   }
 
-  // 3. Validate storage driver
-  if (!["vercel-blob", "s3"].includes(storageDriver)) {
+  // 3. Check Supabase configuration
+  if (storageDriver === "supabase") {
+    const missing: string[] = [];
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL)
+      missing.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY)
+      missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (missing.length > 0) {
+      return {
+        isValid: false,
+        error: `Missing Supabase configuration: ${missing.join(", ")}`,
+        solution:
+          "Add required env vars for Supabase file storage:\n" +
+          "- FILE_STORAGE_TYPE=supabase\n" +
+          "- NEXT_PUBLIC_SUPABASE_URL=your-supabase-url\n" +
+          "- SUPABASE_SERVICE_ROLE_KEY=your-service-role-key\n" +
+          "(Optional) FILE_STORAGE_SUPABASE_BUCKET=uploads (defaults to 'uploads')",
+      };
+    }
+
+    return { isValid: true };
+  }
+
+  // 4. Check Snapzion configuration
+  if (storageDriver === "snapzion") {
+    if (!process.env.SNAPZION_API_TOKEN) {
+      return {
+        isValid: false,
+        error: "SNAPZION_API_TOKEN is not set",
+        solution:
+          "Add Snapzion API token for file uploads:\n" +
+          "- FILE_STORAGE_TYPE=snapzion\n" +
+          "- SNAPZION_API_TOKEN=your-api-token\n" +
+          "(Optional) SNAPZION_API_URL=https://upload.snapzion.com/api/public-upload",
+      };
+    }
+
+    return { isValid: true };
+  }
+
+  // 5. Validate storage driver
+  if (!["vercel-blob", "s3", "supabase", "snapzion"].includes(storageDriver)) {
     return {
       isValid: false,
       error: `Invalid storage driver: ${storageDriver}`,
       solution:
         "FILE_STORAGE_TYPE must be one of:\n" +
         "- 'vercel-blob' (default)\n" +
-        "- 's3' (coming soon)",
+        "- 's3'\n" +
+        "- 'supabase'\n" +
+        "- 'snapzion'",
     };
   }
 

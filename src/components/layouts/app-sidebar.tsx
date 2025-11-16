@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import { AppSidebarMenus } from "./app-sidebar-menus";
 import { AppSidebarAgents } from "./app-sidebar-agents";
+import { AppSidebarCharacterMode } from "./app-sidebar-character-mode";
 import { AppSidebarThreads } from "./app-sidebar-threads";
 import { SidebarHeaderShared } from "./sidebar-header";
 
@@ -52,6 +53,7 @@ export function AppSidebar({
         <div className="flex flex-col overflow-y-auto">
           <AppSidebarMenus user={user} />
           <AppSidebarAgents userRole={userRole} />
+          <AppSidebarCharacterMode />
           <AppSidebarThreads />
         </div>
       </SidebarContent>

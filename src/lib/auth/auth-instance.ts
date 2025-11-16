@@ -87,7 +87,7 @@ const options = {
   },
   session: {
     cookieCache: {
-      enabled: true,
+      enabled: false, // Disable cookie cache to prevent session size limit errors
       maxAge: 60 * 60,
     },
     expiresIn: 60 * 60 * 24 * 7, // 7 days

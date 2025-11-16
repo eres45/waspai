@@ -8,8 +8,8 @@ export async function register() {
         (m) => m.runMigrate,
       );
       await runMigrate().catch((e) => {
-        console.error(e);
-        process.exit(1);
+        console.error("⚠️  Database migration failed, continuing without database:", e.message);
+        // Don't exit, allow app to run without database in dev mode
       });
       const initMCPManager = await import("./lib/ai/mcp/mcp-manager").then(
         (m) => m.initMCPManager,

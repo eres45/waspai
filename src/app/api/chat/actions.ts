@@ -63,22 +63,58 @@ export async function generateTitleFromUserMessageAction({
   return title.trim();
 }
 
+export async function createThreadAction(threadId: string) {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  logger.info(`Creating thread: ${threadId}`);
+  const newThread = await chatRepository.insertThread({
+    id: threadId,
+    title: "",
+    userId: session.user.id,
+  });
+
+  return newThread;
+}
+
 export async function selectThreadWithMessagesAction(threadId: string) {
   const session = await getSession();
   if (!session) {
     throw new Error("Unauthorized");
   }
-  const thread = await chatRepository.selectThread(threadId);
+
+  // Retry logic to handle race condition where thread is being created
+  let thread: any = null;
+  let retries = 3;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    thread = await chatRepository.selectThread(threadId);
+    
+    if (thread) {
+      break;
+    }
+    
+    if (attempt < retries) {
+      // Wait before retrying (exponential backoff: 100ms, 200ms)
+      const waitTime = Math.pow(2, attempt - 1) * 100;
+      logger.info(`Thread ${threadId} not found on attempt ${attempt}, retrying in ${waitTime}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+    }
+  }
 
   if (!thread) {
-    logger.error("Thread not found", threadId);
+    logger.error("Thread not found after retries", threadId);
     return null;
   }
-  if (thread.userId !== session?.user.id) {
+  
+  if (thread?.userId !== session?.user.id) {
     return null;
   }
+  
   const messages = await chatRepository.selectMessagesByThreadId(threadId);
-  return { ...thread, messages: messages ?? [] };
+  return thread ? { ...thread, messages: messages ?? [] } : null;
 }
 
 export async function deleteMessageAction(messageId: string) {

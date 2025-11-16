@@ -2,11 +2,9 @@
 
 import { getToolName, isToolUIPart, TextPart } from "ai";
 import { DEFAULT_VOICE_TOOLS, UIMessageWithCompleted } from "lib/ai/speech";
+import { CUSTOM_TTS_VOICES, getVoiceDisplayName } from "lib/ai/speech/custom-tts";
 
-import {
-  OPENAI_VOICE,
-  useOpenAIVoiceChat as OpenAIVoiceChat,
-} from "lib/ai/speech/open-ai/use-voice-chat.openai";
+import { useCustomVoiceChat } from "lib/ai/speech/custom-voice-chat";
 import { cn, groupBy, isNull } from "lib/utils";
 import {
   CheckIcon,
@@ -40,9 +38,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
-import { GeminiIcon } from "ui/gemini-icon";
 import { MessageLoading } from "ui/message-loading";
-import { OpenAIIcon } from "ui/openai-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ToolMessagePart } from "./message-parts";
 
@@ -134,7 +130,7 @@ export function ChatBotVoice() {
     startListening,
     stop,
     stopListening,
-  } = OpenAIVoiceChat({
+  } = useCustomVoiceChat({
     toolMentions,
     agentId,
     ...voiceChat.options.providerOptions,
@@ -363,60 +359,40 @@ export function ChatBotVoice() {
                           className="flex items-center gap-2 cursor-pointer"
                           icon=""
                         >
-                          <OpenAIIcon className="size-3.5 stroke-none fill-foreground" />
-                          Open AI
+                          <span className="size-3.5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                          Custom TTS
                         </DropdownMenuSubTrigger>
                         <DropdownMenuPortal>
-                          <DropdownMenuSubContent>
-                            {Object.entries(OPENAI_VOICE).map(
-                              ([key, value]) => (
-                                <DropdownMenuItem
-                                  className="cursor-pointer flex items-center justify-between"
-                                  onClick={() =>
-                                    appStoreMutate({
-                                      voiceChat: {
-                                        ...voiceChat,
-                                        options: {
-                                          provider: "openai",
-                                          providerOptions: {
-                                            voice: value,
-                                          },
+                          <DropdownMenuSubContent className="max-h-96 overflow-y-auto">
+                            {CUSTOM_TTS_VOICES.map((voice) => (
+                              <DropdownMenuItem
+                                className="cursor-pointer flex items-center justify-between"
+                                onClick={() =>
+                                  appStoreMutate({
+                                    voiceChat: {
+                                      ...voiceChat,
+                                      options: {
+                                        provider: "custom-tts",
+                                        providerOptions: {
+                                          voice: voice,
                                         },
                                       },
-                                    })
-                                  }
-                                  key={key}
-                                >
-                                  {key}
+                                    },
+                                  })
+                                }
+                                key={voice}
+                              >
+                                {getVoiceDisplayName(voice)}
 
-                                  {value ===
-                                    voiceChat.options.providerOptions
-                                      ?.voice && (
-                                    <CheckIcon className="size-3.5" />
-                                  )}
-                                </DropdownMenuItem>
-                              ),
-                            )}
+                                {voice ===
+                                  voiceChat.options.providerOptions
+                                    ?.voice && (
+                                  <CheckIcon className="size-3.5" />
+                                )}
+                              </DropdownMenuItem>
+                            ))}
                           </DropdownMenuSubContent>
                         </DropdownMenuPortal>
-                      </DropdownMenuSub>
-                      <DropdownMenuSub>
-                        <DropdownMenuSub>
-                          <DropdownMenuSubTrigger
-                            className="flex items-center gap-2 text-muted-foreground"
-                            icon=""
-                          >
-                            <GeminiIcon className="size-3.5" />
-                            Gemini
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                              <div className="text-xs text-muted-foreground p-6">
-                                Not Implemented Yet
-                              </div>
-                            </DropdownMenuSubContent>
-                          </DropdownMenuPortal>
-                        </DropdownMenuSub>
                       </DropdownMenuSub>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>

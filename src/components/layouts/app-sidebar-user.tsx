@@ -26,6 +26,7 @@ import {
   MoonStar,
   ChevronRight,
   Settings,
+  CreditCard,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { appStore } from "@/app/store";
@@ -36,7 +37,6 @@ import { useTranslations } from "next-intl";
 import useSWR from "swr";
 import { getLocaleAction } from "@/i18n/get-locale";
 import { Suspense, useCallback } from "react";
-import { GithubIcon } from "ui/github-icon";
 import { DiscordIcon } from "ui/discord-icon";
 import { useThemeStyle } from "@/hooks/use-theme-style";
 import { BasicUser } from "app-types/user";
@@ -129,6 +129,13 @@ export function AppSidebarUserInner(props: {
             </DropdownMenuItem>
             <SelectTheme />
             <SelectLanguage />
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => appStoreMutate({ openSubscription: true })}
+            >
+              <CreditCard className="size-4 text-foreground" />
+              <span>Subscription</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer"
@@ -139,18 +146,7 @@ export function AppSidebarUserInner(props: {
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                window.open(
-                  "https://github.com/cgoinglove/better-chatbot/issues/new",
-                  "_blank",
-                );
-              }}
-            >
-              <GithubIcon className="size-4 fill-foreground" />
-              <span>{t("reportAnIssue")}</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                window.open("https://discord.gg/gCRu69Upnp", "_blank");
+                window.open("https://discord.gg/XBC6TN4FqV", "_blank");
               }}
             >
               <DiscordIcon className="size-4 fill-foreground" />

@@ -289,3 +289,19 @@ export const buildToolCallUnsupportedModelSystemPrompt = `
 - You are using a model that does not support tool calls. 
 - When users request tool usage, simply explain that the current model cannot use tools and that they can switch to a model that supports tool calling to use tools.
 `.trim();
+
+export const buildSearchModelSystemPrompt = `
+### Search Model Instructions
+- You are using a specialized search model with access to real-time information and web search capabilities.
+- Provide current, up-to-date information for queries about:
+  - Current prices (cryptocurrency, stocks, commodities)
+  - Latest news and events
+  - Real-time data and statistics
+  - Current weather and forecasts
+  - Live sports scores and results
+- Always provide the most recent information available.
+- When providing prices or data, include the timestamp or date of the information when available.
+- Include relevant links, sources, and website references when available.
+- Format links clearly so users can access them easily.
+- If you have source information, mention the website or publication name.
+`.trim();

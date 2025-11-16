@@ -17,6 +17,7 @@ import {
   EllipsisIcon,
   FileIcon,
   Download,
+  Volume2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -46,6 +47,7 @@ import { Separator } from "ui/separator";
 
 import { TextShimmer } from "ui/text-shimmer";
 import equal from "lib/equal";
+import { generateSpeech } from "lib/ai/speech/custom-tts";
 import {
   VercelAIWorkflowToolStreamingResult,
   VercelAIWorkflowToolStreamingResultTag,
@@ -67,7 +69,7 @@ import { BACKGROUND_COLORS, EMOJI_DATA } from "lib/const";
 
 type MessagePart = UIMessage["parts"][number];
 type TextMessagePart = Extract<MessagePart, { type: "text" }>;
-type AssistMessagePart = Extract<MessagePart, { type: "text" }>;
+type AssistMessagePartType = Extract<MessagePart, { type: "text" }>;
 
 interface UserMessagePartProps {
   part: TextMessagePart;
@@ -81,7 +83,7 @@ interface UserMessagePartProps {
 }
 
 interface AssistMessagePartProps {
-  part: AssistMessagePart;
+  part: AssistMessagePartType;
   isLast?: boolean;
   isLoading?: boolean;
   message: UIMessage;
@@ -300,6 +302,8 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   const [isLoading, setIsLoading] = useState(false);
   const agentList = appStore((state) => state.agentList);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const metadata = message.metadata as ChatMetadata | undefined;
 
@@ -409,6 +413,60 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                 </TooltipTrigger>
                 <TooltipContent>Change Model</TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={async () => {
+                      if (isPlaying) {
+                        // Stop playing
+                        if (audioRef.current) {
+                          audioRef.current.pause();
+                          audioRef.current.currentTime = 0;
+                        }
+                        setIsPlaying(false);
+                      } else {
+                        // Start playing
+                        try {
+                          const text = part.text;
+                          if (!text) return;
+                          setIsPlaying(true);
+                          const audioUrl = await generateSpeech(text, "nova");
+                          const proxyUrl = `/api/audio?url=${encodeURIComponent(audioUrl)}`;
+                          
+                          if (!audioRef.current) {
+                            audioRef.current = new Audio();
+                          }
+                          
+                          audioRef.current.src = proxyUrl;
+                          audioRef.current.onended = () => {
+                            setIsPlaying(false);
+                          };
+                          audioRef.current.onerror = () => {
+                            setIsPlaying(false);
+                            toast.error("Failed to play audio");
+                          };
+                          
+                          await audioRef.current.play();
+                        } catch (error) {
+                          console.error("TTS error:", error);
+                          toast.error("Failed to generate speech");
+                          setIsPlaying(false);
+                        }
+                      }
+                    }}
+                    className={cn(
+                      "size-3! p-4! transition-all duration-300",
+                      isPlaying && "text-blue-400"
+                    )}
+                  >
+                    <Volume2 />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isPlaying ? "Stop" : "Read Aloud"}</TooltipContent>
+              </Tooltip>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -726,6 +784,39 @@ const ImageGeneratorToolInvocation = dynamic(
   },
 );
 
+const ImageEditorToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/image-editor").then(
+      (mod) => mod.ImageEditorToolInvocation,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
+const ImageEnhancerToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/image-enhancer").then(
+      (mod) => mod.ImageEnhancerToolInvocation,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
+const VideoGenToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/video-gen").then(
+      (mod) => mod.VideoGenToolInvocation,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -878,6 +969,18 @@ export const ToolMessagePart = memo(
 
       if (toolName === ImageToolName) {
         return <ImageGeneratorToolInvocation part={part} />;
+      }
+
+      if (toolName === "edit-image" || toolName === "remove-background") {
+        return <ImageEditorToolInvocation part={part} />;
+      }
+
+      if (toolName === "enhance-image") {
+        return <ImageEnhancerToolInvocation part={part} />;
+      }
+
+      if (toolName === "video-gen") {
+        return <VideoGenToolInvocation part={part} />;
       }
 
       if (toolName === DefaultToolName.JavascriptExecution) {
@@ -1206,7 +1309,7 @@ export const FileMessagePart = memo(
       return (
         <div
           className={cn(
-            "max-w-md rounded-lg overflow-hidden border border-border",
+            "max-w-md rounded-lg overflow-hidden border border-border relative group",
             isUserMessage ? "ml-auto" : "mr-auto",
           )}
         >
@@ -1216,6 +1319,25 @@ export const FileMessagePart = memo(
             alt={part.filename || "Uploaded image"}
             className="w-full h-auto"
           />
+          
+          {/* Download Button at Top Right Corner */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                asChild
+                size="icon"
+                variant="ghost"
+                className="absolute top-2 right-2 size-8 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <a href={fileUrl} download={part.filename ?? filename}>
+                  <Download className="size-4" />
+                  <span className="sr-only">Download {filename}</span>
+                </a>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Download image</TooltipContent>
+          </Tooltip>
+          
           {part.filename && (
             <div className="px-3 py-2 bg-muted text-sm text-muted-foreground">
               {part.filename}

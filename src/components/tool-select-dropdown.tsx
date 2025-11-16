@@ -77,6 +77,7 @@ import { safe } from "ts-safe";
 import { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { useAgents } from "@/hooks/queries/use-agents";
+import { useCharacters } from "@/hooks/queries/use-characters";
 import { redriectMcpOauth } from "lib/ai/mcp/oauth-redirect";
 import { GeminiIcon } from "ui/gemini-icon";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
@@ -141,6 +142,9 @@ export function ToolSelectDropdown({
   useWorkflowToolList({
     refreshInterval: 1000 * 60 * 5,
   });
+
+  // Load characters into store for mention suggestions
+  useCharacters({ type: "all", revalidateOnFocus: false });
 
   const agentMention = useMemo(() => {
     return mentions?.find((m) => m.type === "agent");

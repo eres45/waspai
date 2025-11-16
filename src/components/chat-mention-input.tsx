@@ -156,11 +156,12 @@ export function ChatMentionInputSuggestion({
   disabledType?: ("mcp" | "workflow" | "defaultTool" | "agent")[];
 }) {
   const t = useTranslations("Common");
-  const [mcpList, workflowList, agentList] = appStore(
+  const [mcpList, workflowList, agentList, characterList] = appStore(
     useShallow((state) => [
       state.mcpList,
       state.workflowToolList,
       state.agentList,
+      state.characterList || [],
     ]),
   );
   const [searchValue, setSearchValue] = useState("");
@@ -299,6 +300,52 @@ export function ChatMentionInputSuggestion({
         };
       });
   }, [agentList, selectedIds, disabledType, searchValue]);
+
+  const characterMentions = useMemo(() => {
+    if (!characterList.length) return [];
+
+    return characterList
+      .filter(
+        (character) =>
+          !searchValue ||
+          character.name.toLowerCase().includes(searchValue.toLowerCase()),
+      )
+      .map((character, i) => {
+        const id = JSON.stringify({
+          type: "character",
+          name: character.name,
+          characterId: character.id,
+          description: character.description,
+          personality: character.personality,
+          icon: character.icon,
+        });
+        return {
+          id: character.id,
+          type: "character",
+          label: character.name,
+          onSelect: () =>
+            onSelectMention({
+              label: `character("${character.name}")`,
+              id,
+            }),
+          icon: (
+            <Avatar
+              style={character.icon?.style}
+              className="size-3.5 ring-[1px] ring-input rounded-full"
+            >
+              <AvatarImage
+                src={character.icon?.type === "image" ? character.icon.value : character.icon?.value || EMOJI_DATA[i % EMOJI_DATA.length]}
+              />
+              <AvatarFallback>{character.name.slice(0, 1)}</AvatarFallback>
+            </Avatar>
+          ),
+          suffix: selectedIds?.includes(id) && (
+            <CheckIcon className="size-3 ml-auto" />
+          ),
+        };
+      });
+  }, [characterList, selectedIds, searchValue]);
+
 
   const workflowMentions = useMemo(() => {
     if (disabledType?.includes("workflow")) return [];
@@ -442,11 +489,12 @@ export function ChatMentionInputSuggestion({
   const allMentions = useMemo(() => {
     return [
       ...agentMentions,
+      ...characterMentions,
       ...workflowMentions,
       ...defaultToolMentions,
       ...mcpMentions,
     ];
-  }, [agentMentions, workflowMentions, defaultToolMentions, mcpMentions]);
+  }, [agentMentions, characterMentions, workflowMentions, defaultToolMentions, mcpMentions]);
 
   // Reset selected index when mentions change
   useEffect(() => {
@@ -468,6 +516,7 @@ export function ChatMentionInputSuggestion({
   const groupedMentions = useMemo(() => {
     const groups = {
       agent: { title: "Agents", items: [] as MentionItemType[] },
+      character: { title: "Characters", items: [] as MentionItemType[] },
       workflow: { title: "Workflows", items: [] as MentionItemType[] },
       defaultTool: { title: "App Tools", items: [] as MentionItemType[] },
       mcp: { title: "MCP Tools", items: [] as MentionItemType[] },
@@ -687,7 +736,7 @@ export function ChatMentionInputSuggestion({
             ) : (
               // Desktop horizontal layout
               <div className="flex flex-1 h-[300px]">
-                {/* Agents & Workflows Column */}
+                {/* Agents & Workflows & Characters Column */}
                 <div className="flex-1 border-r overflow-y-auto">
                   <div className="p-2">
                     <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
@@ -710,6 +759,31 @@ export function ChatMentionInputSuggestion({
                       ) : (
                         <div className="px-2 py-3 text-xs text-muted-foreground text-center">
                           No agents found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-2 border-t">
+                    <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+                      {groupedMentions.character.title}
+                    </div>
+                    <div className="space-y-1">
+                      {groupedMentions.character.items.length > 0 ? (
+                        groupedMentions.character.items.map((item) => (
+                          <MentionItem
+                            key={item.id}
+                            item={item}
+                            isSelected={
+                              allMentions[selectedIndex]?.id === item.id
+                            }
+                            ref={(el) => {
+                              itemRefs.current[item.id] = el;
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                          No characters found
                         </div>
                       )}
                     </div>

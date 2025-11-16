@@ -12,6 +12,8 @@ import {
   PlusIcon,
   Square,
   XIcon,
+  Edit2,
+  Film,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "ui/button";
@@ -49,6 +51,7 @@ import {
 } from "ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
+import { UploadLimitBadge } from "./chat/upload-limit-badge";
 
 import { EMOJI_DATA } from "lib/const";
 import { AgentSummary } from "app-types/agent";
@@ -102,34 +105,42 @@ export default function PromptInput({
   const { data: providers } = useChatModels();
 
   const [
-    globalModel,
+    storeThreadId,
     threadMentions,
     threadFiles,
     threadImageToolModel,
+    editImageState,
+    videoGenState,
+    storeChatModel,
     appStoreMutate,
   ] = appStore(
     useShallow((state) => [
-      state.chatModel,
+      state.currentThreadId,
       state.threadMentions,
       state.threadFiles,
       state.threadImageToolModel,
+      state.editImageState,
+      state.videoGenState,
+      state.chatModel,
       state.mutate,
     ]),
   );
 
+  const chatModel = useMemo(() => {
+    return model || storeChatModel;
+  }, [model, storeChatModel]);
+
   const modelInfo = useMemo(() => {
     const provider = providers?.find(
-      (provider) => provider.provider === globalModel?.provider,
+      (provider) => provider.provider === chatModel?.provider,
     );
-    const model = provider?.models.find(
-      (model) => model.name === globalModel?.model,
+    const modelItem = provider?.models.find(
+      (m) => m.name === chatModel?.model,
     );
-    return model;
-  }, [providers, globalModel]);
+    return modelItem;
+  }, [providers, chatModel]);
 
   const supportedFileMimeTypes = modelInfo?.supportedFileMimeTypes;
-  const canUploadImages =
-    supportedFileMimeTypes?.some((mime) => mime.startsWith("image/")) ?? true;
 
   const mentions = useMemo<ChatMention[]>(() => {
     if (!threadId) return [];
@@ -145,10 +156,6 @@ export default function PromptInput({
     if (!threadId) return undefined;
     return threadImageToolModel[threadId];
   }, [threadImageToolModel, threadId]);
-
-  const chatModel = useMemo(() => {
-    return model ?? globalModel;
-  }, [model, globalModel]);
 
   const editorRef = useRef<Editor | null>(null);
 
@@ -222,8 +229,8 @@ export default function PromptInput({
   );
 
   const handleGenerateImage = useCallback(
-    (provider?: "google" | "openai") => {
-      if (!provider) {
+    (model?: "google" | "openai" | "img-cv" | "flux-max" | "gpt-imager" | "imagen-3" | "nano-banana" | "sdxl" | "chalk" | "meme") => {
+      if (!model) {
         appStoreMutate({
           threadImageToolModel: {},
         });
@@ -235,7 +242,7 @@ export default function PromptInput({
       appStoreMutate((prev) => ({
         threadImageToolModel: {
           ...prev.threadImageToolModel,
-          [threadId]: provider,
+          [threadId]: model,
         },
       }));
 
@@ -377,11 +384,28 @@ export default function PromptInput({
     sendMessage({
       role: "user",
       parts: [...attachmentParts, { type: "text", text: userMessage }],
+      metadata: {
+        ...(editImageState?.isOpen && editImageState?.model ? {
+          editImageModel: editImageState.model,
+        } : {}),
+        ...(videoGenState?.isOpen && videoGenState?.model ? {
+          videoGenModel: videoGenState.model,
+        } : {}),
+      } || undefined,
     });
     appStoreMutate((prev) => ({
       threadFiles: {
         ...prev.threadFiles,
         [threadId!]: [],
+      },
+      editImageState: {
+        isOpen: false,
+        selectedImageUrl: undefined,
+        model: undefined,
+      },
+      videoGenState: {
+        isOpen: false,
+        model: undefined,
       },
     }));
   };
@@ -421,19 +445,22 @@ export default function PromptInput({
                   return (
                     <div key={i} className="flex items-center gap-2">
                       {mention.type === "workflow" ||
-                      mention.type === "agent" ? (
+                      mention.type === "agent" ||
+                      mention.type === "ai-style" ? (
                         <Avatar
                           className="size-6 p-1 ring ring-border rounded-full flex-shrink-0"
-                          style={mention.icon?.style}
+                          style={mention.type === "ai-style" ? { backgroundColor: "#e5e7eb" } : mention.icon?.style}
                         >
                           <AvatarImage
                             src={
-                              mention.icon?.value ||
-                              EMOJI_DATA[i % EMOJI_DATA.length]
+                              mention.type === "ai-style"
+                                ? undefined
+                                : mention.icon?.value ||
+                                  EMOJI_DATA[i % EMOJI_DATA.length]
                             }
                           />
                           <AvatarFallback>
-                            {mention.name.slice(0, 1)}
+                            {mention.type === "ai-style" ? "✨" : mention.name.slice(0, 1)}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
@@ -453,7 +480,12 @@ export default function PromptInput({
                         <span className="text-sm font-semibold truncate">
                           {mention.name}
                         </span>
-                        {mention.description ? (
+                        {mention.type === "ai-style" && (
+                          <span className="text-muted-foreground text-xs truncate">
+                            AI Style
+                          </span>
+                        )}
+                        {mention.type !== "ai-style" && "description" in mention && mention.description ? (
                           <span className="text-muted-foreground text-xs truncate">
                             {mention.description}
                           </span>
@@ -492,7 +524,7 @@ export default function PromptInput({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,.pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.tar,.gz,.mp3,.wav,.m4a,.ogg,.mp4,.webm,.mov"
+                  accept="image/*,.pdf"
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}
@@ -508,22 +540,20 @@ export default function PromptInput({
                       variant={"ghost"}
                       size={"sm"}
                       className="rounded-full hover:bg-input! p-2! data-[state=open]:bg-input!"
-                      disabled={!threadId}
                     >
                       <PlusIcon />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" side="top">
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      disabled={
-                        modelInfo?.isImageInputUnsupported || !canUploadImages
-                      }
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <PaperclipIcon className="mr-2 size-4" />
-                      {t("uploadImage")}
-                    </DropdownMenuItem>
+                    <UploadLimitBadge>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <PaperclipIcon className="mr-2 size-4" />
+                        {t("uploadImage")}
+                      </DropdownMenuItem>
+                    </UploadLimitBadge>
 
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger className="cursor-pointer">
@@ -531,22 +561,169 @@ export default function PromptInput({
                         <span className="mr-4">{t("generateImage")}</span>
                       </DropdownMenuSubTrigger>
                       <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
+                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
                           <DropdownMenuItem
-                            disabled={modelInfo?.isToolCallUnsupported}
-                            onClick={() => handleGenerateImage("google")}
+                            onClick={() => handleGenerateImage("img-cv")}
                             className="cursor-pointer"
                           >
-                            <GeminiIcon className="mr-2 size-4" />
-                            Gemini (Nano Banana)
+                            <ImagesIcon className="mr-2 size-4" />
+                            IMG-CV (Fastest)
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            disabled={modelInfo?.isToolCallUnsupported}
-                            onClick={() => handleGenerateImage("openai")}
+                            onClick={() => handleGenerateImage("flux-max")}
                             className="cursor-pointer"
                           >
-                            <OpenAIIcon className="mr-2 size-4" />
-                            OpenAI
+                            <ImagesIcon className="mr-2 size-4" />
+                            Flux-Max
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("gpt-imager")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            GPT-Imager
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("imagen-3")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Imagen-3
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("nano-banana")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Nano-Banana
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("sdxl")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Stable Diffusion XL
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("chalk")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Chalk Name Style
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("meme")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Meme Generator
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="cursor-pointer">
+                        <Edit2 className="mr-4 size-4 text-muted-foreground" />
+                        <span className="mr-4">Edit Image</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              console.log("Edit Image clicked. Uploaded files:", uploadedFiles);
+                              const validFiles = uploadedFiles.filter(f => f.url && !f.isUploading);
+                              if (validFiles.length === 0) {
+                                toast.info("Please upload an image first to edit it.");
+                              } else {
+                                console.log("Setting edit image state with URL:", validFiles[0].url);
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "nano-banana",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Nano-Banana Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              console.log("Remove Background clicked. Uploaded files:", uploadedFiles);
+                              const validFiles = uploadedFiles.filter(f => f.url && !f.isUploading);
+                              if (validFiles.length === 0) {
+                                toast.info("Please upload an image first to remove background.");
+                              } else {
+                                console.log("Setting remove background state with URL:", validFiles[0].url);
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "remove-background",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Remove Background
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              console.log("Enhance Image clicked. Uploaded files:", uploadedFiles);
+                              const validFiles = uploadedFiles.filter(f => f.url && !f.isUploading);
+                              if (validFiles.length === 0) {
+                                toast.info("Please upload an image first to enhance it.");
+                              } else {
+                                console.log("Setting enhance image state with URL:", validFiles[0].url);
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "enhance-image",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Enhance Image
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="cursor-pointer">
+                        <Film className="mr-4 size-4 text-muted-foreground" />
+                        <span className="mr-4">Generate Video</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              console.log("Video Gen (SORA) clicked");
+                              appStoreMutate({
+                                videoGenState: {
+                                  isOpen: true,
+                                  model: "sora",
+                                },
+                              });
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Film className="mr-2 size-4" />
+                            SORA
                           </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
@@ -580,6 +757,51 @@ export default function PromptInput({
                       />
                     </>
                   ))}
+
+                {!toolDisabled &&
+                  editImageState && editImageState.isOpen && editImageState.selectedImageUrl && (
+                    <Button
+                      variant={"ghost"}
+                      size={"sm"}
+                      className="rounded-full hover:bg-input! p-2! group/edit-image text-primary"
+                      onClick={() => {
+                        // Close the edit modal
+                        appStoreMutate({
+                          editImageState: {
+                            isOpen: false,
+                            selectedImageUrl: undefined,
+                            model: undefined,
+                          },
+                        });
+                      }}
+                    >
+                      <Edit2 className="size-3.5" />
+                      Edit Image
+                      <XIcon className="size-3 group-hover/edit-image:opacity-100 opacity-0 transition-opacity duration-200" />
+                    </Button>
+                  )}
+
+                {!toolDisabled &&
+                  videoGenState && videoGenState.isOpen && videoGenState.model && (
+                    <Button
+                      variant={"ghost"}
+                      size={"sm"}
+                      className="rounded-full hover:bg-input! p-2! group/video-gen text-primary"
+                      onClick={() => {
+                        // Close the video gen mode
+                        appStoreMutate({
+                          videoGenState: {
+                            isOpen: false,
+                            model: undefined,
+                          },
+                        });
+                      }}
+                    >
+                      <Film className="size-3.5" />
+                      Generate Video
+                      <XIcon className="size-3 group-hover/video-gen:opacity-100 opacity-0 transition-opacity duration-200" />
+                    </Button>
+                  )}
 
                 <div className="flex-1" />
 

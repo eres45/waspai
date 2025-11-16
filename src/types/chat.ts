@@ -89,6 +89,29 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
       })
       .nullish(),
   }),
+  z.object({
+    type: z.literal("ai-style"),
+    name: z.string(),
+    aiStyleId: z.string(),
+  }),
+  z.object({
+    type: z.literal("character"),
+    name: z.string(),
+    characterId: z.string(),
+    description: z.string().optional(),
+    personality: z.string().optional(),
+    icon: z
+      .object({
+        type: z.string().optional(),
+        value: z.string(),
+        style: z
+          .object({
+            backgroundColor: z.string(),
+          })
+          .optional(),
+      })
+      .optional(),
+  }),
 ]);
 
 export type ChatMention = z.infer<typeof ChatMentionSchema>;
@@ -108,6 +131,8 @@ export const chatApiSchemaRequestBodySchema = z.object({
   allowedMcpServers: z.record(z.string(), AllowedMCPServerZodSchema).optional(),
   allowedAppDefaultToolkit: z.array(z.string()).optional(),
   attachments: z.array(ChatAttachmentSchema).optional(),
+  editImageModel: z.string().optional(),
+  videoGenModel: z.string().optional(),
 });
 
 export type ChatApiSchemaRequestBody = z.infer<

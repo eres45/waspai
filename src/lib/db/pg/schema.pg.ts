@@ -12,6 +12,7 @@ import {
   unique,
   varchar,
   index,
+  bigint,
 } from "drizzle-orm/pg-core";
 import { isNotNull } from "drizzle-orm";
 import { DBWorkflow, DBEdge, DBNode } from "app-types/workflow";
@@ -371,6 +372,74 @@ export const ChatExportCommentTable = pgTable("chat_export_comment", {
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const FileUploadTable = pgTable("file_uploads", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => UserTable.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  fileSize: bigint("file_size", { mode: "number" }).notNull(),
+  fileType: text("file_type").notNull(),
+  uploadUrl: text("upload_url").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const CharacterTable = pgTable(
+  "character",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    personality: text("personality").notNull(),
+    icon: json("icon").$type<{
+      type?: string;
+      value: string;
+      style?: {
+        backgroundColor: string;
+      };
+    }>(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    privacy: varchar("privacy", {
+      enum: ["public", "private"],
+    })
+      .notNull()
+      .default("private"),
+    createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("character_user_id_idx").on(table.userId),
+    index("character_privacy_idx").on(table.privacy),
+  ],
+);
+
+export type CharacterEntity = typeof CharacterTable.$inferSelect;
+
+export const MusicGenerationTable = pgTable(
+  "music_generation",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    lyrics: text("lyrics").notNull(),
+    tags: varchar("tags").notNull(),
+    permanentUrl: text("permanent_url"),
+    tempUrl: text("temp_url"),
+    fileSize: bigint("file_size", { mode: "number" }),
+    createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("music_generation_user_id_idx").on(table.userId),
+    index("music_generation_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type MusicGenerationEntity = typeof MusicGenerationTable.$inferSelect;
+
 export type ArchiveEntity = typeof ArchiveTable.$inferSelect;
 export type ArchiveItemEntity = typeof ArchiveItemTable.$inferSelect;
 export type BookmarkEntity = typeof BookmarkTable.$inferSelect;
+export type FileUploadEntity = typeof FileUploadTable.$inferSelect;
