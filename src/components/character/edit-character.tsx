@@ -280,7 +280,7 @@ Format the response as a structured character profile.`;
             {characterId === "new" ? "Create Character" : "Edit Character"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Define your character's personality and traits
+            Define your character&apos;s personality and traits
           </p>
         </div>
         <div className="flex gap-2">

@@ -173,7 +173,7 @@ export default function SubscriptionPage() {
                 Is there a free trial?
               </h3>
               <p className="text-muted-foreground">
-                Yes! Start with our Free plan and upgrade whenever you're ready. No credit card required.
+                Yes! Start with our Free plan and upgrade whenever you&apos;re ready. No credit card required.
               </p>
             </div>
 
@@ -182,13 +182,13 @@ export default function SubscriptionPage() {
                 Do you offer refunds?
               </h3>
               <p className="text-muted-foreground">
-                We offer a 30-day money-back guarantee if you're not satisfied with your purchase.
+                We offer a 30-day money-back guarantee if you&apos;re not satisfied with your purchase.
               </p>
             </div>
 
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                What's included in the Pro plan?
+                What&apos;s included in the Pro plan?
               </h3>
               <p className="text-muted-foreground">
                 Unlimited uploads, all AI models, advanced features, priority support, and more.
