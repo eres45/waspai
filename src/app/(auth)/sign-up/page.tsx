@@ -3,6 +3,9 @@ import { getAuthConfig } from "auth/config";
 import { getIsFirstUser } from "lib/auth/server";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function SignUp() {
   const isFirstUser = await getIsFirstUser();
   const {
