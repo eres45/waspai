@@ -36,6 +36,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Wasp AI",
   },
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({
