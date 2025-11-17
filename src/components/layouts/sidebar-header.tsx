@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -69,7 +70,16 @@ export function SidebarHeaderShared({
         <SidebarMenuItem className="flex items-center gap-0.5 mb-1">
           <SidebarMenuButton asChild className="hover:bg-transparent">
             <Link href={href} onClick={handleLinkClick}>
-              <h4 className="font-bold">{title}</h4>
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/wasp-ai-logo.png"
+                  alt="Wasp AI Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-md"
+                />
+                <h4 className="font-bold">Wasp AI</h4>
+              </div>
               {showMobileToggle && (
                 <div
                   className="ml-auto block sm:hidden"

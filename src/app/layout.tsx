@@ -20,9 +20,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "better-chatbot",
+  title: "Wasp AI",
   description:
-    "Better Chatbot is a chatbot that uses the Tools to answer questions.",
+    "Wasp AI is an intelligent chatbot that uses advanced tools to answer your questions.",
 };
 
 export default async function RootLayout({
