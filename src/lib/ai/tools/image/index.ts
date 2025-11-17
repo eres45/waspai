@@ -1,8 +1,4 @@
 import {
-  FilePart,
-  ImagePart,
-  ModelMessage,
-  ToolResultPart,
   tool as createTool,
 } from "ai";
 import { serverFileStorage } from "lib/file-storage";
@@ -10,7 +6,6 @@ import { safe, watchError } from "ts-safe";
 import z from "zod";
 import { ImageToolName } from "..";
 import logger from "logger";
-import { toAny } from "lib/utils";
 import {
   generateImageWithImgCV,
   generateImageWithFluxMax,
@@ -189,25 +184,3 @@ export const nanoBananaTool = createTool({
 
 // Alias for compatibility
 export const openaiImageTool = nanoBananaTool;
-
-function convertToImageToolPartToImagePart(part: ToolResultPart): ImagePart[] {
-  if (part.toolName !== ImageToolName) return [];
-  if (!toAny(part).output?.value?.images?.length) return [];
-  const result = part.output.value as ImageToolResult;
-  return result.images.map((image) => ({
-    type: "image",
-    image: image.url,
-    mediaType: image.mimeType,
-  }));
-}
-
-function convertToImageToolPartToFilePart(part: ToolResultPart): FilePart[] {
-  if (part.toolName !== ImageToolName) return [];
-  if (!toAny(part).output?.value?.images?.length) return [];
-  const result = part.output.value as ImageToolResult;
-  return result.images.map((image) => ({
-    type: "file",
-    mediaType: image.mimeType!,
-    data: image.url,
-  }));
-}
