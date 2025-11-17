@@ -1,12 +1,10 @@
 import SignIn from "@/components/auth/sign-in";
 import { getAuthConfig } from "lib/auth/config";
-import { getIsFirstUser } from "lib/auth/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function SignInPage() {
-  const isFirstUser = await getIsFirstUser();
   const {
     emailAndPasswordEnabled,
     signUpEnabled,
@@ -22,7 +20,7 @@ export default async function SignInPage() {
       emailAndPasswordEnabled={emailAndPasswordEnabled}
       signUpEnabled={signUpEnabled}
       socialAuthenticationProviders={enabledProviders}
-      isFirstUser={isFirstUser}
+      isFirstUser={false}
     />
   );
 }
