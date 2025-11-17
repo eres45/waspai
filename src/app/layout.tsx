@@ -24,12 +24,7 @@ export const metadata: Metadata = {
   description:
     "Wasp AI is an intelligent chatbot that uses advanced tools to answer your questions.",
   icons: {
-    icon: [
-      { url: "/wasp-ai-logo.png?v=2", sizes: "any", type: "image/png" },
-      { url: "/wasp-ai-logo.png?v=2", sizes: "192x192", type: "image/png" },
-      { url: "/wasp-ai-logo.png?v=2", sizes: "512x512", type: "image/png" },
-      { url: "/wasp-ai-logo.png?v=2", rel: "shortcut icon" },
-    ],
+    icon: "/favicon.ico",
     apple: "/wasp-ai-logo.png?v=2",
   },
   appleWebApp: {
