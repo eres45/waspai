@@ -72,7 +72,6 @@ export default function EditCharacter({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
-  const [selectedPrivacy, setSelectedPrivacy] = useState<"public" | "private" | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
@@ -141,7 +140,6 @@ export default function EditCharacter({
   }, [character.name]);
 
   const handlePrivacySelect = useCallback(async (privacy: "public" | "private") => {
-    setSelectedPrivacy(privacy);
     setShowPrivacyDialog(false);
     setShowLoadingDialog(true);
     setIsGenerating(true);
