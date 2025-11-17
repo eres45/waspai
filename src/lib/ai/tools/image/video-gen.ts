@@ -1,4 +1,4 @@
-import { ToolResultPart, tool as createTool } from "ai";
+import { tool as createTool } from "ai";
 import z from "zod";
 import logger from "logger";
 import { generateVideoWithSora } from "lib/ai/image/video-gen";
