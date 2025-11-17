@@ -106,7 +106,8 @@ export default function EmailSignUp({
     ).unwrap();
     if (success) {
       toast.success(message);
-      router.push("/");
+      // Redirect to sign-in so user can log in with their new account
+      router.push("/sign-in");
     } else {
       toast.error(message);
     }
