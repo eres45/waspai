@@ -198,7 +198,7 @@ export function SubscriptionPopup() {
                     Is there a free trial?
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Yes! Start with our Free plan and upgrade whenever you're ready. No credit card required.
+                    Yes! Start with our Free plan and upgrade whenever you&apos;re ready. No credit card required.
                   </p>
                 </div>
 
@@ -207,7 +207,7 @@ export function SubscriptionPopup() {
                     Do you offer refunds?
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    We offer a 30-day money-back guarantee if you're not satisfied with your purchase.
+                    We offer a 30-day money-back guarantee if you&apos;re not satisfied with your purchase.
                   </p>
                 </div>
               </div>
