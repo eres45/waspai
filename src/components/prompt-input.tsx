@@ -105,7 +105,7 @@ export default function PromptInput({
   const { data: providers } = useChatModels();
 
   const [
-    storeThreadId,
+    ,
     threadMentions,
     threadFiles,
     threadImageToolModel,
