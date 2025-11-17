@@ -391,7 +391,7 @@ export default function PromptInput({
         ...(videoGenState?.isOpen && videoGenState?.model ? {
           videoGenModel: videoGenState.model,
         } : {}),
-      } || undefined,
+      },
     });
     appStoreMutate((prev) => ({
       threadFiles: {
