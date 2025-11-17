@@ -82,8 +82,8 @@ export const auth = betterAuth({
 export const getSession = async () => {
   try {
     // Try to get session from cookies first
-    const { cookies: cookiesModule } = await import("next/headers");
-    const cookieStore = await cookiesModule.cookies();
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
     const authUserCookie = cookieStore.get("auth-user");
 
     if (authUserCookie?.value) {
