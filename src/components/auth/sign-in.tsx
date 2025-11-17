@@ -15,7 +15,6 @@ import {
 import { useObjectState } from "@/hooks/use-object-state";
 
 import { Loader } from "lucide-react";
-import { safe } from "ts-safe";
 import { authClient } from "auth/client";
 import { toast } from "sonner";
 import { GithubIcon } from "ui/github-icon";
@@ -23,6 +22,7 @@ import { GoogleIcon } from "ui/google-icon";
 import { useTranslations } from "next-intl";
 import { MicrosoftIcon } from "ui/microsoft-icon";
 import { SocialAuthenticationProvider } from "app-types/authentication";
+import { useRouter } from "next/navigation";
 
 export default function SignIn({
   emailAndPasswordEnabled,
@@ -36,6 +36,7 @@ export default function SignIn({
   isFirstUser: boolean;
 }) {
   const t = useTranslations("Auth.SignIn");
+  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
@@ -44,24 +45,34 @@ export default function SignIn({
     password: "",
   });
 
-  const emailAndPasswordSignIn = () => {
+  const emailAndPasswordSignIn = async () => {
     setLoading(true);
-    safe(() =>
-      authClient.signIn.email(
-        {
+    try {
+      const response = await fetch("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          callbackURL: "/",
-        },
-        {
-          onError(ctx) {
-            toast.error(ctx.error.message || ctx.error.statusText);
-          },
-        },
-      ),
-    )
-      .watch(() => setLoading(false))
-      .unwrap();
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || "Failed to sign in");
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      toast.success(data.message || "Successfully signed in");
+      router.push("/");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign in");
+      setLoading(false);
+    }
   };
 
   const handleSocialSignIn = (provider: SocialAuthenticationProvider) => {
