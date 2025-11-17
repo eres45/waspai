@@ -3,7 +3,6 @@
 import { Button } from "ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "ui/card";
 import { Check } from "lucide-react";
-import { useState } from "react";
 
 const plans = [
   {
@@ -55,8 +54,6 @@ const plans = [
 ];
 
 export default function SubscriptionPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-
   const handleUpgrade = (planName: string) => {
     if (planName === "Enterprise") {
       window.location.href = "mailto:sales@example.com?subject=Enterprise Plan Inquiry";
@@ -64,7 +61,6 @@ export default function SubscriptionPage() {
       // Redirect to payment/checkout
       window.location.href = "/checkout/pro";
     }
-    setSelectedPlan(planName);
   };
 
   return (
