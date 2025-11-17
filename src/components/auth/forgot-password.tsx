@@ -45,6 +45,7 @@ export default function ForgotPassword() {
       const data = await response.json();
       toast.success(data.message || "Reset email sent");
       setSent(true);
+      setLoading(false);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to send reset email",

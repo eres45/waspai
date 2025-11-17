@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { safe } from "ts-safe";
 import { UserZodSchema } from "app-types/user";
 import { existsByEmailAction, signUpAction } from "@/app/api/auth/actions";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 export default function EmailSignUp({
@@ -28,7 +27,6 @@ export default function EmailSignUp({
 }) {
   const t = useTranslations();
   const [step, setStep] = useState(1);
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useObjectState({
     email: "",
@@ -107,7 +105,10 @@ export default function EmailSignUp({
     if (success) {
       toast.success(message);
       // Redirect to main chat page after successful sign-up
-      router.push("/");
+      // Use window.location for full page reload so server can read the new cookie
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
     } else {
       toast.error(message);
     }

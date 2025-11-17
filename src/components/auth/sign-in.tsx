@@ -67,7 +67,10 @@ export default function SignIn({
       const data = await response.json();
       toast.success(data.message || "Successfully signed in");
       // Use window.location to do a full page reload so server can read the new cookie
-      window.location.href = "/";
+      // Add a small delay to ensure cookie is set before redirect
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       setLoading(false);
