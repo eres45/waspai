@@ -8,7 +8,7 @@ import { chatRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { handleError } from "../shared.chat";
-import { createReverseModelMapping } from "../models/route";
+import { createReverseModelMapping } from "lib/ai/model-display-names";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Title API: `),
