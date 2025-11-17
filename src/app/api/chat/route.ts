@@ -13,7 +13,7 @@ import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 import { isSearchQuery } from "lib/search-detector";
 import { SEARCH_MODEL, POLLINATIONS_SYSTEM_PROMPT, POLLINATIONS_MODEL_PROMPTS } from "lib/ai/pollinations";
 import { KIWI_AI_SYSTEM_PROMPT } from "lib/ai/kiwi-ai";
-import { createReverseModelMapping } from "./models/route";
+import { createReverseModelMapping } from "lib/ai/model-display-names";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
