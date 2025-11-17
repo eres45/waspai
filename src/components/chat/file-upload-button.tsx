@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { Button } from "ui/button";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
