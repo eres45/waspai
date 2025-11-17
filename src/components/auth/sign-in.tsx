@@ -22,7 +22,6 @@ import { GoogleIcon } from "ui/google-icon";
 import { useTranslations } from "next-intl";
 import { MicrosoftIcon } from "ui/microsoft-icon";
 import { SocialAuthenticationProvider } from "app-types/authentication";
-import { useRouter } from "next/navigation";
 
 export default function SignIn({
   emailAndPasswordEnabled,
@@ -36,7 +35,6 @@ export default function SignIn({
   isFirstUser: boolean;
 }) {
   const t = useTranslations("Auth.SignIn");
-  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
 
@@ -68,7 +66,8 @@ export default function SignIn({
 
       const data = await response.json();
       toast.success(data.message || "Successfully signed in");
-      router.push("/");
+      // Use window.location to do a full page reload so server can read the new cookie
+      window.location.href = "/";
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       setLoading(false);
