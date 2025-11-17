@@ -2,13 +2,12 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  DEFAULT_VOICE_TOOLS,
   UIMessageWithCompleted,
   VoiceChatOptions,
   VoiceChatSession,
 } from ".";
 import { generateUUID } from "lib/utils";
-import { TextPart, ToolUIPart } from "ai";
+import { TextPart } from "ai";
 import { generateSpeech, CustomTTSVoice } from "./custom-tts";
 
 /**
