@@ -6,7 +6,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "ui/tooltip";
-import { cn } from "@/lib/utils";
 
 interface UploadLimitBadgeProps {
   children: React.ReactNode;
