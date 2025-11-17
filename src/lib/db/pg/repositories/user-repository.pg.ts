@@ -13,6 +13,8 @@ import {
   UserTable,
 } from "../schema.pg";
 import { count, eq, getTableColumns, sql } from "drizzle-orm";
+import { supabaseServer } from "@/lib/supabase-server";
+import logger from "@/lib/logger";
 
 // Helper function to get user columns without password
 const getUserColumnsWithoutPassword = () => {
@@ -22,11 +24,25 @@ const getUserColumnsWithoutPassword = () => {
 
 export const pgUserRepository: UserRepository = {
   existsByEmail: async (email: string): Promise<boolean> => {
-    const result = await db
-      .select()
-      .from(UserTable)
-      .where(eq(UserTable.email, email));
-    return result.length > 0;
+    try {
+      // Use Supabase HTTP client for auth queries (works on Vercel)
+      const { data, error } = await supabaseServer
+        .from("user")
+        .select("id")
+        .eq("email", email)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        logger.error("Error checking if email exists:", error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      logger.error("Error in existsByEmail:", error);
+      return false;
+    }
   },
   updateUserDetails: async ({
     userId,
@@ -98,8 +114,22 @@ export const pgUserRepository: UserRepository = {
   },
 
   getUserCount: async () => {
-    const [result] = await db.select({ count: count() }).from(UserTable);
-    return result?.count ?? 0;
+    try {
+      // Use Supabase HTTP client for auth queries (works on Vercel)
+      const { count: userCount, error } = await supabaseServer
+        .from("user")
+        .select("id", { count: "exact", head: true });
+
+      if (error) {
+        logger.error("Error getting user count:", error);
+        return 0;
+      }
+
+      return userCount ?? 0;
+    } catch (error) {
+      logger.error("Error in getUserCount:", error);
+      return 0;
+    }
   },
   getUserStats: async (userId: string) => {
     // Calculate last 30 days
