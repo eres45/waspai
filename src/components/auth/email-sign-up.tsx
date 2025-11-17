@@ -106,8 +106,8 @@ export default function EmailSignUp({
     ).unwrap();
     if (success) {
       toast.success(message);
-      // Redirect to sign-in so user can log in with their new account
-      router.push("/sign-in");
+      // Redirect to main chat page after successful sign-up
+      router.push("/");
     } else {
       toast.error(message);
     }

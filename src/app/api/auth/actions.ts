@@ -4,6 +4,7 @@ import { BasicUser, UserZodSchema } from "app-types/user";
 import { ActionState } from "lib/action-utils";
 import { signUpWithEmail, emailExists } from "@/lib/auth/supabase-auth";
 import logger from "@/lib/logger";
+import { cookies } from "next/headers";
 
 export async function existsByEmailAction(email: string) {
   try {
@@ -37,6 +38,16 @@ export async function signUpAction(data: {
       parsedData.password,
       parsedData.name,
     );
+
+    // Set a session cookie with user info so they're authenticated
+    const cookieStore = await cookies();
+    cookieStore.set("auth-user", JSON.stringify(result.user), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
     return {
       user: result.user as BasicUser,
       success: true,

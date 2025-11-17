@@ -81,7 +81,26 @@ export const auth = betterAuth({
 
 export const getSession = async () => {
   try {
-    // Get auth header from request
+    // Try to get session from cookies first
+    const { cookies: cookiesModule } = await import("next/headers");
+    const cookieStore = await cookiesModule.cookies();
+    const authUserCookie = cookieStore.get("auth-user");
+
+    if (authUserCookie?.value) {
+      try {
+        const user = JSON.parse(authUserCookie.value);
+        return {
+          user,
+          session: {
+            token: "session-token",
+          },
+        };
+      } catch (error) {
+        logger.warn("Failed to parse auth-user cookie:", error);
+      }
+    }
+
+    // Fallback: try to get from authorization header
     const headersList = await headers();
     const authHeader = headersList.get("authorization");
 
@@ -98,8 +117,7 @@ export const getSession = async () => {
       return null;
     }
 
-    // For now, return a mock session object
-    // In production, you would verify the token with Supabase
+    // Return a mock session object
     return {
       user: {
         id: "user-id",
