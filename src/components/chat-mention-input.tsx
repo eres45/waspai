@@ -124,7 +124,7 @@ export function ChatMentionInputMentionItem({
     <Tooltip>
       <TooltipTrigger asChild>{label}</TooltipTrigger>
       <TooltipContent className="p-4 whitespace-pre-wrap max-w-xs">
-        {item.description || "mention"}
+        {toAny(item).description || "mention"}
       </TooltipContent>
     </Tooltip>
   );
