@@ -1,14 +1,18 @@
 "use server";
 
-import { auth } from "@/lib/auth/server";
 import { BasicUser, UserZodSchema } from "app-types/user";
-import { userRepository } from "lib/db/repository";
 import { ActionState } from "lib/action-utils";
-import { headers } from "next/headers";
+import { signUpWithEmail, emailExists } from "@/lib/auth/supabase-auth";
+import logger from "@/lib/logger";
 
 export async function existsByEmailAction(email: string) {
-  const exists = await userRepository.existsByEmail(email);
-  return exists;
+  try {
+    const exists = await emailExists(email);
+    return exists;
+  } catch (error) {
+    logger.error("Error checking if email exists:", error);
+    return false;
+  }
 }
 
 type SignUpActionResponse = ActionState & {
@@ -28,20 +32,18 @@ export async function signUpAction(data: {
     };
   }
   try {
-    const { user } = await auth.api.signUpEmail({
-      body: {
-        email: parsedData.email,
-        password: parsedData.password,
-        name: parsedData.name,
-      },
-      headers: await headers(),
-    });
+    const result = await signUpWithEmail(
+      parsedData.email,
+      parsedData.password,
+      parsedData.name,
+    );
     return {
-      user,
+      user: result.user as BasicUser,
       success: true,
       message: "Successfully signed up",
     };
   } catch (error) {
+    logger.error("Sign up error:", error);
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to sign up",
