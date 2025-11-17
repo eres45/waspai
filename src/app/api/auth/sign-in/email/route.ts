@@ -68,6 +68,23 @@ export async function POST(request: Request) {
     logger.info(`Session cookie set for user: ${user.id}`);
     console.log("[DEBUG API] Session cookie set successfully");
 
+    // Also set the Better-Auth session cookie for middleware compatibility
+    cookieStore.set(
+      "better-auth.session_token",
+      JSON.stringify({
+        user: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      }),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      },
+    );
+
+    console.log("[DEBUG API] Better-Auth session token set");
+
     return Response.json(
       {
         success: true,

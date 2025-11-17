@@ -39,7 +39,7 @@ export async function signUpAction(data: {
       parsedData.name,
     );
 
-    // Set a session cookie with user info so they're authenticated
+    // Set session cookies with user info so they're authenticated
     const cookieStore = await cookies();
     cookieStore.set("auth-user", JSON.stringify(result.user), {
       httpOnly: true,
@@ -47,6 +47,21 @@ export async function signUpAction(data: {
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
+
+    // Also set the Better-Auth session cookie for middleware compatibility
+    cookieStore.set(
+      "better-auth.session_token",
+      JSON.stringify({
+        user: result.user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      }),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      },
+    );
 
     return {
       user: result.user as BasicUser,
