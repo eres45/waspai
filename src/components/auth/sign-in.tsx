@@ -45,7 +45,9 @@ export default function SignIn({
 
   const emailAndPasswordSignIn = async () => {
     setLoading(true);
+    console.log("[DEBUG] Starting sign-in with email:", formData.email);
     try {
+      console.log("[DEBUG] Sending sign-in request to /api/auth/sign-in/email");
       const response = await fetch("/api/auth/sign-in/email", {
         method: "POST",
         headers: {
@@ -57,21 +59,33 @@ export default function SignIn({
         }),
       });
 
+      console.log("[DEBUG] Sign-in response status:", response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error("[DEBUG] Sign-in error:", error);
         toast.error(error.error || "Failed to sign in");
         setLoading(false);
         return;
       }
 
       const data = await response.json();
+      console.log("[DEBUG] Sign-in successful, response data:", data);
+      console.log("[DEBUG] Checking cookies...");
+      console.log("[DEBUG] Document cookies:", document.cookie);
+
       toast.success(data.message || "Successfully signed in");
+
+      console.log("[DEBUG] Setting timeout for redirect to /");
       // Use window.location to do a full page reload so server can read the new cookie
       // Add a small delay to ensure cookie is set before redirect
       setTimeout(() => {
+        console.log("[DEBUG] Redirecting to / now");
+        console.log("[DEBUG] Final cookies before redirect:", document.cookie);
         window.location.href = "/";
       }, 500);
     } catch (error) {
+      console.error("[DEBUG] Sign-in exception:", error);
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
       setLoading(false);
     }

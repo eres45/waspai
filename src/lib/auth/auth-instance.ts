@@ -86,9 +86,19 @@ export const getSession = async () => {
     const cookieStore = await cookies();
     const authUserCookie = cookieStore.get("auth-user");
 
+    console.log("[DEBUG getSession] Checking for auth-user cookie...");
+    console.log(
+      "[DEBUG getSession] auth-user cookie value:",
+      authUserCookie?.value ? "EXISTS" : "NOT FOUND",
+    );
+
     if (authUserCookie?.value) {
       try {
         const user = JSON.parse(authUserCookie.value);
+        console.log(
+          "[DEBUG getSession] Successfully parsed auth-user cookie, user:",
+          user.id,
+        );
         return {
           user,
           session: {
@@ -96,9 +106,17 @@ export const getSession = async () => {
           },
         };
       } catch (error) {
+        console.log(
+          "[DEBUG getSession] Failed to parse auth-user cookie:",
+          error,
+        );
         logger.warn("Failed to parse auth-user cookie:", error);
       }
     }
+
+    console.log(
+      "[DEBUG getSession] No auth-user cookie found, checking authorization header...",
+    );
 
     // Fallback: try to get from authorization header
     const headersList = await headers();
