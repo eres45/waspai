@@ -1,0 +1,50 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Wasp AI",
+    short_name: "Wasp AI",
+    description:
+      "Wasp AI is an intelligent chatbot that uses advanced tools to answer your questions.",
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+    orientation: "portrait-primary",
+    theme_color: "#000000",
+    background_color: "#ffffff",
+    icons: [
+      {
+        src: "/wasp-ai-logo.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/wasp-ai-logo.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/wasp-ai-logo.png",
+        sizes: "any",
+        type: "image/png",
+        purpose: "any",
+      },
+    ],
+    screenshots: [
+      {
+        src: "/wasp-ai-logo.png",
+        sizes: "192x192",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+      {
+        src: "/wasp-ai-logo.png",
+        sizes: "512x512",
+        type: "image/png",
+        form_factor: "wide",
+      },
+    ],
+  };
+}
