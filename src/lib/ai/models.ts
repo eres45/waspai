@@ -10,7 +10,7 @@ import { createDeepSeekV1Models } from "./deepseek-v1";
 import { createGemmaModels } from "./gemma";
 import { createGeminiDarkModels } from "./gemini-dark";
 import { createOpenAIFreeModels } from "./openai-free";
-import { createKiwiAIModels, KIWI_AI_SYSTEM_PROMPT } from "./kiwi-ai";
+import { createKiwiAIModels } from "./kiwi-ai";
 import { createSonnetFreeModels } from "./sonnet-free";
 import { createWormGPTModels } from "./wormgpt";
 import { ChatModel } from "app-types/chat";
