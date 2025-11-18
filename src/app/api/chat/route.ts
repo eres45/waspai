@@ -61,6 +61,7 @@ import {
   editImageTool,
   removeBackgroundTool,
   enhanceImageTool,
+  animeConversionTool,
 } from "lib/ai/tools/image/edit-image";
 import { videoGenTool } from "lib/ai/tools/image/video-gen";
 import { ImageToolName } from "lib/ai/tools";
@@ -527,6 +528,8 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           imageFilePart &&
           imageUrl &&
           (editImageModel === "enhance-image" || hasEnhanceKeywords);
+        const isAnimeConversionRequest =
+          imageFilePart && imageUrl && editImageModel === "anime-conversion";
 
         const editImagePrompt =
           isEditImageRequest && imageUrl
@@ -541,6 +544,11 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         const enhanceImagePrompt =
           isEnhanceImageRequest && imageUrl
             ? `Call the "enhance-image" tool with imageUrl: "${imageUrl}". Keep response brief.`
+            : "";
+
+        const animeConversionPrompt =
+          isAnimeConversionRequest && imageUrl
+            ? `Call the "anime-conversion" tool with imageUrl: "${imageUrl}". Keep response brief.`
             : "";
 
         // Detect video generation request
@@ -628,6 +636,7 @@ BEGIN ROLEPLAY NOW.`
           isEditImageRequest && editImagePrompt,
           isRemoveBgRequest && removeBgPrompt,
           isEnhanceImageRequest && enhanceImagePrompt,
+          isAnimeConversionRequest && animeConversionPrompt,
           isVideoGenRequest && videoGenPrompt,
         );
 
@@ -643,6 +652,7 @@ BEGIN ROLEPLAY NOW.`
           "edit-image": editImageTool,
           "remove-background": removeBackgroundTool,
           "enhance-image": enhanceImageTool,
+          "anime-conversion": animeConversionTool,
           "video-gen": videoGenTool,
         };
 

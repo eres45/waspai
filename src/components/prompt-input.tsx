@@ -752,6 +752,39 @@ export default function PromptInput({
                             <Edit2 className="mr-2 size-4" />
                             Enhance Image
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              console.log(
+                                "Anime Conversion clicked. Uploaded files:",
+                                uploadedFiles,
+                              );
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to convert to anime.",
+                                );
+                              } else {
+                                console.log(
+                                  "Setting anime conversion state with URL:",
+                                  validFiles[0].url,
+                                );
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "anime-conversion",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Convert to Anime
+                          </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
                     </DropdownMenuSub>

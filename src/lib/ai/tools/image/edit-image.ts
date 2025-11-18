@@ -3,7 +3,11 @@ import z from "zod";
 import logger from "logger";
 import { serverFileStorage } from "lib/file-storage";
 import { safe, watchError } from "ts-safe";
-import { editImageWithNanoBanana, removeImageBackground } from "lib/ai/image/edit-image";
+import {
+  editImageWithNanoBanana,
+  removeImageBackground,
+  convertImageToAnime,
+} from "lib/ai/image/edit-image";
 import { enhanceImageTool } from "./enhance-image";
 
 export type EditImageToolResult = {
@@ -92,7 +96,10 @@ export const removeBackgroundTool = createTool({
   description:
     "Remove the background from an image, leaving only the subject. The image will have a transparent background.",
   inputSchema: z.object({
-    imageUrl: z.string().url().describe("The URL of the image to remove background from"),
+    imageUrl: z
+      .string()
+      .url()
+      .describe("The URL of the image to remove background from"),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Remove Background tool called with imageUrl: "${imageUrl}"`);
@@ -140,6 +147,73 @@ export const removeBackgroundTool = createTool({
           uploadedImage.url.length > 0
             ? "The background has been successfully removed from your image. The image now has a transparent background."
             : "I apologize, but the background removal was not successful. Please try again with a different image.",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+/**
+ * Convert image to anime style tool
+ */
+export const animeConversionTool = createTool({
+  name: "anime-conversion",
+  description:
+    "Convert an image to anime style. Works best with person images. The image will be transformed into an anime-style illustration.",
+  inputSchema: z.object({
+    imageUrl: z
+      .string()
+      .url()
+      .describe("The URL of the image to convert to anime"),
+  }),
+  execute: async ({ imageUrl }, { abortSignal }) => {
+    logger.info(`Anime Conversion tool called with imageUrl: "${imageUrl}"`);
+
+    try {
+      // Call the anime conversion API
+      const processedImage = await convertImageToAnime({
+        prompt: "convert to anime",
+        imageUrl,
+        abortSignal,
+      });
+
+      logger.info(`Anime Conversion: Image converted successfully`);
+
+      // Upload converted image to storage
+      const uploadedImage = await safe(processedImage.image)
+        .map(async (image) => {
+          const uploadedResult = await serverFileStorage.upload(
+            Buffer.from(image.url, "base64"),
+            {
+              contentType: image.mimeType || "image/jpeg",
+            },
+          );
+          return {
+            url: uploadedResult.sourceUrl,
+            mimeType: image.mimeType || "image/jpeg",
+          };
+        })
+        .watch(
+          watchError((e) => {
+            logger.error(e);
+            logger.info(`upload converted image failed. using base64`);
+          }),
+        )
+        .ifFail(() => {
+          throw new Error(
+            "Image conversion was successful, but file upload failed. Please check your file upload configuration and try again.",
+          );
+        })
+        .unwrap();
+
+      return {
+        image: uploadedImage,
+        guide:
+          uploadedImage.url.length > 0
+            ? "Your image has been successfully converted to anime style! The anime version is now displayed above. Note: This works best with person images."
+            : "I apologize, but the anime conversion was not successful. Please try again with a different image, preferably a person image.",
       };
     } catch (e) {
       logger.error(e);
