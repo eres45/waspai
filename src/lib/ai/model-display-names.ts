@@ -18,28 +18,27 @@ export const PROVIDER_ORDER = [
 // Map backend provider names to display names
 export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   "openai-free": "OpenAI",
-  "xai": "Xai",
-  "anthropic": "Anthropic",
-  "deepseek": "DeepSeek",
-  "meta": "Meta",
-  "google": "Google",
-  "mistral": "Mistral",
+  xai: "Xai",
+  anthropic: "Anthropic",
+  deepseek: "DeepSeek",
+  meta: "Meta",
+  google: "Google",
+  mistral: "Mistral",
   "gpt-oss": "GPT-OSS",
-  "grok": "Grok",
-  "qwen": "QWEN",
-  "gemma": "Gemma",
+  grok: "Grok",
+  qwen: "QWEN",
+  gemma: "Gemma",
   "gemini-dark": "Gemini Dark",
   "kiwi-ai": "Kiwi AI",
-  "sonnet-free": "Anthropic",
 };
 
 // Map backend model names to display names (real names)
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // Pollinations Gemini models
-  "gemini": "Gemini 2.5 Flash Lite",
+  gemini: "Gemini 2.5 Flash Lite",
   "gemini-search": "Gemini 2.5 Flash Lite with Search",
   // Pollinations Mistral
-  "mistral": "Mistral Small 3.2 24B",
+  mistral: "Mistral Small 3.2 24B",
   // Pollinations OpenAI models
   "openai-pollinations": "ChatGPT GPT-5 Nano",
   "openai-fast-pollinations": "ChatGPT GPT-4.1 Nano",
@@ -53,8 +52,8 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gpt-4.1": "GPT-4.1",
   "gpt-4.1-mini": "GPT-4.1 Mini",
   "gpt-4.1-nano": "GPT-4.1 Nano",
-  "o1": "o1",
-  "o3": "o3",
+  o1: "o1",
+  o3: "o3",
   "o3-mini": "o3 Mini",
   "o4-mini": "o4 Mini",
   "gpt-5": "GPT-5",
@@ -111,9 +110,11 @@ export const createReverseModelMapping = (): {
   });
 
   const providerReverseMapping: Record<string, string> = {};
-  Object.entries(PROVIDER_DISPLAY_NAMES).forEach(([backendName, displayName]) => {
-    providerReverseMapping[displayName] = backendName;
-  });
+  Object.entries(PROVIDER_DISPLAY_NAMES).forEach(
+    ([backendName, displayName]) => {
+      providerReverseMapping[displayName] = backendName;
+    },
+  );
 
   return {
     models: modelReverseMapping,
