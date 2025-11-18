@@ -44,7 +44,7 @@ export async function signUpAction(data: {
     try {
       await userRepositoryRest.createOrUpdateUser(
         result.user.id,
-        result.user.email,
+        result.user.email || parsedData.email,
         result.user.name || "",
       );
     } catch (dbError) {
