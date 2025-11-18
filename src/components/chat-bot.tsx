@@ -200,6 +200,10 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
         // Use the stored editImageModel from the ref (persists after editImageState is cleared)
         const editImageModel = editImageModelRef.current;
 
+        // Extract videoGenModel from message metadata if available
+        const videoGenModel = (sanitizedLastMessage.metadata as any)
+          ?.videoGenModel;
+
         const requestBody: ChatApiSchemaRequestBody = {
           ...body,
           id,
@@ -220,27 +224,31 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           },
           attachments,
           editImageModel,
+          videoGenModel,
         };
 
         // Clear the ref after using it
         editImageModelRef.current = undefined;
 
         // Get character context from sessionStorage if available
-        const characterContextStr = typeof window !== "undefined" 
-          ? sessionStorage.getItem(`character_${id}`)
-          : null;
-        
+        const characterContextStr =
+          typeof window !== "undefined"
+            ? sessionStorage.getItem(`character_${id}`)
+            : null;
+
         // Check if character is tagged in current mentions
         const hasCharacterMention = requestBody.mentions?.some(
-          (mention: any) => mention.type === "character"
+          (mention: any) => mention.type === "character",
         );
-        
+
         const headers: Record<string, string> = {};
         // Only send character context if character is tagged in mentions
         if (characterContextStr && hasCharacterMention) {
           // Encode as base64 to avoid header encoding issues with special characters
           try {
-            const encoded = btoa(unescape(encodeURIComponent(characterContextStr)));
+            const encoded = btoa(
+              unescape(encodeURIComponent(characterContextStr)),
+            );
             headers["X-Character-Context"] = encoded;
           } catch (error) {
             console.warn("Failed to encode character context:", error);
