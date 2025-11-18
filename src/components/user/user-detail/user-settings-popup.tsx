@@ -14,7 +14,6 @@ import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
-import { authClient } from "@/lib/auth/client";
 
 export function UserSettingsPopup() {
   const t = useTranslations("Chat.ChatPreferences");
@@ -41,15 +40,8 @@ export function UserSettingsPopup() {
         setIsLoading(true);
         setError(null);
 
-        // Get session from authClient
-        const { data: session } = await authClient.getSession();
-
-        if (!session?.user?.id) {
-          throw new Error("Not authenticated");
-        }
-
-        // Fetch user detail from API
-        const response = await fetch(`/api/user/${session.user.id}`);
+        // Fetch user detail from API (will get current user from session)
+        const response = await fetch(`/api/user/me`);
         if (!response.ok) {
           throw new Error("Failed to load user settings");
         }

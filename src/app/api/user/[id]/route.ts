@@ -13,6 +13,16 @@ export async function GET(
 
     const userId = params.id;
 
+    // Handle "me" endpoint - return current user
+    if (userId === "me") {
+      return NextResponse.json({
+        id: session.user.id,
+        name: session.user.name || "",
+        email: session.user.email || "",
+        image: session.user.image || "",
+      });
+    }
+
     // Users can only view their own data, unless they're an admin
     if (session.user.id !== userId) {
       // TODO: Add admin check here if needed
