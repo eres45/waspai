@@ -3,6 +3,7 @@
 import { BasicUser, UserZodSchema } from "app-types/user";
 import { ActionState } from "lib/action-utils";
 import { signUpWithEmail, emailExists } from "@/lib/auth/supabase-auth";
+import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import logger from "@/lib/logger";
 import { cookies } from "next/headers";
 
@@ -38,6 +39,18 @@ export async function signUpAction(data: {
       parsedData.password,
       parsedData.name,
     );
+
+    // Create user in database for foreign key constraints
+    try {
+      await userRepositoryRest.createOrUpdateUser(
+        result.user.id,
+        result.user.email,
+        result.user.name || "",
+      );
+    } catch (dbError) {
+      logger.error("Error creating user in database:", dbError);
+      // Don't fail the sign-up if database creation fails, but log it
+    }
 
     // Set session cookies with user info so they're authenticated
     const cookieStore = await cookies();

@@ -1,4 +1,5 @@
 import { signInWithEmail } from "@/lib/auth/supabase-auth";
+import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import logger from "@/lib/logger";
 import { cookies } from "next/headers";
 
@@ -53,6 +54,18 @@ export async function POST(request: Request) {
 
     logger.info(`User signed in successfully: ${user.id}`);
     console.log("[DEBUG API] User signed in successfully:", user.id);
+
+    // Create or update user in database for foreign key constraints
+    try {
+      await userRepositoryRest.createOrUpdateUser(
+        user.id,
+        user.email || email,
+        user.name || "",
+      );
+    } catch (dbError) {
+      logger.error("Error creating user in database:", dbError);
+      // Don't fail the sign-in if database creation fails, but log it
+    }
 
     // Set session cookie
     const cookieStore = await cookies();
