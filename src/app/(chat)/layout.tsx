@@ -7,7 +7,10 @@ import { getSession } from "lib/auth/server";
 import { COOKIE_KEY_SIDEBAR_STATE } from "lib/const";
 import { AppPopupProvider } from "@/components/layouts/app-popup-provider";
 import { SWRConfigProvider } from "./swr-config";
+import { UserDetailContent } from "@/components/user/user-detail/user-detail-content";
+import { UserDetailContentSkeleton } from "@/components/user/user-detail/user-detail-content-skeleton";
 
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 export const experimental_ppr = true;
 
@@ -24,7 +27,13 @@ export default async function ChatLayout({
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
       <SWRConfigProvider user={session.user}>
-        <AppPopupProvider />
+        <AppPopupProvider
+          userSettingsComponent={
+            <Suspense fallback={<UserDetailContentSkeleton />}>
+              <UserDetailContent view="user" />
+            </Suspense>
+          }
+        />
         <AppSidebar user={session.user} />
         <main className="relative bg-background  w-full flex flex-col h-screen">
           <AppHeader />

@@ -69,12 +69,16 @@ const SubscriptionPopup = dynamic(
   },
 );
 
-export function AppPopupProvider() {
+export function AppPopupProvider({
+  userSettingsComponent,
+}: {
+  userSettingsComponent?: React.ReactNode;
+} = {}) {
   return (
     <>
       <KeyboardShortcutsPopup />
       <ChatPreferencesPopup />
-      <UserSettingsPopup />
+      <UserSettingsPopup userSettingsComponent={userSettingsComponent} />
       <SubscriptionPopup />
       <ChatBotVoice />
       <ChatBotTemporary />
