@@ -5,11 +5,11 @@ import { pgMcpMcpToolCustomizationRepository } from "./pg/repositories/mcp-tool-
 import { pgMcpServerCustomizationRepository } from "./pg/repositories/mcp-server-customization-repository.pg";
 import { pgWorkflowRepository } from "./pg/repositories/workflow-repository.pg";
 import { pgAgentRepository } from "./pg/repositories/agent-repository.pg";
-import { pgArchiveRepository } from "./pg/repositories/archive-repository.pg";
+import { archiveRepository as restArchiveRepository } from "./pg/repositories/archive-repository.rest";
 import { pgMcpOAuthRepository } from "./pg/repositories/mcp-oauth-repository.pg";
 import { pgBookmarkRepository } from "./pg/repositories/bookmark-repository.pg";
 import { pgChatExportRepository } from "./pg/repositories/chat-export-repository.pg";
-import { pgCharacterRepository } from "./pg/repositories/character-repository.pg";
+import { characterRepository as restCharacterRepository } from "./pg/repositories/character-repository.rest";
 import { pgMusicRepository } from "./pg/repositories/music-repository.pg";
 
 export const chatRepository = pgChatRepository;
@@ -23,8 +23,8 @@ export const mcpOAuthRepository = pgMcpOAuthRepository;
 
 export const workflowRepository = pgWorkflowRepository;
 export const agentRepository = pgAgentRepository;
-export const archiveRepository = pgArchiveRepository;
+export const archiveRepository = restArchiveRepository;
 export const bookmarkRepository = pgBookmarkRepository;
 export const chatExportRepository = pgChatExportRepository;
-export const characterRepository = pgCharacterRepository;
+export const characterRepository = restCharacterRepository;
 export const musicRepository = pgMusicRepository;
