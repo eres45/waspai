@@ -221,10 +221,11 @@ export async function editImageWithNanoBanana(
 /**
  * Convert image to anime style using sii3.top API
  * Works best with person images
+ * Note: API can be slow, may take 30-120 seconds
  */
 export async function convertImageToAnime(
   options: EditImageOptions,
-  retries: number = 3,
+  retries: number = 2,
 ): Promise<{ image: EditedImage }> {
   let lastError: Error | null = null;
 
@@ -239,12 +240,12 @@ export async function convertImageToAnime(
 
       logger.info(`Anime Conversion: Image URL: ${options.imageUrl}`);
       logger.info(
-        `Anime Conversion: Sending request with timeout of 60 seconds...`,
+        `Anime Conversion: Sending request with timeout of 180 seconds (API can be slow)...`,
       );
 
-      // Use AbortController with 60 second timeout
+      // Use AbortController with 180 second timeout (API is slow)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const timeoutId = setTimeout(() => controller.abort(), 180000);
 
       try {
         const response = await fetch(
@@ -266,8 +267,11 @@ export async function convertImageToAnime(
 
         const contentType = response.headers.get("content-type") || "";
 
+        logger.info(`Anime Conversion: Response content-type: ${contentType}`);
+
         if (contentType.includes("image")) {
           // API returned image directly
+          logger.info(`Anime Conversion: API returned image directly`);
           const buffer = await response.arrayBuffer();
           const base64 = Buffer.from(buffer).toString("base64");
 
@@ -281,9 +285,11 @@ export async function convertImageToAnime(
               mimeType: contentType || "image/jpeg",
             },
           };
-        } else {
+        } else if (contentType.includes("json")) {
           // Try to parse as JSON
+          logger.info(`Anime Conversion: Parsing JSON response...`);
           const data = await response.json();
+          logger.info(`Anime Conversion: JSON response:`, JSON.stringify(data));
 
           if (data.url) {
             logger.info(
@@ -308,9 +314,44 @@ export async function convertImageToAnime(
                 mimeType: "image/jpeg",
               },
             };
+          } else if (data.image_url) {
+            logger.info(
+              `Anime Conversion: Fetching anime image from ${data.image_url}...`,
+            );
+            const imageResponse = await fetch(data.image_url);
+            if (!imageResponse.ok) {
+              throw new Error(
+                `Failed to fetch anime image: ${imageResponse.status}`,
+              );
+            }
+            const buffer = await imageResponse.arrayBuffer();
+            const base64 = Buffer.from(buffer).toString("base64");
+
+            logger.info(
+              `Anime Conversion: Image successfully converted to anime`,
+            );
+
+            return {
+              image: {
+                url: base64,
+                mimeType: "image/jpeg",
+              },
+            };
           } else {
-            throw new Error("No image URL in response");
+            throw new Error(
+              `No image URL in JSON response. Available keys: ${Object.keys(data).join(", ")}`,
+            );
           }
+        } else {
+          // Unknown response type
+          const text = await response.text();
+          logger.warn(
+            `Anime Conversion: Unexpected response type: ${contentType}`,
+          );
+          logger.warn(
+            `Anime Conversion: Response text (first 500 chars): ${text.substring(0, 500)}`,
+          );
+          throw new Error(`Unexpected response type: ${contentType}`);
         }
       } catch (error) {
         clearTimeout(timeoutId);
@@ -322,13 +363,16 @@ export async function convertImageToAnime(
         `Anime Conversion attempt ${attempt} failed: ${lastError.message}`,
       );
 
-      // If it's a 502/503 error and we have retries left, wait and retry
+      // If it's a timeout/abort error and we have retries left, wait and retry
       if (
         attempt < retries &&
-        (lastError.message.includes("HTTP 502") ||
-          lastError.message.includes("HTTP 503"))
+        (lastError.message.includes("abort") ||
+          lastError.message.includes("timeout") ||
+          lastError.message.includes("HTTP 502") ||
+          lastError.message.includes("HTTP 503") ||
+          lastError.message.includes("HTTP 504"))
       ) {
-        const waitTime = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+        const waitTime = Math.pow(2, attempt - 1) * 2000; // Exponential backoff: 2s, 4s
         logger.info(`Anime Conversion: Waiting ${waitTime}ms before retry...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
         continue;
