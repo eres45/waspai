@@ -244,22 +244,21 @@ export default function PromptInput({
         appStoreMutate({
           threadImageToolModel: {},
         });
+        return;
       }
       if (!threadId) return;
 
       setIsUploadDropdownOpen(false);
 
-      appStoreMutate((prev) => ({
-        threadImageToolModel: {
-          ...prev.threadImageToolModel,
-          [threadId]: model,
-        },
-      }));
-
-      // Focus on the input
-      editorRef.current?.commands.focus();
+      // Open image gen modal by calling global function
+      if (
+        typeof window !== "undefined" &&
+        (window as any).selectImageGenModel
+      ) {
+        (window as any).selectImageGenModel(model);
+      }
     },
-    [threadId, editorRef],
+    [threadId, appStoreMutate],
   );
 
   const addMention = useCallback(
@@ -476,6 +475,37 @@ export default function PromptInput({
     return () =>
       window.removeEventListener("videoGenSubmit", handleVideoGenSubmit);
   }, [sendMessage, appStoreMutate]);
+
+  // Handle image generation submit event
+  useEffect(() => {
+    const handleImageGenSubmit = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { prompt, model } = customEvent.detail;
+
+      if (prompt && model && threadId) {
+        // Store the model in threadImageToolModel
+        appStoreMutate((prev) => ({
+          threadImageToolModel: {
+            ...prev.threadImageToolModel,
+            [threadId]: model,
+          },
+        }));
+
+        // Send message with image generation metadata
+        sendMessage({
+          role: "user",
+          parts: [{ type: "text", text: prompt }],
+          metadata: {
+            imageGenModel: model,
+          },
+        });
+      }
+    };
+
+    window.addEventListener("imageGenSubmit", handleImageGenSubmit);
+    return () =>
+      window.removeEventListener("imageGenSubmit", handleImageGenSubmit);
+  }, [sendMessage, appStoreMutate, threadId]);
 
   // Drag overlay handled globally in ChatBot
 
