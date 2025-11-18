@@ -12,7 +12,7 @@ export const chatRepository: ChatRepository = {
     console.log("[Chat REST] Inserting thread:", thread.id);
 
     const { data, error } = await supabaseRest
-      .from("ChatThread")
+      .from("chat_thread")
       .insert({
         id: thread.id,
         title: thread.title,
@@ -34,7 +34,7 @@ export const chatRepository: ChatRepository = {
     console.log("[Chat REST] Deleting message:", id);
 
     const { error } = await supabaseRest
-      .from("ChatMessage")
+      .from("chat_message")
       .delete()
       .eq("id", id);
 
@@ -49,7 +49,7 @@ export const chatRepository: ChatRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .select()
         .eq("id", id)
         .single();
@@ -75,7 +75,7 @@ export const chatRepository: ChatRepository = {
     try {
       // Get thread
       const { data: threadData, error: threadError } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .select(
           `
           id,
@@ -100,7 +100,7 @@ export const chatRepository: ChatRepository = {
 
       // Get messages
       const { data: messagesData, error: messagesError } = await supabaseRest
-        .from("ChatMessage")
+        .from("chat_message")
         .select()
         .eq("threadId", id)
         .order("createdAt", { ascending: true });
@@ -130,7 +130,7 @@ export const chatRepository: ChatRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ChatMessage")
+        .from("chat_message")
         .select()
         .eq("threadId", threadId)
         .order("createdAt", { ascending: true });
@@ -157,7 +157,7 @@ export const chatRepository: ChatRepository = {
 
     try {
       const { data: threads, error: threadsError } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .select()
         .eq("userId", userId)
         .order("createdAt", { ascending: false });
@@ -170,7 +170,7 @@ export const chatRepository: ChatRepository = {
       const result = await Promise.all(
         (threads || []).map(async (thread) => {
           const { data: messages, error: messagesError } = await supabaseRest
-            .from("ChatMessage")
+            .from("chat_message")
             .select("createdAt")
             .eq("threadId", thread.id)
             .order("createdAt", { ascending: false })
@@ -214,7 +214,7 @@ export const chatRepository: ChatRepository = {
     console.log("[Chat REST] Updating thread:", id);
 
     const { data, error } = await supabaseRest
-      .from("ChatThread")
+      .from("chat_thread")
       .update({ title: thread.title })
       .eq("id", id)
       .select()
@@ -234,7 +234,7 @@ export const chatRepository: ChatRepository = {
     console.log("[Chat REST] Upserting thread:", thread.id);
 
     const { data, error } = await supabaseRest
-      .from("ChatThread")
+      .from("chat_thread")
       .upsert({
         id: thread.id,
         title: thread.title,
@@ -257,7 +257,7 @@ export const chatRepository: ChatRepository = {
     try {
       // Delete messages first
       const { error: messagesError } = await supabaseRest
-        .from("ChatMessage")
+        .from("chat_message")
         .delete()
         .eq("threadId", id);
 
@@ -267,7 +267,7 @@ export const chatRepository: ChatRepository = {
 
       // Remove from archives
       const { error: archiveError } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .delete()
         .eq("itemId", id);
 
@@ -277,7 +277,7 @@ export const chatRepository: ChatRepository = {
 
       // Delete thread
       const { error: threadError } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .delete()
         .eq("id", id);
 
@@ -296,7 +296,7 @@ export const chatRepository: ChatRepository = {
     console.log("[Chat REST] Inserting message:", message.id);
 
     const { data, error } = await supabaseRest
-      .from("ChatMessage")
+      .from("chat_message")
       .insert({
         id: message.id,
         threadId: message.threadId,
@@ -322,7 +322,7 @@ export const chatRepository: ChatRepository = {
     console.log("[Chat REST] Upserting message:", message.id);
 
     const { data, error } = await supabaseRest
-      .from("ChatMessage")
+      .from("chat_message")
       .upsert({
         id: message.id,
         threadId: message.threadId,
@@ -349,7 +349,7 @@ export const chatRepository: ChatRepository = {
     try {
       // Get the message
       const { data: messageData, error: messageError } = await supabaseRest
-        .from("ChatMessage")
+        .from("chat_message")
         .select()
         .eq("id", messageId)
         .single();
@@ -360,7 +360,7 @@ export const chatRepository: ChatRepository = {
 
       // Delete messages in same thread created at or after this message
       const { error: deleteError } = await supabaseRest
-        .from("ChatMessage")
+        .from("chat_message")
         .delete()
         .eq("threadId", messageData.threadId)
         .gte("createdAt", messageData.createdAt);
@@ -383,7 +383,7 @@ export const chatRepository: ChatRepository = {
     try {
       // Get all thread IDs
       const { data: threads, error: threadsError } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .select("id")
         .eq("userId", userId);
 
@@ -407,7 +407,7 @@ export const chatRepository: ChatRepository = {
     try {
       // Get archived thread IDs
       const { data: archivedItems, error: archivedError } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .select("itemId");
 
       if (archivedError) {
@@ -420,7 +420,7 @@ export const chatRepository: ChatRepository = {
 
       // Get all thread IDs for user
       const { data: threads, error: threadsError } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .select("id")
         .eq("userId", userId);
 
@@ -449,7 +449,7 @@ export const chatRepository: ChatRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ChatMessage")
+        .from("chat_message")
         .insert(
           messages.map((msg) => ({
             ...msg,
@@ -474,7 +474,7 @@ export const chatRepository: ChatRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ChatThread")
+        .from("chat_thread")
         .select("userId")
         .eq("id", id)
         .eq("userId", userId)

@@ -41,7 +41,7 @@ export const characterRepository = {
     console.log("[Character REST] Creating character:", input.id);
 
     const { data, error } = await supabaseRest
-      .from("Character")
+      .from("character")
       .insert({
         id: input.id,
         name: input.name,
@@ -69,7 +69,7 @@ export const characterRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .select()
         .eq("id", id)
         .single();
@@ -91,7 +91,7 @@ export const characterRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .select()
         .eq("userId", userId);
 
@@ -111,7 +111,7 @@ export const characterRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .select()
         .eq("privacy", "public");
 
@@ -136,7 +136,7 @@ export const characterRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .select()
         .eq("userId", userId)
         .eq("privacy", "private");
@@ -162,7 +162,7 @@ export const characterRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .select()
         .eq("userId", userId)
         .eq("privacy", "public");
@@ -190,7 +190,7 @@ export const characterRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .update({
           ...input,
           updatedAt: new Date().toISOString(),
@@ -216,7 +216,7 @@ export const characterRepository = {
 
     try {
       const { error } = await supabaseRest
-        .from("Character")
+        .from("character")
         .delete()
         .eq("id", id)
         .eq("userId", userId);
@@ -239,7 +239,7 @@ export const characterRepository = {
     console.log("[Character REST] Searching characters:", query, privacy);
 
     try {
-      let queryBuilder = supabaseRest.from("Character").select();
+      let queryBuilder = supabaseRest.from("character").select();
 
       // Search by name or description
       queryBuilder = queryBuilder.or(

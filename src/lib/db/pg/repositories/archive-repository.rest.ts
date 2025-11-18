@@ -16,7 +16,7 @@ export const archiveRepository: ArchiveRepository = {
     console.log("[Archive REST] Creating archive:", archive.name);
 
     const { data, error } = await supabaseRest
-      .from("Archive")
+      .from("archive")
       .insert({
         id: generateUUID(),
         name: archive.name,
@@ -41,7 +41,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { data: archives, error: archivesError } = await supabaseRest
-        .from("Archive")
+        .from("archive")
         .select()
         .eq("userId", userId)
         .order("updatedAt", { ascending: false });
@@ -54,7 +54,7 @@ export const archiveRepository: ArchiveRepository = {
       const result = await Promise.all(
         (archives || []).map(async (archive) => {
           const { count, error: countError } = await supabaseRest
-            .from("ArchiveItem")
+            .from("archive_item")
             .select("*", { count: "exact", head: true })
             .eq("archiveId", archive.id);
 
@@ -85,7 +85,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Archive")
+        .from("archive")
         .select()
         .eq("id", id)
         .single();
@@ -106,7 +106,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("Archive")
+        .from("archive")
         .update({
           name: archive.name,
           description: archive.description,
@@ -133,7 +133,7 @@ export const archiveRepository: ArchiveRepository = {
     try {
       // Delete items first
       const { error: itemsError } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .delete()
         .eq("archiveId", id);
 
@@ -143,7 +143,7 @@ export const archiveRepository: ArchiveRepository = {
 
       // Delete archive
       const { error: archiveError } = await supabaseRest
-        .from("Archive")
+        .from("archive")
         .delete()
         .eq("id", id);
 
@@ -161,7 +161,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .insert({
           id: generateUUID(),
           archiveId,
@@ -192,7 +192,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { error } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .delete()
         .eq("archiveId", archiveId)
         .eq("itemId", itemId);
@@ -211,7 +211,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .select()
         .eq("archiveId", archiveId)
         .order("addedAt", { ascending: true });
@@ -232,7 +232,7 @@ export const archiveRepository: ArchiveRepository = {
 
     try {
       const { data, error } = await supabaseRest
-        .from("ArchiveItem")
+        .from("archive_item")
         .select(
           `
           archiveId,
