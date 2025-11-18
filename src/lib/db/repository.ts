@@ -1,4 +1,4 @@
-import { pgChatRepository } from "./pg/repositories/chat-repository.pg";
+import { chatRepository as restChatRepository } from "./pg/repositories/chat-repository.rest";
 import { pgUserRepository } from "./pg/repositories/user-repository.pg";
 import { pgMcpRepository } from "./pg/repositories/mcp-repository.pg";
 import { pgMcpMcpToolCustomizationRepository } from "./pg/repositories/mcp-tool-customization-repository.pg";
@@ -12,7 +12,7 @@ import { pgChatExportRepository } from "./pg/repositories/chat-export-repository
 import { characterRepository as restCharacterRepository } from "./pg/repositories/character-repository.rest";
 import { pgMusicRepository } from "./pg/repositories/music-repository.pg";
 
-export const chatRepository = pgChatRepository;
+export const chatRepository = restChatRepository;
 export const userRepository = pgUserRepository;
 export const mcpRepository = pgMcpRepository;
 export const mcpMcpToolCustomizationRepository =
