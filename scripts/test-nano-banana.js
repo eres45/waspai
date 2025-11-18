@@ -25,7 +25,8 @@ async function testAPI(api) {
       method: "POST",
       body: formData,
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
     });
 
@@ -41,7 +42,9 @@ async function testAPI(api) {
 
     // Try to get response body
     const text = await response.text();
-    console.log(`📝 Response Body (first 500 chars):\n${text.substring(0, 500)}`);
+    console.log(
+      `📝 Response Body (first 500 chars):\n${text.substring(0, 500)}`,
+    );
 
     if (response.ok) {
       if (contentType?.includes("image")) {
@@ -50,7 +53,7 @@ async function testAPI(api) {
         try {
           const json = JSON.parse(text);
           console.log(`📄 JSON Response:`, JSON.stringify(json, null, 2));
-        } catch (e) {
+        } catch (_e) {
           console.log(`⚠️  Could not parse JSON`);
         }
       }
@@ -60,14 +63,16 @@ async function testAPI(api) {
   } catch (error) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    console.log(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log(
+      `❌ Error: ${error instanceof Error ? error.message : String(error)}`,
+    );
     console.log(`⏱️  Response Time: ${responseTime}ms`);
   }
 }
 
 async function runTests() {
   console.log("\n🚀 Starting Nano-Banana API Test...\n");
-  
+
   for (const api of apis) {
     await testAPI(api);
   }

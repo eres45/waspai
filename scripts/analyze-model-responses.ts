@@ -55,7 +55,9 @@ async function analyzeModel(modelName: string, prompt: string) {
         } else if (key === "reasoning") {
           console.log(`  • ${key}: "${value?.substring(0, 100)}..."`);
         } else if (typeof value === "object") {
-          console.log(`  • ${key}: ${JSON.stringify(value).substring(0, 100)}...`);
+          console.log(
+            `  • ${key}: ${JSON.stringify(value).substring(0, 100)}...`,
+          );
         } else {
           console.log(`  • ${key}: ${value}`);
         }
@@ -63,43 +65,47 @@ async function analyzeModel(modelName: string, prompt: string) {
     }
 
     console.log("\n🔍 Special Fields Check:");
-    let hasReasoning = false;
-    let hasSearchResults = false;
-    let hasAudio = false;
+    let _hasReasoning = false;
+    let _hasSearchResults = false;
+    let _hasAudio = false;
 
     // Check for reasoning
     if (data.choices?.[0]?.message?.reasoning) {
-      hasReasoning = true;
+      _hasReasoning = true;
       console.log("✅ Found 'reasoning' in message");
       console.log(
-        `   Content: "${data.choices[0].message.reasoning.substring(0, 150)}..."`
+        `   Content: "${data.choices[0].message.reasoning.substring(0, 150)}..."`,
       );
     }
 
     // Check for search results at different levels
     if (data.search_results) {
-      hasSearchResults = true;
+      _hasSearchResults = true;
       console.log("✅ Found 'search_results' at top level");
-      console.log(`   Type: ${Array.isArray(data.search_results) ? "array" : "object"}`);
+      console.log(
+        `   Type: ${Array.isArray(data.search_results) ? "array" : "object"}`,
+      );
       if (Array.isArray(data.search_results)) {
         console.log(`   Count: ${data.search_results.length} results`);
         if (data.search_results[0]) {
-          console.log(`   First result keys: ${Object.keys(data.search_results[0]).join(", ")}`);
+          console.log(
+            `   First result keys: ${Object.keys(data.search_results[0]).join(", ")}`,
+          );
         }
       }
     }
 
     if (data.choices?.[0]?.message?.search_results) {
-      hasSearchResults = true;
+      _hasSearchResults = true;
       console.log("✅ Found 'search_results' in message");
       console.log(
-        `   Type: ${Array.isArray(data.choices[0].message.search_results) ? "array" : "object"}`
+        `   Type: ${Array.isArray(data.choices[0].message.search_results) ? "array" : "object"}`,
       );
     }
 
     // Check for audio
     if (data.choices?.[0]?.message?.audio) {
-      hasAudio = true;
+      _hasAudio = true;
       console.log("✅ Found 'audio' in message");
       const audio = data.choices[0].message.audio;
       console.log(`   Type: ${typeof audio}`);
@@ -109,7 +115,7 @@ async function analyzeModel(modelName: string, prompt: string) {
     }
 
     if (data.audio) {
-      hasAudio = true;
+      _hasAudio = true;
       console.log("✅ Found 'audio' at top level");
       console.log(`   Type: ${typeof data.audio}`);
     }
@@ -128,7 +134,7 @@ async function main() {
   // Test reasoning model
   await analyzeModel(
     "openai-reasoning",
-    "What is 15 * 8 + 25? Show step by step."
+    "What is 15 * 8 + 25? Show step by step.",
   );
 
   // Wait between requests

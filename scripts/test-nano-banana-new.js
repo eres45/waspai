@@ -34,7 +34,8 @@ async function testAPI(api) {
       response = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
     } else {
@@ -46,7 +47,8 @@ async function testAPI(api) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
         body: JSON.stringify(payload),
       });
@@ -63,7 +65,9 @@ async function testAPI(api) {
 
     // Try to get response body
     const text = await response.text();
-    console.log(`📝 Response Body (first 500 chars):\n${text.substring(0, 500)}`);
+    console.log(
+      `📝 Response Body (first 500 chars):\n${text.substring(0, 500)}`,
+    );
 
     if (response.ok) {
       if (contentType?.includes("image")) {
@@ -72,11 +76,11 @@ async function testAPI(api) {
         try {
           const json = JSON.parse(text);
           console.log(`📄 JSON Response:`, JSON.stringify(json, null, 2));
-          
+
           if (json.image || json.url || json.result) {
             console.log(`✅ Image URL provided`);
           }
-        } catch (e) {
+        } catch (_e) {
           console.log(`⚠️  Could not parse JSON`);
         }
       }
@@ -86,14 +90,16 @@ async function testAPI(api) {
   } catch (error) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    console.log(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log(
+      `❌ Error: ${error instanceof Error ? error.message : String(error)}`,
+    );
     console.log(`⏱️  Response Time: ${responseTime}ms`);
   }
 }
 
 async function runTests() {
   console.log("\n🚀 Starting New Nano-Banana API Tests...\n");
-  
+
   for (const api of apis) {
     await testAPI(api);
     // Wait 2 seconds between tests

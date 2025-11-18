@@ -27,23 +27,26 @@ interface ImageEnhanceResult {
 function PureImageEnhancerToolInvocation({
   part,
 }: ImageEnhancerToolInvocationProps) {
-  const handleDownload = useCallback(async (imageUrl: string, filename: string) => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success("Image downloaded successfully");
-    } catch (error) {
-      toast.error("Failed to download image");
-    }
-  }, []);
+  const handleDownload = useCallback(
+    async (imageUrl: string, filename: string) => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        toast.success("Image downloaded successfully");
+      } catch (_error) {
+        toast.error("Failed to download image");
+      }
+    },
+    [],
+  );
 
   const isEnhancing = useMemo(() => {
     return !part.state.startsWith("output");
@@ -74,7 +77,9 @@ function PureImageEnhancerToolInvocation({
       <div className="grid grid-cols-2 gap-4">
         {/* Original Image */}
         <div className="space-y-2">
-          <div className="text-sm font-medium text-muted-foreground">Original</div>
+          <div className="text-sm font-medium text-muted-foreground">
+            Original
+          </div>
           <div className="relative w-full bg-muted rounded-lg overflow-hidden border border-border/40">
             <img
               src={result.originalImage.url}
@@ -86,7 +91,9 @@ function PureImageEnhancerToolInvocation({
             size="sm"
             variant="outline"
             className="w-full gap-2"
-            onClick={() => handleDownload(result.originalImage.url, "original-image.png")}
+            onClick={() =>
+              handleDownload(result.originalImage.url, "original-image.png")
+            }
           >
             <Download className="size-4" />
             Download Original
@@ -95,7 +102,9 @@ function PureImageEnhancerToolInvocation({
 
         {/* Enhanced Image */}
         <div className="space-y-2">
-          <div className="text-sm font-medium text-muted-foreground">Enhanced</div>
+          <div className="text-sm font-medium text-muted-foreground">
+            Enhanced
+          </div>
           <div className="relative w-full bg-muted rounded-lg overflow-hidden border border-border/40">
             <img
               src={result.enhancedImage.url}
@@ -107,7 +116,9 @@ function PureImageEnhancerToolInvocation({
             size="sm"
             variant="outline"
             className="w-full gap-2"
-            onClick={() => handleDownload(result.enhancedImage.url, "enhanced-image.png")}
+            onClick={() =>
+              handleDownload(result.enhancedImage.url, "enhanced-image.png")
+            }
           >
             <Download className="size-4" />
             Download Enhanced

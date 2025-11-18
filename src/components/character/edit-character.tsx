@@ -56,13 +56,13 @@ const defaultConfig = (): Character => {
 
 interface EditCharacterProps {
   initialCharacter?: Character;
-  userId: string;
+  _userId?: string;
   characterId?: string;
 }
 
 export default function EditCharacter({
   initialCharacter,
-  userId,
+  _userId,
   characterId,
 }: EditCharacterProps) {
   const router = useRouter();
@@ -78,7 +78,7 @@ export default function EditCharacter({
 
   // Initialize character state with initial data or defaults
   const [character, setCharacter] = useObjectState(
-    initialCharacter || defaultConfig()
+    initialCharacter || defaultConfig(),
   );
 
   const GENERATION_TIPS = [
@@ -89,47 +89,57 @@ export default function EditCharacter({
     "✨ Finalizing character profile...",
   ];
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    // Check file size
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(`File size must be less than 1MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-      return;
-    }
+      // Check file size
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(
+          `File size must be less than 1MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+        );
+        return;
+      }
 
-    // Check file type
-    if (!["image/png", "image/gif", "image/jpeg", "image/webp"].includes(file.type)) {
-      toast.error("Only PNG, GIF, JPEG, and WebP images are supported");
-      return;
-    }
+      // Check file type
+      if (
+        !["image/png", "image/gif", "image/jpeg", "image/webp"].includes(
+          file.type,
+        )
+      ) {
+        toast.error("Only PNG, GIF, JPEG, and WebP images are supported");
+        return;
+      }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setCharacter({
-        icon: {
-          type: "image",
-          value: base64,
-          style: {
-            backgroundColor: character.icon?.style?.backgroundColor || BACKGROUND_COLORS[0],
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setCharacter({
+          icon: {
+            type: "image",
+            value: base64,
+            style: {
+              backgroundColor:
+                character.icon?.style?.backgroundColor || BACKGROUND_COLORS[0],
+            },
           },
-        },
-      });
-      toast.success("Image uploaded successfully");
-    };
-    reader.onerror = () => {
-      toast.error("Failed to read file");
-    };
-    reader.readAsDataURL(file);
+        });
+        toast.success("Image uploaded successfully");
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read file");
+      };
+      reader.readAsDataURL(file);
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }, [character.icon?.style?.backgroundColor]);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [character.icon?.style?.backgroundColor],
+  );
 
   const handleGenerateClick = useCallback(() => {
     if (!character.name.trim()) {
@@ -139,14 +149,15 @@ export default function EditCharacter({
     setShowPrivacyDialog(true);
   }, [character.name]);
 
-  const handlePrivacySelect = useCallback(async (privacy: "public" | "private") => {
-    setShowPrivacyDialog(false);
-    setShowLoadingDialog(true);
-    setIsGenerating(true);
+  const handlePrivacySelect = useCallback(
+    async (_privacy: "public" | "private") => {
+      setShowPrivacyDialog(false);
+      setShowLoadingDialog(true);
+      setIsGenerating(true);
 
-    try {
-      // Create prompt for Pollinations API
-      const prompt = `Generate a detailed character profile for "${character.name}".
+      try {
+        // Create prompt for Pollinations API
+        const prompt = `Generate a detailed character profile for "${character.name}".
 Origin/Source: ${character.origin}
 
 Please provide:
@@ -158,53 +169,57 @@ Please provide:
 
 Format the response as a structured character profile.`;
 
-      // Call Pollinations API
-      const response = await fetch("https://text.pollinations.ai/openai", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          model: "openai",
-          stream: false,
-        }),
-      });
+        // Call Pollinations API
+        const response = await fetch("https://text.pollinations.ai/openai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            model: "openai",
+            stream: false,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to generate character");
+        if (!response.ok) {
+          throw new Error("Failed to generate character");
+        }
+
+        const data = await response.json();
+        const generatedContent = data.choices?.[0]?.message?.content || "";
+
+        // Parse the generated content
+        const lines = generatedContent
+          .split("\n")
+          .filter((line: string) => line.trim());
+
+        // Extract description and personality from generated content
+        const description = lines.slice(0, 3).join(" ").substring(0, 200);
+        const personality = lines.slice(3).join(" ").substring(0, 500);
+
+        setCharacter({
+          description: description || "Character generated successfully",
+          personality: personality || "Generated personality traits",
+        });
+
+        setShowLoadingDialog(false);
+        toast.success("Your character is ready!");
+      } catch (error) {
+        setShowLoadingDialog(false);
+        toast.error("Failed to generate character");
+        console.error(error);
+      } finally {
+        setIsGenerating(false);
       }
-
-      const data = await response.json();
-      const generatedContent = data.choices?.[0]?.message?.content || "";
-
-      // Parse the generated content
-      const lines = generatedContent.split("\n").filter((line: string) => line.trim());
-      
-      // Extract description and personality from generated content
-      const description = lines.slice(0, 3).join(" ").substring(0, 200);
-      const personality = lines.slice(3).join(" ").substring(0, 500);
-
-      setCharacter({
-        description: description || "Character generated successfully",
-        personality: personality || "Generated personality traits",
-      });
-
-      setShowLoadingDialog(false);
-      toast.success("Your character is ready!");
-    } catch (error) {
-      setShowLoadingDialog(false);
-      toast.error("Failed to generate character");
-      console.error(error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [character.name, character.origin]);
+    },
+    [character.name, character.origin],
+  );
 
   const handleSaveClick = useCallback(() => {
     if (!character.name.trim()) {
@@ -231,39 +246,42 @@ Format the response as a structured character profile.`;
     }
   }, [character, mode]);
 
-  const performSave = useCallback(async (privacy: "public" | "private") => {
-    setIsSaving(true);
-    try {
-      const payload = {
-        name: character.name,
-        description: character.description,
-        personality: character.personality,
-        icon: character.icon,
-        privacy,
-      };
+  const performSave = useCallback(
+    async (privacy: "public" | "private") => {
+      setIsSaving(true);
+      try {
+        const payload = {
+          name: character.name,
+          description: character.description,
+          personality: character.personality,
+          icon: character.icon,
+          privacy,
+        };
 
-      const response = await fetch("/api/character", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch("/api/character", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to save character");
+        if (!response.ok) {
+          throw new Error("Failed to save character");
+        }
+
+        toast.success("Character saved successfully");
+        router.push("/characters");
+      } catch (error) {
+        toast.error("Failed to save character");
+        console.error(error);
+      } finally {
+        setIsSaving(false);
+        setShowPrivacyDialog(false);
       }
-
-      toast.success("Character saved successfully");
-      router.push("/characters");
-    } catch (error) {
-      toast.error("Failed to save character");
-      console.error(error);
-    } finally {
-      setIsSaving(false);
-      setShowPrivacyDialog(false);
-    }
-  }, [character, router]);
+    },
+    [character, router],
+  );
 
   const handleCancel = useCallback(() => {
     router.back();
@@ -282,11 +300,7 @@ Format the response as a structured character profile.`;
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isSaving}
-          >
+          <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
             Cancel
           </Button>
           <Button
@@ -303,7 +317,11 @@ Format the response as a structured character profile.`;
       {/* Content */}
       <ScrollArea className="flex-1">
         <div className="p-6 max-w-2xl">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "manual" | "auto")} className="w-full">
+          <Tabs
+            value={mode}
+            onValueChange={(v) => setMode(v as "manual" | "auto")}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="manual">Manual</TabsTrigger>
               <TabsTrigger value="auto">Auto Generate</TabsTrigger>
@@ -330,7 +348,9 @@ Format the response as a structured character profile.`;
                   id="description"
                   placeholder="Brief description of your character"
                   value={character.description}
-                  onChange={(e) => setCharacter({ description: e.target.value })}
+                  onChange={(e) =>
+                    setCharacter({ description: e.target.value })
+                  }
                   className="min-h-24 resize-none"
                 />
               </div>
@@ -342,12 +362,15 @@ Format the response as a structured character profile.`;
                   id="personality"
                   placeholder="Describe the character's personality, speaking style, and unique traits..."
                   value={character.personality}
-                  onChange={(e) => setCharacter({ personality: e.target.value })}
+                  onChange={(e) =>
+                    setCharacter({ personality: e.target.value })
+                  }
                   className="min-h-32 resize-none"
                   ref={textareaRef}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Be detailed about how this character should behave and communicate
+                  Be detailed about how this character should behave and
+                  communicate
                 </p>
               </div>
 
@@ -379,7 +402,11 @@ Format the response as a structured character profile.`;
                     }}
                   >
                     {character.icon?.type === "image" ? (
-                      <img src={character.icon.value} alt="Character" className="w-full h-full object-cover rounded-lg" />
+                      <img
+                        src={character.icon.value}
+                        alt="Character"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
                     ) : (
                       character.icon?.value
                     )}
@@ -437,7 +464,8 @@ Format the response as a structured character profile.`;
                   className="min-h-32 resize-none"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Describe where the character is from (movie, book, game, real person, etc.) and provide context
+                  Describe where the character is from (movie, book, game, real
+                  person, etc.) and provide context
                 </p>
               </div>
 
@@ -452,7 +480,11 @@ Format the response as a structured character profile.`;
                     }}
                   >
                     {character.icon?.type === "image" ? (
-                      <img src={character.icon.value} alt="Character" className="w-full h-full object-cover rounded-lg" />
+                      <img
+                        src={character.icon.value}
+                        alt="Character"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
                     ) : (
                       character.icon?.value
                     )}
@@ -495,12 +527,20 @@ Format the response as a structured character profile.`;
               {character.description && (
                 <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border/40">
                   <div>
-                    <h3 className="font-semibold mb-2">Generated Description</h3>
-                    <p className="text-sm text-foreground/80">{character.description}</p>
+                    <h3 className="font-semibold mb-2">
+                      Generated Description
+                    </h3>
+                    <p className="text-sm text-foreground/80">
+                      {character.description}
+                    </p>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Generated Personality</h3>
-                    <p className="text-sm text-foreground/80">{character.personality}</p>
+                    <h3 className="font-semibold mb-2">
+                      Generated Personality
+                    </h3>
+                    <p className="text-sm text-foreground/80">
+                      {character.personality}
+                    </p>
                   </div>
                 </div>
               )}
@@ -555,7 +595,9 @@ Format the response as a structured character profile.`;
                   <Loader className="w-full h-full animate-spin text-primary" />
                   <Sparkles className="absolute inset-0 w-full h-full text-yellow-400 animate-pulse" />
                 </div>
-                <h2 className="text-xl font-bold text-center">Creating Your Character</h2>
+                <h2 className="text-xl font-bold text-center">
+                  Creating Your Character
+                </h2>
               </div>
 
               {/* Tips */}

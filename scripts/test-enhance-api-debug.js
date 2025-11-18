@@ -12,7 +12,7 @@ async function debugEnhanceAPI() {
 
   try {
     const enhanceApiUrl = `https://image-enhance.apis-bj-devs.workers.dev/?imageurl=${encodeURIComponent(testImageUrl)}`;
-    
+
     console.log(`Calling: ${enhanceApiUrl}\n`);
 
     const response = await fetch(enhanceApiUrl, {
@@ -36,7 +36,7 @@ async function debugEnhanceAPI() {
       const json = JSON.parse(text);
       console.log("Parsed JSON:");
       console.log(JSON.stringify(json, null, 2));
-    } catch (e) {
+    } catch (_e) {
       console.log("Not JSON, raw text above");
     }
   } catch (error) {

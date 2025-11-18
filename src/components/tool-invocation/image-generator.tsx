@@ -25,23 +25,26 @@ interface ImageGenerationResult {
 function PureImageGeneratorToolInvocation({
   part,
 }: ImageGeneratorToolInvocationProps) {
-  const handleDownload = useCallback(async (imageUrl: string, index: number) => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `generated-image-${index + 1}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success("Image downloaded successfully");
-    } catch (error) {
-      toast.error("Failed to download image");
-    }
-  }, []);
+  const handleDownload = useCallback(
+    async (imageUrl: string, index: number) => {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `generated-image-${index + 1}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        toast.success("Image downloaded successfully");
+      } catch (_error) {
+        toast.error("Failed to download image");
+      }
+    },
+    [],
+  );
 
   const isGenerating = useMemo(() => {
     return !part.state.startsWith("output");
@@ -97,11 +100,11 @@ function PureImageGeneratorToolInvocation({
       "gpt-imager": "GPT-Imager",
       "imagen-3": "Imagen-3",
       "nano-banana": "Nano-Banana",
-      "sdxl": "Stable Diffusion XL",
-      "chalk": "Chalk Name Style",
-      "meme": "Meme Generator",
-      "google": "Gemini",
-      "openai": "OpenAI",
+      sdxl: "Stable Diffusion XL",
+      chalk: "Chalk Name Style",
+      meme: "Meme Generator",
+      google: "Gemini",
+      openai: "OpenAI",
     };
     return modelLabels[model] || model;
   };

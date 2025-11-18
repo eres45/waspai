@@ -32,13 +32,13 @@ const baseToolConfig = {
       .enum(["img-cv", "flux-max", "gpt-imager", "imagen-3", "nano-banana"])
       .default("img-cv")
       .describe(
-        "Image generation model: 'img-cv' (fastest, ultra-realistic), 'flux-max' (fast, high quality), 'gpt-imager' (good quality), 'imagen-3' (Google model), 'nano-banana' (detailed)"
+        "Image generation model: 'img-cv' (fastest, ultra-realistic), 'flux-max' (fast, high quality), 'gpt-imager' (good quality), 'imagen-3' (Google model), 'nano-banana' (detailed)",
       ),
   }),
 };
 
 // Create tool factory
-export function createImageGenerationTool(modelName: string) {
+export function createImageGenerationTool(_modelName: string) {
   return createTool({
     ...baseToolConfig,
     execute: async ({ prompt, model }, { abortSignal }) => {
@@ -90,24 +90,24 @@ export function createImageGenerationTool(modelName: string) {
                   Buffer.from(image.base64, "base64"),
                   {
                     contentType: image.mimeType,
-                  }
+                  },
                 );
                 return {
                   url: uploadedImage.sourceUrl,
                   mimeType: image.mimeType,
                 };
-              })
+              }),
             );
           })
           .watch(
             watchError((e) => {
               logger.error(e);
               logger.info(`upload image failed. using base64`);
-            })
+            }),
           )
           .ifFail(() => {
             throw new Error(
-              "Image generation was successful, but file upload failed. Please check your file upload configuration and try again."
+              "Image generation was successful, but file upload failed. Please check your file upload configuration and try again.",
             );
           })
           .unwrap();

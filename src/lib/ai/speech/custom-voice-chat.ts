@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import {
-  UIMessageWithCompleted,
-  VoiceChatOptions,
-  VoiceChatSession,
-} from ".";
+import { UIMessageWithCompleted, VoiceChatOptions, VoiceChatSession } from ".";
 import { generateUUID } from "lib/utils";
 import { TextPart } from "ai";
 import { generateSpeech, CustomTTSVoice } from "./custom-tts";
@@ -22,10 +18,10 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [messages, setMessages] = useState<UIMessageWithCompleted[]>([]);
-  
+
   // Track voice from props - update when props change
   const [voice, setVoice] = useState<string>(props?.voice || "nova");
-  
+
   useEffect(() => {
     if (props?.voice) {
       setVoice(props.voice);
@@ -61,7 +57,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         if (recognitionRef.current && isListeningRef.current) {
           try {
             recognitionRef.current.start();
-          } catch (e) {
+          } catch (_e) {
             // Already started, ignore error
           }
         }
@@ -75,7 +71,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           if (isListeningRef.current && recognitionRef.current) {
             try {
               recognitionRef.current.start();
-            } catch (e) {
+            } catch (_e) {
               // Already started
             }
           }
@@ -88,7 +84,9 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         let interimTranscript = "";
         let finalTranscript = "";
 
-        console.log(`Speech result event - resultIndex: ${event.resultIndex}, results length: ${event.results.length}`);
+        console.log(
+          `Speech result event - resultIndex: ${event.resultIndex}, results length: ${event.results.length}`,
+        );
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
@@ -103,7 +101,9 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           }
         }
 
-        console.log(`Interim: "${interimTranscript}", Final: "${finalTranscript}"`);
+        console.log(
+          `Interim: "${interimTranscript}", Final: "${finalTranscript}"`,
+        );
 
         if (finalTranscript) {
           const trimmedText = finalTranscript.trim();
@@ -135,9 +135,10 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
       try {
         // Create a voice-based system prompt for roleplay
-        const voiceSystemPrompt = voice && voice !== "nova" 
-          ? `You are a helpful AI assistant with the voice personality of ${voice}. Respond naturally and conversationally as if you are ${voice}.`
-          : undefined;
+        const voiceSystemPrompt =
+          voice && voice !== "nova"
+            ? `You are a helpful AI assistant with the voice personality of ${voice}. Respond naturally and conversationally as if you are ${voice}.`
+            : undefined;
 
         // Send to chat API
         const messageId = generateUUID();
@@ -219,7 +220,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           for (let i = 0; i < lines.length - 1; i++) {
             const line = lines[i].trim();
             console.log(`Line ${i}:`, line.substring(0, 100));
-            
+
             if (line.startsWith("data: ")) {
               try {
                 const jsonStr = line.slice(6); // Remove "data: " prefix
@@ -229,7 +230,10 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                 }
 
                 const data = JSON.parse(jsonStr);
-                console.log("Parsed data:", JSON.stringify(data).substring(0, 200));
+                console.log(
+                  "Parsed data:",
+                  JSON.stringify(data).substring(0, 200),
+                );
 
                 // Extract text from different event types
                 if (data.delta) {
@@ -239,11 +243,17 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                 } else if (data.choices?.[0]?.delta?.content) {
                   // OpenAI format
                   assistantText += data.choices[0].delta.content;
-                  console.log("Added choices delta:", data.choices[0].delta.content);
+                  console.log(
+                    "Added choices delta:",
+                    data.choices[0].delta.content,
+                  );
                 } else if (data.choices?.[0]?.message?.content) {
                   // OpenAI message format
                   assistantText += data.choices[0].message.content;
-                  console.log("Added message:", data.choices[0].message.content);
+                  console.log(
+                    "Added message:",
+                    data.choices[0].message.content,
+                  );
                 }
               } catch (e) {
                 // Ignore JSON parse errors for malformed SSE
@@ -265,7 +275,12 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           }
         }
 
-        console.log("Final assistantText:", assistantText, "Length:", assistantText.length);
+        console.log(
+          "Final assistantText:",
+          assistantText,
+          "Length:",
+          assistantText.length,
+        );
 
         // Mark as completed
         setMessages((prev) => {
@@ -280,7 +295,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           console.log("Generating TTS for complete text:", assistantText);
           const audioUrl = await generateSpeech(
             assistantText,
-            voice as CustomTTSVoice
+            voice as CustomTTSVoice,
           );
 
           console.log("Audio URL received:", audioUrl);
@@ -293,22 +308,22 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           if (!audioElement.current) {
             audioElement.current = new Audio();
           }
-          
+
           audioElement.current.src = proxyUrl;
           audioElement.current.crossOrigin = "anonymous";
-          
+
           audioElement.current.onended = () => {
             setIsAssistantSpeaking(false);
           };
-          
+
           audioElement.current.onerror = (error) => {
             console.error("Audio playback error:", error);
             setIsAssistantSpeaking(false);
           };
-          
+
           // Wait a bit for the audio file to be ready
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
           try {
             await audioElement.current.play();
           } catch (playError) {
@@ -324,7 +339,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         setIsAssistantSpeaking(false);
       }
     },
-    [voice, props?.voice] // Re-run when voice changes
+    [voice, props?.voice], // Re-run when voice changes
   );
 
   const startListening = useCallback(async () => {
@@ -336,14 +351,14 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
       if (!SpeechRecognition) {
         throw new Error(
-          "Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari."
+          "Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.",
         );
       }
 
       // Check if microphone is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error(
-          "Microphone access not available. Please check your browser permissions and ensure a microphone is connected."
+          "Microphone access not available. Please check your browser permissions and ensure a microphone is connected.",
         );
       }
 
@@ -359,15 +374,15 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         } catch (micError: any) {
           if (micError.name === "NotFoundError") {
             throw new Error(
-              "No microphone found. Please connect a microphone and try again."
+              "No microphone found. Please connect a microphone and try again.",
             );
           } else if (micError.name === "NotAllowedError") {
             throw new Error(
-              "Microphone permission denied. Please allow microphone access in your browser settings."
+              "Microphone permission denied. Please allow microphone access in your browser settings.",
             );
           } else if (micError.name === "NotReadableError") {
             throw new Error(
-              "Microphone is in use by another application. Please close other apps using the microphone."
+              "Microphone is in use by another application. Please close other apps using the microphone.",
             );
           }
           throw micError;
@@ -380,8 +395,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         setIsListening(true);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(new Error(errorMessage));
       isListeningRef.current = false;
       setIsListening(false);

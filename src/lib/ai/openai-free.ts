@@ -5,13 +5,13 @@ import logger from "logger";
 /**
  * OpenAI Free API Provider
  * API: https://sii3.top/api/openai.php
- * 
+ *
  * Available Models: 15 top OpenAI models:
  * - gpt-4, gpt-4-turbo, gpt-4o, gpt-4o-mini
  * - gpt-4.1, gpt-4.1-mini, gpt-4.1-nano
  * - o1, o3, o3-mini, o4-mini
  * - gpt-5, gpt-5-mini, gpt-5-nano
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -47,7 +47,7 @@ export function createOpenAIFreeModels() {
 
   // Create a custom fetch function that transforms OpenAI API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -67,7 +67,7 @@ export function createOpenAIFreeModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `OpenAI Free API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `OpenAI Free API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call OpenAI API using POST with model parameter
@@ -111,7 +111,7 @@ export function createOpenAIFreeModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -135,7 +135,7 @@ export function createOpenAIFreeModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

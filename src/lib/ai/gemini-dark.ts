@@ -7,12 +7,12 @@ import logger from "logger";
  * APIs:
  * - https://sii3.top/api/gemini-dark.php (for gemini-pro, gemini-deep)
  * - https://sii3.top/DARK/gemini.php (for gemini-2.5-flash)
- * 
+ *
  * Available Models: 3 top Gemini models:
  * - gemini-2.5-pro (most powerful)
  * - gemini-2.5-deep-search (advanced reasoning)
  * - gemini-2.5-flash (fast and efficient)
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -37,7 +37,7 @@ export function createGeminiDarkModels() {
 
   // Create a custom fetch function that transforms Gemini API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -57,7 +57,7 @@ export function createGeminiDarkModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `Gemini API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `Gemini API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       let response: Response;
@@ -128,7 +128,7 @@ export function createGeminiDarkModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -152,7 +152,7 @@ export function createGeminiDarkModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

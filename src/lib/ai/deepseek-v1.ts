@@ -5,7 +5,7 @@ import logger from "logger";
 /**
  * DeepSeek v1 Provider (chat-deep.ai)
  * API: https://chat-deep.ai/wp-admin/admin-ajax.php
- * 
+ *
  * Model: deepseek-chat
  * - Free to use
  * - No authentication required
@@ -26,7 +26,7 @@ export function createDeepSeekV1Models() {
 
   // Create a custom fetch function that transforms DeepSeek API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -43,7 +43,7 @@ export function createDeepSeekV1Models() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `DeepSeek v1 API called: streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `DeepSeek v1 API called: streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Step 1: Get nonce from chat-deep.ai
@@ -52,7 +52,8 @@ export function createDeepSeekV1Models() {
         const nonceResponse = await fetch("https://chat-deep.ai/", {
           method: "GET",
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
           },
         });
 
@@ -94,9 +95,10 @@ export function createDeepSeekV1Models() {
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "Origin": "https://chat-deep.ai",
-          "Referer": "https://chat-deep.ai/",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          Origin: "https://chat-deep.ai",
+          Referer: "https://chat-deep.ai/",
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: params.toString(),
@@ -137,7 +139,7 @@ export function createDeepSeekV1Models() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -161,7 +163,7 @@ export function createDeepSeekV1Models() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

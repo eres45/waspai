@@ -16,7 +16,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 
 interface SidebarHeaderSharedProps {
-  title: string | React.ReactNode;
+  _title?: string | React.ReactNode;
   href: string;
   showMobileToggle?: boolean;
   onLinkClick?: () => void;
@@ -24,7 +24,7 @@ interface SidebarHeaderSharedProps {
 }
 
 export function SidebarHeaderShared({
-  title,
+  _title,
   href,
   showMobileToggle = true,
   onLinkClick,

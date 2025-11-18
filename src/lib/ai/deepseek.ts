@@ -5,11 +5,11 @@ import logger from "logger";
 /**
  * DeepSeek API Provider
  * API: https://sii3.top/api/deepseek.php
- * 
+ *
  * Available Models: 2 top DeepSeek models:
  * - deepseek-v3.3 (most powerful, best for general tasks)
  * - deepseek-r1 (advanced reasoning, best for complex problems)
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -33,7 +33,7 @@ export function createDeepSeekModels() {
 
   // Create a custom fetch function that transforms DeepSeek API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -53,7 +53,7 @@ export function createDeepSeekModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `DeepSeek API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `DeepSeek API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call DeepSeek API using POST with model parameter
@@ -97,7 +97,7 @@ export function createDeepSeekModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -121,7 +121,7 @@ export function createDeepSeekModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

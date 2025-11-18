@@ -5,12 +5,12 @@ import logger from "logger";
 /**
  * Kiwi AI Dark Code Model Provider
  * API: https://sii3.top/api/DarkCode.php
- * 
+ *
  * Model: dark-code-76
  * - Specialized for code generation and analysis
  * - 12B parameters on very fast and powerful server
  * - Official Kiwi AI model
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -28,7 +28,7 @@ export function createKiwiAIModels() {
 
   // Create a custom fetch function that transforms Kiwi AI API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -45,13 +45,16 @@ export function createKiwiAIModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `Kiwi AI Dark Code API called: streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `Kiwi AI Dark Code API called: streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Only prepend identity instruction if user is asking about identity/creator
       let fullText = userText;
-      const isIdentityQuestion = /who (are|created|made|built|trained)|creator|origin|identity|who am i|what are you|what model|tell me.*about you|more about|elaborate|describe yourself|introduce yourself|darkai/i.test(userText);
-      
+      const isIdentityQuestion =
+        /who (are|created|made|built|trained)|creator|origin|identity|who am i|what are you|what model|tell me.*about you|more about|elaborate|describe yourself|introduce yourself|darkai/i.test(
+          userText,
+        );
+
       if (isIdentityQuestion) {
         // For identity questions, create a more natural conversational prompt
         // This helps the API understand we want a natural response, not just identity info
@@ -82,12 +85,21 @@ Remember to clarify your actual identity and creator in your response.`;
       // Post-process response to enforce Kiwi AI identity
       // Replace any DarkAI references with Kiwi AI
       data.response = data.response
-        .replace(/I was trained and developed by DarkAI/gi, "I am Kiwi AI Dark Code 76, created by Kiwi AI (KiwiAI.com)")
-        .replace(/trained and developed by DarkAI/gi, "created by Kiwi AI (KiwiAI.com)")
+        .replace(
+          /I was trained and developed by DarkAI/gi,
+          "I am Kiwi AI Dark Code 76, created by Kiwi AI (KiwiAI.com)",
+        )
+        .replace(
+          /trained and developed by DarkAI/gi,
+          "created by Kiwi AI (KiwiAI.com)",
+        )
         .replace(/I was trained by DarkAI/gi, "I was created by Kiwi AI")
         .replace(/trained by DarkAI/gi, "created by Kiwi AI")
         .replace(/DarkAI/g, "Kiwi AI")
-        .replace(/I was trained/gi, "I am Kiwi AI Dark Code 76, created by Kiwi AI")
+        .replace(
+          /I was trained/gi,
+          "I am Kiwi AI Dark Code 76, created by Kiwi AI",
+        )
         .replace(/trained by/gi, "created by");
 
       if (isStreaming) {
@@ -114,7 +126,7 @@ Remember to clarify your actual identity and creator in your response.`;
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -138,7 +150,7 @@ Remember to clarify your actual identity and creator in your response.`;
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

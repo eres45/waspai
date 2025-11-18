@@ -5,7 +5,7 @@ import logger from "logger";
 /**
  * WormGPT AI Provider
  * API: https://vetrex.x10.mx/api/wormgpt_ai.php
- * 
+ *
  * Model: wormgpt-ai
  * - Free to use
  * - No authentication required
@@ -29,7 +29,7 @@ export function createWormGPTModels() {
 
   // Create a custom fetch function that transforms WormGPT API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -46,7 +46,7 @@ export function createWormGPTModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `WormGPT AI API called: streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `WormGPT AI API called: streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call WormGPT API using POST with JSON
@@ -65,7 +65,13 @@ export function createWormGPTModels() {
       }
 
       const data: WormGPTResponse = await response.json();
-      const responseText = data.answer || data.response || data.result || data.text || data.message || JSON.stringify(data);
+      const responseText =
+        data.answer ||
+        data.response ||
+        data.result ||
+        data.text ||
+        data.message ||
+        JSON.stringify(data);
 
       if (isStreaming) {
         // Simulate streaming by creating a ReadableStream
@@ -90,7 +96,7 @@ export function createWormGPTModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -114,7 +120,7 @@ export function createWormGPTModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

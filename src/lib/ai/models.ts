@@ -56,19 +56,29 @@ const wormgptModels = createWormGPTModels();
 const staticModels = {
   // Reorganize Pollinations models under their actual provider names
   google: {
-    ...pollinationsModels.gemini && { gemini: pollinationsModels.gemini },
-    ...pollinationsModels["gemini-search"] && { "gemini-search": pollinationsModels["gemini-search"] },
+    ...(pollinationsModels.gemini && { gemini: pollinationsModels.gemini }),
+    ...(pollinationsModels["gemini-search"] && {
+      "gemini-search": pollinationsModels["gemini-search"],
+    }),
     ...geminiDarkModels,
   },
   mistral: {
-    ...pollinationsModels.mistral && { mistral: pollinationsModels.mistral },
+    ...(pollinationsModels.mistral && { mistral: pollinationsModels.mistral }),
   },
   "openai-free": {
     ...openAIFreeModels,
-    ...pollinationsModels.openai && { "openai-pollinations": pollinationsModels.openai },
-    ...pollinationsModels["openai-fast"] && { "openai-fast-pollinations": pollinationsModels["openai-fast"] },
-    ...pollinationsModels["openai-large"] && { "openai-large-pollinations": pollinationsModels["openai-large"] },
-    ...pollinationsModels["openai-reasoning"] && { "openai-reasoning-pollinations": pollinationsModels["openai-reasoning"] },
+    ...(pollinationsModels.openai && {
+      "openai-pollinations": pollinationsModels.openai,
+    }),
+    ...(pollinationsModels["openai-fast"] && {
+      "openai-fast-pollinations": pollinationsModels["openai-fast"],
+    }),
+    ...(pollinationsModels["openai-large"] && {
+      "openai-large-pollinations": pollinationsModels["openai-large"],
+    }),
+    ...(pollinationsModels["openai-reasoning"] && {
+      "openai-reasoning-pollinations": pollinationsModels["openai-reasoning"],
+    }),
   },
   "gpt-oss": gptOssModels,
   grok: grokModels,
@@ -135,17 +145,27 @@ const registerFileSupport = (
 
 // Register image support for models that support it
 registerFileSupport(pollinationsModels.gemini, GEMINI_FILE_MIME_TYPES);
-registerFileSupport(pollinationsModels["gemini-search"], GEMINI_FILE_MIME_TYPES);
+registerFileSupport(
+  pollinationsModels["gemini-search"],
+  GEMINI_FILE_MIME_TYPES,
+);
 registerFileSupport(pollinationsModels.openai, DEFAULT_FILE_PART_MIME_TYPES);
-registerFileSupport(pollinationsModels["openai-fast"], DEFAULT_FILE_PART_MIME_TYPES);
-registerFileSupport(pollinationsModels["openai-large"], DEFAULT_FILE_PART_MIME_TYPES);
-registerFileSupport(pollinationsModels["openai-reasoning"], DEFAULT_FILE_PART_MIME_TYPES);
+registerFileSupport(
+  pollinationsModels["openai-fast"],
+  DEFAULT_FILE_PART_MIME_TYPES,
+);
+registerFileSupport(
+  pollinationsModels["openai-large"],
+  DEFAULT_FILE_PART_MIME_TYPES,
+);
+registerFileSupport(
+  pollinationsModels["openai-reasoning"],
+  DEFAULT_FILE_PART_MIME_TYPES,
+);
 
 const allModels = staticModels;
 
-const allUnsupportedModels = new Set([
-  ...staticUnsupportedModels,
-]);
+const allUnsupportedModels = new Set([...staticUnsupportedModels]);
 
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return allUnsupportedModels.has(model);
@@ -180,13 +200,13 @@ export const customModelProvider = {
     const selectedModel = allModels[model.provider]?.[model.model];
     if (!selectedModel) {
       console.warn(
-        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: openai-free/gpt-4o-mini`
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: openai-free/gpt-4o-mini`,
       );
       // Fallback to a reliable free model
       const fallbackModel = allModels["openai-free"]?.["gpt-4o-mini"];
       if (!fallbackModel) {
         throw new Error(
-          `Model not found: ${model.provider}/${model.model}. Please select a valid model.`
+          `Model not found: ${model.provider}/${model.model}. Please select a valid model.`,
         );
       }
       return fallbackModel;
@@ -195,7 +215,7 @@ export const customModelProvider = {
   },
 };
 
-function checkProviderAPIKey(provider: keyof typeof staticModels) {
+function checkProviderAPIKey(_provider: keyof typeof staticModels) {
   // Pollinations AI doesn't require an API key for free tier
   return true;
 }

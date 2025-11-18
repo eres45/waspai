@@ -4,7 +4,13 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { Button } from "ui/button";
-import { PlusIcon, ArrowUpRight, Globe, Lock, MessageCircle } from "lucide-react";
+import {
+  PlusIcon,
+  ArrowUpRight,
+  Globe,
+  Lock,
+  MessageCircle,
+} from "lucide-react";
 import { BackgroundPaths } from "ui/background-paths";
 import { Card, CardDescription, CardHeader, CardTitle } from "ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "ui/tabs";
@@ -31,20 +37,18 @@ interface Character {
 interface CharactersListProps {
   initialMyCharacters: Character[];
   initialSharedCharacters: Character[];
-  userId: string;
-  userRole?: string;
+  _userId?: string;
+  _userRole?: string;
 }
 
 export function CharactersList({
   initialMyCharacters,
   initialSharedCharacters,
-  userId,
-  userRole,
+  _userId,
+  _userRole,
 }: CharactersListProps) {
   const router = useRouter();
-  const [appStoreMutate] = appStore(
-    useShallow((state) => [state.mutate]),
-  );
+  const [appStoreMutate] = appStore(useShallow((state) => [state.mutate]));
 
   const handleCreateCharacter = () => {
     router.push("/character/new");
@@ -71,9 +75,12 @@ export function CharactersList({
           description: character.description,
           personality: character.personality,
         };
-        
+
         // Store in sessionStorage so chat page can access it
-        sessionStorage.setItem(`character_${newThreadId}`, JSON.stringify(characterInfo));
+        sessionStorage.setItem(
+          `character_${newThreadId}`,
+          JSON.stringify(characterInfo),
+        );
 
         // Add the character as a mention in the new thread
         const characterMention = {
@@ -130,7 +137,11 @@ export function CharactersList({
           }}
         >
           {character.icon?.type === "image" ? (
-            <img src={character.icon.value} alt={character.name} className="w-full h-full object-cover rounded-lg" />
+            <img
+              src={character.icon.value}
+              alt={character.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
           ) : (
             character.icon?.value || "🎭"
           )}
@@ -159,7 +170,10 @@ export function CharactersList({
     </div>
   );
 
-  const EmptyState = ({ title, description }: { title: string; description: string }) => (
+  const EmptyState = ({
+    title,
+    description,
+  }: { title: string; description: string }) => (
     <Card className="relative bg-secondary overflow-hidden cursor-pointer hover:bg-input transition-colors h-[196px]">
       <div className="absolute inset-0 w-full h-full opacity-50">
         <BackgroundPaths />

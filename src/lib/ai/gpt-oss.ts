@@ -5,11 +5,11 @@ import logger from "logger";
 /**
  * GPT-OSS API Provider
  * API: https://sii3.top/api/gpt-oss.php
- * 
+ *
  * Available Models:
  * - gpt-oss-120b: GPT-OSS 120B model
  * - gpt-4-117b: GPT-4 117B model
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -28,7 +28,7 @@ export function createGptOssModels() {
 
   // Create a custom fetch function that transforms GPT-OSS API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -43,8 +43,10 @@ export function createGptOssModels() {
 
       // Check if streaming is requested
       const isStreaming = body.stream === true;
-      
-      logger.info(`GPT-OSS API called: model=${body.model}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`);
+
+      logger.info(
+        `GPT-OSS API called: model=${body.model}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
+      );
 
       // Call GPT-OSS API
       const response = await fetch("https://sii3.top/api/gpt-oss.php", {
@@ -87,7 +89,7 @@ export function createGptOssModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -111,7 +113,7 @@ export function createGptOssModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

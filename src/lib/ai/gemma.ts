@@ -5,12 +5,12 @@ import logger from "logger";
 /**
  * Gemma API Provider
  * API: https://sii3.top/api/gemma.php
- * 
+ *
  * Available Models: 3 top Gemma models:
  * - gemma-27b (most powerful, best for complex tasks)
  * - gemma-12b (balanced, good quality and speed)
  * - gemma-4b (lightweight, fast responses)
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -35,7 +35,7 @@ export function createGemmaModels() {
 
   // Create a custom fetch function that transforms Gemma API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -58,7 +58,7 @@ export function createGemmaModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `Gemma API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `Gemma API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call Gemma API using POST with model parameter
@@ -102,7 +102,7 @@ export function createGemmaModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -126,7 +126,7 @@ export function createGemmaModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

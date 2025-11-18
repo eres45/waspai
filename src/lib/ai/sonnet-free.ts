@@ -5,13 +5,13 @@ import logger from "logger";
 /**
  * Sonnet Free Provider (sonnet3-5.free.nf)
  * Specialized endpoints for different tasks
- * 
+ *
  * Models:
  * - reasoning: For reasoning, math, and analytical questions
  * - chat: For general conversation (DeepSeek-like)
  * - coder: For programming problems and code solutions
  * - math: For mathematical equations and calculations
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -38,7 +38,7 @@ export function createSonnetFreeModels() {
 
   // Create a custom fetch function that transforms Sonnet API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -67,7 +67,7 @@ export function createSonnetFreeModels() {
       }
 
       logger.info(
-        `Sonnet Free API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `Sonnet Free API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call Sonnet API using GET with query parameter
@@ -77,7 +77,8 @@ export function createSonnetFreeModels() {
       const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
@@ -86,7 +87,8 @@ export function createSonnetFreeModels() {
       }
 
       const data: SonnetResponse = await response.json();
-      const responseText = data.response || data.result || data.text || JSON.stringify(data);
+      const responseText =
+        data.response || data.result || data.text || JSON.stringify(data);
 
       if (isStreaming) {
         // Simulate streaming by creating a ReadableStream
@@ -111,7 +113,7 @@ export function createSonnetFreeModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -135,7 +137,7 @@ export function createSonnetFreeModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

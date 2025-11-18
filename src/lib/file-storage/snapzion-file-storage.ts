@@ -33,7 +33,9 @@ export const createSnapzionFileStorage = (): FileStorage => {
     "SNAPZION_API_TOKEN",
     process.env.SNAPZION_API_TOKEN,
   );
-  const snapzionUrl = process.env.SNAPZION_API_URL || "https://upload.snapzion.com/api/public-upload";
+  const snapzionUrl =
+    process.env.SNAPZION_API_URL ||
+    "https://upload.snapzion.com/api/public-upload";
 
   return {
     async upload(content, options: UploadOptions = {}) {
@@ -52,7 +54,7 @@ export const createSnapzionFileStorage = (): FileStorage => {
         const response = await fetch(snapzionUrl, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${snapzionToken}`,
+            Authorization: `Bearer ${snapzionToken}`,
           },
           body: formData,
         });
@@ -81,18 +83,25 @@ export const createSnapzionFileStorage = (): FileStorage => {
         };
       } catch (err) {
         console.error("Snapzion upload exception:", err);
-        throw new Error(`Failed to upload to Snapzion: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(
+          `Failed to upload to Snapzion: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     },
 
-    async createUploadUrl(options: UploadUrlOptions): Promise<UploadUrl | null> {
+    async createUploadUrl(
+      _options: UploadUrlOptions,
+    ): Promise<UploadUrl | null> {
       // Snapzion doesn't support presigned URLs, return null to use direct upload
       return null;
     },
 
     async download(key) {
       // Snapzion files are public, just return the URL
-      throw new FileNotFoundError(key, new Error("Download not supported for Snapzion"));
+      throw new FileNotFoundError(
+        key,
+        new Error("Download not supported for Snapzion"),
+      );
     },
 
     async delete(key) {
@@ -100,22 +109,22 @@ export const createSnapzionFileStorage = (): FileStorage => {
       console.warn(`Delete not supported for Snapzion key: ${key}`);
     },
 
-    async exists(key) {
+    async exists(_key) {
       // Can't check existence without direct access
       return false;
     },
 
-    async getMetadata(key) {
+    async getMetadata(_key) {
       // Can't get metadata from Snapzion
       return null;
     },
 
-    async getSourceUrl(key) {
+    async getSourceUrl(_key) {
       // Snapzion URLs are already public
       return null;
     },
 
-    async getDownloadUrl(key) {
+    async getDownloadUrl(_key) {
       // Snapzion URLs are already public
       return null;
     },

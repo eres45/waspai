@@ -5,10 +5,10 @@ import logger from "logger";
 /**
  * Grok-4 API Provider
  * API: https://sii3.top/api/grok4.php
- * 
+ *
  * Available Models:
  * - grok-4: Grok-4 model
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -27,7 +27,7 @@ export function createGrokModels() {
 
   // Create a custom fetch function that transforms Grok API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -44,7 +44,7 @@ export function createGrokModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `Grok API called: model=${body.model}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `Grok API called: model=${body.model}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call Grok API (uses query parameter for text)
@@ -53,7 +53,7 @@ export function createGrokModels() {
         `https://sii3.top/api/grok4.php?text=${encodedText}`,
         {
           method: "GET",
-        }
+        },
       );
 
       if (!response.ok) {
@@ -86,7 +86,7 @@ export function createGrokModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -110,7 +110,7 @@ export function createGrokModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

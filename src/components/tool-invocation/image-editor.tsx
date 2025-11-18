@@ -35,7 +35,7 @@ function PureImageEditorToolInvocation({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       toast.success("Image downloaded successfully");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to download image");
     }
   }, []);
@@ -58,7 +58,10 @@ function PureImageEditorToolInvocation({
   }, [result]);
 
   const hasError = useMemo(() => {
-    return part.state === "output-error" || (part.state === "output-available" && !image?.url);
+    return (
+      part.state === "output-error" ||
+      (part.state === "output-available" && !image?.url)
+    );
   }, [part.state, image]);
 
   if (hasError) {
@@ -109,9 +112,7 @@ function PureImageEditorToolInvocation({
               <Download className="size-4" />
             </button>
           </div>
-          {guide && (
-            <p className="text-xs text-muted-foreground">{guide}</p>
-          )}
+          {guide && <p className="text-xs text-muted-foreground">{guide}</p>}
         </div>
       )}
     </div>

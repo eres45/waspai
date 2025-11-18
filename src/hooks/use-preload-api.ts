@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
  * Pre-loads API routes to avoid compilation delay on first use
  * This hook makes dummy requests to API endpoints to trigger compilation
  * so they're ready when the user actually needs them
- * 
+ *
  * IMPORTANT: Only runs ONCE on app startup, not on every page refresh
  */
 export function usePreloadApi() {
@@ -32,7 +32,7 @@ export function usePreloadApi() {
         }).catch(() => {
           // Ignore errors - we're just pre-loading
         });
-      } catch (error) {
+      } catch (_error) {
         // Silently fail - this is just optimization
       }
     };
@@ -43,9 +43,11 @@ export function usePreloadApi() {
         await Promise.all([
           fetch("/api/thread", { method: "HEAD" }).catch(() => {}),
           fetch("/api/chat/models", { method: "HEAD" }).catch(() => {}),
-          fetch("/api/storage/upload-limit", { method: "HEAD" }).catch(() => {}),
+          fetch("/api/storage/upload-limit", { method: "HEAD" }).catch(
+            () => {},
+          ),
         ]);
-      } catch (error) {
+      } catch (_error) {
         // Silently fail
       }
     };

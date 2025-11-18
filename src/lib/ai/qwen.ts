@@ -5,7 +5,7 @@ import logger from "logger";
 /**
  * QWEN API Provider
  * API: https://sii3.top/api/qwen.php
- * 
+ *
  * Available Models: Top 10 best QWEN models:
  * - QWEN3 Coder Plus (best for coding)
  * - QWEN3 72B Chat (best general chat)
@@ -17,7 +17,7 @@ import logger from "logger";
  * - QWEN2.5 72B Instruct (excellent instruction following)
  * - QWEN2.5 72B Coder Chat (excellent for coding conversations)
  * - QWEN2.5 72B Math Chat (excellent for math conversations)
- * 
+ *
  * Features:
  * - Free to use
  * - No authentication required
@@ -54,7 +54,7 @@ export function createQWENModels() {
 
   // Create a custom fetch function that transforms QWEN API to OpenAI-compatible format
   const customFetch = async (
-    input: URL | RequestInfo,
+    _input: URL | RequestInfo,
     init?: RequestInit,
   ): Promise<Response> => {
     try {
@@ -74,7 +74,7 @@ export function createQWENModels() {
       const isStreaming = body.stream === true;
 
       logger.info(
-        `QWEN API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`
+        `QWEN API called: model=${modelName}, streaming=${isStreaming}, text="${userText.substring(0, 50)}..."`,
       );
 
       // Call QWEN API using POST with model parameter
@@ -119,7 +119,7 @@ export function createQWENModels() {
                   ],
                 };
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
                 );
                 // Small delay to simulate streaming
                 await new Promise((resolve) => setTimeout(resolve, 10));
@@ -143,7 +143,7 @@ export function createQWENModels() {
                 },
               };
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`)
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();

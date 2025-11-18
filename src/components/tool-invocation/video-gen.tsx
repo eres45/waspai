@@ -19,9 +19,7 @@ interface VideoGenResult {
   guide?: string;
 }
 
-function PureVideoGenToolInvocation({
-  part,
-}: VideoGenToolInvocationProps) {
+function PureVideoGenToolInvocation({ part }: VideoGenToolInvocationProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
 
@@ -38,7 +36,7 @@ function PureVideoGenToolInvocation({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       toast.success("Video downloaded successfully");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to download video");
     }
   }, []);
@@ -74,7 +72,10 @@ function PureVideoGenToolInvocation({
   }, [result]);
 
   const hasError = useMemo(() => {
-    return part.state === "output-error" || (part.state === "output-available" && !video?.url);
+    return (
+      part.state === "output-error" ||
+      (part.state === "output-available" && !video?.url)
+    );
   }, [part.state, video]);
 
   if (hasError) {
@@ -130,7 +131,9 @@ function PureVideoGenToolInvocation({
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              {videoDuration !== null ? `Duration: ${formatDuration(videoDuration)}` : "Loading video..."}
+              {videoDuration !== null
+                ? `Duration: ${formatDuration(videoDuration)}`
+                : "Loading video..."}
             </span>
             {guide && <span>{guide}</span>}
           </div>
