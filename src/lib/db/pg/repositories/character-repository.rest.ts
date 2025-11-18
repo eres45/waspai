@@ -93,7 +93,7 @@ export const characterRepository = {
       const { data, error } = await supabaseRest
         .from("character")
         .select()
-        .eq("userId", userId);
+        .eq("user_id", userId);
 
       if (error) {
         throw error;
@@ -138,7 +138,7 @@ export const characterRepository = {
       const { data, error } = await supabaseRest
         .from("character")
         .select()
-        .eq("userId", userId)
+        .eq("user_id", userId)
         .eq("privacy", "private");
 
       if (error) {
@@ -164,7 +164,7 @@ export const characterRepository = {
       const { data, error } = await supabaseRest
         .from("character")
         .select()
-        .eq("userId", userId)
+        .eq("user_id", userId)
         .eq("privacy", "public");
 
       if (error) {
@@ -196,7 +196,7 @@ export const characterRepository = {
           updatedAt: new Date().toISOString(),
         })
         .eq("id", id)
-        .eq("userId", userId)
+        .eq("user_id", userId)
         .select()
         .single();
 
@@ -219,7 +219,7 @@ export const characterRepository = {
         .from("character")
         .delete()
         .eq("id", id)
-        .eq("userId", userId);
+        .eq("user_id", userId);
 
       if (error) {
         throw error;

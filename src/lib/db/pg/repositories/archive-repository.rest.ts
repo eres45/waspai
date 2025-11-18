@@ -21,9 +21,9 @@ export const archiveRepository: ArchiveRepository = {
         id: generateUUID(),
         name: archive.name,
         description: archive.description,
-        userId: archive.userId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        user_id: archive.userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -43,8 +43,8 @@ export const archiveRepository: ArchiveRepository = {
       const { data: archives, error: archivesError } = await supabaseRest
         .from("archive")
         .select()
-        .eq("userId", userId)
-        .order("updatedAt", { ascending: false });
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false });
 
       if (archivesError) {
         throw archivesError;
@@ -56,19 +56,19 @@ export const archiveRepository: ArchiveRepository = {
           const { count, error: countError } = await supabaseRest
             .from("archive_item")
             .select("*", { count: "exact", head: true })
-            .eq("archiveId", archive.id);
+            .eq("archive_id", archive.id);
 
           if (countError) {
             console.error("[Archive REST] Error counting items:", countError);
             return {
               ...archive,
-              itemCount: 0,
+              item_count: 0,
             };
           }
 
           return {
             ...archive,
-            itemCount: count || 0,
+            item_count: count || 0,
           };
         }),
       );
@@ -110,7 +110,7 @@ export const archiveRepository: ArchiveRepository = {
         .update({
           name: archive.name,
           description: archive.description,
-          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq("id", id)
         .select()
@@ -135,7 +135,7 @@ export const archiveRepository: ArchiveRepository = {
       const { error: itemsError } = await supabaseRest
         .from("archive_item")
         .delete()
-        .eq("archiveId", id);
+        .eq("archive_id", id);
 
       if (itemsError) {
         throw itemsError;
@@ -194,8 +194,8 @@ export const archiveRepository: ArchiveRepository = {
       const { error } = await supabaseRest
         .from("archive_item")
         .delete()
-        .eq("archiveId", archiveId)
-        .eq("itemId", itemId);
+        .eq("archive_id", archiveId)
+        .eq("item_id", itemId);
 
       if (error) {
         throw error;
@@ -213,7 +213,7 @@ export const archiveRepository: ArchiveRepository = {
       const { data, error } = await supabaseRest
         .from("archive_item")
         .select()
-        .eq("archiveId", archiveId)
+        .eq("archive_id", archiveId)
         .order("addedAt", { ascending: true });
 
       if (error) {
@@ -246,7 +246,7 @@ export const archiveRepository: ArchiveRepository = {
           )
         `,
         )
-        .eq("itemId", itemId);
+        .eq("item_id", itemId);
 
       if (error) {
         throw error;
