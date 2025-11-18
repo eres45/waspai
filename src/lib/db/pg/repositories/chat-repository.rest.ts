@@ -13,7 +13,7 @@ export const chatRepository: ChatRepository = {
 
     const { data, error } = await supabaseRest
       .from("chat_thread")
-      .insert({
+      .upsert({
         id: thread.id,
         title: thread.title,
         user_id: thread.userId,
@@ -80,9 +80,9 @@ export const chatRepository: ChatRepository = {
           `
           id,
           title,
-          userId,
-          createdAt,
-          user:userId (
+          user_id,
+          created_at,
+          user:user_id (
             preferences
           )
         `,
@@ -112,8 +112,8 @@ export const chatRepository: ChatRepository = {
       return {
         id: threadData.id,
         title: threadData.title,
-        userId: threadData.userId,
-        createdAt: threadData.createdAt,
+        userId: threadData.user_id,
+        createdAt: threadData.created_at,
         userPreferences: (threadData.user as any)?.preferences || undefined,
         messages: (messagesData || []) as ChatMessage[],
       };
