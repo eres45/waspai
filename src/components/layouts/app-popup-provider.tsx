@@ -69,20 +69,6 @@ const SubscriptionPopup = dynamic(
   },
 );
 
-const VideoGenModal = dynamic(
-  () => import("@/components/video-gen-modal").then((mod) => mod.VideoGenModal),
-  {
-    ssr: false,
-  },
-);
-
-const ImageGenModal = dynamic(
-  () => import("@/components/image-gen-modal").then((mod) => mod.ImageGenModal),
-  {
-    ssr: false,
-  },
-);
-
 export function AppPopupProvider({
   userSettingsComponent,
 }: {
@@ -97,8 +83,6 @@ export function AppPopupProvider({
       <ChatBotVoice />
       <ChatBotTemporary />
       <McpCustomizationPopup />
-      <VideoGenModal />
-      <ImageGenModal />
     </>
   );
 }

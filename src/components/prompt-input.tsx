@@ -250,13 +250,16 @@ export default function PromptInput({
 
       setIsUploadDropdownOpen(false);
 
-      // Open image gen modal by calling global function
-      if (
-        typeof window !== "undefined" &&
-        (window as any).selectImageGenModel
-      ) {
-        (window as any).selectImageGenModel(model);
-      }
+      // Store the model and focus on input for user to type prompt
+      appStoreMutate((prev) => ({
+        threadImageToolModel: {
+          ...prev.threadImageToolModel,
+          [threadId]: model,
+        },
+      }));
+
+      // Focus on the input
+      editorRef.current?.commands.focus();
     },
     [threadId, appStoreMutate],
   );
@@ -444,68 +447,6 @@ export default function PromptInput({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mentions.length, threadId, appStoreMutate, imageToolModel]);
-
-  // Handle video generation submit event
-  useEffect(() => {
-    const handleVideoGenSubmit = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { prompt, model } = customEvent.detail;
-
-      if (prompt && model) {
-        // Send message with video generation metadata
-        sendMessage({
-          role: "user",
-          parts: [{ type: "text", text: prompt }],
-          metadata: {
-            videoGenModel: model,
-          },
-        });
-
-        // Clear video gen state
-        appStoreMutate({
-          videoGenState: {
-            isOpen: false,
-            model: undefined,
-          },
-        });
-      }
-    };
-
-    window.addEventListener("videoGenSubmit", handleVideoGenSubmit);
-    return () =>
-      window.removeEventListener("videoGenSubmit", handleVideoGenSubmit);
-  }, [sendMessage, appStoreMutate]);
-
-  // Handle image generation submit event
-  useEffect(() => {
-    const handleImageGenSubmit = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { prompt, model } = customEvent.detail;
-
-      if (prompt && model && threadId) {
-        // Store the model in threadImageToolModel
-        appStoreMutate((prev) => ({
-          threadImageToolModel: {
-            ...prev.threadImageToolModel,
-            [threadId]: model,
-          },
-        }));
-
-        // Send message with image generation metadata
-        sendMessage({
-          role: "user",
-          parts: [{ type: "text", text: prompt }],
-          metadata: {
-            imageGenModel: model,
-          },
-        });
-      }
-    };
-
-    window.addEventListener("imageGenSubmit", handleImageGenSubmit);
-    return () =>
-      window.removeEventListener("imageGenSubmit", handleImageGenSubmit);
-  }, [sendMessage, appStoreMutate, threadId]);
 
   // Drag overlay handled globally in ChatBot
 
@@ -826,12 +767,15 @@ export default function PromptInput({
                             onClick={() => {
                               setIsUploadDropdownOpen(false);
                               console.log("Video Gen (SORA) clicked");
+                              // Store the video model and focus on input for user to type prompt
                               appStoreMutate({
                                 videoGenState: {
-                                  isOpen: true,
+                                  isOpen: false,
                                   model: "sora",
                                 },
                               });
+                              // Focus on the input
+                              editorRef.current?.commands.focus();
                             }}
                             className="cursor-pointer"
                           >
@@ -853,7 +797,7 @@ export default function PromptInput({
                       onClick={() => handleGenerateImage()}
                     >
                       <ImagesIcon className="size-3.5" />
-                      {t("generateImage")}
+                      {imageToolModel}
                       <XIcon className="size-3 group-hover/image-generator:opacity-100 opacity-0 transition-opacity duration-200" />
                     </Button>
                   ) : (
@@ -896,29 +840,26 @@ export default function PromptInput({
                     </Button>
                   )}
 
-                {!toolDisabled &&
-                  videoGenState &&
-                  videoGenState.isOpen &&
-                  videoGenState.model && (
-                    <Button
-                      variant={"ghost"}
-                      size={"sm"}
-                      className="rounded-full hover:bg-input! p-2! group/video-gen text-primary"
-                      onClick={() => {
-                        // Close the video gen mode
-                        appStoreMutate({
-                          videoGenState: {
-                            isOpen: false,
-                            model: undefined,
-                          },
-                        });
-                      }}
-                    >
-                      <Film className="size-3.5" />
-                      Generate Video
-                      <XIcon className="size-3 group-hover/video-gen:opacity-100 opacity-0 transition-opacity duration-200" />
-                    </Button>
-                  )}
+                {!toolDisabled && videoGenState && videoGenState.model && (
+                  <Button
+                    variant={"ghost"}
+                    size={"sm"}
+                    className="rounded-full hover:bg-input! p-2! group/video-gen text-primary"
+                    onClick={() => {
+                      // Close the video gen mode
+                      appStoreMutate({
+                        videoGenState: {
+                          isOpen: false,
+                          model: undefined,
+                        },
+                      });
+                    }}
+                  >
+                    <Film className="size-3.5" />
+                    {videoGenState.model}
+                    <XIcon className="size-3 group-hover/video-gen:opacity-100 opacity-0 transition-opacity duration-200" />
+                  </Button>
+                )}
 
                 <div className="flex-1" />
 
