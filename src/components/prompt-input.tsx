@@ -134,9 +134,7 @@ export default function PromptInput({
     const provider = providers?.find(
       (provider) => provider.provider === chatModel?.provider,
     );
-    const modelItem = provider?.models.find(
-      (m) => m.name === chatModel?.model,
-    );
+    const modelItem = provider?.models.find((m) => m.name === chatModel?.model);
     return modelItem;
   }, [providers, chatModel]);
 
@@ -229,7 +227,19 @@ export default function PromptInput({
   );
 
   const handleGenerateImage = useCallback(
-    (model?: "google" | "openai" | "img-cv" | "flux-max" | "gpt-imager" | "imagen-3" | "nano-banana" | "sdxl" | "chalk" | "meme") => {
+    (
+      model?:
+        | "google"
+        | "openai"
+        | "img-cv"
+        | "flux-max"
+        | "gpt-imager"
+        | "imagen-3"
+        | "nano-banana"
+        | "sdxl"
+        | "chalk"
+        | "meme",
+    ) => {
       if (!model) {
         appStoreMutate({
           threadImageToolModel: {},
@@ -385,12 +395,16 @@ export default function PromptInput({
       role: "user",
       parts: [...attachmentParts, { type: "text", text: userMessage }],
       metadata: {
-        ...(editImageState?.isOpen && editImageState?.model ? {
-          editImageModel: editImageState.model,
-        } : {}),
-        ...(videoGenState?.isOpen && videoGenState?.model ? {
-          videoGenModel: videoGenState.model,
-        } : {}),
+        ...(editImageState?.isOpen && editImageState?.model
+          ? {
+              editImageModel: editImageState.model,
+            }
+          : {}),
+        ...(videoGenState?.isOpen && videoGenState?.model
+          ? {
+              videoGenModel: videoGenState.model,
+            }
+          : {}),
       },
     });
     appStoreMutate((prev) => ({
@@ -432,6 +446,37 @@ export default function PromptInput({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mentions.length, threadId, appStoreMutate, imageToolModel]);
 
+  // Handle video generation submit event
+  useEffect(() => {
+    const handleVideoGenSubmit = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { prompt, model } = customEvent.detail;
+
+      if (prompt && model) {
+        // Send message with video generation metadata
+        sendMessage({
+          role: "user",
+          parts: [{ type: "text", text: prompt }],
+          metadata: {
+            videoGenModel: model,
+          },
+        });
+
+        // Clear video gen state
+        appStoreMutate({
+          videoGenState: {
+            isOpen: false,
+            model: undefined,
+          },
+        });
+      }
+    };
+
+    window.addEventListener("videoGenSubmit", handleVideoGenSubmit);
+    return () =>
+      window.removeEventListener("videoGenSubmit", handleVideoGenSubmit);
+  }, [sendMessage, appStoreMutate]);
+
   // Drag overlay handled globally in ChatBot
 
   return (
@@ -449,7 +494,11 @@ export default function PromptInput({
                       mention.type === "ai-style" ? (
                         <Avatar
                           className="size-6 p-1 ring ring-border rounded-full flex-shrink-0"
-                          style={mention.type === "ai-style" ? { backgroundColor: "#e5e7eb" } : mention.icon?.style}
+                          style={
+                            mention.type === "ai-style"
+                              ? { backgroundColor: "#e5e7eb" }
+                              : mention.icon?.style
+                          }
                         >
                           <AvatarImage
                             src={
@@ -460,7 +509,9 @@ export default function PromptInput({
                             }
                           />
                           <AvatarFallback>
-                            {mention.type === "ai-style" ? "✨" : mention.name.slice(0, 1)}
+                            {mention.type === "ai-style"
+                              ? "✨"
+                              : mention.name.slice(0, 1)}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
@@ -485,7 +536,9 @@ export default function PromptInput({
                             AI Style
                           </span>
                         )}
-                        {mention.type !== "ai-style" && "description" in mention && mention.description ? (
+                        {mention.type !== "ai-style" &&
+                        "description" in mention &&
+                        mention.description ? (
                           <span className="text-muted-foreground text-xs truncate">
                             {mention.description}
                           </span>
@@ -632,12 +685,22 @@ export default function PromptInput({
                           <DropdownMenuItem
                             onClick={() => {
                               setIsUploadDropdownOpen(false);
-                              console.log("Edit Image clicked. Uploaded files:", uploadedFiles);
-                              const validFiles = uploadedFiles.filter(f => f.url && !f.isUploading);
+                              console.log(
+                                "Edit Image clicked. Uploaded files:",
+                                uploadedFiles,
+                              );
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
                               if (validFiles.length === 0) {
-                                toast.info("Please upload an image first to edit it.");
+                                toast.info(
+                                  "Please upload an image first to edit it.",
+                                );
                               } else {
-                                console.log("Setting edit image state with URL:", validFiles[0].url);
+                                console.log(
+                                  "Setting edit image state with URL:",
+                                  validFiles[0].url,
+                                );
                                 appStoreMutate({
                                   editImageState: {
                                     isOpen: true,
@@ -655,12 +718,22 @@ export default function PromptInput({
                           <DropdownMenuItem
                             onClick={() => {
                               setIsUploadDropdownOpen(false);
-                              console.log("Remove Background clicked. Uploaded files:", uploadedFiles);
-                              const validFiles = uploadedFiles.filter(f => f.url && !f.isUploading);
+                              console.log(
+                                "Remove Background clicked. Uploaded files:",
+                                uploadedFiles,
+                              );
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
                               if (validFiles.length === 0) {
-                                toast.info("Please upload an image first to remove background.");
+                                toast.info(
+                                  "Please upload an image first to remove background.",
+                                );
                               } else {
-                                console.log("Setting remove background state with URL:", validFiles[0].url);
+                                console.log(
+                                  "Setting remove background state with URL:",
+                                  validFiles[0].url,
+                                );
                                 appStoreMutate({
                                   editImageState: {
                                     isOpen: true,
@@ -678,12 +751,22 @@ export default function PromptInput({
                           <DropdownMenuItem
                             onClick={() => {
                               setIsUploadDropdownOpen(false);
-                              console.log("Enhance Image clicked. Uploaded files:", uploadedFiles);
-                              const validFiles = uploadedFiles.filter(f => f.url && !f.isUploading);
+                              console.log(
+                                "Enhance Image clicked. Uploaded files:",
+                                uploadedFiles,
+                              );
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
                               if (validFiles.length === 0) {
-                                toast.info("Please upload an image first to enhance it.");
+                                toast.info(
+                                  "Please upload an image first to enhance it.",
+                                );
                               } else {
-                                console.log("Setting enhance image state with URL:", validFiles[0].url);
+                                console.log(
+                                  "Setting enhance image state with URL:",
+                                  validFiles[0].url,
+                                );
                                 appStoreMutate({
                                   editImageState: {
                                     isOpen: true,
@@ -759,7 +842,9 @@ export default function PromptInput({
                   ))}
 
                 {!toolDisabled &&
-                  editImageState && editImageState.isOpen && editImageState.selectedImageUrl && (
+                  editImageState &&
+                  editImageState.isOpen &&
+                  editImageState.selectedImageUrl && (
                     <Button
                       variant={"ghost"}
                       size={"sm"}
@@ -782,7 +867,9 @@ export default function PromptInput({
                   )}
 
                 {!toolDisabled &&
-                  videoGenState && videoGenState.isOpen && videoGenState.model && (
+                  videoGenState &&
+                  videoGenState.isOpen &&
+                  videoGenState.model && (
                     <Button
                       variant={"ghost"}
                       size={"sm"}
