@@ -11,7 +11,11 @@ import {
 
 import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 import { isSearchQuery } from "lib/search-detector";
-import { SEARCH_MODEL, POLLINATIONS_SYSTEM_PROMPT, POLLINATIONS_MODEL_PROMPTS } from "lib/ai/pollinations";
+import {
+  SEARCH_MODEL,
+  POLLINATIONS_SYSTEM_PROMPT,
+  POLLINATIONS_MODEL_PROMPTS,
+} from "lib/ai/pollinations";
 import { KIWI_AI_SYSTEM_PROMPT } from "lib/ai/kiwi-ai";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
 
@@ -53,7 +57,11 @@ import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { generateUUID } from "lib/utils";
 import { nanoBananaTool, openaiImageTool } from "lib/ai/tools/image";
-import { editImageTool, removeBackgroundTool, enhanceImageTool } from "lib/ai/tools/image/edit-image";
+import {
+  editImageTool,
+  removeBackgroundTool,
+  enhanceImageTool,
+} from "lib/ai/tools/image/edit-image";
 import { videoGenTool } from "lib/ai/tools/image/video-gen";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
@@ -68,7 +76,7 @@ export async function POST(request: Request) {
   try {
     // Check if this is a voice chat session (don't save to history)
     const isVoiceChat = request.headers.get("X-Voice-Chat") === "true";
-    
+
     const json = await request.json();
 
     const session = await getSession();
@@ -91,21 +99,25 @@ export async function POST(request: Request) {
     } = chatApiSchemaRequestBodySchema.parse(json);
 
     // Convert display names back to backend names
-    const { models: modelReverseMapping, providers: providerReverseMapping } = createReverseModelMapping();
+    const { models: modelReverseMapping, providers: providerReverseMapping } =
+      createReverseModelMapping();
     let modelToUse = chatModel;
     if (modelToUse) {
-      const backendProvider = providerReverseMapping[modelToUse.provider] || modelToUse.provider;
-      const backendModel = modelReverseMapping[modelToUse.model] || modelToUse.model;
+      const backendProvider =
+        providerReverseMapping[modelToUse.provider] || modelToUse.provider;
+      const backendModel =
+        modelReverseMapping[modelToUse.model] || modelToUse.model;
       modelToUse = {
         provider: backendProvider,
         model: backendModel,
       };
     }
-    const messageText = message.parts
-      ?.filter((part: any) => part?.type === "text")
-      .map((part: any) => part?.text)
-      .join(" ") || "";
-    
+    const messageText =
+      message.parts
+        ?.filter((part: any) => part?.type === "text")
+        .map((part: any) => part?.text)
+        .join(" ") || "";
+
     // Extract file URLs from attachments for OCR processing
     const fileUrls = attachments
       .filter((att) => att.type === "file" || att.type === "source-url")
@@ -122,12 +134,17 @@ export async function POST(request: Request) {
     let enrichedMessageText = messageText;
     if (fileUrls.length > 0) {
       logger.info(`Starting OCR processing for ${fileUrls.length} files`);
-      enrichedMessageText = await processFileURLsForModel(messageText, fileUrls);
-      logger.info(`OCR processed ${fileUrls.length} files, enriched message with extracted text`);
+      enrichedMessageText = await processFileURLsForModel(
+        messageText,
+        fileUrls,
+      );
+      logger.info(
+        `OCR processed ${fileUrls.length} files, enriched message with extracted text`,
+      );
     } else {
       logger.info(`No file URLs found, skipping OCR`);
     }
-    
+
     if (isSearchQuery(enrichedMessageText)) {
       modelToUse = SEARCH_MODEL;
       logger.info(`Search query detected, using gemini-search model`);
@@ -199,10 +216,10 @@ export async function POST(request: Request) {
 
         // Skip file attachments if they were processed by OCR (images/PDFs)
         if (attachment.type === "file") {
-          const isImageOrPdf = 
-            attachment.mediaType?.startsWith("image/") || 
+          const isImageOrPdf =
+            attachment.mediaType?.startsWith("image/") ||
             attachment.mediaType === "application/pdf";
-          
+
           // If OCR processed this file, skip adding it as attachment
           // The extracted text is already in enrichedMessageText
           if (isImageOrPdf && enrichedMessageText !== messageText) {
@@ -240,19 +257,25 @@ export async function POST(request: Request) {
 
     // Update message text with OCR-enriched content if files were processed
     if (enrichedMessageText !== messageText) {
-      logger.info(`OCR enriched message. Original length: ${messageText.length}, Enriched length: ${enrichedMessageText.length}`);
-      
+      logger.info(
+        `OCR enriched message. Original length: ${messageText.length}, Enriched length: ${enrichedMessageText.length}`,
+      );
+
       // Remove the "Attached files" summary part if it exists (it's marked with ingestionPreview)
       message.parts = message.parts.filter((part: any) => {
         if (part.type === "text" && (part as any).ingestionPreview) {
-          logger.info(`Removing ingestionPreview part: ${part.text.substring(0, 50)}...`);
+          logger.info(
+            `Removing ingestionPreview part: ${part.text.substring(0, 50)}...`,
+          );
           return false;
         }
         return true;
       });
-      
+
       // Find and replace the actual user query text part
-      const textPartIndex = message.parts.findIndex((part: any) => part?.type === "text");
+      const textPartIndex = message.parts.findIndex(
+        (part: any) => part?.type === "text",
+      );
       if (textPartIndex >= 0) {
         logger.info(`Replacing text part at index ${textPartIndex}`);
         message.parts[textPartIndex] = {
@@ -274,7 +297,9 @@ export async function POST(request: Request) {
       if (part.type === "text") {
         logger.info(`Part ${index}: TEXT - ${part.text.substring(0, 100)}...`);
       } else {
-        logger.info(`Part ${index}: ${part.type} - ${part.url || part.mediaType}`);
+        logger.info(
+          `Part ${index}: ${part.type} - ${part.url || part.mediaType}`,
+        );
       }
     });
 
@@ -305,27 +330,34 @@ export async function POST(request: Request) {
 
     // Extract character context from request headers (passed from frontend)
     const characterContextHeader = request.headers.get("X-Character-Context");
-    let characterContext: { name: string; description: string; personality: string } | undefined;
-    
+    let characterContext:
+      | { name: string; description: string; personality: string }
+      | undefined;
+
     // Check if character is tagged in mentions
-    const characterMention = mentions.find((m) => m.type === "character") as Extract<
-      ChatMention,
-      { type: "character" }
-    > | undefined;
-    
+    const characterMention = mentions.find((m) => m.type === "character") as
+      | Extract<ChatMention, { type: "character" }>
+      | undefined;
+
     if (characterContextHeader && characterMention) {
       try {
         // Decode from base64
-        const decoded = Buffer.from(characterContextHeader, "base64").toString("utf-8");
+        const decoded = Buffer.from(characterContextHeader, "base64").toString(
+          "utf-8",
+        );
         characterContext = JSON.parse(decoded);
         if (characterContext?.name) {
-          logger.info(`Character context loaded: ${characterContext.name} (tagged in mentions)`);
+          logger.info(
+            `Character context loaded: ${characterContext.name} (tagged in mentions)`,
+          );
         }
       } catch (error) {
         logger.warn("Failed to parse character context from header:", error);
       }
     } else if (characterContextHeader && !characterMention) {
-      logger.info("Character context header found but character NOT tagged in mentions - using selected model");
+      logger.info(
+        "Character context header found but character NOT tagged in mentions - using selected model",
+      );
     } else {
       logger.info("No character context header or character not tagged");
     }
@@ -336,7 +368,6 @@ export async function POST(request: Request) {
       supportToolCall &&
       (toolChoice != "none" || mentions.length > 0) &&
       !useImageTool;
-
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
@@ -405,8 +436,9 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        const imageModelPrompt = useImageTool && imageTool?.model
-          ? `You are using the image generation tool with the pre-selected model: "${imageTool.model}". 
+        const imageModelPrompt =
+          useImageTool && imageTool?.model
+            ? `You are using the image generation tool with the pre-selected model: "${imageTool.model}". 
 CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 1. The user has selected an image generation model - they want to generate an image
 2. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt
@@ -419,19 +451,21 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 9. After the tool returns the image, provide a brief, friendly response (1-2 sentences max) acknowledging the image was generated
 10. Do not mention the model name or technical details
 11. Keep the response short and natural`
-          : "";
+            : "";
 
         // Detect if this is an edit image request based on selected model
         const lastMessage = messages[messages.length - 1];
-        
+
         // Look for file or source-url type image parts
         const imageFilePart = lastMessage?.parts?.find(
-          (part: any) => (part?.type === "file" || part?.type === "source-url") && part?.mediaType?.startsWith("image/")
+          (part: any) =>
+            (part?.type === "file" || part?.type === "source-url") &&
+            part?.mediaType?.startsWith("image/"),
         );
-        
+
         // Get the actual image URL - try multiple sources in order of preference
         let imageUrl: string | undefined;
-        
+
         // 1. Try fileUrls first (contains CDN URLs from attachments)
         if (fileUrls.length > 0) {
           imageUrl = fileUrls[0];
@@ -445,57 +479,70 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         // 3. Try to extract from message parts directly
         else {
           const urlPart = lastMessage?.parts?.find(
-            (part: any) => typeof part === "object" && part.url && (part.url.includes("http") || part.url.includes("data:"))
+            (part: any) =>
+              typeof part === "object" &&
+              part.url &&
+              (part.url.includes("http") || part.url.includes("data:")),
           );
           if (urlPart) {
             imageUrl = (urlPart as any)?.url;
             logger.info(`Image URL from message parts: ${imageUrl}`);
           }
         }
-        
+
         // Check if user selected an edit image model from the menu
         logger.info(`Edit Image State Model: ${editImageModel}`);
         logger.info(`Image URL: ${imageUrl}`);
-        
+
         // Detect remove background request from keywords as fallback
         const hasRemoveBgKeywords = lastMessage?.parts?.some(
-          (part: any) => 
-            typeof part === "object" && 
-            part.type === "text" && 
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
             (part.text?.toLowerCase().includes("remove") ||
-             part.text?.toLowerCase().includes("background") ||
-             part.text?.toLowerCase().includes("bg"))
+              part.text?.toLowerCase().includes("background") ||
+              part.text?.toLowerCase().includes("bg")),
         );
 
         // Detect enhance image request from keywords as fallback
         const hasEnhanceKeywords = lastMessage?.parts?.some(
-          (part: any) => 
-            typeof part === "object" && 
-            part.type === "text" && 
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
             (part.text?.toLowerCase().includes("enhance") ||
-             part.text?.toLowerCase().includes("improve") ||
-             part.text?.toLowerCase().includes("quality") ||
-             part.text?.toLowerCase().includes("clarity") ||
-             part.text?.toLowerCase().includes("sharpen") ||
-             part.text?.toLowerCase().includes("brighten") ||
-             part.text?.toLowerCase().includes("contrast"))
+              part.text?.toLowerCase().includes("improve") ||
+              part.text?.toLowerCase().includes("quality") ||
+              part.text?.toLowerCase().includes("clarity") ||
+              part.text?.toLowerCase().includes("sharpen") ||
+              part.text?.toLowerCase().includes("brighten") ||
+              part.text?.toLowerCase().includes("contrast")),
         );
-        
-        const isEditImageRequest = imageFilePart && imageUrl && editImageModel === "nano-banana";
-        const isRemoveBgRequest = imageFilePart && imageUrl && (editImageModel === "remove-background" || hasRemoveBgKeywords);
-        const isEnhanceImageRequest = imageFilePart && imageUrl && (editImageModel === "enhance-image" || hasEnhanceKeywords);
 
-        const editImagePrompt = isEditImageRequest && imageUrl
-          ? `Call the "edit-image" tool with imageUrl: "${imageUrl}" and the user's edit instruction.`
-          : "";
+        const isEditImageRequest =
+          imageFilePart && imageUrl && editImageModel === "nano-banana";
+        const isRemoveBgRequest =
+          imageFilePart &&
+          imageUrl &&
+          (editImageModel === "remove-background" || hasRemoveBgKeywords);
+        const isEnhanceImageRequest =
+          imageFilePart &&
+          imageUrl &&
+          (editImageModel === "enhance-image" || hasEnhanceKeywords);
 
-        const removeBgPrompt = isRemoveBgRequest && imageUrl
-          ? `Call the "remove-background" tool with imageUrl: "${imageUrl}". Keep response brief.`
-          : "";
+        const editImagePrompt =
+          isEditImageRequest && imageUrl
+            ? `Call the "edit-image" tool with imageUrl: "${imageUrl}" and the user's edit instruction.`
+            : "";
 
-        const enhanceImagePrompt = isEnhanceImageRequest && imageUrl
-          ? `Call the "enhance-image" tool with imageUrl: "${imageUrl}". Keep response brief.`
-          : "";
+        const removeBgPrompt =
+          isRemoveBgRequest && imageUrl
+            ? `Call the "remove-background" tool with imageUrl: "${imageUrl}". Keep response brief.`
+            : "";
+
+        const enhanceImagePrompt =
+          isEnhanceImageRequest && imageUrl
+            ? `Call the "enhance-image" tool with imageUrl: "${imageUrl}". Keep response brief.`
+            : "";
 
         // Detect video generation request
         const isVideoGenRequest = videoGenModel === "sora";
@@ -574,7 +621,9 @@ BEGIN ROLEPLAY NOW.`
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           modelToUse?.model === "gemini-search" && buildSearchModelSystemPrompt,
-          modelToUse?.provider === "pollinations" && (POLLINATIONS_MODEL_PROMPTS[modelToUse.model] || POLLINATIONS_SYSTEM_PROMPT),
+          modelToUse?.provider === "pollinations" &&
+            (POLLINATIONS_MODEL_PROMPTS[modelToUse.model] ||
+              POLLINATIONS_SYSTEM_PROMPT),
           modelToUse?.provider === "kiwi-ai" && KIWI_AI_SYSTEM_PROMPT,
           useImageTool && imageModelPrompt,
           isEditImageRequest && editImagePrompt,
@@ -624,16 +673,26 @@ BEGIN ROLEPLAY NOW.`
         logger.info(
           `${agent ? `agent: ${agent.name}, ` : ""}tool mode: ${toolChoice}, mentions: ${mentions.length}`,
         );
-        logger.info(`useImageTool: ${useImageTool}, imageTool model: ${imageTool?.model}`);
-        logger.info(`Image tool included: ${Object.keys(vercelAITooles).includes(ImageToolName)}`);
-        logger.info(`Available tools: ${Object.keys(vercelAITooles).join(", ")}`);
-        logger.info(`Remove background tool included: ${Object.keys(vercelAITooles).includes("remove-background")}`);
+        logger.info(
+          `useImageTool: ${useImageTool}, imageTool model: ${imageTool?.model}`,
+        );
+        logger.info(
+          `Image tool included: ${Object.keys(vercelAITooles).includes(ImageToolName)}`,
+        );
+        logger.info(
+          `Available tools: ${Object.keys(vercelAITooles).join(", ")}`,
+        );
+        logger.info(
+          `Remove background tool included: ${Object.keys(vercelAITooles).includes("remove-background")}`,
+        );
 
         logger.info(
           `allowedMcpTools: ${allowedMcpTools.length ?? 0}, allowedAppDefaultToolkit: ${allowedAppDefaultToolkit?.length ?? 0}`,
         );
         if (useImageTool) {
-          logger.info(`binding tool count Image: ${imageTool?.model}, stopWhen: stepCountIs(1), maxRetries: 0`);
+          logger.info(
+            `binding tool count Image: ${imageTool?.model}, stopWhen: stepCountIs(1), maxRetries: 0`,
+          );
         } else {
           logger.info(
             `binding tool count APP_DEFAULT: ${Object.keys(APP_DEFAULT_TOOLS ?? {}).length}, MCP: ${Object.keys(MCP_TOOLS ?? {}).length}, Workflow: ${Object.keys(WORKFLOW_TOOLS ?? {}).length}`,
@@ -673,7 +732,9 @@ BEGIN ROLEPLAY NOW.`
         }
 
         try {
-          logger.info(`onFinish: Starting to save response message with ID: ${responseMessage.id}`);
+          logger.info(
+            `onFinish: Starting to save response message with ID: ${responseMessage.id}`,
+          );
 
           // Filter out duplicate image tool calls when using image tool
           let filteredParts = responseMessage.parts;
@@ -681,10 +742,15 @@ BEGIN ROLEPLAY NOW.`
             let imageToolResultCount = 0;
             filteredParts = responseMessage.parts.filter((part) => {
               // Keep only the first tool result for image-manager
-              if (part.type === "tool-result" && (part as any).toolName === "image-manager") {
+              if (
+                part.type === "tool-result" &&
+                (part as any).toolName === "image-manager"
+              ) {
                 imageToolResultCount++;
                 if (imageToolResultCount > 1) {
-                  logger.info(`Filtering out duplicate image tool result #${imageToolResultCount}`);
+                  logger.info(
+                    `Filtering out duplicate image tool result #${imageToolResultCount}`,
+                  );
                   return false; // Skip duplicates after the first
                 }
               }
@@ -694,8 +760,10 @@ BEGIN ROLEPLAY NOW.`
 
           // Ensure responseMessage has an ID
           const responseId = responseMessage.id || generateUUID();
-          logger.info(`onFinish: Using response ID: ${responseId}, message ID: ${message.id}`);
-          
+          logger.info(
+            `onFinish: Using response ID: ${responseId}, message ID: ${message.id}`,
+          );
+
           if (responseId == message.id) {
             logger.info(`onFinish: Saving single message (IDs match)`);
             await chatRepository.upsertMessage({
@@ -706,7 +774,9 @@ BEGIN ROLEPLAY NOW.`
               metadata,
             });
           } else {
-            logger.info(`onFinish: Saving user message and response message separately`);
+            logger.info(
+              `onFinish: Saving user message and response message separately`,
+            );
             await chatRepository.upsertMessage({
               threadId: thread!.id,
               role: message.role,
@@ -722,7 +792,9 @@ BEGIN ROLEPLAY NOW.`
             });
           }
 
-          logger.info(`onFinish: Messages saved successfully to thread ${thread!.id}`);
+          logger.info(
+            `onFinish: Messages saved successfully to thread ${thread!.id}`,
+          );
 
           if (agent) {
             agentRepository.updateAgent(agent.id, session.user.id, {
@@ -742,7 +814,26 @@ BEGIN ROLEPLAY NOW.`
       stream,
     });
   } catch (error: any) {
-    logger.error(error);
-    return Response.json({ message: error.message }, { status: 500 });
+    logger.error("Chat API Error:", {
+      message: error?.message,
+      stack: error?.stack,
+      error: String(error),
+    });
+    return Response.json(
+      { message: error?.message || "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function HEAD() {
+  try {
+    const session = await getSession();
+    if (!session?.user.id) {
+      return new Response(null, { status: 401 });
+    }
+    return new Response(null, { status: 200 });
+  } catch (_error) {
+    return new Response(null, { status: 500 });
   }
 }

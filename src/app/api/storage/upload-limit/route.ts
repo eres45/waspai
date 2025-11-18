@@ -25,3 +25,19 @@ export async function GET() {
     );
   }
 }
+
+export async function HEAD() {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.id) {
+      return new NextResponse(null, { status: 401 });
+    }
+
+    await checkDailyUploadLimitRest(session.user.id);
+    return new NextResponse(null, { status: 200 });
+  } catch (error) {
+    console.error("Failed to check upload limit:", error);
+    return new NextResponse(null, { status: 500 });
+  }
+}
