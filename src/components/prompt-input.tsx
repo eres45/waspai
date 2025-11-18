@@ -402,7 +402,7 @@ export default function PromptInput({
               editImageModel: editImageState.model,
             }
           : {}),
-        ...(videoGenState?.isOpen && videoGenState?.model
+        ...(videoGenState?.model
           ? {
               videoGenModel: videoGenState.model,
             }
