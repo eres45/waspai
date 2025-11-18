@@ -58,7 +58,17 @@ export const chatRepository: ChatRepository = {
         throw error;
       }
 
-      return data as ChatThread | null;
+      if (!data) {
+        return null;
+      }
+
+      // Map snake_case fields to camelCase
+      return {
+        id: data.id,
+        title: data.title,
+        userId: data.user_id,
+        createdAt: data.created_at,
+      } as ChatThread;
     } catch (error) {
       console.error("[Chat REST] selectThread error:", error);
       return null;
@@ -139,7 +149,15 @@ export const chatRepository: ChatRepository = {
         throw error;
       }
 
-      return (data || []) as ChatMessage[];
+      // Map snake_case fields to camelCase
+      return (data || []).map((msg: any) => ({
+        id: msg.id,
+        threadId: msg.thread_id,
+        role: msg.role,
+        parts: msg.parts,
+        metadata: msg.metadata,
+        createdAt: msg.created_at,
+      })) as ChatMessage[];
     } catch (error) {
       console.error("[Chat REST] selectMessagesByThreadId error:", error);
       return [];
