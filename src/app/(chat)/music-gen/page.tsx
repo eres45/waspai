@@ -2,12 +2,27 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "ui/button";
 import { Textarea } from "ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "ui/card";
-import { Music, Download, Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "ui/card";
+import { Music, Download, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "lib/utils";
 import MusicGenLoader from "@/components/music-gen-loader";
 import { BackgroundPaths } from "@/components/ui/background-paths";
+import dynamic from "next/dynamic";
+
+const AIMusicGenModal = dynamic(
+  () =>
+    import("@/components/ai-music-gen-modal").then(
+      (mod) => mod.AIMusicGenModal,
+    ),
+  { ssr: false },
+);
 
 interface GeneratedMusic {
   id: string;
@@ -40,9 +55,12 @@ export default function MusicGenPage() {
   const [tags, setTags] = useState("pop");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic[]>([]);
-  const [selectedMusic, setSelectedMusic] = useState<GeneratedMusic | null>(null);
+  const [selectedMusic, setSelectedMusic] = useState<GeneratedMusic | null>(
+    null,
+  );
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [currentLyricIndex, setCurrentLyricIndex] = useState(0);
+  const [isAIMusicModalOpen, setIsAIMusicModalOpen] = useState(false);
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
   // Load music generation history from database
@@ -81,16 +99,21 @@ export default function MusicGenPage() {
     const handleTimeUpdate = () => {
       const currentTime = audio.currentTime;
       const totalDuration = audio.duration;
-      
+
       if (totalDuration > 0 && !isNaN(totalDuration)) {
-        const lyricsLines = selectedMusic.lyrics.split('\n').filter(line => line.trim());
-        
+        const lyricsLines = selectedMusic.lyrics
+          .split("\n")
+          .filter((line) => line.trim());
+
         // Calculate which line should be highlighted based on time
         // Distribute lines evenly across the song duration
         const timePercentage = currentTime / totalDuration;
         const lineIndex = Math.floor(timePercentage * lyricsLines.length);
-        const newIndex = Math.min(Math.max(lineIndex, 0), lyricsLines.length - 1);
-        
+        const newIndex = Math.min(
+          Math.max(lineIndex, 0),
+          lyricsLines.length - 1,
+        );
+
         setCurrentLyricIndex(newIndex);
       }
     };
@@ -122,7 +145,7 @@ export default function MusicGenPage() {
 
       const data = await response.json();
       console.log("Music generated:", data);
-      
+
       const newMusic: GeneratedMusic = {
         id: data.id || Date.now().toString(),
         lyrics,
@@ -137,7 +160,7 @@ export default function MusicGenPage() {
       toast.success("Music generated successfully!");
       setLyrics("");
       setIsGenerating(false);
-      
+
       // Reload history to sync with database
       try {
         const historyResponse = await fetch("/api/music-gen/history");
@@ -221,7 +244,7 @@ export default function MusicGenPage() {
                         "px-3 py-1 rounded-full text-sm transition-colors",
                         tags === tag
                           ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
                       )}
                       disabled={isGenerating}
                     >
@@ -249,6 +272,16 @@ export default function MusicGenPage() {
                   </>
                 )}
               </Button>
+
+              <Button
+                onClick={() => setIsAIMusicModalOpen(true)}
+                variant="outline"
+                className="w-full"
+                size="lg"
+              >
+                <Sparkles className="size-4 mr-2" />
+                Generate with AI
+              </Button>
             </CardContent>
           </Card>
 
@@ -275,10 +308,12 @@ export default function MusicGenPage() {
                       "w-full text-left p-3 rounded-lg border transition-colors",
                       selectedMusic?.id === music.id
                         ? "bg-primary/10 border-primary"
-                        : "border-border/40 hover:bg-accent"
+                        : "border-border/40 hover:bg-accent",
                     )}
                   >
-                    <p className="text-sm font-medium truncate">{music.lyrics.split('\n')[0]}</p>
+                    <p className="text-sm font-medium truncate">
+                      {music.lyrics.split("\n")[0]}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {music.tags} • {music.generatedAt.toLocaleTimeString()}
                     </p>
@@ -322,20 +357,20 @@ export default function MusicGenPage() {
                         animation: pulse-glow 3s ease-in-out infinite;
                       }
                     `}</style>
-                    
+
                     {/* Background Animation */}
                     <div className="absolute inset-0 opacity-20">
                       <BackgroundPaths />
                     </div>
-                    
+
                     {/* Gradient overlays */}
                     <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
                     <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
-                    
+
                     {/* Lyrics Container */}
                     <div className="relative z-20 h-full overflow-y-auto scroll-smooth p-6">
                       <div className="space-y-4 py-8">
-                        {selectedMusic.lyrics.split('\n').map((line, idx) => {
+                        {selectedMusic.lyrics.split("\n").map((line, idx) => {
                           const isCurrentLine = idx === currentLyricIndex;
                           return (
                             <p
@@ -345,10 +380,10 @@ export default function MusicGenPage() {
                                 "text-center leading-relaxed whitespace-pre-wrap break-words transition-all duration-300",
                                 isCurrentLine
                                   ? "text-xl font-bold text-primary lyrics-glow scale-105"
-                                  : "text-lg text-foreground/50 hover:text-foreground/70"
+                                  : "text-lg text-foreground/50 hover:text-foreground/70",
                               )}
                             >
-                              {line || '\u00A0'}
+                              {line || "\u00A0"}
                             </p>
                           );
                         })}
@@ -371,11 +406,13 @@ export default function MusicGenPage() {
                           accentColor: "hsl(var(--primary))",
                         }}
                       />
-                      
+
                       {/* Player Info */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
                         <span>🎵 High Quality Audio</span>
-                        <span className="text-primary font-medium">MP3 Format</span>
+                        <span className="text-primary font-medium">
+                          MP3 Format
+                        </span>
                       </div>
                     </div>
 
@@ -406,6 +443,20 @@ export default function MusicGenPage() {
           )}
         </div>
       </div>
+
+      {/* AI Music Generation Modal */}
+      <AIMusicGenModal
+        isOpen={isAIMusicModalOpen}
+        onClose={() => setIsAIMusicModalOpen(false)}
+        onGenerate={async (data) => {
+          setLyrics(data.description);
+          setTags(data.genre);
+          // Trigger generation
+          setTimeout(() => {
+            handleGenerate();
+          }, 100);
+        }}
+      />
     </div>
   );
 }
