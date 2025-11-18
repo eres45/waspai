@@ -366,8 +366,7 @@ export async function POST(request: Request) {
 
     const isToolCallAllowed =
       supportToolCall &&
-      (toolChoice != "none" || mentions.length > 0) &&
-      !useImageTool;
+      (toolChoice != "none" || mentions.length > 0 || useImageTool);
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
