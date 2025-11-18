@@ -29,19 +29,12 @@ export default async function CharactersPage() {
       <CharactersList
         initialMyCharacters={myCharacters as any}
         initialSharedCharacters={sharedCharacters as any}
-        userId={session.user.id}
-        userRole={session.user.role || "user"}
       />
     );
   } catch (error) {
     console.error("Error fetching characters:", error);
     return (
-      <CharactersList
-        initialMyCharacters={[]}
-        initialSharedCharacters={[]}
-        userId={session.user.id}
-        userRole={session.user.role || "user"}
-      />
+      <CharactersList initialMyCharacters={[]} initialSharedCharacters={[]} />
     );
   }
 }

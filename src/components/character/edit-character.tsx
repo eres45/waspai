@@ -56,13 +56,13 @@ const defaultConfig = (): Character => {
 
 interface EditCharacterProps {
   initialCharacter?: Character;
-  _userId?: string;
+  userId?: string;
   characterId?: string;
 }
 
 export default function EditCharacter({
   initialCharacter,
-  _userId,
+  userId: _userId,
   characterId,
 }: EditCharacterProps) {
   const router = useRouter();

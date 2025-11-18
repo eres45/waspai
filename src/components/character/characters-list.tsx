@@ -37,15 +37,15 @@ interface Character {
 interface CharactersListProps {
   initialMyCharacters: Character[];
   initialSharedCharacters: Character[];
-  _userId?: string;
-  _userRole?: string;
+  userId?: string;
+  userRole?: string;
 }
 
 export function CharactersList({
   initialMyCharacters,
   initialSharedCharacters,
-  _userId,
-  _userRole,
+  userId: _userId,
+  userRole: _userRole,
 }: CharactersListProps) {
   const router = useRouter();
   const [appStoreMutate] = appStore(useShallow((state) => [state.mutate]));

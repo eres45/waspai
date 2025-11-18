@@ -16,16 +16,10 @@ export default async function CharacterPage({
 
   // For new characters, pass no initial data
   if (id === "new") {
-    return <EditCharacter userId={session.user.id} />;
+    return <EditCharacter />;
   }
 
   // TODO: Fetch character data from database when repository is ready
   // For now, just render the edit component
-  return (
-    <EditCharacter
-      key={id}
-      userId={session.user.id}
-      characterId={id}
-    />
-  );
+  return <EditCharacter key={id} characterId={id} />;
 }
