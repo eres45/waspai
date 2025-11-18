@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "auth/server";
-import { checkDailyUploadLimit } from "lib/upload-limiter";
+import { checkDailyUploadLimitRest } from "@/lib/upload-limiter.rest";
 
 export async function GET() {
   try {
@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const uploadLimit = await checkDailyUploadLimit(session.user.id);
+    const uploadLimit = await checkDailyUploadLimitRest(session.user.id);
 
     return NextResponse.json({
       remaining: uploadLimit.remaining,
@@ -21,7 +21,7 @@ export async function GET() {
     console.error("Failed to get upload limit:", error);
     return NextResponse.json(
       { error: "Failed to get upload limit" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getSession } from "auth/server";
 import { serverFileStorage, storageDriver } from "lib/file-storage";
 import { checkStorageAction } from "../actions";
-import { checkDailyUploadLimit, recordUpload } from "lib/upload-limiter";
+import {
+  checkDailyUploadLimitRest,
+  recordUploadRest,
+} from "@/lib/upload-limiter.rest";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -12,7 +15,7 @@ export async function POST(request: Request) {
   }
 
   // Check daily upload limit
-  const uploadLimit = await checkDailyUploadLimit(session.user.id);
+  const uploadLimit = await checkDailyUploadLimitRest(session.user.id);
   if (!uploadLimit.allowed) {
     return NextResponse.json(
       {
@@ -62,7 +65,7 @@ export async function POST(request: Request) {
       });
 
       // Record upload
-      await recordUpload(
+      await recordUploadRest(
         session.user.id,
         file.name,
         buffer.byteLength,
@@ -77,22 +80,25 @@ export async function POST(request: Request) {
         metadata: result.metadata,
       });
     } catch (storageError) {
-      console.error("Storage upload failed, falling back to base64:", storageError);
-      
+      console.error(
+        "Storage upload failed, falling back to base64:",
+        storageError,
+      );
+
       // Fallback: Convert to base64 and return as data URL
       const base64 = buffer.toString("base64");
       const mimeType = file.type || "application/octet-stream";
       const dataUrl = `data:${mimeType};base64,${base64}`;
-      
+
       // Record upload (base64)
-      await recordUpload(
+      await recordUploadRest(
         session.user.id,
         file.name,
         buffer.byteLength,
         mimeType,
         dataUrl,
       );
-      
+
       return NextResponse.json({
         success: true,
         key: `base64-${Date.now()}`,
