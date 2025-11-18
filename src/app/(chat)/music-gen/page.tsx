@@ -449,12 +449,43 @@ export default function MusicGenPage() {
         isOpen={isAIMusicModalOpen}
         onClose={() => setIsAIMusicModalOpen(false)}
         onGenerate={async (data) => {
-          setLyrics(data.description);
-          setTags(data.genre);
-          // Trigger generation
-          setTimeout(() => {
-            handleGenerate();
-          }, 100);
+          try {
+            setIsGenerating(true);
+            toast.loading("Generating song lyrics with AI...");
+
+            // Call the lyrics generation API
+            const response = await fetch("/api/music-gen/lyrics", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                musicName: data.musicName,
+                genre: data.genre,
+                mood: data.mood,
+                style: data.style,
+                description: data.description,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to generate lyrics");
+            }
+
+            const result = await response.json();
+            setLyrics(result.lyrics);
+            setTags(data.genre);
+            setIsAIMusicModalOpen(false);
+
+            // Trigger music generation
+            setTimeout(() => {
+              handleGenerate();
+            }, 100);
+          } catch (error) {
+            console.error("Error generating lyrics:", error);
+            toast.error("Failed to generate lyrics. Please try again.");
+            setIsGenerating(false);
+          }
         }}
       />
     </div>
