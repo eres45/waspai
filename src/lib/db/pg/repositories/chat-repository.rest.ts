@@ -329,6 +329,7 @@ export const chatRepository: ChatRepository = {
         role: message.role,
         parts: message.parts,
         metadata: message.metadata,
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
