@@ -168,7 +168,7 @@ export const chatRepository: ChatRepository = {
 
       // Get last message timestamp for each thread
       const result = await Promise.all(
-        (threads || []).map(async (thread) => {
+        (threads || []).map(async (thread: any) => {
           const { data: messages, error: messagesError } = await supabaseRest
             .from("chat_message")
             .select("created_at")
@@ -181,19 +181,30 @@ export const chatRepository: ChatRepository = {
               "[Chat REST] Error getting last message:",
               messagesError,
             );
+            // Use created_at (snake_case from database)
+            const createdAt =
+              thread.created_at || thread.createdAt || new Date().toISOString();
             return {
-              ...thread,
-              lastMessageAt: new Date(thread.created_at).getTime(),
+              id: thread.id,
+              title: thread.title,
+              userId: thread.user_id || thread.userId,
+              createdAt,
+              lastMessageAt: new Date(createdAt).getTime(),
             };
           }
 
           const lastMessage = messages?.[0];
+          const createdAt =
+            thread.created_at || thread.createdAt || new Date().toISOString();
           const lastMessageAt = lastMessage
             ? new Date(lastMessage.created_at).getTime()
-            : new Date(thread.created_at).getTime();
+            : new Date(createdAt).getTime();
 
           return {
-            ...thread,
+            id: thread.id,
+            title: thread.title,
+            userId: thread.user_id || thread.userId,
+            createdAt,
             lastMessageAt,
           };
         }),
