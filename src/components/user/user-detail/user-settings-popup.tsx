@@ -13,11 +13,7 @@ import { Button } from "ui/button";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export function UserSettingsPopup({
-  userSettingsComponent,
-}: {
-  userSettingsComponent?: React.ReactNode;
-}) {
+export function UserSettingsPopup() {
   const t = useTranslations("Chat.ChatPreferences");
   const [openUserSettings, appStoreMutate] = appStore(
     useShallow((state) => [state.openUserSettings, state.mutate]),
@@ -55,7 +51,10 @@ export function UserSettingsPopup({
           <DrawerDescription className="sr-only" />
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 overflow-y-auto">
-              {userSettingsComponent}
+              <div className="p-6 text-center text-muted-foreground">
+                User settings are temporarily unavailable. Please try again
+                later.
+              </div>
             </div>
           </div>
         </DrawerContent>
