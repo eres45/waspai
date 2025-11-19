@@ -2,6 +2,7 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { admin as adminPlugin } from "better-auth/plugins";
+import { headers } from "next/headers";
 import { getAuthConfig } from "./config";
 import logger from "logger";
 import { DEFAULT_USER_ROLE, USER_ROLES } from "app-types/roles";
@@ -37,13 +38,9 @@ const options = {
       enabled: true,
     },
   },
-  // Use Supabase as database adapter for Better Auth
-  // This allows sessions to be stored properly
-  database: {
-    type: "postgres",
-    url: process.env.SUPABASE_URL,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  } as any,
+  // Database adapter disabled - using Supabase Auth instead
+  // This removes all direct PostgreSQL connections
+  database: undefined,
   emailAndPassword: {
     enabled: emailAndPasswordEnabled,
     disableSignUp: !signUpEnabled,
@@ -84,62 +81,73 @@ export const auth = betterAuth({
 
 export const getSession = async () => {
   try {
-    // Get cookies from request
+    // Try to get session from cookies first
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
+    const authUserCookie = cookieStore.get("auth-user");
 
-    // Better Auth stores session in cookies with these names
-    // Try to find the session token cookie
-    const sessionCookie =
-      cookieStore.get("better-auth.session_token")?.value ||
-      cookieStore.get("auth.session_token")?.value ||
-      cookieStore.get("session_token")?.value;
+    console.log("[DEBUG getSession] Checking for auth-user cookie...");
+    console.log(
+      "[DEBUG getSession] auth-user cookie value:",
+      authUserCookie?.value ? "EXISTS" : "NOT FOUND",
+    );
 
-    logger.debug("[getSession] Session cookie found:", !!sessionCookie);
-
-    if (!sessionCookie) {
-      logger.debug("[getSession] No session cookie found");
-      return null;
-    }
-
-    // Try to get user from cookie
-    const userCookie =
-      cookieStore.get("better-auth.user")?.value ||
-      cookieStore.get("auth.user")?.value ||
-      cookieStore.get("user")?.value;
-
-    if (userCookie) {
+    if (authUserCookie?.value) {
       try {
-        const user = JSON.parse(userCookie);
-        logger.debug(
-          "[getSession] Successfully parsed user from cookie:",
+        const user = JSON.parse(authUserCookie.value);
+        console.log(
+          "[DEBUG getSession] Successfully parsed auth-user cookie, user:",
           user.id,
         );
         return {
           user,
           session: {
-            token: sessionCookie,
+            token: "session-token",
           },
         };
       } catch (error) {
-        logger.warn("[getSession] Failed to parse user cookie:", error);
+        console.log(
+          "[DEBUG getSession] Failed to parse auth-user cookie:",
+          error,
+        );
+        logger.warn("Failed to parse auth-user cookie:", error);
       }
     }
 
-    // If no user cookie, return minimal session
-    logger.debug("[getSession] No user cookie, but session token exists");
+    console.log(
+      "[DEBUG getSession] No auth-user cookie found, checking authorization header...",
+    );
+
+    // Fallback: try to get from authorization header
+    const headersList = await headers();
+    const authHeader = headersList.get("authorization");
+
+    if (!authHeader) {
+      logger.debug("No authorization header found");
+      return null;
+    }
+
+    // Extract token from "Bearer <token>"
+    const token = authHeader.replace("Bearer ", "");
+
+    if (!token) {
+      logger.debug("No token found in authorization header");
+      return null;
+    }
+
+    // Return a mock session object
     return {
       user: {
-        id: "unknown",
-        email: "unknown@example.com",
-        name: "Unknown",
+        id: "user-id",
+        email: "user@example.com",
+        name: "User",
       },
       session: {
-        token: sessionCookie,
+        token,
       },
     };
   } catch (error) {
-    logger.error("[getSession] Error getting session:", error);
+    logger.error("Error getting session:", error);
     return null;
   }
 };
