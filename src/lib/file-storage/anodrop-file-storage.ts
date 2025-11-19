@@ -86,20 +86,20 @@ export const createAnodropFileStorage = (): FileStorage => {
           throw new Error(`AnoDrop upload failed: ${response.status}`);
         }
 
-        // AnoDrop redirects to the file page after upload
-        // The final URL contains the file ID
-        const finalUrl = response.url || response.headers.get("location");
+        // AnoDrop returns HTML response with file link
+        // Response format: File Link: <a href='https://anondrop.net/FILE_ID'>https://anondrop.net/FILE_ID</a>
+        const responseText = await response.text();
+        console.log(
+          `AnoDrop: Response received, body length: ${responseText.length}`,
+        );
 
-        if (!finalUrl) {
-          throw new Error("AnoDrop did not return a file URL");
-        }
-
-        // Extract file ID from URL (e.g., https://anondrop.net/FILE_ID)
-        const urlObj = new URL(finalUrl, anodropUrl);
-        const fileId = urlObj.pathname.split("/").filter(Boolean).pop();
+        // Extract file ID from the response
+        // Pattern: https://anondrop.net/FILE_ID (18+ digit number)
+        const match = responseText.match(/https:\/\/anondrop\.net\/(\d{18,})/);
+        const fileId = match ? match[1] : null;
 
         if (!fileId) {
-          console.error("Could not extract file ID from URL:", finalUrl);
+          console.error("AnoDrop: Response body:", responseText);
           throw new Error("Failed to extract file ID from AnoDrop response");
         }
 
