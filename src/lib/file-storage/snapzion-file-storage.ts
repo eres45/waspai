@@ -46,10 +46,41 @@ export const createSnapzionFileStorage = (): FileStorage => {
       try {
         // Create FormData for Snapzion API
         const formData = new FormData();
+
+        // Ensure filename has proper extension based on contentType
+        let finalFilename = filename;
+        if (
+          options.contentType === "application/pdf" &&
+          !filename.endsWith(".pdf")
+        ) {
+          finalFilename = `${filename}.pdf`;
+        } else if (
+          options.contentType ===
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" &&
+          !filename.endsWith(".docx")
+        ) {
+          finalFilename = `${filename}.docx`;
+        } else if (
+          options.contentType === "text/csv" &&
+          !filename.endsWith(".csv")
+        ) {
+          finalFilename = `${filename}.csv`;
+        } else if (
+          options.contentType === "text/plain" &&
+          !filename.endsWith(".txt")
+        ) {
+          finalFilename = `${filename}.txt`;
+        } else if (
+          options.contentType === "image/png" &&
+          !filename.endsWith(".png")
+        ) {
+          finalFilename = `${filename}.png`;
+        }
+
         const blob = new Blob([new Uint8Array(buffer)], {
           type: options.contentType || "application/octet-stream",
         });
-        formData.append("file", blob, filename);
+        formData.append("file", blob, finalFilename);
 
         const response = await fetch(snapzionUrl, {
           method: "POST",
