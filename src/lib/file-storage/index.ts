@@ -5,9 +5,15 @@ import { createS3FileStorage } from "./s3-file-storage";
 import { createVercelBlobStorage } from "./vercel-blob-storage";
 import { createSupabaseFileStorage } from "./supabase-file-storage";
 import { createSnapzionFileStorage } from "./snapzion-file-storage";
+import { createHybridFileStorage } from "./hybrid-file-storage";
 import logger from "logger";
 
-export type FileStorageDriver = "vercel-blob" | "s3" | "supabase" | "snapzion";
+export type FileStorageDriver =
+  | "vercel-blob"
+  | "s3"
+  | "supabase"
+  | "snapzion"
+  | "hybrid";
 
 const resolveDriver = (): FileStorageDriver => {
   const candidate = process.env.FILE_STORAGE_TYPE;
@@ -17,9 +23,10 @@ const resolveDriver = (): FileStorageDriver => {
     normalized === "vercel-blob" ||
     normalized === "s3" ||
     normalized === "supabase" ||
-    normalized === "snapzion"
+    normalized === "snapzion" ||
+    normalized === "hybrid"
   ) {
-    return normalized as FileStorageDriver;
+    return normalized;
   }
 
   // Default to Vercel Blob
@@ -44,6 +51,8 @@ const createFileStorage = (): FileStorage => {
       return createSupabaseFileStorage();
     case "snapzion":
       return createSnapzionFileStorage();
+    case "hybrid":
+      return createHybridFileStorage();
     default: {
       const exhaustiveCheck: never = storageDriver;
       throw new Error(`Unsupported file storage driver: ${exhaustiveCheck}`);
