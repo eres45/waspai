@@ -74,6 +74,7 @@ import {
   qrCodeGeneratorTool,
   qrCodeWithLogoTool,
 } from "lib/ai/tools/qr-code-generator";
+import { chatExportTool } from "lib/ai/tools/chat-export";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { serverFileStorage } from "lib/file-storage";
@@ -671,6 +672,25 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           ? `The user wants to create a QR code with a logo. Call the "generate-qr-code-with-logo" tool with the content to encode and the logo URL.`
           : "";
 
+        // Detect chat export request from keywords
+        const hasChatExportKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("export chat") ||
+              part.text?.toLowerCase().includes("export messages") ||
+              part.text?.toLowerCase().includes("download chat") ||
+              part.text?.toLowerCase().includes("save chat") ||
+              part.text?.toLowerCase().includes("export conversation") ||
+              part.text?.toLowerCase().includes("chat history") ||
+              part.text?.toLowerCase().includes("all messages")),
+        );
+
+        const isChatExportRequest = hasChatExportKeywords;
+        const chatExportPrompt = isChatExportRequest
+          ? `The user wants to export the chat messages. Call the "export-chat-messages" tool with the current threadId (you can use the threadId from context) and format as "text" or "markdown". Then use the returned content to generate a PDF or document.`
+          : "";
+
         // Detect video generation request
         const isVideoGenRequest = videoGenModel === "sora";
         logger.info(`Video Gen Model: ${videoGenModel}`);
@@ -764,6 +784,7 @@ BEGIN ROLEPLAY NOW.`
           isTextFileRequest && textFilePrompt,
           isQrRequest && qrPrompt,
           isQrLogoRequest && qrLogoPrompt,
+          isChatExportRequest && chatExportPrompt,
         );
 
         const IMAGE_TOOL: Record<string, Tool> = useImageTool
@@ -804,6 +825,7 @@ BEGIN ROLEPLAY NOW.`
           "generate-text-file": textFileTool,
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
+          "export-chat-messages": chatExportTool,
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
