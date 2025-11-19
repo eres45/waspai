@@ -81,27 +81,52 @@ export const auth = betterAuth({
 
 export const getSession = async () => {
   try {
-    // Use Better Auth's session retrieval
+    // Use Better Auth's built-in session retrieval
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
 
-    // Better Auth stores session in these cookies
-    const sessionCookie = cookieStore.get("better-auth.session_token");
-    const userCookie = cookieStore.get("better-auth.user");
+    // Try all possible Better Auth cookie names
+    let sessionToken: string | undefined;
+    let userCookie: string | undefined;
 
-    logger.debug("[getSession] Checking for Better Auth cookies...");
-    logger.debug(
-      "[getSession] session_token cookie:",
-      sessionCookie?.value ? "EXISTS" : "NOT FOUND",
-    );
-    logger.debug(
-      "[getSession] user cookie:",
-      userCookie?.value ? "EXISTS" : "NOT FOUND",
-    );
+    // Try different cookie name patterns that Better Auth might use
+    const possibleSessionCookies = [
+      "better-auth.session_token",
+      "auth.session_token",
+      "session_token",
+      "better_auth_session",
+    ];
 
-    if (userCookie?.value) {
+    const possibleUserCookies = [
+      "better-auth.user",
+      "auth.user",
+      "user",
+      "better_auth_user",
+    ];
+
+    for (const cookieName of possibleSessionCookies) {
+      const cookie = cookieStore.get(cookieName);
+      if (cookie?.value) {
+        sessionToken = cookie.value;
+        logger.debug(
+          `[getSession] Found session token in cookie: ${cookieName}`,
+        );
+        break;
+      }
+    }
+
+    for (const cookieName of possibleUserCookies) {
+      const cookie = cookieStore.get(cookieName);
+      if (cookie?.value) {
+        userCookie = cookie.value;
+        logger.debug(`[getSession] Found user cookie: ${cookieName}`);
+        break;
+      }
+    }
+
+    if (userCookie) {
       try {
-        const user = JSON.parse(userCookie.value);
+        const user = JSON.parse(userCookie);
         logger.debug(
           "[getSession] Successfully parsed user cookie, user:",
           user.id,
@@ -109,7 +134,7 @@ export const getSession = async () => {
         return {
           user,
           session: {
-            token: sessionCookie?.value || "session-token",
+            token: sessionToken || "session-token",
           },
         };
       } catch (error) {
