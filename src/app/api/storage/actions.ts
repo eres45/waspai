@@ -123,7 +123,8 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
   if (storageDriver === "hybrid") {
     const missing: string[] = [];
     if (!process.env.SNAPZION_API_TOKEN) missing.push("SNAPZION_API_TOKEN");
-    if (!process.env.ANODROP_API_KEY) missing.push("ANODROP_API_KEY");
+    if (!process.env.BLOB_READ_WRITE_TOKEN)
+      missing.push("BLOB_READ_WRITE_TOKEN");
 
     if (missing.length > 0) {
       return {
@@ -133,7 +134,7 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
           "Add required env vars for hybrid file storage:\n" +
           "- FILE_STORAGE_TYPE=hybrid\n" +
           "- SNAPZION_API_TOKEN=your-snapzion-token\n" +
-          "- ANODROP_API_KEY=your-anodrop-key",
+          "- BLOB_READ_WRITE_TOKEN=your-vercel-blob-token",
       };
     }
 
