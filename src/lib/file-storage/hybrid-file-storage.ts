@@ -5,17 +5,17 @@ import type {
   UploadUrlOptions,
 } from "./file-storage.interface";
 import { createSnapzionFileStorage } from "./snapzion-file-storage";
-import { createAnodropFileStorage } from "./anodrop-file-storage";
+import { createVercelBlobStorage } from "./vercel-blob-storage";
 
 /**
  * Hybrid File Storage
  * Routes uploads to appropriate provider based on file type:
  * - Images & Videos → Snapzion
- * - Documents (PDF, Word, CSV, Text) → AnoDrop
+ * - Documents (PDF, Word, CSV, Text) → Vercel Blob (with 7-day auto-delete)
  */
 export const createHybridFileStorage = (): FileStorage => {
   const snapzionStorage = createSnapzionFileStorage();
-  const anodropStorage = createAnodropFileStorage();
+  const vercelBlobStorage = createVercelBlobStorage();
 
   const isDocumentType = (contentType?: string): boolean => {
     if (!contentType) return false;
@@ -42,34 +42,47 @@ export const createHybridFileStorage = (): FileStorage => {
       // Route to appropriate storage
       if (isDocumentType(options.contentType)) {
         console.log(
-          `Hybrid Storage: Routing to AnoDrop for document: ${options.filename}`,
+          `Hybrid Storage: Routing to Vercel Blob for document: ${options.filename}`,
         );
-        return anodropStorage.upload(content, options);
+        // Add 7-day expiration metadata for documents
+        return vercelBlobStorage.upload(content, {
+          ...options,
+          metadata: {
+            expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
+            uploadedAt: new Date().toISOString(),
+          },
+        });
       } else if (isImageOrVideoType(options.contentType)) {
         console.log(
           `Hybrid Storage: Routing to Snapzion for media: ${options.filename}`,
         );
         return snapzionStorage.upload(content, options);
       } else {
-        // Default to AnoDrop for unknown types
+        // Default to Vercel Blob for unknown types
         console.log(
-          `Hybrid Storage: Routing to AnoDrop for unknown type: ${options.filename}`,
+          `Hybrid Storage: Routing to Vercel Blob for unknown type: ${options.filename}`,
         );
-        return anodropStorage.upload(content, options);
+        return vercelBlobStorage.upload(content, {
+          ...options,
+          metadata: {
+            expiresIn: 7 * 24 * 60 * 60,
+            uploadedAt: new Date().toISOString(),
+          },
+        });
       }
     },
 
     async createUploadUrl(
-      _options: UploadUrlOptions,
+      options: UploadUrlOptions,
     ): Promise<UploadUrl | null> {
-      // Both providers don't support presigned URLs
-      return null;
+      // Vercel Blob supports presigned URLs
+      return vercelBlobStorage.createUploadUrl?.(options) || null;
     },
 
     async download(key) {
-      // Try AnoDrop first (for documents), then Snapzion
+      // Try Vercel Blob first (for documents), then Snapzion
       try {
-        return await anodropStorage.download(key);
+        return await vercelBlobStorage.download(key);
       } catch {
         return await snapzionStorage.download(key);
       }
@@ -78,46 +91,46 @@ export const createHybridFileStorage = (): FileStorage => {
     async delete(key) {
       // Try both providers
       await Promise.all([
-        anodropStorage.delete(key).catch(() => {}),
+        vercelBlobStorage.delete(key).catch(() => {}),
         snapzionStorage.delete(key).catch(() => {}),
       ]);
     },
 
     async exists(key) {
       // Try both providers
-      const [anodropExists, snapzionExists] = await Promise.all([
-        anodropStorage.exists(key).catch(() => false),
+      const [vercelBlobExists, snapzionExists] = await Promise.all([
+        vercelBlobStorage.exists(key).catch(() => false),
         snapzionStorage.exists(key).catch(() => false),
       ]);
-      return anodropExists || snapzionExists;
+      return vercelBlobExists || snapzionExists;
     },
 
     async getMetadata(key) {
       // Try both providers
-      const anodropMeta = await anodropStorage
+      const vercelBlobMeta = await vercelBlobStorage
         .getMetadata(key)
         .catch(() => null);
-      if (anodropMeta) return anodropMeta;
+      if (vercelBlobMeta) return vercelBlobMeta;
 
       return await snapzionStorage.getMetadata(key).catch(() => null);
     },
 
     async getSourceUrl(key) {
       // Try both providers
-      const anodropUrl = await anodropStorage
+      const vercelBlobUrl = await vercelBlobStorage
         .getSourceUrl(key)
         .catch(() => null);
-      if (anodropUrl) return anodropUrl;
+      if (vercelBlobUrl) return vercelBlobUrl;
 
       return await snapzionStorage.getSourceUrl(key).catch(() => null);
     },
 
     async getDownloadUrl(key) {
       // Try both providers
-      const anodropUrl = await anodropStorage
+      const vercelBlobUrl = await vercelBlobStorage
         .getDownloadUrl?.(key)
         .catch(() => null);
-      if (anodropUrl) return anodropUrl;
+      if (vercelBlobUrl) return vercelBlobUrl;
 
       return (
         (await snapzionStorage.getDownloadUrl?.(key).catch(() => null)) || null

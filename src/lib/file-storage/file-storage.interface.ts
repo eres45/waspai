@@ -18,6 +18,7 @@ export interface FileMetadata {
 export interface UploadOptions {
   filename?: string;
   contentType?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface UploadResult {

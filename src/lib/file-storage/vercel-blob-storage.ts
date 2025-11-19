@@ -64,10 +64,26 @@ export const createVercelBlobStorage = (): FileStorage => {
       const filename = options.filename ?? "file";
       const pathname = buildPathname(filename);
 
-      const result = await put(pathname, buffer, {
+      // Extract expiration metadata if provided
+      const customMetadata = (options as any).metadata || {};
+      const expiresIn = customMetadata.expiresIn; // in seconds
+
+      // Build put options
+      const putOptions: any = {
         access: "public",
         contentType: options.contentType,
-      });
+      };
+
+      // Add custom metadata for tracking expiration
+      if (expiresIn) {
+        const expiresAt = new Date(Date.now() + expiresIn * 1000);
+        putOptions.metadata = {
+          expiresAt: expiresAt.toISOString(),
+          uploadedAt: customMetadata.uploadedAt || new Date().toISOString(),
+        };
+      }
+
+      const result = await put(pathname, buffer, putOptions);
 
       const metadata: FileMetadata = {
         key: result.pathname,
