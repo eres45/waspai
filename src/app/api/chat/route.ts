@@ -163,7 +163,15 @@ export async function POST(request: Request) {
       logger.info(`Search query detected, using gemini-search model`);
     }
 
-    const model = customModelProvider.getModel(modelToUse);
+    logger.info(`Getting model: ${modelToUse?.provider}/${modelToUse?.model}`);
+    let model;
+    try {
+      model = customModelProvider.getModel(modelToUse);
+      logger.info(`Model retrieved successfully`);
+    } catch (modelError) {
+      logger.error(`Failed to get model:`, modelError);
+      throw modelError;
+    }
 
     let thread = await chatRepository.selectThreadDetails(id);
 
@@ -1024,9 +1032,16 @@ BEGIN ROLEPLAY NOW.`
       message: error?.message,
       stack: error?.stack,
       error: String(error),
+      name: error?.name,
+      code: error?.code,
     });
+    console.error("Chat API Error Details:", error);
     return Response.json(
-      { message: error?.message || "Internal server error" },
+      {
+        message: error?.message || "Internal server error",
+        error:
+          process.env.NODE_ENV === "development" ? String(error) : undefined,
+      },
       { status: 500 },
     );
   }
