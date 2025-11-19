@@ -190,17 +190,84 @@ export async function POST(request: Request) {
     }
 
     const messages: UIMessage[] = (thread?.messages ?? []).map((m) => {
-      return {
-        id: m.id,
-        role: m.role,
-        parts: m.parts,
-        metadata: m.metadata,
-      };
+      try {
+        // Ensure parts is an array (it might be a string from JSON)
+        let parts = m.parts;
+        if (typeof parts === "string") {
+          parts = JSON.parse(parts);
+        }
+        if (!Array.isArray(parts)) {
+          logger.warn(
+            `Invalid parts format for message ${m.id}, using empty array`,
+          );
+          parts = [];
+        }
+
+        return {
+          id: m.id,
+          role: m.role,
+          parts: parts,
+          metadata: m.metadata,
+        };
+      } catch (parseError) {
+        logger.error(`Failed to parse message ${m.id}:`, parseError);
+        return {
+          id: m.id,
+          role: m.role,
+          parts: [],
+          metadata: m.metadata,
+        };
+      }
     });
 
     if (messages.at(-1)?.id == message.id) {
       messages.pop();
     }
+
+    logger.info(`Loaded ${messages.length} messages from thread history`);
+    messages.forEach((m, idx) => {
+      logger.info(
+        `Message ${idx}: id=${m.id}, role=${m.role}, parts=${m.parts?.length || 0}`,
+      );
+    });
+
+    // For Pollinations models, truncate message history to stay within character limits
+    // Pollinations has a ~8000 character limit for input
+    if (
+      modelToUse?.provider === "pollinations" ||
+      modelToUse?.provider === "google"
+    ) {
+      const MAX_HISTORY_CHARS = 6000; // Leave 2000 chars for current message + system prompt
+      let totalChars = 0;
+      const truncatedMessages: UIMessage[] = [];
+
+      // Add messages from the end (most recent) until we hit the limit
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        const msgChars = JSON.stringify(msg).length;
+
+        if (
+          totalChars + msgChars > MAX_HISTORY_CHARS &&
+          truncatedMessages.length > 0
+        ) {
+          // Stop adding if we'd exceed the limit (but keep at least one message)
+          break;
+        }
+
+        truncatedMessages.unshift(msg);
+        totalChars += msgChars;
+      }
+
+      if (truncatedMessages.length < messages.length) {
+        logger.warn(
+          `Truncated message history for ${modelToUse.provider}/${modelToUse.model}: ${messages.length} → ${truncatedMessages.length} messages (${totalChars} chars)`,
+        );
+      }
+
+      messages.length = 0;
+      messages.push(...truncatedMessages);
+    }
+
     const ingestionPreviewParts = await buildCsvIngestionPreviewParts(
       attachments,
       (key) => serverFileStorage.download(key),
@@ -424,7 +491,30 @@ export async function POST(request: Request) {
       logger.info("No character context header or character not tagged");
     }
 
-    const useImageTool = Boolean(imageTool?.model);
+    // Auto-detect image generation requests from message content
+    const hasImageGenerationKeywords = message.parts?.some(
+      (part: any) =>
+        typeof part === "object" &&
+        part.type === "text" &&
+        (part.text?.toLowerCase().includes("generate image") ||
+          part.text?.toLowerCase().includes("create image") ||
+          part.text?.toLowerCase().includes("draw") ||
+          part.text?.toLowerCase().includes("image of") ||
+          part.text?.toLowerCase().includes("picture of") ||
+          part.text?.toLowerCase().includes("photo of") ||
+          part.text?.toLowerCase().includes("generate a picture") ||
+          part.text?.toLowerCase().includes("create a picture") ||
+          part.text?.toLowerCase().includes("make an image")),
+    );
+
+    // Enable image tool if either explicitly provided or auto-detected
+    const useImageTool =
+      Boolean(imageTool?.model) || hasImageGenerationKeywords;
+
+    // If auto-detected but no model specified, use a default
+    const effectiveImageTool =
+      imageTool ||
+      (hasImageGenerationKeywords ? { model: "img-cv" } : undefined);
 
     const isToolCallAllowed =
       supportToolCall &&
@@ -498,13 +588,13 @@ export async function POST(request: Request) {
           .orElse({});
 
         const imageModelPrompt =
-          useImageTool && imageTool?.model
-            ? `You are using the image generation tool with the pre-selected model: "${imageTool.model}". 
+          useImageTool && effectiveImageTool?.model
+            ? `You are using the image generation tool with the pre-selected model: "${effectiveImageTool.model}". 
 CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 1. The user has selected an image generation model - they want to generate an image
 2. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt
 3. Use the exact tool name: "image-manager" (this is the ONLY tool name to use)
-4. ALWAYS use model="${imageTool.model}" - this is the ONLY model you must use
+4. ALWAYS use model="${effectiveImageTool.model}" - this is the ONLY model you must use
 5. Do NOT use any other model - do not substitute with gpt-imager, img-cv, or any other model
 6. Do NOT call the tool multiple times - call it EXACTLY ONCE
 7. Do NOT ask the user to choose a model or ask for clarification
@@ -741,9 +831,26 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           ? `The user wants to export the chat messages. Call the "export-chat-messages" tool with the current threadId (you can use the threadId from context) and format as "text" or "markdown". Then use the returned content to generate a PDF or document.`
           : "";
 
-        // Detect video generation request
-        const isVideoGenRequest = videoGenModel === "sora";
-        logger.info(`Video Gen Model: ${videoGenModel}`);
+        // Detect video generation request from keywords
+        const hasVideoGenKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("generate video") ||
+              part.text?.toLowerCase().includes("create video") ||
+              part.text?.toLowerCase().includes("make video") ||
+              part.text?.toLowerCase().includes("video of") ||
+              part.text?.toLowerCase().includes("video generation") ||
+              part.text?.toLowerCase().includes("sora") ||
+              part.text?.toLowerCase().includes("generate a video")),
+        );
+
+        // Enable video generation if either explicitly provided or auto-detected
+        const isVideoGenRequest =
+          videoGenModel === "sora" || hasVideoGenKeywords;
+        logger.info(
+          `Video Gen Model: ${videoGenModel}, Auto-detected: ${hasVideoGenKeywords}`,
+        );
 
         const videoGenPrompt = isVideoGenRequest
           ? `Call the "video-gen" tool with the user's video description. Keep response brief.`
@@ -840,7 +947,7 @@ BEGIN ROLEPLAY NOW.`
         const IMAGE_TOOL: Record<string, Tool> = useImageTool
           ? {
               [ImageToolName]:
-                imageTool?.model === "google"
+                effectiveImageTool?.model === "google"
                   ? nanoBananaTool
                   : openaiImageTool,
             }
