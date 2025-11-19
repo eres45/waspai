@@ -11,7 +11,11 @@ export async function getStorageInfoAction() {
   return {
     type: storageDriver,
     supportsDirectUpload:
-      storageDriver === "vercel-blob" || storageDriver === "s3" || storageDriver === "supabase" || storageDriver === "snapzion",
+      storageDriver === "vercel-blob" ||
+      storageDriver === "s3" ||
+      storageDriver === "supabase" ||
+      storageDriver === "snapzion" ||
+      storageDriver === "hybrid",
   };
 }
 
@@ -115,8 +119,33 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
     return { isValid: true };
   }
 
-  // 5. Validate storage driver
-  if (!["vercel-blob", "s3", "supabase", "snapzion"].includes(storageDriver)) {
+  // 5. Check Hybrid configuration
+  if (storageDriver === "hybrid") {
+    const missing: string[] = [];
+    if (!process.env.SNAPZION_API_TOKEN) missing.push("SNAPZION_API_TOKEN");
+    if (!process.env.ANODROP_API_KEY) missing.push("ANODROP_API_KEY");
+
+    if (missing.length > 0) {
+      return {
+        isValid: false,
+        error: `Missing Hybrid storage configuration: ${missing.join(", ")}`,
+        solution:
+          "Add required env vars for hybrid file storage:\n" +
+          "- FILE_STORAGE_TYPE=hybrid\n" +
+          "- SNAPZION_API_TOKEN=your-snapzion-token\n" +
+          "- ANODROP_API_KEY=your-anodrop-key",
+      };
+    }
+
+    return { isValid: true };
+  }
+
+  // 6. Validate storage driver
+  if (
+    !["vercel-blob", "s3", "supabase", "snapzion", "hybrid"].includes(
+      storageDriver,
+    )
+  ) {
     return {
       isValid: false,
       error: `Invalid storage driver: ${storageDriver}`,
@@ -125,7 +154,8 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
         "- 'vercel-blob' (default)\n" +
         "- 's3'\n" +
         "- 'supabase'\n" +
-        "- 'snapzion'",
+        "- 'snapzion'\n" +
+        "- 'hybrid'",
     };
   }
 
