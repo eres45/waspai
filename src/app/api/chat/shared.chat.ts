@@ -161,9 +161,11 @@ export function handleError(error: any) {
   if (LoadAPIKeyError.isInstance(error)) {
     return error.message;
   }
-  logger.error(error);
-  logger.error(`Route Error: ${error.name}`);
-  return errorToString(error.message);
+  logger.error("Error in chat:", error);
+  logger.error(`Route Error: ${error?.name || "Unknown"}`);
+  const errorMessage = error?.message || errorToString(error);
+  logger.error(`Error message: ${errorMessage}`);
+  return errorMessage;
 }
 
 export function extractInProgressToolPart(message: UIMessage): ToolUIPart[] {
