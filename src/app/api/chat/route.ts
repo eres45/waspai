@@ -304,6 +304,47 @@ export async function POST(request: Request) {
       }
     }
 
+    // Filter out unsupported file types before sending to model
+    const supportedFileTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/pdf",
+    ];
+
+    const unsupportedParts: any[] = [];
+    message.parts = message.parts.filter((part: any) => {
+      if (part.type === "file" && part.mediaType) {
+        if (!supportedFileTypes.includes(part.mediaType)) {
+          unsupportedParts.push({
+            mediaType: part.mediaType,
+            filename: part.filename,
+          });
+          logger.warn(
+            `Filtering out unsupported file type: ${part.mediaType} (${part.filename})`,
+          );
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // If there were unsupported files, add a note to the message
+    if (unsupportedParts.length > 0) {
+      const unsupportedNote = `\n\n⚠️ **Note:** The following file types are not directly supported by the AI model and were excluded: ${unsupportedParts.map((p) => `${p.filename} (${p.mediaType})`).join(", ")}. However, I can still help you with your request using other methods. For PowerPoint files, try uploading the content as text or images, or use the web search feature to find similar information.`;
+
+      const textPart = message.parts.find((p: any) => p.type === "text") as any;
+      if (textPart && textPart.text) {
+        textPart.text += unsupportedNote;
+      } else {
+        message.parts.unshift({
+          type: "text",
+          text: unsupportedNote,
+        });
+      }
+    }
+
     // Debug: Log message parts before sending to model
     logger.info(`Message parts count: ${message.parts.length}`);
     message.parts.forEach((part: any, index: number) => {

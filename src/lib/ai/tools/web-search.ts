@@ -53,45 +53,62 @@ async function performNonStreamingSearch(query: string) {
 
   logger.info(`Web Search: Performing non-streaming search for "${query}"`);
 
-  const response = await fetch(searchUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-  if (!response.ok) {
-    const error = await response.text();
-    logger.error(`Web Search API error (${response.status}):`, error);
+  try {
+    const response = await fetch(searchUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+      signal: controller.signal,
+    });
 
-    if (response.status === 400) {
-      throw new Error(
-        "Invalid search query. Please provide a non-empty query.",
-      );
-    } else if (response.status === 429) {
-      throw new Error("Rate limited. Please try again later.");
-    } else if (response.status === 500) {
-      throw new Error("SearchFlox API error. Please try again later.");
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.text();
+      logger.error(`Web Search API error (${response.status}):`, error);
+
+      if (response.status === 400) {
+        throw new Error(
+          "Invalid search query. Please provide a non-empty query.",
+        );
+      } else if (response.status === 429) {
+        throw new Error("Rate limited. Please try again later.");
+      } else if (response.status === 500) {
+        throw new Error("SearchFlox API error. Please try again later.");
+      }
+
+      throw new Error(`SearchFlox API error: ${response.status}`);
     }
 
-    throw new Error(`SearchFlox API error: ${response.status}`);
+    const data = await response.json();
+
+    logger.info(
+      `Web Search: Found ${data.sources?.length || 0} sources for "${query}"`,
+    );
+
+    // Clean up the results text for better formatting
+    const cleanedResults = (data.text || "")
+      .replace(/\s+/g, " ") // Remove excessive whitespace
+      .trim();
+
+    return {
+      success: true,
+      query: data.query,
+      results: cleanedResults,
+      sources: data.sources || [],
+      timestamp: data.timestamp,
+      guide: `Search results for "${query}". Found ${data.sources?.length || 0} sources. Use the information above to answer the user's question.`,
+    };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    logger.error("Non-streaming search error:", error);
+    throw error;
   }
-
-  const data = await response.json();
-
-  logger.info(
-    `Web Search: Found ${data.sources?.length || 0} sources for "${query}"`,
-  );
-
-  return {
-    success: true,
-    query: data.query,
-    results: data.text,
-    sources: data.sources || [],
-    timestamp: data.timestamp,
-    guide: `Search results for "${query}". Found ${data.sources?.length || 0} sources. Use the information above to answer the user's question.`,
-  };
 }
 
 /**
@@ -164,14 +181,19 @@ async function performStreamingSearch(query: string) {
     reader.releaseLock();
   }
 
+  // Clean up the results text for better formatting
+  const cleanedResults = fullText
+    .replace(/\s+/g, " ") // Remove excessive whitespace
+    .trim();
+
   logger.info(
-    `Web Search: Streaming search complete. Received ${fullText.length} characters`,
+    `Web Search: Streaming search complete. Received ${cleanedResults.length} characters`,
   );
 
   return {
     success: true,
     query,
-    results: fullText,
+    results: cleanedResults,
     streamedChunks,
     guide: `Streaming search results for "${query}". Use the information above to answer the user's question.`,
   };
