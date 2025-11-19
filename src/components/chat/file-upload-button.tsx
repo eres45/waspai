@@ -13,11 +13,19 @@ import {
 } from "ui/dialog";
 
 interface FileUploadButtonProps {
-  onFileUpload: (file: { url: string; name: string; type: string; size: number }) => void;
+  onFileUpload: (file: {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+  }) => void;
   disabled?: boolean;
 }
 
-export function FileUploadButton({ onFileUpload, disabled = false }: FileUploadButtonProps) {
+export function FileUploadButton({
+  onFileUpload,
+  disabled = false,
+}: FileUploadButtonProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState<{
     url: string;
@@ -28,7 +36,9 @@ export function FileUploadButton({ onFileUpload, disabled = false }: FileUploadB
   const [showDialog, setShowDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -67,7 +77,7 @@ export function FileUploadButton({ onFileUpload, disabled = false }: FileUploadB
         if (error.remaining !== undefined) {
           toast.error(
             `Upload limit reached. ${error.remaining} uploads remaining today.`,
-            { duration: 5000 }
+            { duration: 5000 },
           );
         } else {
           toast.error(error.error || "Upload failed");
@@ -76,7 +86,7 @@ export function FileUploadButton({ onFileUpload, disabled = false }: FileUploadB
       }
 
       const result = await response.json();
-      
+
       onFileUpload({
         url: result.url,
         name: preview.name,
@@ -87,7 +97,7 @@ export function FileUploadButton({ onFileUpload, disabled = false }: FileUploadB
       toast.success("File uploaded successfully!");
       setShowDialog(false);
       setPreview(null);
-      
+
       // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -134,7 +144,7 @@ export function FileUploadButton({ onFileUpload, disabled = false }: FileUploadB
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled || isUploading}
-        accept="image/*,.pdf"
+        accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv"
       />
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

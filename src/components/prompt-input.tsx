@@ -548,7 +548,7 @@ export default function PromptInput({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,.pdf"
+                  accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv"
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}

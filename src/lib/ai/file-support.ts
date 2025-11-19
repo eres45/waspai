@@ -3,8 +3,17 @@ export const DEFAULT_FILE_PART_MIME_TYPES = [
   "image/png",
   "image/webp",
   "image/gif",
-  // Enable PDF when supported by the chosen model/provider
+  // Documents
   "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+  "text/csv",
+  "application/csv",
 ] as const;
 
 export const OPENAI_FILE_MIME_TYPES = [

@@ -64,6 +64,16 @@ import {
   animeConversionTool,
 } from "lib/ai/tools/image/edit-image";
 import { videoGenTool } from "lib/ai/tools/image/video-gen";
+import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
+import {
+  wordDocumentTool,
+  csvGeneratorTool,
+  textFileTool,
+} from "lib/ai/tools/document-generator";
+import {
+  qrCodeGeneratorTool,
+  qrCodeWithLogoTool,
+} from "lib/ai/tools/qr-code-generator";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { serverFileStorage } from "lib/file-storage";
@@ -551,6 +561,116 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             ? `Call the "anime-conversion" tool with imageUrl: "${imageUrl}". Keep response brief.`
             : "";
 
+        // Detect PDF generation request from keywords
+        const hasPdfKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("pdf") ||
+              part.text?.toLowerCase().includes("create pdf") ||
+              part.text?.toLowerCase().includes("generate pdf") ||
+              part.text?.toLowerCase().includes("export pdf") ||
+              part.text?.toLowerCase().includes("save as pdf") ||
+              part.text?.toLowerCase().includes("pdf report") ||
+              part.text?.toLowerCase().includes("pdf document")),
+        );
+
+        const isPdfRequest = hasPdfKeywords;
+        const pdfPrompt = isPdfRequest
+          ? `The user wants to create a PDF. Call the "generate-pdf" tool with an appropriate title and the content they want in the PDF.`
+          : "";
+
+        // Detect Word document generation request from keywords
+        const hasWordKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("word") ||
+              part.text?.toLowerCase().includes("docx") ||
+              part.text?.toLowerCase().includes("create document") ||
+              part.text?.toLowerCase().includes("generate document") ||
+              part.text?.toLowerCase().includes("word document") ||
+              part.text?.toLowerCase().includes("export word") ||
+              part.text?.toLowerCase().includes("save as word")),
+        );
+
+        const isWordRequest = hasWordKeywords;
+        const wordPrompt = isWordRequest
+          ? `The user wants to create a Word document. Call the "generate-word-document" tool with an appropriate title and the content they want in the document.`
+          : "";
+
+        // Detect CSV generation request from keywords
+        const hasCsvKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("csv") ||
+              part.text?.toLowerCase().includes("export csv") ||
+              part.text?.toLowerCase().includes("generate csv") ||
+              part.text?.toLowerCase().includes("csv file") ||
+              part.text?.toLowerCase().includes("spreadsheet") ||
+              part.text?.toLowerCase().includes("export data") ||
+              part.text?.toLowerCase().includes("tabular data")),
+        );
+
+        const isCsvRequest = hasCsvKeywords;
+        const csvPrompt = isCsvRequest
+          ? `The user wants to create a CSV file. Call the "generate-csv" tool with an appropriate title and the CSV data (comma-separated values with newlines).`
+          : "";
+
+        // Detect text file generation request from keywords
+        const hasTextFileKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("text file") ||
+              part.text?.toLowerCase().includes("txt") ||
+              part.text?.toLowerCase().includes("create text") ||
+              part.text?.toLowerCase().includes("generate text file") ||
+              part.text?.toLowerCase().includes("export text") ||
+              part.text?.toLowerCase().includes("save as text")),
+        );
+
+        const isTextFileRequest = hasTextFileKeywords;
+        const textFilePrompt = isTextFileRequest
+          ? `The user wants to create a text file. Call the "generate-text-file" tool with an appropriate title and the content they want in the file.`
+          : "";
+
+        // Detect QR code generation request from keywords
+        const hasQrKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("qr code") ||
+              part.text?.toLowerCase().includes("generate qr") ||
+              part.text?.toLowerCase().includes("create qr") ||
+              (part.text?.toLowerCase().includes("qr") &&
+                !part.text?.toLowerCase().includes("qr with logo")) ||
+              part.text?.toLowerCase().includes("scan code")),
+        );
+
+        const isQrRequest = hasQrKeywords;
+        const qrPrompt = isQrRequest
+          ? `The user wants to create a QR code. Call the "generate-qr-code" tool with the content to encode (URL, text, email, phone number, etc.).`
+          : "";
+
+        // Detect QR code with logo generation request from keywords
+        const hasQrLogoKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("qr code with logo") ||
+              part.text?.toLowerCase().includes("qr with image") ||
+              part.text?.toLowerCase().includes("branded qr") ||
+              part.text?.toLowerCase().includes("qr with brand") ||
+              part.text?.toLowerCase().includes("qr logo")),
+        );
+
+        const isQrLogoRequest = hasQrLogoKeywords;
+        const qrLogoPrompt = isQrLogoRequest
+          ? `The user wants to create a QR code with a logo. Call the "generate-qr-code-with-logo" tool with the content to encode and the logo URL.`
+          : "";
+
         // Detect video generation request
         const isVideoGenRequest = videoGenModel === "sora";
         logger.info(`Video Gen Model: ${videoGenModel}`);
@@ -638,6 +758,12 @@ BEGIN ROLEPLAY NOW.`
           isEnhanceImageRequest && enhanceImagePrompt,
           isAnimeConversionRequest && animeConversionPrompt,
           isVideoGenRequest && videoGenPrompt,
+          isPdfRequest && pdfPrompt,
+          isWordRequest && wordPrompt,
+          isCsvRequest && csvPrompt,
+          isTextFileRequest && textFilePrompt,
+          isQrRequest && qrPrompt,
+          isQrLogoRequest && qrLogoPrompt,
         );
 
         const IMAGE_TOOL: Record<string, Tool> = useImageTool
@@ -672,6 +798,12 @@ BEGIN ROLEPLAY NOW.`
           ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
           ...IMAGE_TOOL,
           ...EDIT_IMAGE_TOOL,
+          "generate-pdf": pdfGeneratorTool,
+          "generate-word-document": wordDocumentTool,
+          "generate-csv": csvGeneratorTool,
+          "generate-text-file": textFileTool,
+          "generate-qr-code": qrCodeGeneratorTool,
+          "generate-qr-code-with-logo": qrCodeWithLogoTool,
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 

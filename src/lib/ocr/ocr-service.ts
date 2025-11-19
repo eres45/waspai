@@ -19,7 +19,7 @@ interface OCRResponse {
  */
 export async function extractTextFromDocuments(
   text: string,
-  links?: string[]
+  links?: string[],
 ): Promise<string> {
   try {
     if (!links || links.length === 0) {
@@ -43,7 +43,7 @@ export async function extractTextFromDocuments(
       method: "POST",
       body: formData,
       headers: {
-        "Accept": "application/json",
+        Accept: "application/json",
       },
     });
 
@@ -54,7 +54,7 @@ export async function extractTextFromDocuments(
       return text; // Fallback to original text
     }
 
-    const result = await response.json() as OCRResponse;
+    const result = (await response.json()) as OCRResponse;
     console.log(`OCR: Response success: ${result.success}`);
     console.log(`OCR: Extracted data length: ${result.data?.length || 0}`);
 
@@ -80,32 +80,56 @@ export async function extractTextFromDocuments(
  */
 export async function processFileURLsForModel(
   userMessage: string,
-  fileUrls: string[]
+  fileUrls: string[],
 ): Promise<string> {
   if (!fileUrls || fileUrls.length === 0) {
     return userMessage;
   }
 
-  // Filter for image and PDF files only - these are the files we can extract text from
+  // Filter for image, PDF, and document files - these are the files we can extract text from
   const supportedUrls = fileUrls.filter((url) => {
     if (!url) return false;
     const lowerUrl = url.toLowerCase();
-    
+
     // Check for image files
-    const isImage = 
+    const isImage =
       lowerUrl.includes(".jpg") ||
       lowerUrl.includes(".jpeg") ||
       lowerUrl.includes(".png") ||
       lowerUrl.includes(".gif") ||
       lowerUrl.includes(".webp") ||
       lowerUrl.includes("data:image");
-    
+
     // Check for PDF files
-    const isPdf = 
-      lowerUrl.includes(".pdf") ||
-      lowerUrl.includes("data:application/pdf");
-    
-    return isImage || isPdf;
+    const isPdf =
+      lowerUrl.includes(".pdf") || lowerUrl.includes("data:application/pdf");
+
+    // Check for document files (Word, PowerPoint, Excel, Text, CSV)
+    const isDocument =
+      lowerUrl.includes(".doc") ||
+      lowerUrl.includes(".docx") ||
+      lowerUrl.includes(".ppt") ||
+      lowerUrl.includes(".pptx") ||
+      lowerUrl.includes(".xls") ||
+      lowerUrl.includes(".xlsx") ||
+      lowerUrl.includes(".txt") ||
+      lowerUrl.includes(".csv") ||
+      lowerUrl.includes("data:application/msword") ||
+      lowerUrl.includes(
+        "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ) ||
+      lowerUrl.includes("data:application/vnd.ms-powerpoint") ||
+      lowerUrl.includes(
+        "data:application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ) ||
+      lowerUrl.includes("data:application/vnd.ms-excel") ||
+      lowerUrl.includes(
+        "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ) ||
+      lowerUrl.includes("data:text/plain") ||
+      lowerUrl.includes("data:text/csv");
+
+    return isImage || isPdf || isDocument;
   });
 
   // Only process if we have supported files (images or PDFs)
@@ -116,7 +140,7 @@ export async function processFileURLsForModel(
   // Extract text from documents
   const enrichedMessage = await extractTextFromDocuments(
     userMessage,
-    supportedUrls
+    supportedUrls,
   );
 
   return enrichedMessage;
