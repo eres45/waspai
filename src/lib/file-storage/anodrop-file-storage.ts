@@ -71,8 +71,10 @@ export const createAnodropFileStorage = (): FileStorage => {
         });
         formData.append("file", blob, finalFilename);
 
-        // Upload to AnoDrop
+        // Upload to AnoDrop using direct upload endpoint
         const uploadUrl = `${anodropUrl}/upload?key=${anodropKey}`;
+        console.log(`AnoDrop: Uploading to ${uploadUrl}`);
+
         const response = await fetch(uploadUrl, {
           method: "POST",
           body: formData,
@@ -84,18 +86,25 @@ export const createAnodropFileStorage = (): FileStorage => {
           throw new Error(`AnoDrop upload failed: ${response.status}`);
         }
 
-        // Parse response to get file ID
-        const responseText = await response.text();
-        // AnoDrop returns HTML, we need to extract the file ID from the response
-        // The response typically contains a link like /FILE_ID
-        const fileIdMatch = responseText.match(/\/([a-zA-Z0-9]+)/);
-        const fileId = fileIdMatch ? fileIdMatch[1] : null;
+        // AnoDrop redirects to the file page after upload
+        // The final URL contains the file ID
+        const finalUrl = response.url || response.headers.get("location");
+
+        if (!finalUrl) {
+          throw new Error("AnoDrop did not return a file URL");
+        }
+
+        // Extract file ID from URL (e.g., https://anondrop.net/FILE_ID)
+        const urlObj = new URL(finalUrl, anodropUrl);
+        const fileId = urlObj.pathname.split("/").filter(Boolean).pop();
 
         if (!fileId) {
+          console.error("Could not extract file ID from URL:", finalUrl);
           throw new Error("Failed to extract file ID from AnoDrop response");
         }
 
         const sourceUrl = `${anodropUrl}/${fileId}`;
+        console.log(`AnoDrop: File uploaded successfully to ${sourceUrl}`);
 
         const metadata: FileMetadata = {
           key,
