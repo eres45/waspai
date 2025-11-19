@@ -368,13 +368,7 @@ export async function POST(request: Request) {
       >
     )?.agentId;
 
-    let agent;
-    try {
-      agent = await rememberAgentAction(agentId, session.user.id);
-    } catch (error) {
-      logger.warn("Failed to load agent:", error);
-      agent = undefined;
-    }
+    const agent = await rememberAgentAction(agentId, session.user.id);
 
     if (agent?.instructions?.mentions) {
       mentions.push(...agent.instructions.mentions);
