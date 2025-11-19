@@ -2,7 +2,6 @@
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { admin as adminPlugin } from "better-auth/plugins";
-import { headers } from "next/headers";
 import { getAuthConfig } from "./config";
 import logger from "logger";
 import { DEFAULT_USER_ROLE, USER_ROLES } from "app-types/roles";
@@ -38,9 +37,13 @@ const options = {
       enabled: true,
     },
   },
-  // Database adapter disabled - using Supabase Auth instead
-  // This removes all direct PostgreSQL connections
-  database: undefined,
+  // Use Supabase as database adapter for Better Auth
+  // This allows sessions to be stored properly
+  database: {
+    type: "postgres",
+    url: process.env.SUPABASE_URL,
+    secret: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  } as any,
   emailAndPassword: {
     enabled: emailAndPasswordEnabled,
     disableSignUp: !signUpEnabled,
@@ -81,60 +84,41 @@ export const auth = betterAuth({
 
 export const getSession = async () => {
   try {
-    // Use Better Auth's built-in session retrieval
+    // Get cookies from request
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
 
-    // Try all possible Better Auth cookie names
-    let sessionToken: string | undefined;
-    let userCookie: string | undefined;
+    // Better Auth stores session in cookies with these names
+    // Try to find the session token cookie
+    const sessionCookie =
+      cookieStore.get("better-auth.session_token")?.value ||
+      cookieStore.get("auth.session_token")?.value ||
+      cookieStore.get("session_token")?.value;
 
-    // Try different cookie name patterns that Better Auth might use
-    const possibleSessionCookies = [
-      "better-auth.session_token",
-      "auth.session_token",
-      "session_token",
-      "better_auth_session",
-    ];
+    logger.debug("[getSession] Session cookie found:", !!sessionCookie);
 
-    const possibleUserCookies = [
-      "better-auth.user",
-      "auth.user",
-      "user",
-      "better_auth_user",
-    ];
-
-    for (const cookieName of possibleSessionCookies) {
-      const cookie = cookieStore.get(cookieName);
-      if (cookie?.value) {
-        sessionToken = cookie.value;
-        logger.debug(
-          `[getSession] Found session token in cookie: ${cookieName}`,
-        );
-        break;
-      }
+    if (!sessionCookie) {
+      logger.debug("[getSession] No session cookie found");
+      return null;
     }
 
-    for (const cookieName of possibleUserCookies) {
-      const cookie = cookieStore.get(cookieName);
-      if (cookie?.value) {
-        userCookie = cookie.value;
-        logger.debug(`[getSession] Found user cookie: ${cookieName}`);
-        break;
-      }
-    }
+    // Try to get user from cookie
+    const userCookie =
+      cookieStore.get("better-auth.user")?.value ||
+      cookieStore.get("auth.user")?.value ||
+      cookieStore.get("user")?.value;
 
     if (userCookie) {
       try {
         const user = JSON.parse(userCookie);
         logger.debug(
-          "[getSession] Successfully parsed user cookie, user:",
+          "[getSession] Successfully parsed user from cookie:",
           user.id,
         );
         return {
           user,
           session: {
-            token: sessionToken || "session-token",
+            token: sessionCookie,
           },
         };
       } catch (error) {
@@ -142,32 +126,16 @@ export const getSession = async () => {
       }
     }
 
-    // Fallback: try to get from authorization header
-    const headersList = await headers();
-    const authHeader = headersList.get("authorization");
-
-    if (!authHeader) {
-      logger.debug("[getSession] No authorization header found");
-      return null;
-    }
-
-    // Extract token from "Bearer <token>"
-    const token = authHeader.replace("Bearer ", "");
-
-    if (!token) {
-      logger.debug("[getSession] No token found in authorization header");
-      return null;
-    }
-
-    // Return a mock session object
+    // If no user cookie, return minimal session
+    logger.debug("[getSession] No user cookie, but session token exists");
     return {
       user: {
-        id: "user-id",
-        email: "user@example.com",
-        name: "User",
+        id: "unknown",
+        email: "unknown@example.com",
+        name: "Unknown",
       },
       session: {
-        token,
+        token: sessionCookie,
       },
     };
   } catch (error) {
