@@ -81,49 +81,48 @@ export const auth = betterAuth({
 
 export const getSession = async () => {
   try {
-    // Try to get session from cookies first
+    // Use Better Auth's session retrieval
     const { cookies } = await import("next/headers");
     const cookieStore = await cookies();
-    const authUserCookie = cookieStore.get("auth-user");
 
-    console.log("[DEBUG getSession] Checking for auth-user cookie...");
-    console.log(
-      "[DEBUG getSession] auth-user cookie value:",
-      authUserCookie?.value ? "EXISTS" : "NOT FOUND",
+    // Better Auth stores session in these cookies
+    const sessionCookie = cookieStore.get("better-auth.session_token");
+    const userCookie = cookieStore.get("better-auth.user");
+
+    logger.debug("[getSession] Checking for Better Auth cookies...");
+    logger.debug(
+      "[getSession] session_token cookie:",
+      sessionCookie?.value ? "EXISTS" : "NOT FOUND",
+    );
+    logger.debug(
+      "[getSession] user cookie:",
+      userCookie?.value ? "EXISTS" : "NOT FOUND",
     );
 
-    if (authUserCookie?.value) {
+    if (userCookie?.value) {
       try {
-        const user = JSON.parse(authUserCookie.value);
-        console.log(
-          "[DEBUG getSession] Successfully parsed auth-user cookie, user:",
+        const user = JSON.parse(userCookie.value);
+        logger.debug(
+          "[getSession] Successfully parsed user cookie, user:",
           user.id,
         );
         return {
           user,
           session: {
-            token: "session-token",
+            token: sessionCookie?.value || "session-token",
           },
         };
       } catch (error) {
-        console.log(
-          "[DEBUG getSession] Failed to parse auth-user cookie:",
-          error,
-        );
-        logger.warn("Failed to parse auth-user cookie:", error);
+        logger.warn("[getSession] Failed to parse user cookie:", error);
       }
     }
-
-    console.log(
-      "[DEBUG getSession] No auth-user cookie found, checking authorization header...",
-    );
 
     // Fallback: try to get from authorization header
     const headersList = await headers();
     const authHeader = headersList.get("authorization");
 
     if (!authHeader) {
-      logger.debug("No authorization header found");
+      logger.debug("[getSession] No authorization header found");
       return null;
     }
 
@@ -131,7 +130,7 @@ export const getSession = async () => {
     const token = authHeader.replace("Bearer ", "");
 
     if (!token) {
-      logger.debug("No token found in authorization header");
+      logger.debug("[getSession] No token found in authorization header");
       return null;
     }
 
@@ -147,7 +146,7 @@ export const getSession = async () => {
       },
     };
   } catch (error) {
-    logger.error("Error getting session:", error);
+    logger.error("[getSession] Error getting session:", error);
     return null;
   }
 };
