@@ -13,8 +13,13 @@ const resolveDriver = (): FileStorageDriver => {
   const candidate = process.env.FILE_STORAGE_TYPE;
 
   const normalized = candidate?.trim().toLowerCase();
-  if (normalized === "vercel-blob" || normalized === "s3" || normalized === "supabase" || normalized === "snapzion") {
-    return normalized;
+  if (
+    normalized === "vercel-blob" ||
+    normalized === "s3" ||
+    normalized === "supabase" ||
+    normalized === "snapzion"
+  ) {
+    return normalized as FileStorageDriver;
   }
 
   // Default to Vercel Blob
