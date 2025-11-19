@@ -38,23 +38,52 @@ export const webSearchTool = createTool({
       }
     } catch (error) {
       logger.error("Web Search Error:", error);
-      throw new Error(
-        `Failed to search the web: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      // Return a graceful error response instead of throwing
+      // This prevents the entire chat from failing
+      return {
+        success: false,
+        query,
+        results: `Unable to fetch web search results at this moment. The search service may be temporarily unavailable or rate-limited. Please try again in a few moments.`,
+        sources: [],
+        error: error instanceof Error ? error.message : String(error),
+        guide: `Web search temporarily unavailable. Please try again later or rephrase your query.`,
+      };
     }
   },
 });
 
 /**
  * Non-streaming search - returns full results at once
+ * Tries SearchFlox first, falls back to Snapzion if needed
  */
 async function performNonStreamingSearch(query: string) {
-  const searchUrl = "https://searchfloxai.vercel.app/api/search";
-
   logger.info(`Web Search: Performing non-streaming search for "${query}"`);
 
+  // Try SearchFlox first
+  try {
+    return await searchWithSearchFlox(query);
+  } catch (searchFloxError) {
+    logger.warn(
+      `SearchFlox failed, trying Snapzion fallback:`,
+      searchFloxError,
+    );
+    try {
+      return await searchWithSnapzion(query);
+    } catch (snapzionError) {
+      logger.error(`Both SearchFlox and Snapzion failed:`, snapzionError);
+      throw snapzionError;
+    }
+  }
+}
+
+/**
+ * Search using SearchFlox API
+ */
+async function searchWithSearchFlox(query: string) {
+  const searchUrl = "https://searchfloxai.vercel.app/api/search";
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
   try {
     const response = await fetch(searchUrl, {
@@ -70,16 +99,16 @@ async function performNonStreamingSearch(query: string) {
 
     if (!response.ok) {
       const error = await response.text();
-      logger.error(`Web Search API error (${response.status}):`, error);
+      logger.error(`SearchFlox API error (${response.status}):`, error);
 
       if (response.status === 400) {
         throw new Error(
           "Invalid search query. Please provide a non-empty query.",
         );
       } else if (response.status === 429) {
-        throw new Error("Rate limited. Please try again later.");
+        throw new Error("SearchFlox rate limited. Trying fallback...");
       } else if (response.status === 500) {
-        throw new Error("SearchFlox API error. Please try again later.");
+        throw new Error("SearchFlox API error. Trying fallback...");
       }
 
       throw new Error(`SearchFlox API error: ${response.status}`);
@@ -88,7 +117,7 @@ async function performNonStreamingSearch(query: string) {
     const data = await response.json();
 
     logger.info(
-      `Web Search: Found ${data.sources?.length || 0} sources for "${query}"`,
+      `SearchFlox: Found ${data.sources?.length || 0} sources for "${query}"`,
     );
 
     // Clean up the results text for better formatting
@@ -106,7 +135,71 @@ async function performNonStreamingSearch(query: string) {
     };
   } catch (error) {
     clearTimeout(timeoutId);
-    logger.error("Non-streaming search error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Search using Snapzion Search API (fallback)
+ */
+async function searchWithSnapzion(query: string) {
+  const searchUrl = "https://searchapi.snapzion.com/search";
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+  try {
+    const params = new URLSearchParams({
+      query,
+      safesearch: "moderate",
+      max_results: "10",
+    });
+
+    const response = await fetch(`${searchUrl}?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Snapzion API error: ${response.status}`);
+    }
+
+    const results = await response.json();
+
+    logger.info(
+      `Snapzion: Found ${results?.length || 0} results for "${query}"`,
+    );
+
+    // Format Snapzion results to match SearchFlox format
+    const formattedResults = results
+      .filter((r: any) => r.url && r.title) // Filter out invalid results
+      .map((r: any) => ({
+        title: r.title,
+        url: r.url,
+        description: r.description || "",
+      }));
+
+    const resultsText = formattedResults
+      .map((r: any) => `${r.title}: ${r.description}`)
+      .join(" | ");
+
+    return {
+      success: true,
+      query,
+      results:
+        resultsText ||
+        `Found ${formattedResults.length} results for "${query}"`,
+      sources: formattedResults,
+      timestamp: Date.now(),
+      guide: `Search results for "${query}". Found ${formattedResults.length} sources. Use the information above to answer the user's question.`,
+    };
+  } catch (error) {
+    clearTimeout(timeoutId);
     throw error;
   }
 }
