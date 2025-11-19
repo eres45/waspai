@@ -75,6 +75,7 @@ import {
   qrCodeWithLogoTool,
 } from "lib/ai/tools/qr-code-generator";
 import { chatExportTool } from "lib/ai/tools/chat-export";
+import { webSearchTool } from "lib/ai/tools/web-search";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { serverFileStorage } from "lib/file-storage";
@@ -826,6 +827,7 @@ BEGIN ROLEPLAY NOW.`
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
           "export-chat-messages": chatExportTool,
+          "web-search": webSearchTool,
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
