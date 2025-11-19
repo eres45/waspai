@@ -8,7 +8,7 @@ export const agentRepository: AgentRepository = {
     const now = new Date().toISOString();
 
     const { data, error } = await supabaseRest
-      .from("Agent")
+      .from("agent")
       .insert({
         id,
         name: agent.name,
@@ -35,7 +35,7 @@ export const agentRepository: AgentRepository = {
 
   async selectAgentById(id, userId): Promise<Agent | null> {
     const { data, error } = await supabaseRest
-      .from("Agent")
+      .from("agent")
       .select(
         `
         id,
@@ -78,7 +78,7 @@ export const agentRepository: AgentRepository = {
 
   async selectAgents(userId, _filters, limit = 10): Promise<AgentSummary[]> {
     const query = supabaseRest
-      .from("Agent")
+      .from("agent")
       .select(
         `
         id,
@@ -119,7 +119,7 @@ export const agentRepository: AgentRepository = {
     if (!hasAccess) throw new Error("Access denied");
 
     const { data, error } = await supabaseRest
-      .from("Agent")
+      .from("agent")
       .update({
         ...updates,
         updatedAt: new Date().toISOString(),
@@ -143,14 +143,14 @@ export const agentRepository: AgentRepository = {
     const hasAccess = await agentRepository.checkAccess(id, userId, true);
     if (!hasAccess) throw new Error("Access denied");
 
-    const { error } = await supabaseRest.from("Agent").delete().eq("id", id);
+    const { error } = await supabaseRest.from("agent").delete().eq("id", id);
 
     if (error) throw error;
   },
 
   async checkAccess(agentId, userId, destructive = false): Promise<boolean> {
     const { data, error } = await supabaseRest
-      .from("Agent")
+      .from("agent")
       .select("userId, visibility")
       .eq("id", agentId)
       .single();
@@ -169,7 +169,7 @@ export const agentRepository: AgentRepository = {
 
   async selectAgentsByUserId(userId): Promise<Agent[]> {
     const { data, error } = await supabaseRest
-      .from("Agent")
+      .from("agent")
       .select(
         `
         id,

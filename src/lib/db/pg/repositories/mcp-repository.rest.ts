@@ -7,7 +7,7 @@ export const mcpRepository: MCPRepository = {
     const now = new Date().toISOString();
 
     const { data, error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .upsert({
         id: id,
         name: server.name,
@@ -27,7 +27,7 @@ export const mcpRepository: MCPRepository = {
 
   async selectById(id) {
     const { data, error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .select("*")
       .eq("id", id)
       .single();
@@ -40,7 +40,7 @@ export const mcpRepository: MCPRepository = {
   },
 
   async selectAll() {
-    const { data, error } = await supabaseRest.from("McpServer").select("*");
+    const { data, error } = await supabaseRest.from("mcp_server").select("*");
 
     if (error) throw error;
     return data || [];
@@ -48,7 +48,7 @@ export const mcpRepository: MCPRepository = {
 
   async selectAllForUser(userId) {
     const { data, error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .select(
         `
         id,
@@ -77,7 +77,7 @@ export const mcpRepository: MCPRepository = {
 
   async updateVisibility(id, visibility) {
     const { error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .update({
         visibility,
         updatedAt: new Date().toISOString(),
@@ -89,7 +89,7 @@ export const mcpRepository: MCPRepository = {
 
   async deleteById(id) {
     const { error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .delete()
       .eq("id", id);
 
@@ -98,7 +98,7 @@ export const mcpRepository: MCPRepository = {
 
   async selectByServerName(name) {
     const { data, error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .select("*")
       .eq("name", name)
       .single();
@@ -112,7 +112,7 @@ export const mcpRepository: MCPRepository = {
 
   async existsByServerName(name) {
     const { data, error } = await supabaseRest
-      .from("McpServer")
+      .from("mcp_server")
       .select("id")
       .eq("name", name)
       .single();
