@@ -10,7 +10,6 @@ import {
   Sparkles,
   ImageIcon,
 } from "lucide-react";
-import { useFileUpload } from "@/hooks/use-presigned-upload";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
@@ -28,8 +27,14 @@ interface UserAvatarUploadProps {
   disabled?: boolean;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 
 export function UserAvatarUpload({
   currentImageUrl,
@@ -43,8 +48,8 @@ export function UserAvatarUpload({
   const [showDefaultDialog, setShowDefaultDialog] = useState(false);
   const [showEmojiDialog, setShowEmojiDialog] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload, isUploading } = useFileUpload();
 
   const displayUrl = previewUrl || currentImageUrl;
 
@@ -56,13 +61,15 @@ export function UserAvatarUpload({
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error(t("pleaseUploadValidImage"));
+      toast.error("Please upload a valid image (JPEG, PNG, WebP, or GIF)");
       return;
     }
 
-    // Validate file size
+    // Validate file size (2MB max)
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(t("imageSizeMustBeLessThan"));
+      toast.error(
+        `File too large. Maximum size is 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      );
       return;
     }
 
@@ -73,14 +80,38 @@ export function UserAvatarUpload({
     };
     reader.readAsDataURL(file);
 
-    // Upload file
-    const result = await upload(file);
-    if (result) {
-      onImageUpdate(result.url);
-      toast.success(t("profilePhotoUpdatedSuccessfully"));
-    } else {
-      // Reset preview on failure
+    // Upload file to dedicated avatar endpoint (no daily limit)
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/user/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.message || error.error || "Failed to upload avatar");
+        setPreviewUrl(null);
+        return;
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        onImageUpdate(result.url);
+        toast.success("Profile photo updated successfully");
+      } else {
+        toast.error("Failed to upload avatar");
+        setPreviewUrl(null);
+      }
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      toast.error("Failed to upload avatar");
       setPreviewUrl(null);
+    } finally {
+      setIsUploading(false);
     }
 
     // Reset input
