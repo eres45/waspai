@@ -50,18 +50,18 @@ export async function GET(request: NextRequest) {
             email.split("@")[0] ||
             "GitHub User";
           const avatarUrl = user.user_metadata?.avatar_url || null;
-          const githubUsername = user.user_metadata?.preferred_username || null;
 
-          // Create or update user in database
+          // Create or update user in database with avatar
           try {
             await userRepositoryRest.createOrUpdateUser(
               user.id,
               email,
               name,
               avatarUrl,
-              githubUsername,
             );
-            logger.info(`GitHub user created/updated: ${email}`);
+            logger.info(
+              `GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
+            );
           } catch (dbErr) {
             logger.error(
               `Failed to create/update user in database: ${email}`,

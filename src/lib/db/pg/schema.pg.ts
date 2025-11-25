@@ -104,7 +104,6 @@ export const UserTable = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   password: text("password"),
   image: text("image"),
-  githubUsername: text("github_username"),
   preferences: json("preferences").default({}).$type<UserPreferences>(),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),

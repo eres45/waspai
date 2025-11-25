@@ -33,18 +33,18 @@ export const ChatGreeting = () => {
       t("whatAreYouThinking", { name: user.name }),
     ];
     return words[Math.floor(Math.random() * words.length)];
-  }, [user?.name, t]);
+  }, [user?.name]);
 
   return (
     <motion.div
       key="welcome"
-      className="max-w-3xl mx-auto my-4 h-auto"
+      className="max-w-3xl mx-auto my-4 h-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ delay: 0.3 }}
     >
-      <div className="rounded-xl p-6 flex flex-col gap-4 leading-relaxed text-center">
+      <div className="rounded-xl p-6 flex flex-col gap-2 leading-relaxed text-center">
         <h1 className="text-2xl md:text-3xl">
           {word ? <FlipWords words={[word]} className="text-primary" /> : ""}
         </h1>

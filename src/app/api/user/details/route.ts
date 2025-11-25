@@ -1,5 +1,5 @@
 import { getSession } from "auth/server";
-import { userRepositoryRest } from "lib/db/pg/repositories/user-repository.rest";
+import { userRepository } from "lib/db/repository";
 import { NextResponse } from "next/server";
 import logger from "logger";
 
@@ -13,8 +13,8 @@ export async function GET() {
     }
 
     try {
-      // Use Supabase REST API instead of direct PostgreSQL (works on Vercel)
-      const user = await userRepositoryRest.getUserById(session.user.id);
+      // Try to fetch from repository
+      const user = await userRepository.getUserById(session.user.id);
 
       if (!user) {
         logger.warn(`User not found in database: ${session.user.id}`);
@@ -34,7 +34,6 @@ export async function GET() {
         email: session.user.email || "",
         name: session.user.name || "User",
         image: session.user.image || null,
-        githubUsername: session.user.user_metadata?.preferred_username || null,
         createdAt: new Date(),
         updatedAt: new Date(),
         lastLogin: new Date(),

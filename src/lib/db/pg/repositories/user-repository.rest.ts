@@ -11,28 +11,28 @@ export const userRepositoryRest = {
     email: string,
     name?: string,
     avatarUrl?: string | null,
-    githubUsername?: string | null,
   ) {
     try {
       logger.info(`[User REST] Creating/updating user: ${userId}`);
 
+      const userData: Record<string, unknown> = {
+        id: userId,
+        email,
+        name: name || "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only include image if avatarUrl is provided
+      if (avatarUrl) {
+        userData.image = avatarUrl;
+      }
+
       const { data, error } = await supabaseRest
         .from("user")
-        .upsert(
-          {
-            id: userId,
-            email,
-            name: name || "",
-            image: avatarUrl || null,
-            github_username: githubUsername || null,
-            role: "user",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "id",
-          },
-        )
+        .upsert(userData, {
+          onConflict: "id",
+        })
         .select()
         .single();
 
