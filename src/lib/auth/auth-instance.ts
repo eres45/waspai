@@ -39,7 +39,7 @@ const options = {
     },
   },
   // Database adapter disabled - using Supabase Auth instead
-  // This removes all direct PostgreSQL connections
+  // Better Auth will use in-memory session management for OAuth
   database: undefined,
   emailAndPassword: {
     enabled: emailAndPasswordEnabled,

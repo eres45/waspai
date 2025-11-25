@@ -17,11 +17,11 @@ import { useObjectState } from "@/hooks/use-object-state";
 import { Loader } from "lucide-react";
 import { authClient } from "auth/client";
 import { toast } from "sonner";
-import { GithubIcon } from "ui/github-icon";
 import { GoogleIcon } from "ui/google-icon";
 import { useTranslations } from "next-intl";
 import { MicrosoftIcon } from "ui/microsoft-icon";
 import { SocialAuthenticationProvider } from "app-types/authentication";
+import { GitHubOAuthButton } from "./supabase-oauth-button";
 
 export default function SignIn({
   emailAndPasswordEnabled,
@@ -184,16 +184,8 @@ export default function SignIn({
                     Google
                   </Button>
                 )}
-                {socialAuthenticationProviders.includes("github") && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleSocialSignIn("github")}
-                    className="flex-1 w-full"
-                  >
-                    <GithubIcon className="size-4 fill-foreground" />
-                    GitHub
-                  </Button>
-                )}
+                {/* GitHub OAuth via Supabase */}
+                <GitHubOAuthButton />
                 {socialAuthenticationProviders.includes("microsoft") && (
                   <Button
                     variant="outline"

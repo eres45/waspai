@@ -1,9 +1,9 @@
 import { Button } from "../ui/button";
 import { SocialAuthenticationProvider } from "app-types/authentication";
 import { GoogleIcon } from "ui/google-icon";
-import { GithubIcon } from "ui/github-icon";
 import { MicrosoftIcon } from "ui/microsoft-icon";
 import { cn } from "lib/utils";
+import { GitHubOAuthButton } from "./supabase-oauth-button";
 
 export default function SocialProviders({
   socialAuthenticationProviders,
@@ -27,17 +27,8 @@ export default function SocialProviders({
           Google
         </Button>
       )}
-      {socialAuthenticationProviders.includes("github") && (
-        <Button
-          variant="outline"
-          onClick={() => onSocialProviderClick("github")}
-          className="flex-1 w-full"
-          data-testid="github-signup-button"
-        >
-          <GithubIcon className="size-4 fill-foreground" />
-          GitHub
-        </Button>
-      )}
+      {/* GitHub OAuth via Supabase */}
+      <GitHubOAuthButton />
       {socialAuthenticationProviders.includes("microsoft") && (
         <Button
           variant="outline"
