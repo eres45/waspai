@@ -1,19 +1,52 @@
 import { getSession } from "auth/server";
-import { getUser } from "lib/user/server";
+import { userRepository } from "lib/db/repository";
 import { NextResponse } from "next/server";
+import logger from "logger";
 
 export async function GET() {
   try {
     const session = await getSession();
 
     if (!session?.user?.id) {
+      logger.warn("No session found for user details request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const user = await getUser(session.user.id);
-    return NextResponse.json(user ?? {});
+
+    try {
+      // Try to fetch from repository
+      const user = await userRepository.getUserById(session.user.id);
+
+      if (!user) {
+        logger.warn(`User not found in database: ${session.user.id}`);
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(user);
+    } catch (dbError: any) {
+      // If database fails, return user info from session as fallback
+      logger.warn(
+        "Database query failed, using session data as fallback:",
+        dbError.message,
+      );
+
+      return NextResponse.json({
+        id: session.user.id,
+        email: session.user.email || "",
+        name: session.user.name || "User",
+        image: session.user.image || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLogin: new Date(),
+      });
+    }
   } catch (error: any) {
+    logger.error("Error fetching user details:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to get user details" },
+      {
+        error: error.message || "Failed to get user details",
+        details:
+          process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
       { status: 500 },
     );
   }
