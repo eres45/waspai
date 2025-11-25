@@ -651,6 +651,16 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         // Get the actual image URL - try multiple sources in order of preference
         let imageUrl: string | undefined;
 
+        // Debug: Log all message parts to understand structure
+        logger.info(
+          `Last message parts count: ${lastMessage?.parts?.length || 0}`,
+        );
+        lastMessage?.parts?.forEach((part: any, idx: number) => {
+          logger.info(
+            `Part ${idx}: type=${part.type}, url=${(part as any)?.url?.substring(0, 100) || "N/A"}, mediaType=${(part as any)?.mediaType || "N/A"}`,
+          );
+        });
+
         // 1. Try fileUrls first (contains CDN URLs from attachments)
         if (fileUrls.length > 0) {
           imageUrl = fileUrls[0];
@@ -661,13 +671,15 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           imageUrl = (imageFilePart as any)?.url;
           logger.info(`Image URL from imageFilePart: ${imageUrl}`);
         }
-        // 3. Try to extract from message parts directly
-        else {
+        // 3. Try to extract from message parts directly - look for any part with URL
+        if (!imageUrl) {
           const urlPart = lastMessage?.parts?.find(
             (part: any) =>
               typeof part === "object" &&
-              part.url &&
-              (part.url.includes("http") || part.url.includes("data:")),
+              (part as any)?.url &&
+              ((part as any)?.url.includes("http") ||
+                (part as any)?.url.includes("data:") ||
+                (part as any)?.url.includes("blob:")),
           );
           if (urlPart) {
             imageUrl = (urlPart as any)?.url;
@@ -678,6 +690,9 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         // Check if user selected an edit image model from the menu
         logger.info(`Edit Image State Model: ${editImageModel}`);
         logger.info(`Image URL: ${imageUrl}`);
+        logger.info(`ImageFilePart found: ${!!imageFilePart}`);
+        logger.info(`FileUrls: ${fileUrls.join(", ")}`);
+        logger.info(`Attachments count: ${attachments.length}`);
 
         // Detect edit image request from keywords (smart intent + edit words)
         const hasEditImageKeywords = lastMessage?.parts?.some((part: any) => {
