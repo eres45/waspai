@@ -21,9 +21,13 @@ export type UpdateUserPasswordError =
   (typeof UpdateUserPasswordError)[keyof typeof UpdateUserPasswordError];
 
 export const UpdateUserDetailsSchema = z.object({
-  userId: z.uuid("Invalid user ID"),
-  name: z.string().min(1, "Name is required").max(100, "Name is too long"),
-  email: z.email("Invalid email address").optional(),
+  userId: z.string().uuid("Invalid user ID"),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(100, "Name is too long")
+    .optional(),
+  email: z.string().email("Invalid email address").optional(),
   image: z.string().optional(),
 });
 

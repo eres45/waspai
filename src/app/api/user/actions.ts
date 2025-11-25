@@ -78,6 +78,15 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
 
     try {
       const { name, email, image } = data;
+
+      // Check if at least one field is provided
+      if (!name && !email && !image) {
+        return {
+          success: false,
+          message: "Please provide at least one field to update",
+        };
+      }
+
       const user = await getUser(userId);
       if (!user) {
         logger.warn(`User not found for update: ${userId}`);
