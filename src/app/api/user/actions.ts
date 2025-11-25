@@ -29,7 +29,7 @@ export const updateUserImageAction = validatedActionWithUserManagePermission(
   async (
     data,
     userId,
-    userSession,
+    _userSession,
     isOwnResource,
   ): Promise<UpdateUserActionState> => {
     const t = await getTranslations("User.Profile.common");
@@ -37,20 +37,9 @@ export const updateUserImageAction = validatedActionWithUserManagePermission(
     try {
       const { image } = data;
 
-      if (isOwnResource) {
-        await auth.api.updateUser({
-          returnHeaders: true,
-          body: { image },
-          headers: await headers(),
-        });
-      } else {
-        await updateUserDetails(
-          userId,
-          userSession.user.name,
-          userSession.user.email || "",
-          image,
-        );
-      }
+      // Update user image in database
+      // Works for both Better Auth and Supabase Auth users
+      await updateUserDetails(userId, undefined, undefined, image);
 
       const user = await getUser(userId);
       if (!user) {
@@ -101,25 +90,9 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
       const isDifferentName = name && name !== userSession.user.name;
       const isDifferentImage = image && image !== userSession.user.image;
 
-      // this forces a session update for the current user, getting the latest data
-      if (isOwnResource) {
-        if (isDifferentName || isDifferentImage) {
-          await auth.api.updateUser({
-            returnHeaders: true,
-            body: { name, ...(image && { image }) },
-            headers: await headers(),
-          });
-        }
-        if (isDifferentEmail) {
-          await auth.api.changeEmail({
-            returnHeaders: true,
-            body: { newEmail: email },
-            headers: await headers(),
-          });
-        }
-      } else {
-        await updateUserDetails(userId, name, email);
-      }
+      // Update user details in database
+      // Works for both Better Auth and Supabase Auth users
+      await updateUserDetails(userId, name, email, image);
 
       if (isDifferentEmail) user.email = email;
       if (isDifferentName) user.name = name;
