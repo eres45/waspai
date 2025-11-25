@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { useObjectState } from "@/hooks/use-object-state";
 import { cn } from "lib/utils";
-import { ChevronLeft, Loader, Check, X } from "lucide-react";
+import { ChevronLeft, Loader, Check, X, Mail as MailIcon } from "lucide-react";
 import { toast } from "sonner";
 import { safe } from "ts-safe";
 import { UserZodSchema } from "app-types/user";
@@ -36,6 +36,7 @@ export default function EmailSignUp({
 
   const steps = [
     t("Auth.SignUp.step1"),
+    "Verify Email",
     t("Auth.SignUp.step2"),
     t("Auth.SignUp.step3"),
   ];
@@ -75,13 +76,51 @@ export default function EmailSignUp({
     setStep(2);
   };
 
+  const checkEmailVerified = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/check-email-verified", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || "Failed to check email verification");
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.verified) {
+        toast.success("Email verified! Proceeding to next step...");
+        setStep(3);
+      } else {
+        toast.error(
+          "Email not verified yet. Please check your inbox and click the verification link.",
+        );
+      }
+      setIsLoading(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to check email verification",
+      );
+      setIsLoading(false);
+    }
+  };
+
   const successNameStep = () => {
     const { success } = UserZodSchema.shape.name.safeParse(formData.name);
     if (!success) {
       toast.error(t("Auth.SignUp.nameRequired"));
       return;
     }
-    setStep(3);
+    setStep(4);
   };
 
   const successPasswordStep = async () => {
@@ -128,7 +167,7 @@ export default function EmailSignUp({
             <div className="h-2 w-full relative bg-input">
               <div
                 style={{
-                  width: `${(step / 3) * 100}%`,
+                  width: `${(step / steps.length) * 100}%`,
                 }}
                 className="h-full bg-primary transition-all duration-300"
               ></div>
@@ -162,6 +201,28 @@ export default function EmailSignUp({
             </div>
           )}
           {step === 2 && (
+            <div className={cn("flex flex-col gap-6 py-8")}>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <MailIcon className="size-8 text-primary" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg">Verify Your Email</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We sent a verification link to <br />
+                    <span className="font-medium text-foreground">
+                      {formData.email}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="bg-muted p-4 rounded-lg text-sm text-muted-foreground text-center">
+                Click the link in your email to verify your account, then click
+                the button below.
+              </div>
+            </div>
+          )}
+          {step === 3 && (
             <div className={cn("flex flex-col gap-2")}>
               <Label htmlFor="name">Full Name</Label>
               <Input
@@ -184,7 +245,7 @@ export default function EmailSignUp({
               />
             </div>
           )}
-          {step === 3 && (
+          {step === 4 && (
             <div className={cn("flex flex-col gap-2")}>
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
@@ -271,11 +332,16 @@ export default function EmailSignUp({
               className="w-1/2"
               onClick={() => {
                 if (step === 1) successEmailStep();
-                if (step === 2) successNameStep();
-                if (step === 3) successPasswordStep();
+                if (step === 2) checkEmailVerified();
+                if (step === 3) successNameStep();
+                if (step === 4) successPasswordStep();
               }}
             >
-              {step === 3 ? t("Auth.SignUp.createAccount") : t("Common.next")}
+              {step === 2
+                ? "I'm Verified"
+                : step === 4
+                  ? t("Auth.SignUp.createAccount")
+                  : t("Common.next")}
               {isLoading && <Loader className="size-4 ml-2" />}
             </Button>
             <Button
