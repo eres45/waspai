@@ -492,33 +492,58 @@ export async function POST(request: Request) {
     }
 
     // Auto-detect image generation requests from message content
-    const hasImageGenerationKeywords = message.parts?.some(
-      (part: any) =>
-        typeof part === "object" &&
-        part.type === "text" &&
-        (part.text?.toLowerCase().includes("generate image") ||
-          part.text?.toLowerCase().includes("create image") ||
-          part.text?.toLowerCase().includes("draw") ||
-          part.text?.toLowerCase().includes("image of") ||
-          part.text?.toLowerCase().includes("picture of") ||
-          part.text?.toLowerCase().includes("photo of") ||
-          part.text?.toLowerCase().includes("generate a picture") ||
-          part.text?.toLowerCase().includes("create a picture") ||
-          part.text?.toLowerCase().includes("make an image")),
-    );
+    // Smart detection: looks for intent words (create, generate, draw, make, show) + image-related words
+    const hasImageGenerationKeywords = message.parts?.some((part: any) => {
+      if (typeof part !== "object" || part.type !== "text" || !part.text) {
+        return false;
+      }
+      const text = part.text.toLowerCase();
+
+      // Intent words: what the user wants to do
+      const intentWords = [
+        "create",
+        "generate",
+        "draw",
+        "make",
+        "show",
+        "can you",
+        "please",
+        "i want",
+      ];
+      const hasIntent = intentWords.some((word) => text.includes(word));
+
+      // Image-related words: what they want to create
+      const imageWords = [
+        "image",
+        "picture",
+        "photo",
+        "visual",
+        "artwork",
+        "illustration",
+        "drawing",
+        "painting",
+        "render",
+      ];
+      const hasImageWord = imageWords.some((word) => text.includes(word));
+
+      // If they have both intent + image word, it's likely an image generation request
+      if (hasIntent && hasImageWord) {
+        return true;
+      }
+
+      // Also check for specific patterns like "a dog", "a cat", "a person", etc. with intent
+      const objectPatterns =
+        /can you (create|generate|draw|make|show).*\b(a|an|the)\s+\w+/i;
+      if (hasIntent && objectPatterns.test(text)) {
+        return true;
+      }
+
+      return false;
+    });
 
     // Enable image tool if either explicitly provided or auto-detected
     const useImageTool =
       Boolean(imageTool?.model) || hasImageGenerationKeywords;
-
-    logger.info(
-      `Image generation keyword detection: ${hasImageGenerationKeywords}, explicit tool: ${Boolean(imageTool?.model)}`,
-    );
-    if (hasImageGenerationKeywords) {
-      logger.info(
-        `Message text: ${message.parts?.find((p: any) => p.type === "text")?.text?.substring(0, 100)}`,
-      );
-    }
 
     // If auto-detected but no model specified, use a default
     const effectiveImageTool =
@@ -711,75 +736,154 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             ? `Call the "anime-conversion" tool with imageUrl: "${imageUrl}". Keep response brief.`
             : "";
 
-        // Detect PDF generation request from keywords
-        const hasPdfKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("pdf") ||
-              part.text?.toLowerCase().includes("create pdf") ||
-              part.text?.toLowerCase().includes("generate pdf") ||
-              part.text?.toLowerCase().includes("export pdf") ||
-              part.text?.toLowerCase().includes("save as pdf") ||
-              part.text?.toLowerCase().includes("pdf report") ||
-              part.text?.toLowerCase().includes("pdf document")),
-        );
+        // Detect PDF generation request from keywords (smart intent + PDF words)
+        const hasPdfKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          const intentWords = [
+            "create",
+            "generate",
+            "make",
+            "export",
+            "save",
+            "download",
+            "can you",
+            "please",
+            "i want",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          const pdfWords = ["pdf", "pdf report", "pdf document"]; // keep simple but focused
+          const hasPdfWord = pdfWords.some((word) => text.includes(word));
+
+          if (hasIntent && hasPdfWord) {
+            return true;
+          }
+
+          // Fallback: plain mention of pdf
+          return text.includes("pdf");
+        });
 
         const isPdfRequest = hasPdfKeywords;
         const pdfPrompt = isPdfRequest
           ? `The user wants to create a PDF. Call the "generate-pdf" tool with an appropriate title and the content they want in the PDF.`
           : "";
 
-        // Detect Word document generation request from keywords
-        const hasWordKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("word") ||
-              part.text?.toLowerCase().includes("docx") ||
-              part.text?.toLowerCase().includes("create document") ||
-              part.text?.toLowerCase().includes("generate document") ||
-              part.text?.toLowerCase().includes("word document") ||
-              part.text?.toLowerCase().includes("export word") ||
-              part.text?.toLowerCase().includes("save as word")),
-        );
+        // Detect Word document generation request from keywords (smart intent + document words)
+        const hasWordKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          const intentWords = [
+            "create",
+            "generate",
+            "make",
+            "export",
+            "save",
+            "can you",
+            "please",
+            "i want",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          const wordDocWords = [
+            "word document",
+            "docx",
+            "ms word",
+            "word file",
+          ];
+          const hasWordDocWord = wordDocWords.some((word) =>
+            text.includes(word),
+          );
+
+          if (hasIntent && hasWordDocWord) {
+            return true;
+          }
+
+          // Fallbacks
+          return text.includes("word document") || text.includes("docx");
+        });
 
         const isWordRequest = hasWordKeywords;
         const wordPrompt = isWordRequest
           ? `The user wants to create a Word document. Call the "generate-word-document" tool with an appropriate title and the content they want in the document.`
           : "";
 
-        // Detect CSV generation request from keywords
-        const hasCsvKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("csv") ||
-              part.text?.toLowerCase().includes("export csv") ||
-              part.text?.toLowerCase().includes("generate csv") ||
-              part.text?.toLowerCase().includes("csv file") ||
-              part.text?.toLowerCase().includes("spreadsheet") ||
-              part.text?.toLowerCase().includes("export data") ||
-              part.text?.toLowerCase().includes("tabular data")),
-        );
+        // Detect CSV generation request from keywords (smart intent + table/csv words)
+        const hasCsvKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          const intentWords = [
+            "create",
+            "generate",
+            "make",
+            "export",
+            "save",
+            "can you",
+            "please",
+            "i want",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          const csvWords = [
+            "csv",
+            "csv file",
+            "spreadsheet",
+            "table",
+            "tabular data",
+          ];
+          const hasCsvWord = csvWords.some((word) => text.includes(word));
+
+          if (hasIntent && hasCsvWord) {
+            return true;
+          }
+
+          return text.includes("csv");
+        });
 
         const isCsvRequest = hasCsvKeywords;
         const csvPrompt = isCsvRequest
           ? `The user wants to create a CSV file. Call the "generate-csv" tool with an appropriate title and the CSV data (comma-separated values with newlines).`
           : "";
 
-        // Detect text file generation request from keywords
-        const hasTextFileKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("text file") ||
-              part.text?.toLowerCase().includes("txt") ||
-              part.text?.toLowerCase().includes("create text") ||
-              part.text?.toLowerCase().includes("generate text file") ||
-              part.text?.toLowerCase().includes("export text") ||
-              part.text?.toLowerCase().includes("save as text")),
-        );
+        // Detect text file generation request from keywords (smart intent + text-file words)
+        const hasTextFileKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          const intentWords = [
+            "create",
+            "generate",
+            "make",
+            "export",
+            "save",
+            "can you",
+            "please",
+            "i want",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          const textFileWords = ["text file", "txt", "plain text"];
+          const hasTextFileWord = textFileWords.some((word) =>
+            text.includes(word),
+          );
+
+          if (hasIntent && hasTextFileWord) {
+            return true;
+          }
+
+          return text.includes("text file") || text.includes("txt");
+        });
 
         const isTextFileRequest = hasTextFileKeywords;
         const textFilePrompt = isTextFileRequest
@@ -787,17 +891,46 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           : "";
 
         // Detect QR code generation request from keywords
-        const hasQrKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("qr code") ||
-              part.text?.toLowerCase().includes("generate qr") ||
-              part.text?.toLowerCase().includes("create qr") ||
-              (part.text?.toLowerCase().includes("qr") &&
-                !part.text?.toLowerCase().includes("qr with logo")) ||
-              part.text?.toLowerCase().includes("scan code")),
-        );
+        // Smart detection: looks for intent words + QR-related words or links
+        const hasQrKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          // Intent words
+          const intentWords = [
+            "create",
+            "generate",
+            "make",
+            "can you",
+            "please",
+            "add",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          // QR-related words
+          const qrWords = ["qr code", "qr", "scan code"];
+          const hasQrWord = qrWords.some((word) => text.includes(word));
+
+          // Link indicators
+          const hasLink =
+            text.includes("http") ||
+            text.includes("link") ||
+            text.includes("url");
+
+          // If they mention QR with intent, it's a QR request
+          if (hasIntent && hasQrWord) {
+            return true;
+          }
+
+          // If they have intent + link + mention of QR, it's a QR request
+          if (hasIntent && hasLink && hasQrWord) {
+            return true;
+          }
+
+          return false;
+        });
 
         const isQrRequest = hasQrKeywords;
         const qrPrompt = isQrRequest
@@ -821,19 +954,42 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           ? `The user wants to create a QR code with a logo. Call the "generate-qr-code-with-logo" tool with the content to encode and the logo URL.`
           : "";
 
-        // Detect chat export request from keywords
-        const hasChatExportKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("export chat") ||
-              part.text?.toLowerCase().includes("export messages") ||
-              part.text?.toLowerCase().includes("download chat") ||
-              part.text?.toLowerCase().includes("save chat") ||
-              part.text?.toLowerCase().includes("export conversation") ||
-              part.text?.toLowerCase().includes("chat history") ||
-              part.text?.toLowerCase().includes("all messages")),
-        );
+        // Detect chat export request from keywords (smart intent + chat/history words)
+        const hasChatExportKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          const intentWords = [
+            "export",
+            "download",
+            "save",
+            "archive",
+            "can you",
+            "please",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          const chatWords = [
+            "chat",
+            "conversation",
+            "messages",
+            "history",
+            "all messages",
+          ];
+          const hasChatWord = chatWords.some((word) => text.includes(word));
+
+          if (hasIntent && hasChatWord) {
+            return true;
+          }
+
+          return (
+            text.includes("export chat") ||
+            text.includes("download chat") ||
+            text.includes("chat history")
+          );
+        });
 
         const isChatExportRequest = hasChatExportKeywords;
         const chatExportPrompt = isChatExportRequest
@@ -841,18 +997,48 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           : "";
 
         // Detect video generation request from keywords
-        const hasVideoGenKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("generate video") ||
-              part.text?.toLowerCase().includes("create video") ||
-              part.text?.toLowerCase().includes("make video") ||
-              part.text?.toLowerCase().includes("video of") ||
-              part.text?.toLowerCase().includes("video generation") ||
-              part.text?.toLowerCase().includes("sora") ||
-              part.text?.toLowerCase().includes("generate a video")),
-        );
+        // Smart detection: looks for intent words + video-related words
+        const hasVideoGenKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          // Intent words
+          const intentWords = [
+            "create",
+            "generate",
+            "make",
+            "can you",
+            "please",
+            "show",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          // Video-related words
+          const videoWords = [
+            "video",
+            "sora",
+            "animation",
+            "animated",
+            "motion",
+          ];
+          const hasVideoWord = videoWords.some((word) => text.includes(word));
+
+          // If they have both intent + video word, it's likely a video generation request
+          if (hasIntent && hasVideoWord) {
+            return true;
+          }
+
+          // Also check for specific patterns like "a dog running", "a person dancing", etc. with intent
+          const objectPatterns =
+            /can you (create|generate|make|show).*\b(a|an|the)\s+\w+\s+(running|walking|dancing|jumping|flying|swimming|eating|playing)/i;
+          if (hasIntent && objectPatterns.test(text)) {
+            return true;
+          }
+
+          return false;
+        });
 
         // Enable video generation if either explicitly provided or auto-detected
         const isVideoGenRequest =
@@ -1029,6 +1215,29 @@ BEGIN ROLEPLAY NOW.`
           );
         }
         logger.info(`model: ${modelToUse?.provider}/${modelToUse?.model}`);
+
+        // CRITICAL: Save user message BEFORE calling streamText
+        // This ensures that even if streamText fails, the user message is preserved in the thread
+        // This prevents thread corruption where subsequent messages can't load history
+        try {
+          logger.info(
+            `Saving user message to thread before streamText: ${message.id}`,
+          );
+          await chatRepository.upsertMessage({
+            threadId: thread!.id,
+            role: message.role,
+            parts: message.parts.map(convertToSavePart),
+            id: message.id,
+          });
+          logger.info(`User message saved successfully: ${message.id}`);
+        } catch (saveError) {
+          logger.error(
+            `Failed to save user message before streamText:`,
+            saveError,
+          );
+          // Don't throw - continue with streamText so user gets some response
+          // But log this critical error for debugging
+        }
 
         const result = streamText({
           model,

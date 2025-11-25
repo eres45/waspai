@@ -1,0 +1,26 @@
+
+> wasp-ai@1.25.0 test:comprehensive G:\project\better-chatbot
+> tsx scripts/comprehensive-test.ts
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ   COMPREHENSIVE WASPAI CHATBOT TEST SUITE                  Γòæ
+Γòæ   Testing all AI models, APIs, and features                Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+≡ƒñû TESTING AI MODELS (DIRECT API CALLS)...
+
+Testing OpenAI GPT-4o Mini...
+Γ¥î OpenAI GPT-4o Mini - 453.35ms
+   Error: HTTP 401
+Testing Google Gemini...
+ΓÅ¡∩╕Å Google Gemini - 0.03ms
+Testing Anthropic Claude...
+Γ¥î Anthropic Claude - 417.41ms
+   Error: HTTP 401
+Testing Groq Mixtral...
+Γ¥î Groq Mixtral - 850.76ms
+   Error: HTTP 401
+Testing xAI Grok...
+Γ¥î xAI Grok - 543.99ms
+   Error: HTTP 400
+Testing Pollinations Gemini...

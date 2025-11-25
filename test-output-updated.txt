@@ -1,0 +1,293 @@
+
+> wasp-ai@1.25.0 test:comprehensive G:\project\better-chatbot
+> tsx scripts/comprehensive-test.ts
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ   COMPREHENSIVE WASPAI CHATBOT TEST SUITE                  Γòæ
+Γòæ   Testing all AI models, APIs, and features                Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+≡ƒñû TESTING AI MODELS...
+
+Testing OpenAI GPT-4o Mini...
+Γ¥î OpenAI GPT-4o Mini - 29.82ms
+   Error: fetch failed
+Testing Google Gemini...
+Γ¥î Google Gemini - 2.37ms
+   Error: fetch failed
+Testing Anthropic Claude...
+Γ¥î Anthropic Claude - 1.35ms
+   Error: fetch failed
+Testing Groq Mixtral...
+Γ¥î Groq Mixtral - 1.19ms
+   Error: fetch failed
+Testing xAI Grok...
+Γ¥î xAI Grok - 1.86ms
+   Error: fetch failed
+Testing Pollinations Gemini...
+Γ¥î Pollinations Gemini - 1.29ms
+   Error: fetch failed
+Testing Pollinations Mistral...
+Γ¥î Pollinations Mistral - 1.31ms
+   Error: fetch failed
+Testing DeepSeek Chat...
+Γ¥î DeepSeek Chat - 1.62ms
+   Error: fetch failed
+Testing Qwen Turbo...
+Γ¥î Qwen Turbo - 1.59ms
+   Error: fetch failed
+Testing Kiwi AI...
+Γ¥î Kiwi AI - 1.58ms
+   Error: fetch failed
+
+≡ƒû╝∩╕Å  TESTING IMAGE GENERATION...
+
+Testing ImgCV (Fastest)...
+Γ¥î ImgCV (Fastest) - 1.09ms
+   Error: fetch failed
+Testing Flux Max (High Quality)...
+Γ¥î Flux Max (High Quality) - 0.81ms
+   Error: fetch failed
+Testing GPT Imager...
+Γ¥î GPT Imager - 0.85ms
+   Error: fetch failed
+Testing Google Imagen 3...
+Γ¥î Google Imagen 3 - 0.87ms
+   Error: fetch failed
+Testing Nano Banana...
+Γ¥î Nano Banana - 0.82ms
+   Error: fetch failed
+Testing Stable Diffusion XL...
+Γ¥î Stable Diffusion XL - 0.85ms
+   Error: fetch failed
+
+≡ƒÄ¼ TESTING VIDEO GENERATION...
+
+Testing SORA Video Generation...
+Γ¥î SORA Video Generation - 0.79ms
+   Error: fetch failed
+
+≡ƒöì TESTING WEB SEARCH...
+
+Testing web search: "latest AI news 2024"...
+Γ¥î Web Search: "latest AI news 2024" - 1.53ms
+   Error: fetch failed
+Testing web search: "TypeScript best practices"...
+Γ¥î Web Search: "TypeScript best practices" - 1.05ms
+   Error: fetch failed
+Testing web search: "React performance optimization"...
+Γ¥î Web Search: "React performance optimization" - 0.81ms
+   Error: fetch failed
+
+≡ƒôä TESTING DOCUMENT GENERATION...
+
+Testing PDF Generation...
+Γ¥î PDF Generation - 0.87ms
+   Error: fetch failed
+Testing Word Document...
+Γ¥î Word Document - 0.84ms
+   Error: fetch failed
+Testing CSV Generation...
+Γ¥î CSV Generation - 0.84ms
+   Error: fetch failed
+Testing Text File...
+Γ¥î Text File - 0.71ms
+   Error: fetch failed
+
+≡ƒô▒ TESTING QR CODE GENERATION...
+
+Testing QR Code...
+Γ¥î QR Code - 0.86ms
+   Error: fetch failed
+Testing QR Code with Logo...
+Γ¥î QR Code with Logo - 0.87ms
+   Error: fetch failed
+
+≡ƒöæ TESTING KEYWORD DETECTION...
+
+Testing Image Generation Keyword: "generate image of a cat"...
+Γ¥î Image Generation Keyword - 1.18ms
+   Error: fetch failed
+Testing Video Generation Keyword: "create video of a dog running"...
+Γ¥î Video Generation Keyword - 0.90ms
+   Error: fetch failed
+Testing PDF Generation Keyword: "generate pdf with my data"...
+Γ¥î PDF Generation Keyword - 0.88ms
+   Error: fetch failed
+Testing Word Document Keyword: "create word document"...
+Γ¥î Word Document Keyword - 1.29ms
+   Error: fetch failed
+Testing CSV Generation Keyword: "generate csv file"...
+Γ¥î CSV Generation Keyword - 0.91ms
+   Error: fetch failed
+Testing Text File Keyword: "create text file"...
+Γ¥î Text File Keyword - 1.02ms
+   Error: fetch failed
+Testing QR Code Keyword: "generate qr code"...
+Γ¥î QR Code Keyword - 1.12ms
+   Error: fetch failed
+
+≡ƒöî TESTING API ENDPOINTS...
+
+Testing Chat (POST)...
+Γ¥î Chat (POST) - 0.97ms
+   Error: fetch failed
+Testing Chat Models...
+Γ¥î Chat Models - 0.86ms
+   Error: fetch failed
+Testing Generate Chat Title...
+Γ¥î Generate Chat Title - 0.68ms
+   Error: fetch failed
+Testing Export Chat...
+Γ¥î Export Chat - 0.76ms
+   Error: fetch failed
+Testing Get Threads...
+Γ¥î Get Threads - 0.66ms
+   Error: fetch failed
+Testing Get Agents...
+Γ¥î Get Agents - 0.78ms
+   Error: fetch failed
+Testing Create Agent...
+Γ¥î Create Agent - 0.79ms
+   Error: fetch failed
+Testing Get Characters...
+Γ¥î Get Characters - 0.97ms
+   Error: fetch failed
+Testing Create Character...
+Γ¥î Create Character - 0.76ms
+   Error: fetch failed
+Testing Get Archives...
+Γ¥î Get Archives - 0.85ms
+   Error: fetch failed
+Testing Create Archive...
+Γ¥î Create Archive - 0.88ms
+   Error: fetch failed
+Testing Get Bookmarks...
+Γ¥î Get Bookmarks - 0.66ms
+   Error: fetch failed
+Testing Create Bookmark...
+Γ¥î Create Bookmark - 0.61ms
+   Error: fetch failed
+Testing Get Workflows...
+Γ¥î Get Workflows - 0.58ms
+   Error: fetch failed
+Testing Create Workflow...
+Γ¥î Create Workflow - 0.70ms
+   Error: fetch failed
+Testing Get Workflow Tools...
+Γ¥î Get Workflow Tools - 1.37ms
+   Error: fetch failed
+Testing List MCP Servers...
+Γ¥î List MCP Servers - 1.17ms
+   Error: fetch failed
+Testing Get MCP Servers...
+Γ¥î Get MCP Servers - 1.81ms
+   Error: fetch failed
+Testing Create MCP Server...
+Γ¥î Create MCP Server - 1.03ms
+   Error: fetch failed
+Testing Get Upload Limit...
+Γ¥î Get Upload Limit - 0.84ms
+   Error: fetch failed
+Testing Get Upload URL...
+Γ¥î Get Upload URL - 0.76ms
+   Error: fetch failed
+Testing Get User Details...
+Γ¥î Get User Details - 0.90ms
+   Error: fetch failed
+Testing Get User Preferences...
+Γ¥î Get User Preferences - 0.84ms
+   Error: fetch failed
+Testing Update User Preferences...
+Γ¥î Update User Preferences - 0.83ms
+   Error: fetch failed
+Testing Get Music History...
+Γ¥î Get Music History - 0.69ms
+   Error: fetch failed
+Testing Generate Music Lyrics...
+Γ¥î Generate Music Lyrics - 0.92ms
+   Error: fetch failed
+Testing Generate Music...
+Γ¥î Generate Music - 0.73ms
+   Error: fetch failed
+Testing Generate Audio...
+Γ¥î Generate Audio - 1.14ms
+   Error: fetch failed
+Testing Text to Speech...
+Γ¥î Text to Speech - 0.76ms
+   Error: fetch failed
+Testing Get Exports...
+Γ¥î Get Exports - 0.78ms
+   Error: fetch failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                    TEST SUMMARY                            Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+Total Tests: 63
+Γ£à Passed: 0
+Γ¥î Failed: 63
+ΓÜá∩╕Å  Partial: 0
+ΓÅ¡∩╕Å  Skipped: 0
+ΓÅ▒∩╕Å  Total Duration: -1764050040.60s
+
+≡ƒôê BY CATEGORY:
+
+AI Models:
+  Total: 10
+  Passed: 0
+  Failed: 10
+  Success Rate: 0.00%
+  Avg Response Time: 4.40ms
+
+Image Generation:
+  Total: 6
+  Passed: 0
+  Failed: 6
+  Success Rate: 0.00%
+  Avg Response Time: 0.88ms
+
+Video Generation:
+  Total: 1
+  Passed: 0
+  Failed: 1
+  Success Rate: 0.00%
+  Avg Response Time: 0.79ms
+
+Web Search:
+  Total: 3
+  Passed: 0
+  Failed: 3
+  Success Rate: 0.00%
+  Avg Response Time: 1.13ms
+
+Document Generation:
+  Total: 4
+  Passed: 0
+  Failed: 4
+  Success Rate: 0.00%
+  Avg Response Time: 0.81ms
+
+QR Code Generation:
+  Total: 2
+  Passed: 0
+  Failed: 2
+  Success Rate: 0.00%
+  Avg Response Time: 0.87ms
+
+Keyword Detection:
+  Total: 7
+  Passed: 0
+  Failed: 7
+  Success Rate: 0.00%
+  Avg Response Time: 1.04ms
+
+API Endpoints:
+  Total: 30
+  Passed: 0
+  Failed: 30
+  Success Rate: 0.00%
+  Avg Response Time: 0.87ms
+
+
+≡ƒôè Full report saved to: G:\project\better-chatbot\test-reports\comprehensive-test-2025-11-25T05-54-00-843Z.json

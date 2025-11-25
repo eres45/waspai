@@ -1,0 +1,494 @@
+{
+  "timestamp": "2025-11-25T06:02:50.133Z",
+  "totalDuration": -1764050569863.1333,
+  "summary": {
+    "total": 48,
+    "passed": 0,
+    "failed": 48,
+    "partial": 0,
+    "skipped": 0
+  },
+  "categories": [
+    {
+      "category": "AI Models",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 3.7353399999999963,
+      "successRate": 0
+    },
+    {
+      "category": "Image Generation",
+      "total": 6,
+      "passed": 0,
+      "failed": 6,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.7461166666666704,
+      "successRate": 0
+    },
+    {
+      "category": "Video Generation",
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.7826000000000022,
+      "successRate": 0
+    },
+    {
+      "category": "Web Search",
+      "total": 3,
+      "passed": 0,
+      "failed": 3,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.75939999999999,
+      "successRate": 0
+    },
+    {
+      "category": "Document Generation",
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.7751000000000019,
+      "successRate": 0
+    },
+    {
+      "category": "QR Code Generation",
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.7827500000000072,
+      "successRate": 0
+    },
+    {
+      "category": "Keyword Detection",
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.713557142857143,
+      "successRate": 0
+    },
+    {
+      "category": "API Endpoints",
+      "total": 15,
+      "passed": 0,
+      "failed": 15,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 0.6196666666666677,
+      "successRate": 0
+    }
+  ],
+  "results": [
+    {
+      "name": "OpenAI GPT-4o Mini",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 27.35239999999999,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.093Z"
+    },
+    {
+      "name": "Google Gemini",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.3881000000000085,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.095Z"
+    },
+    {
+      "name": "Anthropic Claude",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.0741999999999905,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.096Z"
+    },
+    {
+      "name": "Groq Mixtral",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.0208000000000084,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.097Z"
+    },
+    {
+      "name": "xAI Grok",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.0597999999999956,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.098Z"
+    },
+    {
+      "name": "Pollinations Gemini",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 0.9647999999999968,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.099Z"
+    },
+    {
+      "name": "Pollinations Mistral",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 0.9524999999999864,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.100Z"
+    },
+    {
+      "name": "DeepSeek Chat",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 0.9125999999999976,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.101Z"
+    },
+    {
+      "name": "Qwen Turbo",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.5017999999999745,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.103Z"
+    },
+    {
+      "name": "Kiwi AI",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.126400000000018,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.104Z"
+    },
+    {
+      "name": "ImgCV (Fastest)",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 0.8549000000000149,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.105Z"
+    },
+    {
+      "name": "Flux Max (High Quality)",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 0.7697000000000003,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.106Z"
+    },
+    {
+      "name": "GPT Imager",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 0.6958999999999946,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.106Z"
+    },
+    {
+      "name": "Google Imagen 3",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 0.7034000000000162,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.107Z"
+    },
+    {
+      "name": "Nano Banana",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 0.6587000000000103,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.108Z"
+    },
+    {
+      "name": "Stable Diffusion XL",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 0.794099999999986,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.109Z"
+    },
+    {
+      "name": "SORA Video Generation",
+      "category": "Video Generation",
+      "status": "FAIL",
+      "responseTime": 0.7826000000000022,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.110Z"
+    },
+    {
+      "name": "Web Search: \"latest AI news 2024\"",
+      "category": "Web Search",
+      "status": "FAIL",
+      "responseTime": 0.8075999999999794,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.111Z"
+    },
+    {
+      "name": "Web Search: \"TypeScript best practices\"",
+      "category": "Web Search",
+      "status": "FAIL",
+      "responseTime": 0.751499999999993,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.111Z"
+    },
+    {
+      "name": "Web Search: \"React performance optimization\"",
+      "category": "Web Search",
+      "status": "FAIL",
+      "responseTime": 0.7190999999999974,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.112Z"
+    },
+    {
+      "name": "PDF Generation",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 0.8011999999999944,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.113Z"
+    },
+    {
+      "name": "Word Document",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 0.758499999999998,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.114Z"
+    },
+    {
+      "name": "CSV Generation",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 0.7978000000000236,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.115Z"
+    },
+    {
+      "name": "Text File",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 0.7428999999999917,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.116Z"
+    },
+    {
+      "name": "QR Code",
+      "category": "QR Code Generation",
+      "status": "FAIL",
+      "responseTime": 0.7623000000000104,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.117Z"
+    },
+    {
+      "name": "QR Code with Logo",
+      "category": "QR Code Generation",
+      "status": "FAIL",
+      "responseTime": 0.8032000000000039,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.117Z"
+    },
+    {
+      "name": "Image Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.8122000000000185,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.118Z"
+    },
+    {
+      "name": "Video Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.7121999999999957,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.119Z"
+    },
+    {
+      "name": "PDF Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.6443999999999903,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.120Z"
+    },
+    {
+      "name": "Word Document Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.6257999999999981,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.121Z"
+    },
+    {
+      "name": "CSV Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.7897000000000105,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.121Z"
+    },
+    {
+      "name": "Text File Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.7326999999999941,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.122Z"
+    },
+    {
+      "name": "QR Code Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 0.677899999999994,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.123Z"
+    },
+    {
+      "name": "Chat Models",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.6864999999999952,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.124Z"
+    },
+    {
+      "name": "Get Threads",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.6868000000000052,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.125Z"
+    },
+    {
+      "name": "Get Agents",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.6174000000000035,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.125Z"
+    },
+    {
+      "name": "Get Characters",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.6590999999999951,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.126Z"
+    },
+    {
+      "name": "Get Archives",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5799000000000092,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.127Z"
+    },
+    {
+      "name": "Get Bookmarks",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.6313000000000102,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.127Z"
+    },
+    {
+      "name": "Get Workflows",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.9030999999999949,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.128Z"
+    },
+    {
+      "name": "Get Workflow Tools",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5752999999999986,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.129Z"
+    },
+    {
+      "name": "List MCP Servers",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5666999999999973,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.129Z"
+    },
+    {
+      "name": "Get MCP Servers",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5364000000000146,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.130Z"
+    },
+    {
+      "name": "Get Upload Limit",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5908000000000015,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.131Z"
+    },
+    {
+      "name": "Get User Details",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5485999999999933,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.131Z"
+    },
+    {
+      "name": "Get User Preferences",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.5013000000000147,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.132Z"
+    },
+    {
+      "name": "Get Music History",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.6229999999999905,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.132Z"
+    },
+    {
+      "name": "Get Exports",
+      "category": "API Endpoints",
+      "status": "FAIL",
+      "responseTime": 0.588799999999992,
+      "error": "fetch failed",
+      "details": "fetch failed",
+      "timestamp": "2025-11-25T06:02:50.133Z"
+    }
+  ]
+}

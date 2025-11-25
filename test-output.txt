@@ -1,0 +1,215 @@
+
+> wasp-ai@1.25.0 test:comprehensive G:\project\better-chatbot
+> tsx scripts/comprehensive-test.ts
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ   COMPREHENSIVE WASPAI CHATBOT TEST SUITE                  Γòæ
+Γòæ   Testing all AI models, APIs, and features                Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+≡ƒñû TESTING AI MODELS...
+
+Testing OpenAI GPT-4o Mini...
+Γ¥î OpenAI GPT-4o Mini - 49.53ms
+   Error: fetch failed
+Testing Google Gemini...
+Γ¥î Google Gemini - 2.39ms
+   Error: fetch failed
+Testing Anthropic Claude...
+Γ¥î Anthropic Claude - 2.32ms
+   Error: fetch failed
+Testing Groq Mixtral...
+Γ¥î Groq Mixtral - 1.90ms
+   Error: fetch failed
+Testing xAI Grok...
+Γ¥î xAI Grok - 2.71ms
+   Error: fetch failed
+Testing Pollinations Gemini...
+Γ¥î Pollinations Gemini - 2.35ms
+   Error: fetch failed
+Testing Pollinations Mistral...
+Γ¥î Pollinations Mistral - 1.85ms
+   Error: fetch failed
+Testing DeepSeek Chat...
+Γ¥î DeepSeek Chat - 1.71ms
+   Error: fetch failed
+Testing Qwen Turbo...
+Γ¥î Qwen Turbo - 2.23ms
+   Error: fetch failed
+Testing Kiwi AI...
+Γ¥î Kiwi AI - 2.50ms
+   Error: fetch failed
+
+≡ƒû╝∩╕Å  TESTING IMAGE GENERATION...
+
+Testing ImgCV (Fastest)...
+Γ¥î ImgCV (Fastest) - 1.42ms
+   Error: fetch failed
+Testing Flux Max (High Quality)...
+Γ¥î Flux Max (High Quality) - 1.34ms
+   Error: fetch failed
+Testing GPT Imager...
+Γ¥î GPT Imager - 1.56ms
+   Error: fetch failed
+Testing Google Imagen 3...
+Γ¥î Google Imagen 3 - 1.30ms
+   Error: fetch failed
+Testing Nano Banana...
+Γ¥î Nano Banana - 1.86ms
+   Error: fetch failed
+Testing Stable Diffusion XL...
+Γ¥î Stable Diffusion XL - 1.71ms
+   Error: fetch failed
+
+≡ƒÄ¼ TESTING VIDEO GENERATION...
+
+Testing SORA Video Generation...
+Γ¥î SORA Video Generation - 2.07ms
+   Error: fetch failed
+
+≡ƒöì TESTING WEB SEARCH...
+
+Testing web search: "latest AI news 2024"...
+Γ¥î Web Search: "latest AI news 2024" - 1.34ms
+   Error: fetch failed
+Testing web search: "TypeScript best practices"...
+Γ¥î Web Search: "TypeScript best practices" - 1.81ms
+   Error: fetch failed
+Testing web search: "React performance optimization"...
+Γ¥î Web Search: "React performance optimization" - 1.47ms
+   Error: fetch failed
+
+≡ƒôä TESTING DOCUMENT GENERATION...
+
+Testing PDF Generation...
+Γ¥î PDF Generation - 2.00ms
+   Error: fetch failed
+Testing Word Document...
+Γ¥î Word Document - 1.79ms
+   Error: fetch failed
+Testing CSV Generation...
+Γ¥î CSV Generation - 1.41ms
+   Error: fetch failed
+Testing Text File...
+Γ¥î Text File - 1.38ms
+   Error: fetch failed
+
+≡ƒô▒ TESTING QR CODE GENERATION...
+
+Testing QR Code...
+Γ¥î QR Code - 1.50ms
+   Error: fetch failed
+Testing QR Code with Logo...
+Γ¥î QR Code with Logo - 2.40ms
+   Error: fetch failed
+
+≡ƒöæ TESTING KEYWORD DETECTION...
+
+Testing Image Generation Keyword: "generate image of a cat"...
+Γ¥î Image Generation Keyword - 1.32ms
+   Error: fetch failed
+Testing Video Generation Keyword: "create video of a dog running"...
+Γ¥î Video Generation Keyword - 1.94ms
+   Error: fetch failed
+Testing PDF Generation Keyword: "generate pdf with my data"...
+Γ¥î PDF Generation Keyword - 1.42ms
+   Error: fetch failed
+Testing Word Document Keyword: "create word document"...
+Γ¥î Word Document Keyword - 1.57ms
+   Error: fetch failed
+Testing CSV Generation Keyword: "generate csv file"...
+Γ¥î CSV Generation Keyword - 1.42ms
+   Error: fetch failed
+Testing Text File Keyword: "create text file"...
+Γ¥î Text File Keyword - 1.72ms
+   Error: fetch failed
+Testing QR Code Keyword: "generate qr code"...
+Γ¥î QR Code Keyword - 1.86ms
+   Error: fetch failed
+
+≡ƒöî TESTING API ENDPOINTS...
+
+Testing Get Threads...
+Γ¥î Get Threads - 1.42ms
+   Error: fetch failed
+Testing Get Agents...
+Γ¥î Get Agents - 2.36ms
+   Error: fetch failed
+Testing List MCP Servers...
+Γ¥î List MCP Servers - 1.92ms
+   Error: fetch failed
+Testing Get Models...
+Γ¥î Get Models - 1.71ms
+   Error: fetch failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                    TEST SUMMARY                            Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+Total Tests: 37
+Γ£à Passed: 0
+Γ¥î Failed: 37
+ΓÜá∩╕Å  Partial: 0
+ΓÅ¡∩╕Å  Skipped: 0
+ΓÅ▒∩╕Å  Total Duration: -1764049794.03s
+
+≡ƒôê BY CATEGORY:
+
+AI Models:
+  Total: 10
+  Passed: 0
+  Failed: 10
+  Success Rate: 0.00%
+  Avg Response Time: 6.95ms
+
+Image Generation:
+  Total: 6
+  Passed: 0
+  Failed: 6
+  Success Rate: 0.00%
+  Avg Response Time: 1.53ms
+
+Video Generation:
+  Total: 1
+  Passed: 0
+  Failed: 1
+  Success Rate: 0.00%
+  Avg Response Time: 2.07ms
+
+Web Search:
+  Total: 3
+  Passed: 0
+  Failed: 3
+  Success Rate: 0.00%
+  Avg Response Time: 1.54ms
+
+Document Generation:
+  Total: 4
+  Passed: 0
+  Failed: 4
+  Success Rate: 0.00%
+  Avg Response Time: 1.65ms
+
+QR Code Generation:
+  Total: 2
+  Passed: 0
+  Failed: 2
+  Success Rate: 0.00%
+  Avg Response Time: 1.95ms
+
+Keyword Detection:
+  Total: 7
+  Passed: 0
+  Failed: 7
+  Success Rate: 0.00%
+  Avg Response Time: 1.61ms
+
+API Endpoints:
+  Total: 4
+  Passed: 0
+  Failed: 4
+  Success Rate: 0.00%
+  Avg Response Time: 1.85ms
+
+
+≡ƒôè Full report saved to: G:\project\better-chatbot\test-reports\comprehensive-test-2025-11-25T05-49-54-429Z.json

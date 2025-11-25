@@ -1,43 +1,13 @@
-import * as fs from "fs";
-import * as path from "path";
-
-interface TestResult {
-  name: string;
-  category: string;
-  status: "pass" | "fail" | "timeout" | "error";
-  responseTime: number;
-  error?: string;
-  details?: any;
-  timestamp: string;
-}
-
-interface TestReport {
-  timestamp: string;
-  totalTests: number;
-  passed: number;
-  failed: number;
-  timeout: number;
-  errors: number;
-  results: TestResult[];
-  summary: {
-    byCategory: Record<
-      string,
-      { total: number; passed: number; failed: number }
-    >;
-    averageResponseTime: number;
-    slowestTest: TestResult;
-    fastestTest: TestResult;
-  };
-}
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const fs = require("fs");
+const path = require("path");
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 const REPORT_DIR = path.join(process.cwd(), "test-reports");
-
 // Ensure report directory exists
 if (!fs.existsSync(REPORT_DIR)) {
   fs.mkdirSync(REPORT_DIR, { recursive: true });
 }
-
 // Test configurations
 const tests = {
   // AI Models Tests
@@ -67,7 +37,6 @@ const tests = {
       prompt: "Explain REST APIs",
     },
   ],
-
   // Image Generation Tests
   imageGeneration: [
     {
@@ -91,7 +60,6 @@ const tests = {
       prompt: "A colorful abstract art piece",
     },
   ],
-
   // Video Generation Tests
   videoGeneration: [
     {
@@ -100,7 +68,6 @@ const tests = {
       prompt: "A person walking through a park",
     },
   ],
-
   // Web Search Tests
   webSearch: [
     {
@@ -112,7 +79,6 @@ const tests = {
       query: "TypeScript tutorial for beginners",
     },
   ],
-
   // Document Generation Tests
   documentGeneration: [
     {
@@ -134,7 +100,6 @@ const tests = {
       content: "Name,Age,City\nJohn,25,NYC\nJane,30,LA",
     },
   ],
-
   // QR Code Tests
   qrCode: [
     {
@@ -143,8 +108,7 @@ const tests = {
     },
   ],
 };
-
-async function testAIModel(test: any): Promise<TestResult> {
+async function testAIModel(test) {
   const startTime = Date.now();
   try {
     const response = await fetch(`${BASE_URL}/api/chat`, {
@@ -171,9 +135,7 @@ async function testAIModel(test: any): Promise<TestResult> {
       }),
       signal: AbortSignal.timeout(30000),
     });
-
     const responseTime = Date.now() - startTime;
-
     if (!response.ok) {
       return {
         name: test.name,
@@ -184,7 +146,6 @@ async function testAIModel(test: any): Promise<TestResult> {
         timestamp: new Date().toISOString(),
       };
     }
-
     return {
       name: test.name,
       category: "AI Models",
@@ -192,7 +153,7 @@ async function testAIModel(test: any): Promise<TestResult> {
       responseTime,
       timestamp: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error) {
     const responseTime = Date.now() - startTime;
     return {
       name: test.name,
@@ -204,8 +165,7 @@ async function testAIModel(test: any): Promise<TestResult> {
     };
   }
 }
-
-async function testImageGeneration(test: any): Promise<TestResult> {
+async function testImageGeneration(test) {
   const startTime = Date.now();
   try {
     const response = await fetch(`${BASE_URL}/api/chat`, {
@@ -231,9 +191,7 @@ async function testImageGeneration(test: any): Promise<TestResult> {
       }),
       signal: AbortSignal.timeout(60000),
     });
-
     const responseTime = Date.now() - startTime;
-
     if (!response.ok) {
       return {
         name: test.name,
@@ -244,7 +202,6 @@ async function testImageGeneration(test: any): Promise<TestResult> {
         timestamp: new Date().toISOString(),
       };
     }
-
     return {
       name: test.name,
       category: "Image Generation",
@@ -252,7 +209,7 @@ async function testImageGeneration(test: any): Promise<TestResult> {
       responseTime,
       timestamp: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error) {
     const responseTime = Date.now() - startTime;
     return {
       name: test.name,
@@ -264,8 +221,7 @@ async function testImageGeneration(test: any): Promise<TestResult> {
     };
   }
 }
-
-async function testVideoGeneration(test: any): Promise<TestResult> {
+async function testVideoGeneration(test) {
   const startTime = Date.now();
   try {
     const response = await fetch(`${BASE_URL}/api/chat`, {
@@ -289,9 +245,7 @@ async function testVideoGeneration(test: any): Promise<TestResult> {
       }),
       signal: AbortSignal.timeout(120000),
     });
-
     const responseTime = Date.now() - startTime;
-
     if (!response.ok) {
       return {
         name: test.name,
@@ -302,7 +256,6 @@ async function testVideoGeneration(test: any): Promise<TestResult> {
         timestamp: new Date().toISOString(),
       };
     }
-
     return {
       name: test.name,
       category: "Video Generation",
@@ -310,7 +263,7 @@ async function testVideoGeneration(test: any): Promise<TestResult> {
       responseTime,
       timestamp: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error) {
     const responseTime = Date.now() - startTime;
     return {
       name: test.name,
@@ -322,8 +275,7 @@ async function testVideoGeneration(test: any): Promise<TestResult> {
     };
   }
 }
-
-async function testWebSearch(test: any): Promise<TestResult> {
+async function testWebSearch(test) {
   const startTime = Date.now();
   try {
     const response = await fetch(`${BASE_URL}/api/chat`, {
@@ -353,9 +305,7 @@ async function testWebSearch(test: any): Promise<TestResult> {
       }),
       signal: AbortSignal.timeout(45000),
     });
-
     const responseTime = Date.now() - startTime;
-
     if (!response.ok) {
       return {
         name: test.name,
@@ -366,7 +316,6 @@ async function testWebSearch(test: any): Promise<TestResult> {
         timestamp: new Date().toISOString(),
       };
     }
-
     return {
       name: test.name,
       category: "Web Search",
@@ -374,7 +323,7 @@ async function testWebSearch(test: any): Promise<TestResult> {
       responseTime,
       timestamp: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error) {
     const responseTime = Date.now() - startTime;
     return {
       name: test.name,
@@ -386,8 +335,7 @@ async function testWebSearch(test: any): Promise<TestResult> {
     };
   }
 }
-
-async function testDocumentGeneration(test: any): Promise<TestResult> {
+async function testDocumentGeneration(test) {
   const startTime = Date.now();
   try {
     const toolName =
@@ -396,7 +344,6 @@ async function testDocumentGeneration(test: any): Promise<TestResult> {
         : test.type === "word"
           ? "generate-word-document"
           : "generate-csv";
-
     const response = await fetch(`${BASE_URL}/api/chat`, {
       method: "POST",
       headers: {
@@ -424,9 +371,7 @@ async function testDocumentGeneration(test: any): Promise<TestResult> {
       }),
       signal: AbortSignal.timeout(30000),
     });
-
     const responseTime = Date.now() - startTime;
-
     if (!response.ok) {
       return {
         name: test.name,
@@ -437,7 +382,6 @@ async function testDocumentGeneration(test: any): Promise<TestResult> {
         timestamp: new Date().toISOString(),
       };
     }
-
     return {
       name: test.name,
       category: "Document Generation",
@@ -445,7 +389,7 @@ async function testDocumentGeneration(test: any): Promise<TestResult> {
       responseTime,
       timestamp: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error) {
     const responseTime = Date.now() - startTime;
     return {
       name: test.name,
@@ -457,8 +401,7 @@ async function testDocumentGeneration(test: any): Promise<TestResult> {
     };
   }
 }
-
-async function testQRCode(test: any): Promise<TestResult> {
+async function testQRCode(test) {
   const startTime = Date.now();
   try {
     const response = await fetch(`${BASE_URL}/api/chat`, {
@@ -488,9 +431,7 @@ async function testQRCode(test: any): Promise<TestResult> {
       }),
       signal: AbortSignal.timeout(30000),
     });
-
     const responseTime = Date.now() - startTime;
-
     if (!response.ok) {
       return {
         name: test.name,
@@ -501,7 +442,6 @@ async function testQRCode(test: any): Promise<TestResult> {
         timestamp: new Date().toISOString(),
       };
     }
-
     return {
       name: test.name,
       category: "QR Code",
@@ -509,7 +449,7 @@ async function testQRCode(test: any): Promise<TestResult> {
       responseTime,
       timestamp: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error) {
     const responseTime = Date.now() - startTime;
     return {
       name: test.name,
@@ -521,12 +461,9 @@ async function testQRCode(test: any): Promise<TestResult> {
     };
   }
 }
-
-async function runAllTests(): Promise<TestReport> {
+async function runAllTests() {
   console.log("🚀 Starting comprehensive feature tests...\n");
-
-  const results: TestResult[] = [];
-
+  const results = [];
   // Test AI Models
   console.log("📝 Testing AI Models...");
   for (const test of tests.aiModels) {
@@ -536,7 +473,6 @@ async function runAllTests(): Promise<TestReport> {
       `  ${result.name}: ${result.status} (${result.responseTime}ms)`,
     );
   }
-
   // Test Image Generation
   console.log("\n🖼️  Testing Image Generation...");
   for (const test of tests.imageGeneration) {
@@ -546,7 +482,6 @@ async function runAllTests(): Promise<TestReport> {
       `  ${result.name}: ${result.status} (${result.responseTime}ms)`,
     );
   }
-
   // Test Video Generation
   console.log("\n🎬 Testing Video Generation...");
   for (const test of tests.videoGeneration) {
@@ -556,7 +491,6 @@ async function runAllTests(): Promise<TestReport> {
       `  ${result.name}: ${result.status} (${result.responseTime}ms)`,
     );
   }
-
   // Test Web Search
   console.log("\n🔍 Testing Web Search...");
   for (const test of tests.webSearch) {
@@ -566,7 +500,6 @@ async function runAllTests(): Promise<TestReport> {
       `  ${result.name}: ${result.status} (${result.responseTime}ms)`,
     );
   }
-
   // Test Document Generation
   console.log("\n📄 Testing Document Generation...");
   for (const test of tests.documentGeneration) {
@@ -576,7 +509,6 @@ async function runAllTests(): Promise<TestReport> {
       `  ${result.name}: ${result.status} (${result.responseTime}ms)`,
     );
   }
-
   // Test QR Code
   console.log("\n📱 Testing QR Code...");
   for (const test of tests.qrCode) {
@@ -586,25 +518,18 @@ async function runAllTests(): Promise<TestReport> {
       `  ${result.name}: ${result.status} (${result.responseTime}ms)`,
     );
   }
-
   // Generate report
   const report = generateReport(results);
   saveReport(report);
   printReport(report);
-
   return report;
 }
-
-function generateReport(results: TestResult[]): TestReport {
+function generateReport(results) {
   const passed = results.filter((r) => r.status === "pass").length;
   const failed = results.filter((r) => r.status === "fail").length;
   const timeout = results.filter((r) => r.status === "timeout").length;
   const errors = results.filter((r) => r.status === "error").length;
-
-  const byCategory: Record<
-    string,
-    { total: number; passed: number; failed: number }
-  > = {};
+  const byCategory = {};
   for (const result of results) {
     if (!byCategory[result.category]) {
       byCategory[result.category] = { total: 0, passed: 0, failed: 0 };
@@ -616,17 +541,14 @@ function generateReport(results: TestResult[]): TestReport {
       byCategory[result.category].failed++;
     }
   }
-
   const responseTimes = results.map((r) => r.responseTime);
   const averageResponseTime =
     responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-
   const sortedByTime = [...results].sort(
     (a, b) => b.responseTime - a.responseTime,
   );
   const slowestTest = sortedByTime[0];
   const fastestTest = sortedByTime[sortedByTime.length - 1];
-
   return {
     timestamp: new Date().toISOString(),
     totalTests: results.length,
@@ -643,20 +565,16 @@ function generateReport(results: TestResult[]): TestReport {
     },
   };
 }
-
-function saveReport(report: TestReport): void {
+function saveReport(report) {
   const filename = `test-report-${Date.now()}.json`;
   const filepath = path.join(REPORT_DIR, filename);
-
   fs.writeFileSync(filepath, JSON.stringify(report, null, 2));
   console.log(`\n✅ Report saved to: ${filepath}`);
 }
-
-function printReport(report: TestReport): void {
+function printReport(report) {
   console.log("\n" + "=".repeat(80));
   console.log("📊 TEST REPORT");
   console.log("=".repeat(80));
-
   console.log(`\n⏱️  Timestamp: ${report.timestamp}`);
   console.log(`\n📈 Summary:`);
   console.log(`   Total Tests: ${report.totalTests}`);
@@ -666,7 +584,6 @@ function printReport(report: TestReport): void {
   console.log(`   ❌ Failed: ${report.failed}`);
   console.log(`   ⏳ Timeout: ${report.timeout}`);
   console.log(`   ⚠️  Errors: ${report.errors}`);
-
   console.log(`\n⚡ Performance:`);
   console.log(
     `   Average Response Time: ${report.summary.averageResponseTime.toFixed(0)}ms`,
@@ -677,7 +594,6 @@ function printReport(report: TestReport): void {
   console.log(
     `   Slowest: ${report.summary.slowestTest.name} (${report.summary.slowestTest.responseTime}ms)`,
   );
-
   console.log(`\n📂 By Category:`);
   for (const [category, stats] of Object.entries(report.summary.byCategory)) {
     const passRate = ((stats.passed / stats.total) * 100).toFixed(1);
@@ -685,7 +601,6 @@ function printReport(report: TestReport): void {
       `   ${category}: ${stats.passed}/${stats.total} passed (${passRate}%)`,
     );
   }
-
   console.log(`\n❌ Failed Tests:`);
   const failedTests = report.results.filter((r) => r.status !== "pass");
   if (failedTests.length === 0) {
@@ -698,9 +613,7 @@ function printReport(report: TestReport): void {
       }
     }
   }
-
   console.log("\n" + "=".repeat(80));
 }
-
 // Run tests
 runAllTests().catch(console.error);

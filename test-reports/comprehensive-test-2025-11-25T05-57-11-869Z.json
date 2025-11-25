@@ -1,0 +1,591 @@
+{
+  "timestamp": "2025-11-25T05:57:11.985Z",
+  "totalDuration": -1764050231574.8948,
+  "summary": {
+    "total": 62,
+    "passed": 28,
+    "failed": 33,
+    "partial": 1,
+    "skipped": 0
+  },
+  "categories": [
+    {
+      "category": "AI Models",
+      "total": 10,
+      "passed": 0,
+      "failed": 10,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 6.003230000000007,
+      "successRate": 0
+    },
+    {
+      "category": "Image Generation",
+      "total": 6,
+      "passed": 0,
+      "failed": 6,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 1.4787666666666628,
+      "successRate": 0
+    },
+    {
+      "category": "Video Generation",
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 1.438999999999993,
+      "successRate": 0
+    },
+    {
+      "category": "Web Search",
+      "total": 3,
+      "passed": 0,
+      "failed": 3,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 1.7360999999999933,
+      "successRate": 0
+    },
+    {
+      "category": "Document Generation",
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 1.9394000000000204,
+      "successRate": 0
+    },
+    {
+      "category": "QR Code Generation",
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 1.69825000000003,
+      "successRate": 0
+    },
+    {
+      "category": "Keyword Detection",
+      "total": 7,
+      "passed": 0,
+      "failed": 7,
+      "partial": 0,
+      "skipped": 0,
+      "avgResponseTime": 1.5344571428571336,
+      "successRate": 0
+    },
+    {
+      "category": "API Endpoints",
+      "total": 29,
+      "passed": 28,
+      "failed": 0,
+      "partial": 1,
+      "skipped": 0,
+      "avgResponseTime": 0.228444827586196,
+      "successRate": 96.55172413793103
+    }
+  ],
+  "results": [
+    {
+      "name": "OpenAI GPT-4o Mini",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 40.238500000000016,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.913Z"
+    },
+    {
+      "name": "Google Gemini",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 2.613500000000016,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.916Z"
+    },
+    {
+      "name": "Anthropic Claude",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 2.4292000000000087,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.919Z"
+    },
+    {
+      "name": "Groq Mixtral",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.9284000000000106,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.921Z"
+    },
+    {
+      "name": "xAI Grok",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 2.1074999999999875,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.923Z"
+    },
+    {
+      "name": "Pollinations Gemini",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.976699999999994,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.925Z"
+    },
+    {
+      "name": "Pollinations Mistral",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 1.9797000000000082,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.927Z"
+    },
+    {
+      "name": "DeepSeek Chat",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 2.0526000000000124,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.929Z"
+    },
+    {
+      "name": "Qwen Turbo",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 2.454400000000021,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.932Z"
+    },
+    {
+      "name": "Kiwi AI",
+      "category": "AI Models",
+      "status": "FAIL",
+      "responseTime": 2.251800000000003,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.934Z"
+    },
+    {
+      "name": "ImgCV (Fastest)",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 1.7536000000000058,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.936Z"
+    },
+    {
+      "name": "Flux Max (High Quality)",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 1.0209999999999866,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.937Z"
+    },
+    {
+      "name": "GPT Imager",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 1.8038999999999987,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.939Z"
+    },
+    {
+      "name": "Google Imagen 3",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 1.230400000000003,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.941Z"
+    },
+    {
+      "name": "Nano Banana",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 1.6210999999999842,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.942Z"
+    },
+    {
+      "name": "Stable Diffusion XL",
+      "category": "Image Generation",
+      "status": "FAIL",
+      "responseTime": 1.4425999999999988,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.944Z"
+    },
+    {
+      "name": "SORA Video Generation",
+      "category": "Video Generation",
+      "status": "FAIL",
+      "responseTime": 1.438999999999993,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.946Z"
+    },
+    {
+      "name": "Web Search: \"latest AI news 2024\"",
+      "category": "Web Search",
+      "status": "FAIL",
+      "responseTime": 1.8697999999999695,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.948Z"
+    },
+    {
+      "name": "Web Search: \"TypeScript best practices\"",
+      "category": "Web Search",
+      "status": "FAIL",
+      "responseTime": 1.6677999999999997,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.950Z"
+    },
+    {
+      "name": "Web Search: \"React performance optimization\"",
+      "category": "Web Search",
+      "status": "FAIL",
+      "responseTime": 1.6707000000000107,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.951Z"
+    },
+    {
+      "name": "PDF Generation",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 1.886700000000019,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.954Z"
+    },
+    {
+      "name": "Word Document",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 1.9682000000000244,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.956Z"
+    },
+    {
+      "name": "CSV Generation",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 2.072300000000041,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.958Z"
+    },
+    {
+      "name": "Text File",
+      "category": "Document Generation",
+      "status": "FAIL",
+      "responseTime": 1.8303999999999974,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.960Z"
+    },
+    {
+      "name": "QR Code",
+      "category": "QR Code Generation",
+      "status": "FAIL",
+      "responseTime": 1.907000000000039,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.962Z"
+    },
+    {
+      "name": "QR Code with Logo",
+      "category": "QR Code Generation",
+      "status": "FAIL",
+      "responseTime": 1.489500000000021,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.964Z"
+    },
+    {
+      "name": "Image Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.7240999999999644,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.966Z"
+    },
+    {
+      "name": "Video Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.6673000000000116,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.968Z"
+    },
+    {
+      "name": "PDF Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.2199999999999704,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.969Z"
+    },
+    {
+      "name": "Word Document Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.0381000000000427,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.970Z"
+    },
+    {
+      "name": "CSV Generation Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.7789999999999964,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.972Z"
+    },
+    {
+      "name": "Text File Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.5375999999999976,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.974Z"
+    },
+    {
+      "name": "QR Code Keyword",
+      "category": "Keyword Detection",
+      "status": "FAIL",
+      "responseTime": 1.7750999999999522,
+      "error": "fetch failed",
+      "timestamp": "2025-11-25T05:57:11.975Z"
+    },
+    {
+      "name": "Chat Route Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.4667999999999779,
+      "details": "API handler found with response handling (42954 bytes)",
+      "timestamp": "2025-11-25T05:57:11.976Z"
+    },
+    {
+      "name": "Chat Models",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.25619999999997844,
+      "details": "API handler found with response handling (1161 bytes)",
+      "timestamp": "2025-11-25T05:57:11.977Z"
+    },
+    {
+      "name": "Chat Title Generation",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2319999999999709,
+      "details": "API handler found with response handling (2300 bytes)",
+      "timestamp": "2025-11-25T05:57:11.977Z"
+    },
+    {
+      "name": "Chat Export",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.23250000000001592,
+      "details": "API handler found with response handling (856 bytes)",
+      "timestamp": "2025-11-25T05:57:11.977Z"
+    },
+    {
+      "name": "Thread Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2533999999999992,
+      "details": "API handler found with response handling (382 bytes)",
+      "timestamp": "2025-11-25T05:57:11.978Z"
+    },
+    {
+      "name": "Agent Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.23680000000001655,
+      "details": "API handler found with response handling (2796 bytes)",
+      "timestamp": "2025-11-25T05:57:11.978Z"
+    },
+    {
+      "name": "Agent AI",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.24160000000000537,
+      "details": "API handler found with response handling (2701 bytes)",
+      "timestamp": "2025-11-25T05:57:11.978Z"
+    },
+    {
+      "name": "Character Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.21419999999994843,
+      "details": "API handler found with response handling (3018 bytes)",
+      "timestamp": "2025-11-25T05:57:11.979Z"
+    },
+    {
+      "name": "Archive Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2068999999999619,
+      "details": "API handler found with response handling (1488 bytes)",
+      "timestamp": "2025-11-25T05:57:11.979Z"
+    },
+    {
+      "name": "Bookmark Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.23129999999997608,
+      "details": "API handler found with response handling (2237 bytes)",
+      "timestamp": "2025-11-25T05:57:11.979Z"
+    },
+    {
+      "name": "Workflow Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.199799999999982,
+      "details": "API handler found with response handling (1793 bytes)",
+      "timestamp": "2025-11-25T05:57:11.979Z"
+    },
+    {
+      "name": "Workflow Tools",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.20729999999997517,
+      "details": "API handler found with response handling (362 bytes)",
+      "timestamp": "2025-11-25T05:57:11.980Z"
+    },
+    {
+      "name": "MCP Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.19060000000001764,
+      "details": "API handler found with response handling (1210 bytes)",
+      "timestamp": "2025-11-25T05:57:11.980Z"
+    },
+    {
+      "name": "MCP List",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.21619999999995798,
+      "details": "API handler found with response handling (1864 bytes)",
+      "timestamp": "2025-11-25T05:57:11.980Z"
+    },
+    {
+      "name": "Storage Upload Limit",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.13450000000000273,
+      "details": "API handler found with response handling (1195 bytes)",
+      "timestamp": "2025-11-25T05:57:11.980Z"
+    },
+    {
+      "name": "Storage Upload URL",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.1524000000000001,
+      "details": "API handler found with response handling (5128 bytes)",
+      "timestamp": "2025-11-25T05:57:11.981Z"
+    },
+    {
+      "name": "Storage Ingest",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.10899999999998045,
+      "details": "API handler found with response handling (1704 bytes)",
+      "timestamp": "2025-11-25T05:57:11.981Z"
+    },
+    {
+      "name": "User Details",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.30110000000001946,
+      "details": "API handler found with response handling (587 bytes)",
+      "timestamp": "2025-11-25T05:57:11.981Z"
+    },
+    {
+      "name": "User Preferences",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2026000000000181,
+      "details": "API handler found with response handling (1397 bytes)",
+      "timestamp": "2025-11-25T05:57:11.981Z"
+    },
+    {
+      "name": "Music Generation",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.23689999999999145,
+      "details": "API handler found with response handling (9785 bytes)",
+      "timestamp": "2025-11-25T05:57:11.982Z"
+    },
+    {
+      "name": "Music Lyrics",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2717999999999847,
+      "details": "API handler found with response handling (2162 bytes)",
+      "timestamp": "2025-11-25T05:57:11.982Z"
+    },
+    {
+      "name": "Music History",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.20760000000001355,
+      "details": "API handler found with response handling (985 bytes)",
+      "timestamp": "2025-11-25T05:57:11.982Z"
+    },
+    {
+      "name": "Audio Generation",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2600999999999658,
+      "details": "API handler found with response handling (2109 bytes)",
+      "timestamp": "2025-11-25T05:57:11.983Z"
+    },
+    {
+      "name": "Text to Speech",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.21289999999999054,
+      "details": "API handler found with response handling (2985 bytes)",
+      "timestamp": "2025-11-25T05:57:11.983Z"
+    },
+    {
+      "name": "Export Handler",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2008999999999901,
+      "details": "API handler found with response handling (653 bytes)",
+      "timestamp": "2025-11-25T05:57:11.983Z"
+    },
+    {
+      "name": "Auth Handler",
+      "category": "API Endpoints",
+      "status": "PARTIAL",
+      "responseTime": 0.31389999999998963,
+      "details": "API handler found but response handling may be incomplete",
+      "timestamp": "2025-11-25T05:57:11.983Z"
+    },
+    {
+      "name": "Forgot Password",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.2349999999999568,
+      "details": "API handler found with response handling (1226 bytes)",
+      "timestamp": "2025-11-25T05:57:11.984Z"
+    },
+    {
+      "name": "Reset Password",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.20109999999999673,
+      "details": "API handler found with response handling (1631 bytes)",
+      "timestamp": "2025-11-25T05:57:11.984Z"
+    },
+    {
+      "name": "Verify Email",
+      "category": "API Endpoints",
+      "status": "PASS",
+      "responseTime": 0.19950000000000045,
+      "details": "API handler found with response handling (1718 bytes)",
+      "timestamp": "2025-11-25T05:57:11.984Z"
+    }
+  ]
+}
