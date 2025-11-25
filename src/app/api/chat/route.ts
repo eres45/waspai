@@ -302,18 +302,9 @@ export async function POST(request: Request) {
         );
         if (exists) return;
 
-        // Skip file attachments if they were processed by OCR (images/PDFs)
+        // Always add file attachments to message parts
+        // Even if OCR extracted text, we still need the image/file part for tools like edit-image
         if (attachment.type === "file") {
-          const isImageOrPdf =
-            attachment.mediaType?.startsWith("image/") ||
-            attachment.mediaType === "application/pdf";
-
-          // If OCR processed this file, skip adding it as attachment
-          // The extracted text is already in enrichedMessageText
-          if (isImageOrPdf && enrichedMessageText !== messageText) {
-            return;
-          }
-
           attachmentParts.push({
             type: "file",
             url: attachment.url,
