@@ -21,7 +21,10 @@ export function GitHubOAuthButton() {
         return;
       }
 
-      // Redirect happens automatically via server action
+      // Redirect to GitHub OAuth URL
+      if (result.url) {
+        window.location.href = result.url;
+      }
     } catch (error) {
       toast.error(
         error instanceof Error

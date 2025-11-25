@@ -98,7 +98,7 @@ export async function signUpAction(data: {
 
 export async function signInWithGitHubAction() {
   try {
-    const { error } = await supabaseAuth.auth.signInWithOAuth({
+    const { data, error } = await supabaseAuth.auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback`,
@@ -113,9 +113,17 @@ export async function signInWithGitHubAction() {
       };
     }
 
-    // Redirect happens automatically
+    // Return the OAuth URL for client to redirect to
+    if (data?.url) {
+      return {
+        success: true,
+        url: data.url,
+      };
+    }
+
     return {
-      success: true,
+      success: false,
+      error: "No OAuth URL returned from Supabase",
     };
   } catch (error) {
     logger.error("GitHub OAuth error:", error);
