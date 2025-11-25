@@ -28,6 +28,7 @@ export type BasicUser = Omit<
   | "banExpires"
 > & {
   image?: string | null;
+  githubUsername?: string | null;
   role?: string | null;
   banned?: boolean | null;
   banReason?: string | null;
