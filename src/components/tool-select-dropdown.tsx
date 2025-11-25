@@ -1071,6 +1071,12 @@ function AgentSelector({
 }
 
 function ImageEditingSelector() {
+  const handleImageEditClick = () => {
+    toast.info(
+      "Upload an image first, then use the Edit Image menu to edit it",
+    );
+  };
+
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
@@ -1080,19 +1086,28 @@ function ImageEditingSelector() {
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleImageEditClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 ✏️
               </span>
               Edit Image
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleImageEditClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 🎨
               </span>
               Remove Background
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleImageEditClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 ✨
               </span>
@@ -1106,6 +1121,10 @@ function ImageEditingSelector() {
 }
 
 function VideoGenerationSelector() {
+  const handleVideoGenClick = () => {
+    toast.info("Describe the video you want to generate in the chat message");
+  };
+
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
@@ -1115,7 +1134,10 @@ function VideoGenerationSelector() {
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleVideoGenClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 🎬
               </span>
@@ -1129,6 +1151,12 @@ function VideoGenerationSelector() {
 }
 
 function QRCodeSelector() {
+  const handleQRCodeClick = () => {
+    toast.info(
+      "Ask the AI to generate a QR code by describing what you want to encode",
+    );
+  };
+
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
@@ -1138,7 +1166,10 @@ function QRCodeSelector() {
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleQRCodeClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 ⬜
               </span>
@@ -1152,6 +1183,10 @@ function QRCodeSelector() {
 }
 
 function DocumentToolsSelector() {
+  const handleDocumentClick = () => {
+    toast.info("Ask the AI to generate documents by describing what you need");
+  };
+
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
@@ -1161,26 +1196,38 @@ function DocumentToolsSelector() {
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleDocumentClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 📄
               </span>
               Generate PDF
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleDocumentClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
-                📊
+                📝
               </span>
               Generate Document
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleDocumentClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
-                📈
+                📊
               </span>
               Generate Presentation
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-xs">
+            <DropdownMenuItem
+              onClick={handleDocumentClick}
+              className="cursor-pointer text-xs"
+            >
               <span className="mr-2 size-4 flex items-center justify-center">
                 💾
               </span>
