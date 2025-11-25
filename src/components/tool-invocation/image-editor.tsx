@@ -101,7 +101,7 @@ function PureImageEditorToolInvocation({
             <img
               src={image.url}
               alt="Edited image"
-              className="w-full h-auto object-cover max-h-96"
+              className="w-full h-auto object-contain"
             />
             {/* Download button - top right corner */}
             <button

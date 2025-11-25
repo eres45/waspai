@@ -76,10 +76,6 @@ export const editImageTool = createTool({
 
       return {
         image: uploadedImage,
-        guide:
-          uploadedImage.url.length > 0
-            ? "The image has been successfully edited and is now displayed above. If you need any further edits or adjustments, please let me know."
-            : "I apologize, but the image editing was not successful. Please try again with a different prompt.",
       };
     } catch (e) {
       logger.error(e);
