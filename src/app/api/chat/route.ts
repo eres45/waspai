@@ -679,6 +679,45 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         logger.info(`Edit Image State Model: ${editImageModel}`);
         logger.info(`Image URL: ${imageUrl}`);
 
+        // Detect edit image request from keywords (smart intent + edit words)
+        const hasEditImageKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+
+          const intentWords = [
+            "edit",
+            "change",
+            "recolor",
+            "color",
+            "modify",
+            "adjust",
+            "can you",
+            "please",
+          ];
+          const hasIntent = intentWords.some((word) => text.includes(word));
+
+          const editWords = [
+            "color",
+            "recolor",
+            "edit",
+            "change",
+            "modify",
+            "adjust",
+            "top",
+            "bottom",
+            "sleeve",
+            "shirt",
+            "dress",
+            "hair",
+            "background",
+          ];
+          const hasEditWord = editWords.some((word) => text.includes(word));
+
+          return hasIntent && hasEditWord && imageFilePart;
+        });
+
         // Detect remove background request from keywords as fallback
         const hasRemoveBgKeywords = lastMessage?.parts?.some(
           (part: any) =>
@@ -703,8 +742,21 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
               part.text?.toLowerCase().includes("contrast")),
         );
 
+        // Detect anime conversion request from keywords
+        const hasAnimeKeywords = lastMessage?.parts?.some(
+          (part: any) =>
+            typeof part === "object" &&
+            part.type === "text" &&
+            (part.text?.toLowerCase().includes("anime") ||
+              part.text?.toLowerCase().includes("cartoon") ||
+              part.text?.toLowerCase().includes("manga") ||
+              part.text?.toLowerCase().includes("convert to anime")),
+        );
+
         const isEditImageRequest =
-          imageFilePart && imageUrl && editImageModel === "nano-banana";
+          imageFilePart &&
+          imageUrl &&
+          (editImageModel === "nano-banana" || hasEditImageKeywords);
         const isRemoveBgRequest =
           imageFilePart &&
           imageUrl &&
@@ -714,7 +766,9 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           imageUrl &&
           (editImageModel === "enhance-image" || hasEnhanceKeywords);
         const isAnimeConversionRequest =
-          imageFilePart && imageUrl && editImageModel === "anime-conversion";
+          imageFilePart &&
+          imageUrl &&
+          (editImageModel === "anime-conversion" || hasAnimeKeywords);
 
         const editImagePrompt =
           isEditImageRequest && imageUrl
