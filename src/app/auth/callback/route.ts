@@ -70,9 +70,17 @@ export async function GET(request: NextRequest) {
             // Continue anyway - user is authenticated in Supabase
           }
 
-          // Set session cookies
+          // Set session cookies with enriched user data
           const cookieStore = await cookies();
-          cookieStore.set("auth-user", JSON.stringify(data.user), {
+
+          // Ensure user object has name and image from GitHub
+          const enrichedUser = {
+            ...data.user,
+            name: name,
+            image: avatarUrl,
+          };
+
+          cookieStore.set("auth-user", JSON.stringify(enrichedUser), {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
@@ -90,7 +98,9 @@ export async function GET(request: NextRequest) {
             },
           );
 
-          logger.info(`User authenticated via GitHub: ${email}`);
+          logger.info(
+            `User authenticated via GitHub: ${email} with name: ${name}`,
+          );
         }
       } catch (exchangeErr) {
         logger.error("Session exchange error:", exchangeErr);
