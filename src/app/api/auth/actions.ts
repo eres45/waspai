@@ -98,10 +98,16 @@ export async function signUpAction(data: {
 
 export async function signInWithGitHubAction() {
   try {
+    // Get the base URL - use NEXT_PUBLIC_BASE_URL if available, otherwise use BETTER_AUTH_URL
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      process.env.BETTER_AUTH_URL ||
+      "http://localhost:3000";
+
     const { data, error } = await supabaseAuth.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback`,
+        redirectTo: `${baseUrl}/auth/callback`,
       },
     });
 
