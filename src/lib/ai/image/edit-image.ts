@@ -125,11 +125,6 @@ export async function editImageWithNanoBanana(
         `Nano-Banana Edit: Starting image edit with prompt: "${options.prompt}" (attempt ${attempt}/${retries})`,
       );
 
-      const payload = {
-        prompt: options.prompt,
-        imageUrl: options.imageUrl,
-      };
-
       logger.info(`Nano-Banana Edit: Image URL: ${options.imageUrl}`);
       logger.info(
         `Nano-Banana Edit: Sending request with timeout of 60 seconds...`,
@@ -140,17 +135,18 @@ export async function editImageWithNanoBanana(
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
 
       try {
-        const response = await fetch(
-          "https://vetrex.x10.mx/api/nano_banana.php",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
-          },
-        );
+        // Try GET method first (more reliable for this API)
+        const params = new URLSearchParams();
+        params.append("prompt", options.prompt);
+        params.append("imageUrl", options.imageUrl);
+
+        const url = `https://vetrex.x10.mx/api/nano_banana.php?${params.toString()}`;
+        logger.info(`Nano-Banana Edit: Using GET request to ${url}`);
+
+        const response = await fetch(url, {
+          method: "GET",
+          signal: controller.signal,
+        });
 
         clearTimeout(timeoutId);
 
@@ -196,8 +192,10 @@ export async function editImageWithNanoBanana(
 
       // If it's a 502/503 error and we have retries left, wait and retry
       if (
-        (attempt < retries && lastError.message.includes("HTTP 502")) ||
-        lastError.message.includes("HTTP 503")
+        attempt < retries &&
+        (lastError.message.includes("HTTP 502") ||
+          lastError.message.includes("HTTP 503") ||
+          lastError.message.includes("HTTP 504"))
       ) {
         const waitTime = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
         logger.info(`Nano-Banana Edit: Waiting ${waitTime}ms before retry...`);
