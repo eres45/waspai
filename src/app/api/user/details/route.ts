@@ -13,14 +13,18 @@ export async function GET() {
 
     // Return user data from session immediately (fast path)
     // Session already has the latest user data from GitHub OAuth
+    const now = new Date().toISOString();
+
     const userData = {
       id: session.user.id,
       email: session.user.email || "",
       name: session.user.name || session.user.email?.split("@")[0] || "User",
       image: session.user.image || null,
-      createdAt: session.user.createdAt,
-      updatedAt: session.user.updatedAt,
-      lastLogin: session.user.lastLogin,
+      createdAt: session.user.createdAt || now,
+      updatedAt: session.user.updatedAt || now,
+      lastLogin: session.user.lastLogin || now,
+      emailVerified: session.user.emailVerified || false,
+      role: session.user.role || "user",
     };
 
     return NextResponse.json(userData);
