@@ -112,6 +112,11 @@ export function AppSidebarUserInner(props: {
                   >
                     {user?.name}
                   </span>
+                  {user?.githubUsername && (
+                    <span className="truncate text-xs text-muted-foreground">
+                      @{user.githubUsername}
+                    </span>
+                  )}
                   <span className="truncate text-xs text-muted-foreground">
                     {user?.email}
                   </span>

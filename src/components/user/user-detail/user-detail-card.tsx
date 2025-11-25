@@ -48,6 +48,11 @@ export function UserDetailCard({
                   </Badge>
                 )}
               </div>
+              {user.githubUsername && (
+                <p className="text-sm text-muted-foreground">
+                  @{user.githubUsername}
+                </p>
+              )}
               <CardDescription data-testid="user-email">
                 {user.email}
               </CardDescription>

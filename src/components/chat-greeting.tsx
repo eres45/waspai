@@ -45,23 +45,9 @@ export const ChatGreeting = () => {
       transition={{ delay: 0.3 }}
     >
       <div className="rounded-xl p-6 flex flex-col gap-4 leading-relaxed text-center">
-        {user?.image && (
-          <div className="flex justify-center">
-            <img
-              src={user.image}
-              alt={user.name || "User"}
-              className="w-16 h-16 rounded-full border-2 border-primary"
-            />
-          </div>
-        )}
         <h1 className="text-2xl md:text-3xl">
           {word ? <FlipWords words={[word]} className="text-primary" /> : ""}
         </h1>
-        {user?.githubUsername && (
-          <p className="text-sm text-muted-foreground">
-            @{user.githubUsername}
-          </p>
-        )}
       </div>
     </motion.div>
   );
