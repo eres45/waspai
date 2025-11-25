@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import logger from "@/lib/logger";
+import { supabaseAuth } from "@/lib/auth/supabase-auth";
+import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,13 +21,56 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Supabase OAuth sends token in URL hash (client-side)
-    // The token is already in the URL, just redirect to home
-    // Supabase client will handle the session from the hash
-    logger.info("Auth callback successful, redirecting to home");
+    // Get the code from GitHub OAuth
+    const code = searchParams.get("code");
 
-    // Redirect to home with the hash intact so Supabase can process it
-    return NextResponse.redirect(new URL("/?auth=success", request.url));
+    if (code) {
+      try {
+        // Exchange code for session
+        const { data, error: exchangeError } =
+          await supabaseAuth.auth.exchangeCodeForSession(code);
+
+        if (exchangeError) {
+          logger.error("Code exchange error:", exchangeError);
+          return NextResponse.redirect(
+            new URL(
+              `/auth/error?error=exchange_failed&description=${exchangeError.message}`,
+              request.url,
+            ),
+          );
+        }
+
+        if (data?.session) {
+          // Set session cookies
+          const cookieStore = await cookies();
+          cookieStore.set("auth-user", JSON.stringify(data.user), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+          });
+
+          cookieStore.set(
+            "better-auth.session_token",
+            data.session.access_token,
+            {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+              maxAge: 60 * 60 * 24 * 7, // 7 days
+            },
+          );
+
+          logger.info(`User authenticated via GitHub: ${data.user.email}`);
+        }
+      } catch (exchangeErr) {
+        logger.error("Session exchange error:", exchangeErr);
+      }
+    }
+
+    // Redirect to home
+    logger.info("Auth callback successful, redirecting to home");
+    return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {
     logger.error("Auth callback error:", error);
     return NextResponse.redirect(
