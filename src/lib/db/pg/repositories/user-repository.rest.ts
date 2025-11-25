@@ -6,7 +6,13 @@ export const userRepositoryRest = {
    * Create or upsert a user in the database
    * This ensures the user exists in the public.user table for foreign key constraints
    */
-  async createOrUpdateUser(userId: string, email: string, name?: string) {
+  async createOrUpdateUser(
+    userId: string,
+    email: string,
+    name?: string,
+    avatarUrl?: string | null,
+    githubUsername?: string | null,
+  ) {
     try {
       logger.info(`[User REST] Creating/updating user: ${userId}`);
 
@@ -17,6 +23,8 @@ export const userRepositoryRest = {
             id: userId,
             email,
             name: name || "",
+            image: avatarUrl || null,
+            github_username: githubUsername || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },

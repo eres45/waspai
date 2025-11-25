@@ -104,6 +104,7 @@ export const UserTable = pgTable("user", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   password: text("password"),
   image: text("image"),
+  githubUsername: text("github_username"),
   preferences: json("preferences").default({}).$type<UserPreferences>(),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -406,8 +407,12 @@ export const CharacterTable = pgTable(
     })
       .notNull()
       .default("private"),
-    createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("character_user_id_idx").on(table.userId),
@@ -429,7 +434,9 @@ export const MusicGenerationTable = pgTable(
     permanentUrl: text("permanent_url"),
     tempUrl: text("temp_url"),
     fileSize: bigint("file_size", { mode: "number" }),
-    createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("music_generation_user_id_idx").on(table.userId),
