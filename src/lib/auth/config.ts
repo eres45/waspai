@@ -30,16 +30,16 @@ function parseSocialAuthConfigs() {
   } = {};
   const disableSignUp = parseEnvBoolean(process.env.DISABLE_SIGN_UP);
 
-  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     const githubResult = GitHubConfigSchema.safeParse({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
       disableSignUp,
     });
     if (githubResult.success) {
       configs.github = githubResult.data;
       experimental_taintUniqueValue(
-        "Do not pass GITHUB_CLIENT_SECRET to the client",
+        "Do not pass GITHUB_SECRET to the client",
         configs,
         configs.github.clientSecret,
       );
