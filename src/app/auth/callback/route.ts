@@ -49,10 +49,18 @@ export async function GET(request: NextRequest) {
             user.user_metadata?.preferred_username ||
             email.split("@")[0] ||
             "GitHub User";
+          const avatarUrl = user.user_metadata?.avatar_url || null;
+          const githubUsername = user.user_metadata?.preferred_username || null;
 
           // Create or update user in database
           try {
-            await userRepositoryRest.createOrUpdateUser(user.id, email, name);
+            await userRepositoryRest.createOrUpdateUser(
+              user.id,
+              email,
+              name,
+              avatarUrl,
+              githubUsername,
+            );
             logger.info(`GitHub user created/updated: ${email}`);
           } catch (dbErr) {
             logger.error(
