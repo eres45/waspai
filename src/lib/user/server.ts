@@ -141,10 +141,35 @@ export async function updateUserDetails(
   if (!name && !email && !image) {
     return;
   }
-  return await userRepository.updateUserDetails({
+
+  // Update user in database
+  const updatedUser = await userRepository.updateUserDetails({
     userId: resolvedUserId,
     ...(name && { name }),
     ...(email && { email }),
     ...(image && { image }),
   });
+
+  // Update session cookie with new data
+  const session = await getSession();
+  if (session?.user?.id === resolvedUserId) {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+
+    const enrichedUser = {
+      ...session.user,
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(image && { image }),
+    };
+
+    cookieStore.set("auth-user", JSON.stringify(enrichedUser), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+  }
+
+  return updatedUser;
 }
