@@ -1,5 +1,4 @@
 import { getSession } from "auth/server";
-import { userRepository } from "lib/db/repository";
 import { NextResponse } from "next/server";
 import logger from "logger";
 
@@ -19,21 +18,10 @@ export async function GET() {
       email: session.user.email || "",
       name: session.user.name || session.user.email?.split("@")[0] || "User",
       image: session.user.image || null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      lastLogin: new Date(),
+      createdAt: session.user.createdAt,
+      updatedAt: session.user.updatedAt,
+      lastLogin: session.user.lastLogin,
     };
-
-    // Optionally sync to database in background (non-blocking)
-    if (process.env.NODE_ENV === "production") {
-      try {
-        userRepository.getUserById(session.user.id).catch((err) => {
-          logger.warn("Background database sync failed:", err.message);
-        });
-      } catch (_err) {
-        // Silently fail - user data already returned
-      }
-    }
 
     return NextResponse.json(userData);
   } catch (error: any) {
