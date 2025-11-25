@@ -22,6 +22,7 @@ export const supabaseAuth = createClient(
 
 /**
  * Sign up a new user with email and password
+ * Requires email verification before user can sign in
  */
 export async function signUpWithEmail(
   email: string,
@@ -31,14 +32,14 @@ export async function signUpWithEmail(
   try {
     logger.info(`Signing up user: ${email}`);
 
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth with email verification required
     const { data, error } = await supabaseAuth.auth.admin.createUser({
       email,
       password,
       user_metadata: {
         name,
       },
-      email_confirm: true, // Auto-confirm email
+      email_confirm: false, // Require email verification
     });
 
     if (error) {
@@ -50,14 +51,18 @@ export async function signUpWithEmail(
       throw new Error("User creation failed");
     }
 
-    logger.info(`User created successfully: ${data.user.id}`);
+    logger.info(
+      `User created successfully: ${data.user.id}. Verification email sent.`,
+    );
 
     return {
       user: {
         id: data.user.id,
         email: data.user.email,
         name: name || data.user.user_metadata?.name || "",
+        email_confirmed_at: data.user.email_confirmed_at,
       },
+      requiresEmailVerification: !data.user.email_confirmed_at,
     };
   } catch (error) {
     logger.error("Sign up error:", error);
@@ -145,5 +150,132 @@ export async function emailExists(email: string): Promise<boolean> {
   } catch (error) {
     logger.error("Email exists check error:", error);
     return false;
+  }
+}
+
+/**
+ * Send password reset email
+ * User receives email with link to reset password
+ */
+export async function resetPasswordForEmail(
+  email: string,
+  redirectTo: string = `${process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password`,
+) {
+  try {
+    logger.info(`Password reset requested for: ${email}`);
+
+    const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+
+    if (error) {
+      logger.error(`Password reset error for ${email}:`, error);
+      throw new Error(error.message);
+    }
+
+    logger.info(`Password reset email sent to: ${email}`);
+
+    return {
+      success: true,
+      message: "Password reset email sent. Check your inbox.",
+    };
+  } catch (error) {
+    logger.error("Password reset error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update user password (used after password reset)
+ * Must be called by authenticated user or with valid session
+ */
+export async function updateUserPassword(userId: string, newPassword: string) {
+  try {
+    logger.info(`Updating password for user: ${userId}`);
+
+    const { error } = await supabaseAuth.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    });
+
+    if (error) {
+      logger.error(`Password update error for ${userId}:`, error);
+      throw new Error(error.message);
+    }
+
+    logger.info(`Password updated successfully for user: ${userId}`);
+
+    return {
+      success: true,
+      message: "Password updated successfully",
+    };
+  } catch (error) {
+    logger.error("Password update error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Verify email by sending confirmation email
+ * User receives email with verification link
+ */
+export async function sendEmailVerification(
+  email: string,
+  redirectTo: string = `${process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL}/auth/verify-email`,
+) {
+  try {
+    logger.info(`Email verification requested for: ${email}`);
+
+    // Get user by email
+    const { data: userData, error: getUserError } =
+      await supabaseAuth.auth.admin.listUsers();
+
+    if (getUserError) {
+      logger.error("Error listing users:", getUserError);
+      throw new Error("Failed to verify email");
+    }
+
+    const user = userData.users.find((u) => u.email === email);
+
+    if (!user) {
+      logger.warn(`User not found for email: ${email}`);
+      throw new Error("User not found");
+    }
+
+    // Check if email is already verified
+    if (user.email_confirmed_at) {
+      logger.info(`Email already verified for: ${email}`);
+      return {
+        success: true,
+        message: "Email is already verified",
+        verified: true,
+      };
+    }
+
+    // Send verification email using Supabase's built-in email service
+    // This uses the "Confirm sign up" email template
+    const { error } = await supabaseAuth.auth.admin.generateLink({
+      type: "signup",
+      email,
+      password: Math.random().toString(36).slice(-12), // Temporary password for link generation
+      options: {
+        redirectTo,
+      },
+    });
+
+    if (error) {
+      logger.error(`Email verification error for ${email}:`, error);
+      throw new Error(error.message);
+    }
+
+    logger.info(`Email verification link sent to: ${email}`);
+
+    return {
+      success: true,
+      message: "Verification email sent. Check your inbox.",
+      verified: false,
+    };
+  } catch (error) {
+    logger.error("Email verification error:", error);
+    throw error;
   }
 }

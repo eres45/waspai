@@ -77,9 +77,11 @@ export async function signUpAction(data: {
     );
 
     return {
-      user: result.user as BasicUser,
+      user: result.user as unknown as BasicUser,
       success: true,
-      message: "Successfully signed up",
+      message: result.requiresEmailVerification
+        ? "Successfully signed up! Please check your email to verify your account."
+        : "Successfully signed up",
     };
   } catch (error) {
     logger.error("Sign up error:", error);
