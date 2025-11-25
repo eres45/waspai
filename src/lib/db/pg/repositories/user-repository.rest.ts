@@ -92,4 +92,51 @@ export const userRepositoryRest = {
       return false;
     }
   },
+
+  /**
+   * Update user details (name, email, image)
+   */
+  async updateUserDetails({
+    userId,
+    name,
+    email,
+    image,
+  }: {
+    userId: string;
+    name?: string;
+    email?: string;
+    image?: string;
+  }) {
+    try {
+      logger.info(
+        `[User REST] Updating user: ${userId}, name=${name}, email=${email}, image=${image ? "yes" : "no"}`,
+      );
+
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      if (image !== undefined) updateData.image = image;
+
+      const { data, error } = await supabaseRest
+        .from("user")
+        .update(updateData)
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error(`[User REST] Error updating user:`, error);
+        throw error;
+      }
+
+      logger.info(`[User REST] User updated successfully: ${userId}`);
+      return data;
+    } catch (error) {
+      logger.error(`[User REST] updateUserDetails error:`, error);
+      throw error;
+    }
+  },
 };

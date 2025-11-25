@@ -1,5 +1,6 @@
 import { chatRepository as restChatRepository } from "./pg/repositories/chat-repository.rest";
 import { pgUserRepository } from "./pg/repositories/user-repository.pg";
+import { userRepositoryRest } from "./pg/repositories/user-repository.rest";
 import { pgMcpRepository } from "./pg/repositories/mcp-repository.pg";
 import { pgMcpMcpToolCustomizationRepository } from "./pg/repositories/mcp-tool-customization-repository.pg";
 import { pgMcpServerCustomizationRepository } from "./pg/repositories/mcp-server-customization-repository.pg";
@@ -13,7 +14,11 @@ import { characterRepository as restCharacterRepository } from "./pg/repositorie
 import { pgMusicRepository } from "./pg/repositories/music-repository.pg";
 
 export const chatRepository = restChatRepository;
-export const userRepository = pgUserRepository;
+// Use REST API for user operations to avoid direct PostgreSQL connection issues on Vercel
+export const userRepository = {
+  ...pgUserRepository,
+  updateUserDetails: userRepositoryRest.updateUserDetails,
+};
 export const mcpRepository = pgMcpRepository;
 export const mcpMcpToolCustomizationRepository =
   pgMcpMcpToolCustomizationRepository;

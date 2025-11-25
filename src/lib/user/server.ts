@@ -142,22 +142,15 @@ export async function updateUserDetails(
     return;
   }
 
-  let updatedUser: any = null;
+  // Update user in database using REST API (works on Vercel)
+  const updatedUser = await userRepository.updateUserDetails({
+    userId: resolvedUserId,
+    ...(name && { name }),
+    ...(email && { email }),
+    ...(image && { image }),
+  });
 
-  // Try to update user in database
-  try {
-    updatedUser = await userRepository.updateUserDetails({
-      userId: resolvedUserId,
-      ...(name && { name }),
-      ...(email && { email }),
-      ...(image && { image }),
-    });
-  } catch (dbError) {
-    // Database update failed, but we can still update the session
-    console.warn("Database update failed, updating session only:", dbError);
-  }
-
-  // Always update session cookie with new data
+  // Update session cookie with new data
   const session = await getSession();
   if (session?.user?.id === resolvedUserId) {
     const { cookies } = await import("next/headers");
@@ -176,16 +169,6 @@ export async function updateUserDetails(
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
-  }
-
-  // Return updated user from session if database failed
-  if (!updatedUser && session?.user?.id === resolvedUserId) {
-    return {
-      ...session.user,
-      ...(name && { name }),
-      ...(email && { email }),
-      ...(image && { image }),
-    };
   }
 
   return updatedUser;
