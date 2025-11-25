@@ -4,15 +4,10 @@ import logger from "@/lib/logger";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get("code");
+
+    // Check for error
     const error = searchParams.get("error");
     const errorDescription = searchParams.get("error_description");
-
-    logger.info("Auth callback received", {
-      code: !!code,
-      error,
-      errorDescription,
-    });
 
     if (error) {
       logger.error("OAuth error:", { error, errorDescription });
@@ -24,17 +19,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!code) {
-      logger.error("No code provided in callback");
-      return NextResponse.redirect(
-        new URL("/auth/error?error=no_code", request.url),
-      );
-    }
-
-    // Supabase handles the code exchange automatically
-    // Just redirect to home page
+    // Supabase OAuth sends token in URL hash (client-side)
+    // The token is already in the URL, just redirect to home
+    // Supabase client will handle the session from the hash
     logger.info("Auth callback successful, redirecting to home");
-    return NextResponse.redirect(new URL("/", request.url));
+
+    // Redirect to home with the hash intact so Supabase can process it
+    return NextResponse.redirect(new URL("/?auth=success", request.url));
   } catch (error) {
     logger.error("Auth callback error:", error);
     return NextResponse.redirect(
