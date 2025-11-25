@@ -67,6 +67,10 @@ export async function POST(request: NextRequest) {
     // Set session cookies with enriched user data
     const cookieStore = await cookies();
 
+    // Clear any old auth cookies first
+    cookieStore.delete("auth-user");
+    cookieStore.delete("better-auth.session_token");
+
     // Ensure user object has name and image from GitHub
     const enrichedUser = {
       ...data.user,
