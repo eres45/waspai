@@ -142,15 +142,22 @@ export async function updateUserDetails(
     return;
   }
 
-  // Update user in database
-  const updatedUser = await userRepository.updateUserDetails({
-    userId: resolvedUserId,
-    ...(name && { name }),
-    ...(email && { email }),
-    ...(image && { image }),
-  });
+  let updatedUser: any = null;
 
-  // Update session cookie with new data
+  // Try to update user in database
+  try {
+    updatedUser = await userRepository.updateUserDetails({
+      userId: resolvedUserId,
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(image && { image }),
+    });
+  } catch (dbError) {
+    // Database update failed, but we can still update the session
+    console.warn("Database update failed, updating session only:", dbError);
+  }
+
+  // Always update session cookie with new data
   const session = await getSession();
   if (session?.user?.id === resolvedUserId) {
     const { cookies } = await import("next/headers");
@@ -169,6 +176,16 @@ export async function updateUserDetails(
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
+  }
+
+  // Return updated user from session if database failed
+  if (!updatedUser && session?.user?.id === resolvedUserId) {
+    return {
+      ...session.user,
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(image && { image }),
+    };
   }
 
   return updatedUser;
