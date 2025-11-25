@@ -1,24 +1,45 @@
 import { createClient } from "@supabase/supabase-js";
 import logger from "@/lib/logger";
 
-if (!process.env.SUPABASE_URL) {
-  throw new Error("SUPABASE_URL environment variable is not set");
+// Initialize Supabase client - only on server
+let supabaseAuthInstance: ReturnType<typeof createClient> | null = null;
+
+function getSupabaseAuth() {
+  if (typeof window !== "undefined") {
+    throw new Error("supabaseAuth can only be used on the server");
+  }
+
+  if (!supabaseAuthInstance) {
+    if (!process.env.SUPABASE_URL) {
+      throw new Error("SUPABASE_URL environment variable is not set");
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        "SUPABASE_SERVICE_ROLE_KEY environment variable is not set",
+      );
+    }
+
+    supabaseAuthInstance = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
+    );
+  }
+
+  return supabaseAuthInstance;
 }
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY environment variable is not set");
-}
-
-export const supabaseAuth = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+export const supabaseAuth = new Proxy({} as ReturnType<typeof createClient>, {
+  get: (_target, prop) => {
+    return getSupabaseAuth()[prop as keyof ReturnType<typeof createClient>];
   },
-);
+});
 
 /**
  * Sign up a new user with email and password

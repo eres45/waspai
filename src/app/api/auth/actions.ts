@@ -2,7 +2,11 @@
 
 import { BasicUser, UserZodSchema } from "app-types/user";
 import { ActionState } from "lib/action-utils";
-import { signUpWithEmail, emailExists } from "@/lib/auth/supabase-auth";
+import {
+  signUpWithEmail,
+  emailExists,
+  supabaseAuth,
+} from "@/lib/auth/supabase-auth";
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import logger from "@/lib/logger";
 import { cookies } from "next/headers";
@@ -88,6 +92,39 @@ export async function signUpAction(data: {
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to sign up",
+    };
+  }
+}
+
+export async function signInWithGitHubAction() {
+  try {
+    const { error } = await supabaseAuth.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      logger.error("GitHub OAuth error:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to sign in with GitHub",
+      };
+    }
+
+    // Redirect happens automatically
+    return {
+      success: true,
+    };
+  } catch (error) {
+    logger.error("GitHub OAuth error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in with GitHub",
     };
   }
 }

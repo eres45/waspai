@@ -1,11 +1,11 @@
 "use client";
 
-import { supabaseAuth } from "@/lib/auth/supabase-auth";
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "ui/github-icon";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader } from "lucide-react";
+import { signInWithGitHubAction } from "@/app/api/auth/actions";
 
 export function GitHubOAuthButton() {
   const [loading, setLoading] = useState(false);
@@ -13,20 +13,15 @@ export function GitHubOAuthButton() {
   const handleGitHubSignIn = async () => {
     setLoading(true);
     try {
-      const { error } = await supabaseAuth.auth.signInWithOAuth({
-        provider: "github",
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/callback`,
-        },
-      });
+      const result = await signInWithGitHubAction();
 
-      if (error) {
-        toast.error(error.message || "Failed to sign in with GitHub");
+      if (result.error) {
+        toast.error(result.error);
         setLoading(false);
         return;
       }
 
-      // Redirect happens automatically
+      // Redirect happens automatically via server action
     } catch (error) {
       toast.error(
         error instanceof Error
