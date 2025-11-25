@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import logger from "@/lib/logger";
 import { supabaseAuth } from "@/lib/auth/supabase-auth";
 import { cookies } from "next/headers";
+import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +41,27 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        if (data?.session) {
+        if (data?.session && data?.user) {
+          const user = data.user;
+          const email = user.email || "";
+          const name =
+            user.user_metadata?.name ||
+            user.user_metadata?.preferred_username ||
+            email.split("@")[0] ||
+            "GitHub User";
+
+          // Create or update user in database
+          try {
+            await userRepositoryRest.createOrUpdateUser(user.id, email, name);
+            logger.info(`GitHub user created/updated: ${email}`);
+          } catch (dbErr) {
+            logger.error(
+              `Failed to create/update user in database: ${email}`,
+              dbErr,
+            );
+            // Continue anyway - user is authenticated in Supabase
+          }
+
           // Set session cookies
           const cookieStore = await cookies();
           cookieStore.set("auth-user", JSON.stringify(data.user), {
@@ -61,7 +82,7 @@ export async function GET(request: NextRequest) {
             },
           );
 
-          logger.info(`User authenticated via GitHub: ${data.user.email}`);
+          logger.info(`User authenticated via GitHub: ${email}`);
         }
       } catch (exchangeErr) {
         logger.error("Session exchange error:", exchangeErr);
