@@ -511,6 +511,15 @@ export async function POST(request: Request) {
     const useImageTool =
       Boolean(imageTool?.model) || hasImageGenerationKeywords;
 
+    logger.info(
+      `Image generation keyword detection: ${hasImageGenerationKeywords}, explicit tool: ${Boolean(imageTool?.model)}`,
+    );
+    if (hasImageGenerationKeywords) {
+      logger.info(
+        `Message text: ${message.parts?.find((p: any) => p.type === "text")?.text?.substring(0, 100)}`,
+      );
+    }
+
     // If auto-detected but no model specified, use a default
     const effectiveImageTool =
       imageTool ||
