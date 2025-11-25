@@ -49,16 +49,16 @@ export async function POST(request: NextRequest) {
     const avatarUrl = user.user_metadata?.avatar_url || null;
     const githubUsername = user.user_metadata?.preferred_username || null;
 
-    // Create or update user in database
+    // Create or update user in database with role "user"
     try {
-      await userRepositoryRest.createOrUpdateUser(
+      const userData = await userRepositoryRest.createOrUpdateUser(
         user.id,
         email,
         name,
         avatarUrl,
         githubUsername,
       );
-      logger.info(`GitHub user created/updated: ${email}`);
+      logger.info(`GitHub user created/updated: ${email}`, userData);
     } catch (dbErr) {
       logger.error(`Failed to create/update user in database: ${email}`, dbErr);
       // Continue anyway - user is authenticated in Supabase

@@ -25,6 +25,7 @@ export const userRepositoryRest = {
             name: name || "",
             image: avatarUrl || null,
             github_username: githubUsername || null,
+            role: "user",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
