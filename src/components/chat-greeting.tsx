@@ -18,6 +18,8 @@ function getGreetingByTime() {
 export const ChatGreeting = () => {
   const { data: user } = useSWR<BasicUser>(`/api/user/details`, fetcher, {
     revalidateOnMount: false,
+    revalidateOnFocus: false,
+    dedupingInterval: 60000, // Cache for 1 minute
   });
   const t = useTranslations("Chat.Greeting");
 
@@ -28,12 +30,10 @@ export const ChatGreeting = () => {
       t("niceToSeeYouAgain", { name: user.name }),
       t("whatAreYouWorkingOnToday", { name: user.name }),
       t("letMeKnowWhenYoureReadyToBegin"),
-      t("whatAreYourThoughtsToday"),
-      t("whereWouldYouLikeToStart"),
       t("whatAreYouThinking", { name: user.name }),
     ];
     return words[Math.floor(Math.random() * words.length)];
-  }, [user?.name]);
+  }, [user?.name, t]);
 
   return (
     <motion.div

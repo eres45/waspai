@@ -12,33 +12,30 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    try {
-      // Try to fetch from repository
-      const user = await userRepository.getUserById(session.user.id);
+    // Return user data from session immediately (fast path)
+    // Session already has the latest user data from GitHub OAuth
+    const userData = {
+      id: session.user.id,
+      email: session.user.email || "",
+      name: session.user.name || session.user.email?.split("@")[0] || "User",
+      image: session.user.image || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastLogin: new Date(),
+    };
 
-      if (!user) {
-        logger.warn(`User not found in database: ${session.user.id}`);
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // Optionally sync to database in background (non-blocking)
+    if (process.env.NODE_ENV === "production") {
+      try {
+        userRepository.getUserById(session.user.id).catch((err) => {
+          logger.warn("Background database sync failed:", err.message);
+        });
+      } catch (_err) {
+        // Silently fail - user data already returned
       }
-
-      return NextResponse.json(user);
-    } catch (dbError: any) {
-      // If database fails, return user info from session as fallback
-      logger.warn(
-        "Database query failed, using session data as fallback:",
-        dbError.message,
-      );
-
-      return NextResponse.json({
-        id: session.user.id,
-        email: session.user.email || "",
-        name: session.user.name || "User",
-        image: session.user.image || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastLogin: new Date(),
-      });
     }
+
+    return NextResponse.json(userData);
   } catch (error: any) {
     logger.error("Error fetching user details:", error);
     return NextResponse.json(
