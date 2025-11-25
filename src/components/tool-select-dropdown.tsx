@@ -9,6 +9,9 @@ import {
   ChartColumn,
   ChevronRight,
   CodeIcon,
+  Edit2,
+  FileText,
+  Film,
   GlobeIcon,
   HardDriveUploadIcon,
   ImagesIcon,
@@ -262,6 +265,22 @@ export function ToolSelectDropdown({
           onGenerateImage={onGenerateImage}
           modelInfo={modelInfo}
         />
+        <div className="py-1">
+          <DropdownMenuSeparator />
+        </div>
+        <ImageEditingSelector />
+        <div className="py-1">
+          <DropdownMenuSeparator />
+        </div>
+        <VideoGenerationSelector />
+        <div className="py-1">
+          <DropdownMenuSeparator />
+        </div>
+        <QRCodeSelector />
+        <div className="py-1">
+          <DropdownMenuSeparator />
+        </div>
+        <DocumentToolsSelector />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
@@ -1051,6 +1070,129 @@ function AgentSelector({
   );
 }
 
+function ImageEditingSelector() {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+          <Edit2 className="size-3.5" />
+          Image Editing
+        </DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                ✏️
+              </span>
+              Edit Image
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                🎨
+              </span>
+              Remove Background
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                ✨
+              </span>
+              Enhance Image
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuGroup>
+  );
+}
+
+function VideoGenerationSelector() {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+          <Film className="size-3.5" />
+          Video Generation
+        </DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                🎬
+              </span>
+              SORA (Video Gen)
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuGroup>
+  );
+}
+
+function QRCodeSelector() {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+          <span className="size-3.5 flex items-center justify-center">⬜</span>
+          QR Code
+        </DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                ⬜
+              </span>
+              Generate QR Code
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuGroup>
+  );
+}
+
+function DocumentToolsSelector() {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+          <FileText className="size-3.5" />
+          Document Tools
+        </DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                📄
+              </span>
+              Generate PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                📊
+              </span>
+              Generate Document
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                📈
+              </span>
+              Generate Presentation
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer text-xs">
+              <span className="mr-2 size-4 flex items-center justify-center">
+                💾
+              </span>
+              Export Chat
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuGroup>
+  );
+}
+
 function ImageGeneratorSelector({
   onGenerateImage,
   modelInfo,
@@ -1069,21 +1211,68 @@ function ImageGeneratorSelector({
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
+            <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
+              Fast & Realistic
+            </DropdownMenuLabel>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
               onClick={() => onGenerateImage?.("google")}
-              className="cursor-pointer"
+              className="cursor-pointer text-xs"
             >
               <GeminiIcon className="mr-2 size-4" />
-              Gemini (Nano Banana)
+              Img-CV (Ultra-Fast)
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
+              High Quality
+            </DropdownMenuLabel>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
               onClick={() => onGenerateImage?.("openai")}
-              className="cursor-pointer"
+              className="cursor-pointer text-xs"
             >
               <OpenAIIcon className="mr-2 size-4" />
-              OpenAI
+              DALL-E 3
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              className="cursor-pointer text-xs"
+            >
+              <span className="mr-2 size-4 flex items-center justify-center">
+                ⚡
+              </span>
+              Flux Pro
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              className="cursor-pointer text-xs"
+            >
+              <span className="mr-2 size-4 flex items-center justify-center">
+                🎨
+              </span>
+              Imagen 3
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
+              Specialized
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              className="cursor-pointer text-xs"
+            >
+              <span className="mr-2 size-4 flex items-center justify-center">
+                ✏️
+              </span>
+              Chalk (Text Art)
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              className="cursor-pointer text-xs"
+            >
+              <span className="mr-2 size-4 flex items-center justify-center">
+                😂
+              </span>
+              Meme Generator
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>

@@ -434,11 +434,11 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                           setIsPlaying(true);
                           const audioUrl = await generateSpeech(text, "nova");
                           const proxyUrl = `/api/audio?url=${encodeURIComponent(audioUrl)}`;
-                          
+
                           if (!audioRef.current) {
                             audioRef.current = new Audio();
                           }
-                          
+
                           audioRef.current.src = proxyUrl;
                           audioRef.current.onended = () => {
                             setIsPlaying(false);
@@ -447,7 +447,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                             setIsPlaying(false);
                             toast.error("Failed to play audio");
                           };
-                          
+
                           await audioRef.current.play();
                         } catch (error) {
                           console.error("TTS error:", error);
@@ -458,13 +458,15 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                     }}
                     className={cn(
                       "size-3! p-4! transition-all duration-300",
-                      isPlaying && "text-blue-400"
+                      isPlaying && "text-blue-400",
                     )}
                   >
                     <Volume2 />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{isPlaying ? "Stop" : "Read Aloud"}</TooltipContent>
+                <TooltipContent>
+                  {isPlaying ? "Stop" : "Read Aloud"}
+                </TooltipContent>
               </Tooltip>
 
               <Tooltip>
@@ -817,6 +819,17 @@ const VideoGenToolInvocation = dynamic(
   },
 );
 
+const QRCodeGeneratorToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/qr-code-generator").then(
+      (mod) => mod.QRCodeGeneratorToolInvocation,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -981,6 +994,13 @@ export const ToolMessagePart = memo(
 
       if (toolName === "video-gen") {
         return <VideoGenToolInvocation part={part} />;
+      }
+
+      if (
+        toolName === "generate-qr-code" ||
+        toolName === "generate-qr-code-with-logo"
+      ) {
+        return <QRCodeGeneratorToolInvocation part={part} />;
       }
 
       if (toolName === DefaultToolName.JavascriptExecution) {
@@ -1319,7 +1339,7 @@ export const FileMessagePart = memo(
             alt={part.filename || "Uploaded image"}
             className="w-full h-auto"
           />
-          
+
           {/* Download Button at Top Right Corner */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1337,7 +1357,7 @@ export const FileMessagePart = memo(
             </TooltipTrigger>
             <TooltipContent>Download image</TooltipContent>
           </Tooltip>
-          
+
           {part.filename && (
             <div className="px-3 py-2 bg-muted text-sm text-muted-foreground">
               {part.filename}
