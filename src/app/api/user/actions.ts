@@ -80,6 +80,7 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
       const { name, email, image } = data;
       const user = await getUser(userId);
       if (!user) {
+        logger.warn(`User not found for update: ${userId}`);
         return {
           success: false,
           message: t("userNotFound"),
@@ -90,6 +91,10 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
       const isDifferentName = name && name !== userSession.user.name;
       const isDifferentImage = image && image !== userSession.user.image;
 
+      logger.info(
+        `Updating user ${userId}: name=${name}, email=${email}, image=${image ? "yes" : "no"}`,
+      );
+
       // Update user details in database
       // Works for both Better Auth and Supabase Auth users
       await updateUserDetails(userId, name, email, image);
@@ -98,6 +103,8 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
       if (isDifferentName) user.name = name;
       if (isDifferentImage) user.image = image;
 
+      logger.info(`User ${userId} updated successfully`);
+
       return {
         success: true,
         message: t("userDetailsUpdatedSuccessfully"),
@@ -105,7 +112,12 @@ export const updateUserDetailsAction = validatedActionWithUserManagePermission(
         currentUserUpdated: isOwnResource,
       };
     } catch (error) {
-      logger.error("Failed to update user details:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error(
+        `Failed to update user details for ${userId}: ${errorMessage}`,
+        error,
+      );
       return {
         success: false,
         message: t("failedToUpdateUserDetails"),

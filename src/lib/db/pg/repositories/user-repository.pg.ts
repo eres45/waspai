@@ -55,20 +55,31 @@ export const pgUserRepository: UserRepository = {
     image?: string;
     email?: string;
   }): Promise<User> => {
-    const [result] = await db
-      .update(UserTable)
-      .set({
-        ...(name && { name }),
-        ...(image && { image }),
-        ...(email && { email }),
-        updatedAt: new Date(),
-      })
-      .where(eq(UserTable.id, userId))
-      .returning();
-    return {
-      ...result,
-      preferences: result.preferences,
-    };
+    try {
+      const [result] = await db
+        .update(UserTable)
+        .set({
+          ...(name && { name }),
+          ...(image && { image }),
+          ...(email && { email }),
+          updatedAt: new Date(),
+        })
+        .where(eq(UserTable.id, userId))
+        .returning();
+
+      if (!result) {
+        logger.error(`User not found for update: ${userId}`);
+        throw new Error(`User not found: ${userId}`);
+      }
+
+      return {
+        ...result,
+        preferences: result.preferences,
+      };
+    } catch (error) {
+      logger.error(`Failed to update user details for ${userId}:`, error);
+      throw error;
+    }
   },
 
   updatePreferences: async (
