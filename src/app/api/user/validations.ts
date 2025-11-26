@@ -28,7 +28,10 @@ export const UpdateUserDetailsSchema = z.object({
     .max(100, "Name is too long")
     .optional(),
   email: z.string().email("Invalid email address").optional(),
-  image: z.string().optional(),
+  image: z
+    .string()
+    .max(10 * 1024 * 1024, "Image is too large (max 10MB)")
+    .optional(),
 });
 
 export const UpdateUserPreferencesSchema = z.object({

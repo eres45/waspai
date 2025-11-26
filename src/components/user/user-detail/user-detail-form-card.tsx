@@ -16,10 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { User } from "lucide-react";
 import { toast } from "sonner";
 import Form from "next/form";
-import {
-  updateUserDetailsAction,
-  updateUserImageAction,
-} from "@/app/api/user/actions";
+import { updateUserDetailsAction } from "@/app/api/user/actions";
 import { UpdateUserActionState } from "@/app/api/user/validations";
 import { BasicUserWithLastLogin } from "app-types/user";
 import { getUserAvatar } from "lib/user/utils";
@@ -66,11 +63,21 @@ export function UserDetailFormCard({
 
   const handleImageUpdate = async (imageUrl: string) => {
     try {
-      const formData = new FormData();
-      formData.append("userId", user.id);
-      formData.append("image", imageUrl);
+      const response = await fetch("/api/user/image", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image: imageUrl }),
+      });
 
-      const result = await updateUserImageAction({}, formData);
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.error || "Failed to update profile photo");
+        return;
+      }
+
+      const result = await response.json();
       if (result?.success && result.user) {
         setCurrentUser(result.user);
         onUserDetailsUpdate?.(result.user);
