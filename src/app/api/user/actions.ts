@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import { auth } from "auth/server";
 import {
   UpdateUserDetailsSchema,
+  UpdateUserPreferencesSchema,
   DeleteUserSchema,
   UpdateUserPasswordSchema,
   UpdateUserActionState,
@@ -318,3 +319,73 @@ Generate a profile picture that fulfills the user's request while maintaining th
     };
   }
 }
+
+export const updateUserPreferencesAction =
+  validatedActionWithUserManagePermission(
+    UpdateUserPreferencesSchema,
+    async (
+      data,
+      userId,
+      _userSession,
+      _isOwnResource,
+      _formData,
+    ): Promise<UpdateUserActionState> => {
+      const t = await getTranslations("User.Profile.common");
+
+      try {
+        const { displayName, profession, responseStyleExample, botName } = data;
+
+        // Check if at least one field is provided
+        if (!displayName && !profession && !responseStyleExample && !botName) {
+          return {
+            success: false,
+            message: "Please provide at least one field to update",
+          };
+        }
+
+        const user = await getUser(userId);
+        if (!user) {
+          logger.warn(`User not found for preferences update: ${userId}`);
+          return {
+            success: false,
+            message: t("userNotFound"),
+          };
+        }
+
+        logger.info(
+          `Updating user preferences ${userId}: displayName=${displayName}, profession=${profession}`,
+        );
+
+        // Update user preferences in database
+        const { userRepository } = await import("lib/db/repository");
+        const currentPreferences = await userRepository.getPreferences(userId);
+
+        await userRepository.updatePreferences(userId, {
+          displayName: displayName || currentPreferences?.displayName,
+          profession: profession || currentPreferences?.profession,
+          responseStyleExample:
+            responseStyleExample || currentPreferences?.responseStyleExample,
+          botName: botName || currentPreferences?.botName,
+        });
+
+        logger.info(`User preferences ${userId} updated successfully`);
+
+        return {
+          success: true,
+          message: "Preferences updated successfully",
+          user,
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        logger.error(
+          `Failed to update user preferences for ${userId}: ${errorMessage}`,
+          error,
+        );
+        return {
+          success: false,
+          message: "Failed to update preferences",
+        };
+      }
+    },
+  );

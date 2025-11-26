@@ -31,6 +31,17 @@ export const UpdateUserDetailsSchema = z.object({
   image: z.string().optional(),
 });
 
+export const UpdateUserPreferencesSchema = z.object({
+  userId: z.string().uuid("Invalid user ID"),
+  displayName: z.string().max(100, "Display name is too long").optional(),
+  profession: z.string().max(200, "Profession is too long").optional(),
+  responseStyleExample: z
+    .string()
+    .max(1000, "Response style example is too long")
+    .optional(),
+  botName: z.string().max(100, "Bot name is too long").optional(),
+});
+
 export const DeleteUserSchema = z.object({
   userId: z.uuid("Invalid user ID"),
 });

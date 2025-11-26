@@ -18,6 +18,7 @@ export const chatRepository = restChatRepository;
 export const userRepository = {
   ...pgUserRepository,
   updateUserDetails: userRepositoryRest.updateUserDetails,
+  updatePreferences: userRepositoryRest.updateUserPreferences,
 };
 export const mcpRepository = pgMcpRepository;
 export const mcpMcpToolCustomizationRepository =

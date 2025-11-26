@@ -139,4 +139,37 @@ export const userRepositoryRest = {
       throw error;
     }
   },
+
+  /**
+   * Update user preferences (settings)
+   */
+  async updateUserPreferences(
+    userId: string,
+    preferences: Record<string, unknown>,
+  ) {
+    try {
+      logger.info(`[User REST] Updating preferences for user: ${userId}`);
+
+      const { data, error } = await supabaseRest
+        .from("user")
+        .update({
+          preferences,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error(`[User REST] Error updating preferences:`, error);
+        throw error;
+      }
+
+      logger.info(`[User REST] Preferences updated successfully: ${userId}`);
+      return data;
+    } catch (error) {
+      logger.error(`[User REST] updateUserPreferences error:`, error);
+      throw error;
+    }
+  },
 };
