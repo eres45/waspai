@@ -138,9 +138,16 @@ export async function updateUserDetails(
   image?: string,
 ) {
   const resolvedUserId = await getUserIdAndCheckAccess(userId);
-  if (!name && !email && !image) {
+  // Check if at least one field is provided (use !== undefined to handle empty strings)
+  if (name === undefined && email === undefined && image === undefined) {
+    console.log("[updateUserDetails] No fields to update");
     return;
   }
+  console.log("[updateUserDetails] Updating user:", {
+    name,
+    email,
+    image: image ? "yes" : "no",
+  });
 
   // Update user in database using REST API (works on Vercel)
   const updatedUser = await userRepository.updateUserDetails({
