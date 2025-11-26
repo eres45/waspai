@@ -65,14 +65,22 @@ export function UserDetailFormCard({
   }, {});
 
   const handleImageUpdate = async (imageUrl: string) => {
-    const formData = new FormData();
-    formData.append("userId", user.id);
-    formData.append("image", imageUrl);
+    try {
+      const formData = new FormData();
+      formData.append("userId", user.id);
+      formData.append("image", imageUrl);
 
-    const result = await updateUserImageAction({}, formData);
-    if (result?.success && result.user) {
-      setCurrentUser(result.user);
-      onUserDetailsUpdate?.(result.user);
+      const result = await updateUserImageAction({}, formData);
+      if (result?.success && result.user) {
+        setCurrentUser(result.user);
+        onUserDetailsUpdate?.(result.user);
+        toast.success("Profile photo updated successfully");
+      } else {
+        toast.error(result?.message || "Failed to update profile photo");
+      }
+    } catch (error) {
+      console.error("Image update error:", error);
+      toast.error("Failed to update profile photo");
     }
   };
   return (
