@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { text, voice = "nova", language } = body;
 
-    logger.info(`TTS API called: voice=${voice}, text="${text?.substring(0, 50)}..."`);
+    logger.info(
+      `TTS API called: voice=${voice}, text="${text?.substring(0, 50)}..."`,
+    );
 
     if (!text || typeof text !== "string") {
       logger.error(`Invalid text: ${JSON.stringify(text)}`);
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -55,27 +57,76 @@ export async function POST(request: NextRequest) {
       text: text.trim(),
       voice: voice.trim(),
     };
-    
+
     if (language) {
       ttsPayload.language = language;
     }
-    
+
     const ttsBody = JSON.stringify(ttsPayload);
 
     logger.info(`Calling external TTS API with: ${ttsBody}`);
 
-    const response = await fetch("https://vetrex.x10.mx/api/tts.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: ttsBody,
-    });
+    let response;
+    let retries = 3;
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error(`TTS API error: ${response.status} - ${errorText}`);
-      throw new Error(`TTS API error: ${response.status}`);
+    // Retry logic for TTS API
+    while (retries > 0) {
+      try {
+        logger.info(
+          `TTS API attempt ${4 - retries}/3: Calling https://vetrex.x10.mx/api/tts.php`,
+        );
+
+        response = await fetch("https://vetrex.x10.mx/api/tts.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: ttsBody,
+        });
+
+        logger.info(`TTS API response status: ${response.status}`);
+
+        if (response.ok) {
+          logger.info(`TTS API attempt ${4 - retries}/3: SUCCESS`);
+          break; // Success, exit retry loop
+        }
+
+        const errorText = await response.text();
+        lastError = new Error(
+          `TTS API error: ${response.status} - ${errorText}`,
+        );
+        logger.warn(
+          `TTS API attempt failed (${4 - retries}/3): ${response.status} - ${errorText}`,
+        );
+        retries--;
+
+        if (retries > 0) {
+          // Wait before retrying
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (4 - retries)),
+          );
+        }
+      } catch (fetchError) {
+        lastError = fetchError as Error;
+        logger.warn(
+          `TTS API fetch error (${4 - retries}/3): ${lastError.message}`,
+        );
+        retries--;
+
+        if (retries > 0) {
+          // Wait before retrying
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (4 - retries)),
+          );
+        }
+      }
+    }
+
+    if (!response || !response.ok) {
+      const errorMessage = lastError?.message || "TTS API failed after retries";
+      logger.error(`TTS API error: ${errorMessage}`);
+      throw new Error(errorMessage);
     }
 
     const data: TTSResponse = await response.json();
@@ -85,7 +136,7 @@ export async function POST(request: NextRequest) {
       throw new Error(data.error || "Failed to generate speech");
     }
 
-    logger.info(`TTS API success: ${data.audio_url}`);
+    logger.info(`TTS API success: audio_url=${data.audio_url}`);
 
     return new Response(
       JSON.stringify({
@@ -97,7 +148,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (error) {
     logger.error(`TTS API error: ${error}`);
@@ -111,7 +162,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 }
