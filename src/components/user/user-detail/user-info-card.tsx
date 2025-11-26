@@ -199,7 +199,9 @@ export function UserInfoCard({
               {tCommon("joined")}
             </Label>
             <p className="text-sm font-medium" data-testid="user-created-at">
-              {format(new Date(user.createdAt), "PPP")}
+              {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
+                ? format(new Date(user.createdAt), "PPP")
+                : "—"}
             </p>
           </div>
 
@@ -208,7 +210,9 @@ export function UserInfoCard({
               {tCommon("lastUpdated")}
             </Label>
             <p className="text-sm font-medium" data-testid="user-updated-at">
-              {format(new Date(user.updatedAt), "PPP")}
+              {user.updatedAt && !isNaN(new Date(user.updatedAt).getTime())
+                ? format(new Date(user.updatedAt), "PPP")
+                : "—"}
             </p>
           </div>
         </div>

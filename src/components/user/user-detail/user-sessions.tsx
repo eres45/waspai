@@ -57,10 +57,16 @@ export async function UserSessions({
               {sessions.map((session) => (
                 <TableRow key={session.id}>
                   <TableCell>
-                    {format(new Date(session.createdAt), "PPp")}
+                    {session.createdAt &&
+                    !isNaN(new Date(session.createdAt).getTime())
+                      ? format(new Date(session.createdAt), "PPp")
+                      : "—"}
                   </TableCell>
                   <TableCell>
-                    {format(new Date(session.expiresAt), "PPp")}
+                    {session.expiresAt &&
+                    !isNaN(new Date(session.expiresAt).getTime())
+                      ? format(new Date(session.expiresAt), "PPp")
+                      : "—"}
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {session.ipAddress || tCommon("unknown")}
