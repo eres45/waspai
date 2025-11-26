@@ -17,6 +17,7 @@ export const chatRepository = restChatRepository;
 // Use REST API for user operations to avoid direct PostgreSQL connection issues on Vercel
 export const userRepository = {
   ...pgUserRepository,
+  getUserById: userRepositoryRest.getUserById,
   updateUserDetails: userRepositoryRest.updateUserDetails,
   updatePreferences: userRepositoryRest.updateUserPreferences,
 };
