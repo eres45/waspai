@@ -63,6 +63,7 @@ export function UserDetailFormCard({
 
   const handleImageUpdate = async (imageUrl: string) => {
     try {
+      console.log("[Client] Starting image update, size:", imageUrl.length);
       const response = await fetch("/api/user/image", {
         method: "PUT",
         headers: {
@@ -71,22 +72,29 @@ export function UserDetailFormCard({
         body: JSON.stringify({ image: imageUrl }),
       });
 
+      console.log("[Client] Response status:", response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error("[Client] Error response:", error);
         toast.error(error.error || "Failed to update profile photo");
         return;
       }
 
       const result = await response.json();
+      console.log("[Client] Success response:", result);
+
       if (result?.success && result.user) {
+        console.log("[Client] Updating local state with user:", result.user.id);
         setCurrentUser(result.user);
         onUserDetailsUpdate?.(result.user);
         toast.success("Profile photo updated successfully");
       } else {
+        console.error("[Client] Invalid response format:", result);
         toast.error(result?.message || "Failed to update profile photo");
       }
     } catch (error) {
-      console.error("Image update error:", error);
+      console.error("[Client] Image update error:", error);
       toast.error("Failed to update profile photo");
     }
   };
