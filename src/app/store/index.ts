@@ -126,7 +126,10 @@ const initialState: AppState = {
     AppDefaultToolkit.Visualization,
   ],
   toolPresets: [],
-  chatModel: undefined,
+  chatModel: {
+    provider: "google",
+    model: "gemini",
+  },
   openShortcutsPopup: false,
   openChatPreferences: false,
   mcpCustomizationPopup: undefined,

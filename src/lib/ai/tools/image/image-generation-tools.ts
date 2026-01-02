@@ -2,11 +2,8 @@ import { tool as createTool } from "ai";
 import z from "zod";
 import { ImageToolName } from "..";
 import {
-  generateImageWithImgCV,
-  generateImageWithFluxMax,
-  generateImageWithGPTImager,
-  generateImageWithImagen3,
-  generateImageWithNanoBananaAPI,
+  generateImageWithInfip,
+  generateImageWithStableDiffusionXL,
 } from "lib/ai/image/generate-image";
 import { serverFileStorage } from "lib/file-storage";
 import { safe, watchError } from "ts-safe";
@@ -29,10 +26,10 @@ const baseToolConfig = {
   inputSchema: z.object({
     prompt: z.string().describe("The image generation prompt"),
     model: z
-      .enum(["img-cv", "flux-max", "gpt-imager", "imagen-3", "nano-banana"])
-      .default("img-cv")
+      .enum(["sdxl", "flux-max", "gpt-imager", "imagen-3", "nano-banana"])
+      .default("sdxl")
       .describe(
-        "Image generation model: 'img-cv' (fastest, ultra-realistic), 'flux-max' (fast, high quality), 'gpt-imager' (good quality), 'imagen-3' (Google model), 'nano-banana' (detailed)",
+        "Image generation model: 'sdxl' (Stable Diffusion XL, high quality), 'flux-max' (fast, high quality), 'gpt-imager' (good quality), 'imagen-3' (Google model), 'nano-banana' (detailed)",
       ),
   }),
 };
@@ -47,33 +44,19 @@ export function createImageGenerationTool(_modelName: string) {
 
         // Select the appropriate image generation function
         switch (model) {
-          case "img-cv":
-            generatedImages = await generateImageWithImgCV({
+          case "sdxl":
+            generatedImages = await generateImageWithStableDiffusionXL({
               prompt,
               abortSignal,
             });
             break;
           case "flux-max":
-            generatedImages = await generateImageWithFluxMax({
-              prompt,
-              abortSignal,
-            });
-            break;
           case "gpt-imager":
-            generatedImages = await generateImageWithGPTImager({
-              prompt,
-              abortSignal,
-            });
-            break;
           case "imagen-3":
-            generatedImages = await generateImageWithImagen3({
-              prompt,
-              abortSignal,
-            });
-            break;
           case "nano-banana":
-            generatedImages = await generateImageWithNanoBananaAPI({
+            generatedImages = await generateImageWithInfip({
               prompt,
+              model,
               abortSignal,
             });
             break;
@@ -126,7 +109,7 @@ export function createImageGenerationTool(_modelName: string) {
 }
 
 // Export individual tools for each model
-export const imgCVTool = createImageGenerationTool("img-cv");
+export const sdxlTool = createImageGenerationTool("sdxl");
 export const fluxMaxTool = createImageGenerationTool("flux-max");
 export const gptImagerTool = createImageGenerationTool("gpt-imager");
 export const imagen3Tool = createImageGenerationTool("imagen-3");
@@ -134,7 +117,7 @@ export const nanoBananaTool = createImageGenerationTool("nano-banana");
 
 // Export all tools as a map
 export const imageGenerationTools = {
-  "img-cv": imgCVTool,
+  sdxl: sdxlTool,
   "flux-max": fluxMaxTool,
   "gpt-imager": gptImagerTool,
   "imagen-3": imagen3Tool,
@@ -143,10 +126,10 @@ export const imageGenerationTools = {
 
 // Model metadata for UI
 export const imageModelMetadata = {
-  "img-cv": {
-    name: "IMG-CV",
-    description: "Ultra-realistic, fastest (1.4s)",
-    icon: "⚡",
+  sdxl: {
+    name: "SDXL",
+    description: "Stable Diffusion XL - High quality, reliable",
+    icon: "🎨",
   },
   "flux-max": {
     name: "Flux-Max",
@@ -156,7 +139,7 @@ export const imageModelMetadata = {
   "gpt-imager": {
     name: "GPT-Imager",
     description: "Good quality (8.9s)",
-    icon: "🎨",
+    icon: "🖌️",
   },
   "imagen-3": {
     name: "Imagen-3",

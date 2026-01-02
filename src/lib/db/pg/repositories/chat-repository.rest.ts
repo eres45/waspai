@@ -5,29 +5,87 @@
 import { ChatMessage, ChatRepository, ChatThread } from "app-types/chat";
 import { supabaseRest } from "../../supabase-rest";
 
+const mapThreadToEntity = (data: any): ChatThread => ({
+  id: data.id,
+  title: data.title,
+  userId: data.user_id,
+  createdAt: data.created_at,
+});
+
+const mapMessageToEntity = (data: any): ChatMessage => ({
+  id: data.id,
+  threadId: data.thread_id,
+  role: data.role,
+  parts: data.parts,
+  metadata: data.metadata,
+  createdAt: data.created_at,
+});
+
 export const chatRepository: ChatRepository = {
   insertThread: async (
     thread: Omit<ChatThread, "createdAt">,
   ): Promise<ChatThread> => {
     console.log("[Chat REST] Inserting thread:", thread.id);
 
-    const { data, error } = await supabaseRest
-      .from("chat_thread")
-      .upsert({
-        id: thread.id,
-        title: thread.title,
-        user_id: thread.userId,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    // Helper for upserting user if missing
+    const ensureUserExists = async (userId: string) => {
+      console.log(
+        "[Chat REST] FK violation. Attempting to create missing user:",
+        userId,
+      );
+      try {
+        await supabaseRest.from("user").upsert(
+          {
+            id: userId,
+            email: `missing_sync_${userId}@placeholder.com`, // Dummy, will be updated on login
+            name: "Synced User",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+      } catch (e) {
+        console.error("[Chat REST] Failed to auto-create user:", e);
+      }
+    };
 
-    if (error) {
+    try {
+      const { data, error } = await supabaseRest
+        .from("chat_thread")
+        .upsert({
+          id: thread.id,
+          title: thread.title,
+          user_id: thread.userId,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return mapThreadToEntity(data);
+    } catch (error: any) {
+      // Check for foreign key violation (Postgres code 23503)
+      if (error?.code === "23503") {
+        await ensureUserExists(thread.userId);
+        // Retry once
+        const { data: retryData, error: retryError } = await supabaseRest
+          .from("chat_thread")
+          .upsert({
+            id: thread.id,
+            title: thread.title,
+            user_id: thread.userId,
+            created_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (retryError) throw retryError;
+        return mapThreadToEntity(retryData);
+      }
+
       console.error("[Chat REST] insertThread error:", error);
       throw new Error(error.message || "Failed to insert thread");
     }
-
-    return data as ChatThread;
   },
 
   deleteChatMessage: async (id: string): Promise<void> => {
@@ -254,7 +312,7 @@ export const chatRepository: ChatRepository = {
       throw new Error(error.message || "Failed to update thread");
     }
 
-    return data as ChatThread;
+    return mapThreadToEntity(data);
   },
 
   upsertThread: async (
@@ -262,22 +320,53 @@ export const chatRepository: ChatRepository = {
   ): Promise<ChatThread> => {
     console.log("[Chat REST] Upserting thread:", thread.id);
 
-    const { data, error } = await supabaseRest
-      .from("chat_thread")
-      .upsert({
-        id: thread.id,
-        title: thread.title,
-        user_id: thread.userId,
-      })
-      .select()
-      .single();
+    // Same logic for upsert
+    try {
+      const { data, error } = await supabaseRest
+        .from("chat_thread")
+        .upsert({
+          id: thread.id,
+          title: thread.title,
+          user_id: thread.userId,
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (error) throw error;
+      return mapThreadToEntity(data);
+    } catch (error: any) {
+      if (error?.code === "23503") {
+        // FK violation
+        console.log("Auto-creating user for upsertThread FK violation");
+        await supabaseRest.from("user").upsert(
+          {
+            id: thread.userId,
+            email: `missing_sync_${thread.userId}@placeholder.com`,
+            name: "Synced User",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+
+        // Retry
+        const { data: retryData, error: retryError } = await supabaseRest
+          .from("chat_thread")
+          .upsert({
+            id: thread.id,
+            title: thread.title,
+            user_id: thread.userId,
+          })
+          .select()
+          .single();
+
+        if (retryError) throw retryError;
+        return mapThreadToEntity(retryData);
+      }
+
       console.error("[Chat REST] upsertThread error:", error);
       throw new Error(error.message || "Failed to upsert thread");
     }
-
-    return data as ChatThread;
   },
 
   deleteThread: async (id: string): Promise<void> => {
@@ -342,7 +431,7 @@ export const chatRepository: ChatRepository = {
       throw new Error(error.message || "Failed to insert message");
     }
 
-    return data as ChatMessage;
+    return mapMessageToEntity(data);
   },
 
   upsertMessage: async (
@@ -368,7 +457,7 @@ export const chatRepository: ChatRepository = {
       throw new Error(error.message || "Failed to upsert message");
     }
 
-    return data as ChatMessage;
+    return mapMessageToEntity(data);
   },
 
   deleteMessagesByChatIdAfterTimestamp: async (
@@ -483,7 +572,9 @@ export const chatRepository: ChatRepository = {
         .insert(
           messages.map((msg) => ({
             ...msg,
-            created_at: msg.createdAt || new Date().toISOString(),
+            thread_id: msg.threadId || msg.thread_id,
+            created_at:
+              msg.createdAt || msg.created_at || new Date().toISOString(),
           })),
         )
         .select();
@@ -492,7 +583,7 @@ export const chatRepository: ChatRepository = {
         throw error;
       }
 
-      return (data || []) as ChatMessage[];
+      return (data || []).map(mapMessageToEntity);
     } catch (error) {
       console.error("[Chat REST] insertMessages error:", error);
       throw error;

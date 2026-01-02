@@ -36,6 +36,18 @@ interface UpdateCharacterInput {
   privacy?: "public" | "private";
 }
 
+const mapCharacterToEntity = (data: any): CharacterEntity => ({
+  id: data.id,
+  name: data.name,
+  description: data.description,
+  personality: data.personality,
+  icon: data.icon,
+  userId: data.user_id,
+  privacy: data.privacy,
+  createdAt: data.created_at,
+  updatedAt: data.updated_at,
+});
+
 export const characterRepository = {
   async createCharacter(input: CreateCharacterInput): Promise<CharacterEntity> {
     console.log("[Character REST] Creating character:", input.id);
@@ -48,10 +60,10 @@ export const characterRepository = {
         description: input.description,
         personality: input.personality,
         icon: input.icon,
-        userId: input.userId,
+        user_id: input.userId,
         privacy: input.privacy,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -61,7 +73,7 @@ export const characterRepository = {
       throw new Error(error.message || "Failed to create character");
     }
 
-    return data as CharacterEntity;
+    return mapCharacterToEntity(data);
   },
 
   async getCharacterById(id: string): Promise<CharacterEntity | null> {
@@ -79,7 +91,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return data as CharacterEntity | null;
+      return data ? mapCharacterToEntity(data) : null;
     } catch (error) {
       console.error("[Character REST] getCharacterById error:", error);
       return null;
@@ -99,7 +111,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return (data as CharacterEntity[]) || [];
+      return (data as any[])?.map(mapCharacterToEntity) || [];
     } catch (error) {
       console.error("[Character REST] getCharactersByUserId error:", error);
       return [];
@@ -119,7 +131,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return (data as CharacterEntity[]) || [];
+      return (data as any[])?.map(mapCharacterToEntity) || [];
     } catch (error) {
       console.error("[Character REST] getPublicCharacters error:", error);
       return [];
@@ -145,7 +157,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return (data as CharacterEntity[]) || [];
+      return (data as any[])?.map(mapCharacterToEntity) || [];
     } catch (error) {
       console.error(
         "[Character REST] getPrivateCharactersByUserId error:",
@@ -171,7 +183,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return (data as CharacterEntity[]) || [];
+      return (data as any[])?.map(mapCharacterToEntity) || [];
     } catch (error) {
       console.error(
         "[Character REST] getPublicCharactersByUserId error:",
@@ -189,12 +201,13 @@ export const characterRepository = {
     console.log("[Character REST] Updating character:", id);
 
     try {
+      const updateBody: any = { ...input };
+      if (input.privacy) updateBody.privacy = input.privacy;
+      updateBody.updated_at = new Date().toISOString();
+
       const { data, error } = await supabaseRest
         .from("character")
-        .update({
-          ...input,
-          updatedAt: new Date().toISOString(),
-        })
+        .update(updateBody)
         .eq("id", id)
         .eq("user_id", userId)
         .select()
@@ -204,7 +217,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return data as CharacterEntity | null;
+      return data ? mapCharacterToEntity(data) : null;
     } catch (error) {
       console.error("[Character REST] updateCharacter error:", error);
       return null;
@@ -256,7 +269,7 @@ export const characterRepository = {
         throw error;
       }
 
-      return (data as CharacterEntity[]) || [];
+      return (data as any[])?.map(mapCharacterToEntity) || [];
     } catch (error) {
       console.error("[Character REST] searchCharacters error:", error);
       return [];

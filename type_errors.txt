@@ -1,0 +1,28 @@
+
+> wasp-ai@1.25.0 check-types G:\project\better-chatbot
+> tsc --noEmit
+
+src/components/tool-select-dropdown.tsx(85,1): error TS6133: 'GeminiIcon' is declared but its value is never read.
+src/components/tool-select-dropdown.tsx(87,1): error TS6133: 'OpenAIIcon' is declared but its value is never read.
+src/components/tool-select-dropdown.tsx(1081,9): error TS6133: 'handleImageEditClick' is declared but its value is never read.
+src/hooks/use-presigned-upload.ts(29,31): error TS2769: No overload matches this call.
+  Overload 1 of 12, '(key: StrictKey, fetcher: ((arg: ArgumentsTuple) => FetcherResponse<StorageInfo>) | ((arg: ArgumentsTuple) => FetcherResponse<...>) | null, config: SWRConfiguration<...> | undefined): SWRResponse<...>', gave the following error.
+    Argument of type '"storage-info"' is not assignable to parameter of type 'StrictKey'.
+  Overload 2 of 12, '(key: Key, fetcher: BareFetcher<StorageInfo> | null, config: SWRConfiguration<StorageInfo, any, BareFetcher<StorageInfo>> | undefined): SWRResponse<...>', gave the following error.
+    Argument of type '() => Promise<{ type: FileStorageDriver; supportsDirectUpload: boolean; }>' is not assignable to parameter of type 'BareFetcher<StorageInfo>'.
+      Type 'Promise<{ type: FileStorageDriver; supportsDirectUpload: boolean; }>' is not assignable to type 'FetcherResponse<StorageInfo>'.
+        Type 'Promise<{ type: FileStorageDriver; supportsDirectUpload: boolean; }>' is not assignable to type 'Promise<StorageInfo>'.
+          Type '{ type: FileStorageDriver; supportsDirectUpload: boolean; }' is not assignable to type 'StorageInfo'.
+            Types of property 'type' are incompatible.
+              Type 'FileStorageDriver' is not assignable to type '"vercel-blob" | "s3" | "supabase" | "hybrid" | "local" | "snapzion"'.
+                Type '"telegram"' is not assignable to type '"vercel-blob" | "s3" | "supabase" | "hybrid" | "local" | "snapzion"'.
+src/lib/ai/tools/image/image-generation-tools.ts(5,3): error TS2724: '"lib/ai/image/generate-image"' has no exported member named 'generateImageWithImgCV'. Did you mean 'generateImageWithInfip'?
+src/lib/ai/tools/image/image-generation-tools.ts(6,3): error TS2305: Module '"lib/ai/image/generate-image"' has no exported member 'generateImageWithFluxMax'.
+src/lib/ai/tools/image/image-generation-tools.ts(7,3): error TS2305: Module '"lib/ai/image/generate-image"' has no exported member 'generateImageWithGPTImager'.
+src/lib/ai/tools/image/image-generation-tools.ts(8,3): error TS2724: '"lib/ai/image/generate-image"' has no exported member named 'generateImageWithImagen3'. Did you mean 'generateImageWithInfip'?
+src/lib/ai/tools/image/image-generation-tools.ts(9,3): error TS2305: Module '"lib/ai/image/generate-image"' has no exported member 'generateImageWithNanoBananaAPI'.
+src/lib/db/pg/repositories/agent-repository.rest.ts(3,27): error TS6133: 'AgentSummary' is declared but its value is never read.
+src/lib/db/pg/repositories/chat-export-repository.rest.ts(4,1): error TS6133: 'UserTable' is declared but its value is never read.
+src/lib/db/pg/repositories/music-repository.rest.ts(3,1): error TS6133: 'MusicGenerationEntity' is declared but its value is never read.
+src/lib/db/pg/repositories/user-repository.pg.ts(25,14): error TS2739: Type '{ existsByEmail: (email: string) => Promise<boolean>; updateUserDetails: ({ userId, name, image, email, }: { userId: string; name?: string | undefined; image?: string | undefined; email?: string | undefined; }) => Promise<...>; ... 5 more ...; getUserAuthMethods: (userId: string) => Promise<...>; }' is missing the following properties from type 'UserRepository': createOrUpdateUser, userExists
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.

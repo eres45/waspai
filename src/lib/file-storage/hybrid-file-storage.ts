@@ -4,17 +4,17 @@ import type {
   UploadUrl,
   UploadUrlOptions,
 } from "./file-storage.interface";
-import { createSnapzionFileStorage } from "./snapzion-file-storage";
+import { createTelegramFileStorage } from "./telegram-file-storage";
 import { createVercelBlobStorage } from "./vercel-blob-storage";
 
 /**
  * Hybrid File Storage
  * Routes uploads to appropriate provider based on file type:
- * - Images & Videos → Snapzion
+ * - Images & Videos → Telegram Bot API
  * - Documents (PDF, Word, CSV, Text) → Vercel Blob (with 7-day auto-delete)
  */
 export const createHybridFileStorage = (): FileStorage => {
-  const snapzionStorage = createSnapzionFileStorage();
+  const telegramStorage = createTelegramFileStorage();
   const vercelBlobStorage = createVercelBlobStorage();
 
   const isDocumentType = (contentType?: string): boolean => {
@@ -54,9 +54,9 @@ export const createHybridFileStorage = (): FileStorage => {
         });
       } else if (isImageOrVideoType(options.contentType)) {
         console.log(
-          `Hybrid Storage: Routing to Snapzion for media: ${options.filename}`,
+          `Hybrid Storage: Routing to Telegram for media: ${options.filename}`,
         );
-        return snapzionStorage.upload(content, options);
+        return telegramStorage.upload(content, options);
       } else {
         // Default to Vercel Blob for unknown types
         console.log(
@@ -80,11 +80,11 @@ export const createHybridFileStorage = (): FileStorage => {
     },
 
     async download(key) {
-      // Try Vercel Blob first (for documents), then Snapzion
+      // Try Vercel Blob first (for documents), then Telegram
       try {
         return await vercelBlobStorage.download(key);
       } catch {
-        return await snapzionStorage.download(key);
+        return await telegramStorage.download(key);
       }
     },
 
@@ -92,17 +92,17 @@ export const createHybridFileStorage = (): FileStorage => {
       // Try both providers
       await Promise.all([
         vercelBlobStorage.delete(key).catch(() => {}),
-        snapzionStorage.delete(key).catch(() => {}),
+        telegramStorage.delete(key).catch(() => {}),
       ]);
     },
 
     async exists(key) {
       // Try both providers
-      const [vercelBlobExists, snapzionExists] = await Promise.all([
+      const [vercelBlobExists, telegramExists] = await Promise.all([
         vercelBlobStorage.exists(key).catch(() => false),
-        snapzionStorage.exists(key).catch(() => false),
+        telegramStorage.exists(key).catch(() => false),
       ]);
-      return vercelBlobExists || snapzionExists;
+      return vercelBlobExists || telegramExists;
     },
 
     async getMetadata(key) {
@@ -112,7 +112,7 @@ export const createHybridFileStorage = (): FileStorage => {
         .catch(() => null);
       if (vercelBlobMeta) return vercelBlobMeta;
 
-      return await snapzionStorage.getMetadata(key).catch(() => null);
+      return await telegramStorage.getMetadata(key).catch(() => null);
     },
 
     async getSourceUrl(key) {
@@ -122,7 +122,7 @@ export const createHybridFileStorage = (): FileStorage => {
         .catch(() => null);
       if (vercelBlobUrl) return vercelBlobUrl;
 
-      return await snapzionStorage.getSourceUrl(key).catch(() => null);
+      return await telegramStorage.getSourceUrl(key).catch(() => null);
     },
 
     async getDownloadUrl(key) {
@@ -133,7 +133,7 @@ export const createHybridFileStorage = (): FileStorage => {
       if (vercelBlobUrl) return vercelBlobUrl;
 
       return (
-        (await snapzionStorage.getDownloadUrl?.(key).catch(() => null)) || null
+        (await telegramStorage.getDownloadUrl?.(key).catch(() => null)) || null
       );
     },
   } satisfies FileStorage;

@@ -2,17 +2,10 @@ import "server-only";
 
 import { LanguageModel } from "ai";
 import { createPollinationsModels } from "./pollinations";
-import { createGptOssModels } from "./gpt-oss";
-import { createGrokModels } from "./grok";
-import { createQWENModels } from "./qwen";
-import { createDeepSeekModels } from "./deepseek";
-import { createDeepSeekV1Models } from "./deepseek-v1";
-import { createGemmaModels } from "./gemma";
-import { createGeminiDarkModels } from "./gemini-dark";
-import { createOpenAIFreeModels } from "./openai-free";
-import { createKiwiAIModels } from "./kiwi-ai";
-import { createSonnetFreeModels } from "./sonnet-free";
-import { createWormGPTModels } from "./wormgpt";
+import { createA4FModels } from "./a4f-models";
+import { createDeepInfraModels } from "./deepinfra";
+import { createLLMChatModels } from "./llmchat";
+import { createTypeGPTModels } from "./typegpt";
 import { ChatModel } from "app-types/chat";
 import {
   DEFAULT_FILE_PART_MIME_TYPES,
@@ -22,51 +15,52 @@ import {
 // Pollinations AI models - Free tier with 10 requests per minute
 const pollinationsModels = createPollinationsModels();
 
-// GPT-OSS models - Free tier
-const gptOssModels = createGptOssModels();
+// A4F Models - Professional tier
+const a4fModels = createA4FModels();
 
-// Grok models - Free tier
-const grokModels = createGrokModels();
+// DeepInfra Models - Pro tier
+const deepInfraModels = createDeepInfraModels();
 
-// QWEN models - Free tier (top 10 models)
-const qwenModels = createQWENModels();
+// LLMChat Models - Free tier
+const llmChatModels = createLLMChatModels();
 
-// DeepSeek models - Free tier
-const deepseekModels = createDeepSeekModels();
-const deepseekV1Models = createDeepSeekV1Models();
-
-// Gemma models - Free tier
-const gemmaModels = createGemmaModels();
-
-// Gemini Dark models - Free tier
-const geminiDarkModels = createGeminiDarkModels();
-
-// OpenAI Free models - Free tier
-const openAIFreeModels = createOpenAIFreeModels();
-
-// Kiwi AI models - Free tier
-const kiwiAIModels = createKiwiAIModels();
-
-// Anthropic Claude models - Free tier (specialized endpoints)
-const anthropicModels = createSonnetFreeModels();
-
-// WormGPT AI models - Free tier
-const wormgptModels = createWormGPTModels();
+// TypeGPT Models
+const typegptModels = createTypeGPTModels();
 
 const staticModels = {
-  // Reorganize Pollinations models under their actual provider names
   google: {
     ...(pollinationsModels.gemini && { gemini: pollinationsModels.gemini }),
     ...(pollinationsModels["gemini-search"] && {
       "gemini-search": pollinationsModels["gemini-search"],
     }),
-    ...geminiDarkModels,
+    "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
+    "google-gemma-2-12b-it": deepInfraModels["google-gemma-2-12b-it"],
+    "google-gemma-3-27b-it": typegptModels["google-gemma-3-27b-it"], // New
+    "cf-google-gemma-7b-it": llmChatModels["cf-google-gemma-7b-it"],
+    "cf-google-gemma-2b-it-lora": llmChatModels["cf-google-gemma-2b-it-lora"],
   },
   mistral: {
     ...(pollinationsModels.mistral && { mistral: pollinationsModels.mistral }),
+    "mistralai-Mistral-7B-Instruct-v0.1":
+      deepInfraModels["mistralai-Mistral-7B-Instruct-v0.1"],
+    "mistralai-Mistral-7B-Instruct-v0.2":
+      deepInfraModels["mistralai-Mistral-7B-Instruct-v0.2"],
+    "mistralai-Mistral-Small-Instruct-2409":
+      deepInfraModels["mistralai-Mistral-Small-Instruct-2409"],
+    "mistralai-Devstral-Small-2505":
+      typegptModels["mistralai-Devstral-Small-2505"], // New
+    "mistralai-Mistral-Small-3.1-24B-Instruct-2503":
+      typegptModels["mistralai-Mistral-Small-3.1-24B-Instruct-2503"], // New
+    "cf-mistralai-mistral-small-3.1-24b-instruct":
+      llmChatModels["cf-mistralai-mistral-small-3.1-24b-instruct"],
+    "cf-mistralai-mistral-7b-instruct-v0.1":
+      llmChatModels["cf-mistralai-mistral-7b-instruct-v0.1"],
+    "cf-mistralai-mistral-7b-instruct-v0.2":
+      llmChatModels["cf-mistralai-mistral-7b-instruct-v0.2"],
+    "cf-mistralai-openhermes-2.5-mistral-7b":
+      llmChatModels["cf-mistralai-openhermes-2.5-mistral-7b"],
   },
   "openai-free": {
-    ...openAIFreeModels,
     ...(pollinationsModels.openai && {
       "openai-pollinations": pollinationsModels.openai,
     }),
@@ -80,45 +74,121 @@ const staticModels = {
       "openai-reasoning-pollinations": pollinationsModels["openai-reasoning"],
     }),
   },
-  "gpt-oss": gptOssModels,
-  grok: grokModels,
-  qwen: qwenModels,
-  deepseek: {
-    ...deepseekModels,
-    ...deepseekV1Models,
+  openai: {
+    "openai-gpt-oss-120b": a4fModels["openai-gpt-oss-120b"],
+    "openai-gpt-oss-20b": a4fModels["openai-gpt-oss-20b"],
+    "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
   },
-  gemma: gemmaModels,
-  "kiwi-ai": kiwiAIModels,
-  anthropic: anthropicModels,
-  wormgpt: wormgptModels,
+  meta: {
+    "llama-4-scout-17b-16e-instruct":
+      a4fModels["meta-llama-llama-4-scout-17b-16e-instruct"],
+    "llama-guard-4-12b": a4fModels["meta-llama-llama-guard-4-12b"],
+    "llama-prompt-guard-2-86m":
+      a4fModels["meta-llama-llama-prompt-guard-2-86m"],
+  },
+  qwen: {
+    "qwen-qwen3-32b": a4fModels["qwen-qwen3-32b"],
+    "Qwen-Qwen2-7B-Instruct": deepInfraModels["Qwen-Qwen2-7B-Instruct"],
+    "Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo":
+      deepInfraModels["Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo"],
+    "Qwen-Qwen3-235B-A22B-Instruct-2507":
+      typegptModels["Qwen-Qwen3-235B-A22B-Instruct-2507"], // New
+    "qwen-qwen3-next-80b-a3b-instruct":
+      typegptModels["qwen-qwen3-next-80b-a3b-instruct"], // New
+    "qwen-qwen3-next-80b-a3b-thinking":
+      typegptModels["qwen-qwen3-next-80b-a3b-thinking"], // New
+    "cf-qwen-qwen1.5-7b-chat-awq": llmChatModels["cf-qwen-qwen1.5-7b-chat-awq"],
+    "cf-qwen-qwen1.5-14b-chat-awq":
+      llmChatModels["cf-qwen-qwen1.5-14b-chat-awq"],
+    "cf-qwen-qwen1.5-0.5b-chat": llmChatModels["cf-qwen-qwen1.5-0.5b-chat"],
+    "cf-qwen-qwen1.5-1.8b-chat": llmChatModels["cf-qwen-qwen1.5-1.8b-chat"],
+  },
+  moonshot: {
+    "moonshotai-kimi-k2-instruct": a4fModels["moonshotai-kimi-k2-instruct"],
+    "moonshotai-kimi-k2-instruct-0905":
+      a4fModels["moonshotai-kimi-k2-instruct-0905"],
+    "moonshotai-Kimi-K2-Thinking":
+      deepInfraModels["moonshotai-Kimi-K2-Thinking"],
+  },
+  allam: {},
+  canopy: {
+    "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
+  },
+  deepseek: {
+    "deepseek-ai-deepseek-r1-distill-qwen-32b":
+      typegptModels["deepseek-ai-deepseek-r1-distill-qwen-32b"], // New
+    "deepseek-ai-DeepSeek-V3.1-Terminus":
+      deepInfraModels["deepseek-ai-DeepSeek-V3.1-Terminus"],
+    "deepseek-ai-DeepSeek-R1-Turbo":
+      deepInfraModels["deepseek-ai-DeepSeek-R1-Turbo"],
+    "deepseek-ai-DeepSeek-R1": deepInfraModels["deepseek-ai-DeepSeek-R1"],
+    "cf-deepseek-ai-deepseek-coder-6.7b-base":
+      llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-base"],
+    "cf-deepseek-ai-deepseek-coder-6.7b-instruct":
+      llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-instruct"],
+    "cf-deepseek-ai-deepseek-math-7b-instruct":
+      llmChatModels["cf-deepseek-ai-deepseek-math-7b-instruct"],
+  },
+  minimax: {
+    "MiniMaxAI-MiniMax-M2": deepInfraModels["MiniMaxAI-MiniMax-M2"],
+  },
+  microsoft: {
+    "microsoft-phi-4-multimodal-instruct":
+      typegptModels["microsoft-phi-4-multimodal-instruct"], // New
+    "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
+  },
+  tiiuae: {
+    "cf-tiiuae-falcon-7b-instruct":
+      llmChatModels["cf-tiiuae-falcon-7b-instruct"],
+  },
+  defog: {
+    "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
+  },
+  lgai: {
+    "LGAI-EXAONE-K-EXAONE-236B-A23B":
+      typegptModels["LGAI-EXAONE-K-EXAONE-236B-A23B"], // New
+  },
+  zai: {
+    "zai-org-GLM-4.6": typegptModels["zai-org-GLM-4.6"], // New
+    "zai-org-GLM-4.7": typegptModels["zai-org-GLM-4.7"], // New
+  },
+  others: {
+    "cf-huggingfacegi-zephyr-7b-beta":
+      llmChatModels["cf-huggingfacegi-zephyr-7b-beta"],
+    "cf-intel-neural-chat-7b-v3-1":
+      llmChatModels["cf-intel-neural-chat-7b-v3-1"],
+    "cf-nexusflow-starling-lm-7b-beta":
+      llmChatModels["cf-nexusflow-starling-lm-7b-beta"],
+    "cf-openchat-openchat-3.5": llmChatModels["cf-openchat-openchat-3.5"],
+    "cf-una-cybertron-una-cybertron-7b-v2-bf16":
+      llmChatModels["cf-una-cybertron-una-cybertron-7b-v2-bf16"],
+    "cf-tinyllama-tinyllama-1.1b-chat-v1.0":
+      llmChatModels["cf-tinyllama-tinyllama-1.1b-chat-v1.0"],
+  },
+  llm: {
+    "llama-3.1-8b-instant": a4fModels["llama-3.1-8b-instant"],
+    "llama-3.3-70b-versatile": a4fModels["llama-3.3-70b-versatile"],
+    "Llama-3.3-70B-DeepInfra":
+      deepInfraModels["meta-llama-Llama-3.3-70B-Instruct"],
+    "Llama-3.1-8B-DeepInfra":
+      deepInfraModels["meta-llama-Llama-3.1-8B-Instruct"],
+    "Llama-3.2-3B-DeepInfra":
+      deepInfraModels["meta-llama-Llama-3.2-3B-Instruct"],
+    "Llama-3.2-1B-DeepInfra":
+      deepInfraModels["meta-llama-Llama-3.2-1B-Instruct"],
+    "Llama-3-8B-DeepInfra": deepInfraModels["meta-llama-Llama-3-8B-Instruct"],
+    "cf-llama-3-8b": llmChatModels["cf-meta-llama-3-8b-instruct"],
+    "cf-llama-3.1-8b": llmChatModels["cf-meta-llama-3.1-8b-instruct"],
+    "cf-llama-2-7b": llmChatModels["cf-meta-llama-2-7b-chat-fp16"],
+    "cf-llama-2-13b": llmChatModels["cf-meta-llama-2-13b-chat"],
+    "cf-llama-guard": llmChatModels["cf-meta-llama-guard-7b"],
+    "cf-llama-3-8b-awq": llmChatModels["cf-meta-llama-3-8b-instruct-awq"],
+  },
 };
 
 const staticUnsupportedModels = new Set<LanguageModel>([
   // gemini-search doesn't support tool calling
   pollinationsModels["gemini-search"],
-  // GPT-OSS models don't support tool calling
-  gptOssModels["gpt-oss-120b"],
-  gptOssModels["gpt-4-117b"],
-  // Grok models don't support tool calling
-  grokModels["grok-4"],
-  // QWEN models don't support tool calling
-  ...Object.values(qwenModels),
-  // DeepSeek models don't support tool calling
-  ...Object.values(deepseekModels),
-  // DeepSeek v1 models don't support tool calling
-  ...Object.values(deepseekV1Models),
-  // Gemma models don't support tool calling
-  ...Object.values(gemmaModels),
-  // Gemini Dark models don't support tool calling
-  ...Object.values(geminiDarkModels),
-  // OpenAI Free models don't support tool calling
-  ...Object.values(openAIFreeModels),
-  // Kiwi AI models don't support tool calling
-  ...Object.values(kiwiAIModels),
-  // Anthropic Claude models don't support tool calling
-  ...Object.values(anthropicModels),
-  // WormGPT models don't support tool calling
-  ...Object.values(wormgptModels),
 ]);
 
 const staticSupportImageInputModels = {
@@ -171,7 +241,7 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return allUnsupportedModels.has(model);
 };
 
-const isImageInputUnsupportedModel = (model: LanguageModel) => {
+export const isImageInputUnsupportedModel = (model: LanguageModel) => {
   return !Object.values(staticSupportImageInputModels).includes(model);
 };
 
@@ -190,6 +260,25 @@ export const customModelProvider = {
         isToolCallUnsupported: isToolCallUnsupportedModel(model),
         isImageInputUnsupported: isImageInputUnsupportedModel(model),
         supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
+        isPro:
+          [
+            "meta",
+            "openai",
+            "qwen",
+            "moonshot",
+            "allam",
+            "canopy",
+            "deepseek",
+            "minimax",
+            "microsoft",
+            "tiiuae",
+            "defog",
+            "other",
+            "llm",
+            "lgai",
+            "zai",
+          ].includes(provider) ||
+          (["google", "mistral"].includes(provider) && name.includes("-")),
       })),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
   })),
@@ -197,13 +286,14 @@ export const customModelProvider = {
     if (!model) {
       throw new Error("No model specified");
     }
-    const selectedModel = allModels[model.provider]?.[model.model];
+    const selectedModel =
+      allModels[model.provider as keyof typeof allModels]?.[model.model];
     if (!selectedModel) {
       console.warn(
-        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: openai-free/gpt-4o-mini`,
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: openai-free/openai-pollinations`,
       );
-      // Fallback to a reliable free model
-      const fallbackModel = allModels["openai-free"]?.["gpt-4o-mini"];
+      // Fallback to a reliable free model (Gemini 2.5 Flash)
+      const fallbackModel = allModels["google"]?.["gemini"];
       if (!fallbackModel) {
         throw new Error(
           `Model not found: ${model.provider}/${model.model}. Please select a valid model.`,

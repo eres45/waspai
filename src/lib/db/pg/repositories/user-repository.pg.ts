@@ -23,6 +23,77 @@ const getUserColumnsWithoutPassword = () => {
 };
 
 export const pgUserRepository: UserRepository = {
+  createOrUpdateUser: async (
+    userId: string,
+    email: string,
+    name?: string,
+    avatarUrl?: string | null,
+  ): Promise<User | null> => {
+    try {
+      // Logic from REST repository: don't overwrite custom changes
+      const [existingUser] = await db
+        .select({ name: UserTable.name, image: UserTable.image })
+        .from(UserTable)
+        .where(eq(UserTable.id, userId));
+
+      const isPlaceholder = existingUser?.name === "Synced User";
+      const hasName = !!existingUser?.name;
+      const hasImage = !!existingUser?.image;
+
+      const [result] = await db
+        .insert(UserTable)
+        .values({
+          id: userId,
+          email,
+          name: !existingUser || isPlaceholder || !hasName ? name || "" : "",
+          image: !existingUser || !hasImage ? avatarUrl || null : null,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: UserTable.id,
+          set: {
+            email,
+            ...((!existingUser || isPlaceholder || !hasName) && {
+              name: name || "",
+            }),
+            ...((!existingUser || !hasImage) && { image: avatarUrl || null }),
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+
+      if (!result) return null;
+
+      return {
+        ...result,
+        preferences: (result.preferences as UserPreferences) || null,
+      };
+    } catch (error) {
+      logger.error(`[User PG] createOrUpdateUser error:`, error);
+      throw error;
+    }
+  },
+  userExists: async (userId: string): Promise<boolean> => {
+    try {
+      // Use Supabase HTTP client for auth queries (works on Vercel)
+      const { data, error } = await supabaseServer
+        .from("user")
+        .select("id")
+        .eq("id", userId)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        logger.error("Error checking if user exists:", error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      logger.error("Error in userExists:", error);
+      return false;
+    }
+  },
   existsByEmail: async (email: string): Promise<boolean> => {
     try {
       // Use Supabase HTTP client for auth queries (works on Vercel)

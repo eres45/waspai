@@ -14,7 +14,6 @@ export async function getStorageInfoAction() {
       storageDriver === "vercel-blob" ||
       storageDriver === "s3" ||
       storageDriver === "supabase" ||
-      storageDriver === "snapzion" ||
       storageDriver === "hybrid",
   };
 }
@@ -102,23 +101,6 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
     return { isValid: true };
   }
 
-  // 4. Check Snapzion configuration
-  if (storageDriver === "snapzion") {
-    if (!process.env.SNAPZION_API_TOKEN) {
-      return {
-        isValid: false,
-        error: "SNAPZION_API_TOKEN is not set",
-        solution:
-          "Add Snapzion API token for file uploads:\n" +
-          "- FILE_STORAGE_TYPE=snapzion\n" +
-          "- SNAPZION_API_TOKEN=your-api-token\n" +
-          "(Optional) SNAPZION_API_URL=https://upload.snapzion.com/api/public-upload",
-      };
-    }
-
-    return { isValid: true };
-  }
-
   // 5. Check Hybrid configuration
   if (storageDriver === "hybrid") {
     const missing: string[] = [];
@@ -141,9 +123,30 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
     return { isValid: true };
   }
 
+  // 6. Check Telegram configuration
+  if (storageDriver === "telegram") {
+    const missing: string[] = [];
+    if (!process.env.TELEGRAM_BOT_TOKEN) missing.push("TELEGRAM_BOT_TOKEN");
+    if (!process.env.TELEGRAM_CHANNEL_ID) missing.push("TELEGRAM_CHANNEL_ID");
+
+    if (missing.length > 0) {
+      return {
+        isValid: false,
+        error: `Missing Telegram configuration: ${missing.join(", ")}`,
+        solution:
+          "Add required env vars for Telegram storage:\n" +
+          "- FILE_STORAGE_TYPE=telegram\n" +
+          "- TELEGRAM_BOT_TOKEN=your-bot-token\n" +
+          "- TELEGRAM_CHANNEL_ID=your-channel-id",
+      };
+    }
+
+    return { isValid: true };
+  }
+
   // 6. Validate storage driver
   if (
-    !["vercel-blob", "s3", "supabase", "snapzion", "hybrid"].includes(
+    !["vercel-blob", "s3", "supabase", "hybrid", "telegram"].includes(
       storageDriver,
     )
   ) {
@@ -155,8 +158,7 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
         "- 'vercel-blob' (default)\n" +
         "- 's3'\n" +
         "- 'supabase'\n" +
-        "- 'snapzion'\n" +
-        "- 'hybrid'",
+        "- 'telegram'",
     };
   }
 

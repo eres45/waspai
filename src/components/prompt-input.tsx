@@ -173,6 +173,19 @@ export default function PromptInput({
       if (!threadId) return;
       appStoreMutate((prev) => {
         const newMentions = mentions.filter((m) => !equal(m, mention));
+
+        // If we're deleting a character mention, also clear its context from sessionStorage
+        if (mention.type === "character") {
+          try {
+            sessionStorage.removeItem(`character_${threadId}`);
+          } catch (e) {
+            console.warn(
+              "Failed to clear character context from sessionStorage:",
+              e,
+            );
+          }
+        }
+
         return {
           threadMentions: {
             ...prev.threadMentions,
@@ -181,7 +194,7 @@ export default function PromptInput({
         };
       });
     },
-    [mentions, threadId],
+    [mentions, threadId, appStoreMutate],
   );
 
   const deleteFile = useCallback(
@@ -229,16 +242,16 @@ export default function PromptInput({
   const handleGenerateImage = useCallback(
     (
       model?:
-        | "google"
-        | "openai"
-        | "img-cv"
-        | "flux-max"
-        | "gpt-imager"
-        | "imagen-3"
-        | "nano-banana"
         | "sdxl"
         | "chalk"
-        | "meme",
+        | "img3"
+        | "img4"
+        | "qwen"
+        | "nano-banana"
+        | "flux-schnell"
+        | "lucid-origin"
+        | "phoenix"
+        | "sdxl-lite",
     ) => {
       if (!model) {
         appStoreMutate({
@@ -259,6 +272,49 @@ export default function PromptInput({
       }));
 
       // Focus on the input
+      editorRef.current?.commands.focus();
+    },
+    [threadId, appStoreMutate],
+  );
+
+  const handleEditImage = useCallback(
+    (tool: "nano-banana" | "remove-background" | "enhance-image") => {
+      if (!threadId) return;
+
+      setIsUploadDropdownOpen(false);
+
+      if (tool === "nano-banana") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "nano-banana",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info(
+          "Nano-Banana Edit Mode: Upload an image and provide a prompt to edit it.",
+        );
+      } else if (tool === "remove-background") {
+        // Maybe handle these differently or just set state
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "remove-background",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image to remove its background.");
+      } else if (tool === "enhance-image") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "enhance-image",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image to enhance it.");
+      }
+
       editorRef.current?.commands.focus();
     },
     [threadId, appStoreMutate],
@@ -436,6 +492,19 @@ export default function PromptInput({
       ) {
         e.preventDefault();
         e.stopPropagation();
+
+        // Clear character context if any exists
+        if (mentions.some((m) => m.type === "character")) {
+          try {
+            sessionStorage.removeItem(`character_${threadId}`);
+          } catch (e) {
+            console.warn(
+              "Failed to clear character context from sessionStorage:",
+              e,
+            );
+          }
+        }
+
         appStoreMutate(() => ({
           threadMentions: {},
           agentId: undefined,
@@ -587,34 +656,6 @@ export default function PromptInput({
                       <DropdownMenuPortal>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("img-cv")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            IMG-CV (Fastest)
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleGenerateImage("flux-max")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            Flux-Max
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleGenerateImage("gpt-imager")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            GPT-Imager
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleGenerateImage("imagen-3")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            Imagen-3
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
                             onClick={() => handleGenerateImage("sdxl")}
                             className="cursor-pointer"
                           >
@@ -622,18 +663,61 @@ export default function PromptInput({
                             Stable Diffusion XL
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            onClick={() => handleGenerateImage("sdxl-lite")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            SDXL Lite
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("img3")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            IMG3
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("img4")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            IMG4
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("flux-schnell")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Flux Schnell
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("nano-banana")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Nano Banana
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("lucid-origin")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Lucid Origin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("phoenix")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            Phoenix
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={() => handleGenerateImage("chalk")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
                             Chalk Name Style
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleGenerateImage("meme")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            Meme Generator
                           </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
@@ -803,6 +887,7 @@ export default function PromptInput({
                         onSelectWorkflow={onSelectWorkflow}
                         onSelectAgent={onSelectAgent}
                         onGenerateImage={handleGenerateImage}
+                        onEditImage={handleEditImage}
                         mentions={mentions}
                       />
                     </>

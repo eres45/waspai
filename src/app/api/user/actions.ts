@@ -19,10 +19,8 @@ import { getUser, getUserAccounts, updateUserDetails } from "lib/user/server";
 import { getTranslations } from "next-intl/server";
 import { logger } from "better-auth";
 import {
-  generateImageWithOpenAI,
-  generateImageWithXAI,
+  generateImageWithInfip,
   GeneratedImageResult,
-  generateImageWithNanoBanana,
 } from "lib/ai/image/generate-image";
 
 export const updateUserImageAction = validatedActionWithUserManagePermission(
@@ -266,27 +264,30 @@ Generate a profile picture that fulfills the user's request while maintaining th
 
     let response: GeneratedImageResult;
 
+    let model: string;
     switch (provider) {
       case "openai":
-        response = await generateImageWithOpenAI({
-          prompt: enhancedPrompt,
-        });
-        break;
       case "xai":
-        response = await generateImageWithXAI({
-          prompt: enhancedPrompt,
-        });
+        model = "flux-schnell"; // Use Flux for high quality
         break;
       case "google":
-        response = await generateImageWithNanoBanana({
-          prompt: enhancedPrompt,
-        });
+        model = "nano-banana";
         break;
       default:
-        return {
-          success: false,
-          error: "Invalid provider",
-        };
+        model = "sdxl";
+    }
+
+    try {
+      response = await generateImageWithInfip({
+        prompt: enhancedPrompt,
+        model: model as any,
+      });
+    } catch (err) {
+      logger.error("Infip generation failed:", err);
+      return {
+        success: false,
+        error: "Failed to generate image via Infip",
+      };
     }
 
     if (!response || response.images.length === 0) {

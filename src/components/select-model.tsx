@@ -126,6 +126,11 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         <div className="ml-3" />
                       )}
                       <span className="pr-2">{item.name}</span>
+                      {item.isPro && (
+                        <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground mr-1 h-fit">
+                          PRO
+                        </div>
+                      )}
                       {item.isToolCallUnsupported && (
                         <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                           No tools

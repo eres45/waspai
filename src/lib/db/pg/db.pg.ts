@@ -1,6 +1,13 @@
 // import { Logger } from "drizzle-orm";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { isDatabaseConnectionError } from "../db-error-handler";
+
+// Force unset PGHOST to prevent 'getaddrinfo ENOTFOUND postgres' error
+// caused by system environment variable conflict
+if (process.env.PGHOST === "postgres") {
+  delete process.env.PGHOST;
+}
 
 // class MyLogger implements Logger {
 //   logQuery(query: string, params: unknown[]): void {
@@ -27,7 +34,15 @@ export const pgDb = new Proxy({} as ReturnType<typeof drizzlePg>, {
       }
 
       try {
-        pgDbInstance = drizzlePg(process.env.POSTGRES_URL, {
+        // Explicitly create a Pool to ensure connection string is respected
+        // and to facilitate ignoring conflicting env vars if needed
+        const pool = new Pool({
+          connectionString: process.env.POSTGRES_URL,
+          // Force SSL if it's supposed to be required (Supabase usually needs it)
+          // ssl: { rejectUnauthorized: false }
+        });
+
+        pgDbInstance = drizzlePg(pool, {
           //   logger: new MyLogger(),
         });
         console.log("[DB] PostgreSQL connection initialized");
@@ -38,7 +53,7 @@ export const pgDb = new Proxy({} as ReturnType<typeof drizzlePg>, {
         );
         if (isDatabaseConnectionError(error)) {
           connectionError = new Error(
-            `[DB] Cannot connect to PostgreSQL on Vercel free tier. This is a known limitation. Please migrate to Supabase HTTP API. Original error: ${(error as any)?.message}`,
+            `[DB] Cannot connect to PostgreSQL. Original error: ${(error as any)?.message}`,
           );
         } else {
           connectionError = error as Error;

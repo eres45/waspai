@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   Card,
@@ -44,6 +45,7 @@ export function UserDetailFormCard({
 }: UserDetailFormCardProps) {
   const { t, tCommon } = useProfileTranslations(view);
   const [currentUser, setCurrentUser] = useState(user);
+  const router = useRouter();
 
   const [, detailsUpdateFormAction, isPending] = useActionState<
     UpdateUserActionState,
@@ -89,6 +91,7 @@ export function UserDetailFormCard({
         setCurrentUser(result.user);
         onUserDetailsUpdate?.(result.user);
         toast.success("Profile photo updated successfully");
+        router.refresh(); // Refresh server components (NavBar)
       } else {
         console.error("[Client] Invalid response format:", result);
         toast.error(result?.message || "Failed to update profile photo");

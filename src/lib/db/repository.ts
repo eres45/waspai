@@ -1,37 +1,34 @@
 import { chatRepository as restChatRepository } from "./pg/repositories/chat-repository.rest";
-import { pgUserRepository } from "./pg/repositories/user-repository.pg";
+// import { pgUserRepository } from "./pg/repositories/user-repository.pg";
 import { userRepositoryRest } from "./pg/repositories/user-repository.rest";
-import { pgMcpRepository } from "./pg/repositories/mcp-repository.pg";
-import { pgMcpMcpToolCustomizationRepository } from "./pg/repositories/mcp-tool-customization-repository.pg";
-import { pgMcpServerCustomizationRepository } from "./pg/repositories/mcp-server-customization-repository.pg";
-import { pgWorkflowRepository } from "./pg/repositories/workflow-repository.pg";
-import { pgAgentRepository } from "./pg/repositories/agent-repository.pg";
+import { restMcpRepository } from "./pg/repositories/mcp-repository.rest";
+import { restMcpToolCustomizationRepository } from "./pg/repositories/mcp-tool-customization-repository.rest";
+import { restMcpServerCustomizationRepository } from "./pg/repositories/mcp-server-customization-repository.rest";
+import { restWorkflowRepository } from "./pg/repositories/workflow-repository.rest";
+import { restAgentRepository } from "./pg/repositories/agent-repository.rest";
 import { archiveRepository as restArchiveRepository } from "./pg/repositories/archive-repository.rest";
-import { pgMcpOAuthRepository } from "./pg/repositories/mcp-oauth-repository.pg";
-import { pgBookmarkRepository } from "./pg/repositories/bookmark-repository.pg";
-import { pgChatExportRepository } from "./pg/repositories/chat-export-repository.pg";
+import { restMcpOAuthRepository } from "./pg/repositories/mcp-oauth-repository.rest";
+import { restBookmarkRepository } from "./pg/repositories/bookmark-repository.rest";
+import { restChatExportRepository } from "./pg/repositories/chat-export-repository.rest";
 import { characterRepository as restCharacterRepository } from "./pg/repositories/character-repository.rest";
-import { pgMusicRepository } from "./pg/repositories/music-repository.pg";
+import { restMusicRepository } from "./pg/repositories/music-repository.rest";
+import { telegramUploadRepositoryRest } from "./pg/repositories/telegram-upload-repository.rest";
 
 export const chatRepository = restChatRepository;
 // Use REST API for user operations to avoid direct PostgreSQL connection issues on Vercel
-export const userRepository = {
-  ...pgUserRepository,
-  getUserById: userRepositoryRest.getUserById,
-  updateUserDetails: userRepositoryRest.updateUserDetails,
-  updatePreferences: userRepositoryRest.updateUserPreferences,
-};
-export const mcpRepository = pgMcpRepository;
+export const userRepository = userRepositoryRest;
+export const mcpRepository = restMcpRepository;
 export const mcpMcpToolCustomizationRepository =
-  pgMcpMcpToolCustomizationRepository;
+  restMcpToolCustomizationRepository;
 export const mcpServerCustomizationRepository =
-  pgMcpServerCustomizationRepository;
-export const mcpOAuthRepository = pgMcpOAuthRepository;
+  restMcpServerCustomizationRepository;
+export const mcpOAuthRepository = restMcpOAuthRepository;
 
-export const workflowRepository = pgWorkflowRepository;
-export const agentRepository = pgAgentRepository;
+export const workflowRepository = restWorkflowRepository;
+export const agentRepository = restAgentRepository;
 export const archiveRepository = restArchiveRepository;
-export const bookmarkRepository = pgBookmarkRepository;
-export const chatExportRepository = pgChatExportRepository;
+export const bookmarkRepository = restBookmarkRepository;
+export const chatExportRepository = restChatExportRepository;
 export const characterRepository = restCharacterRepository;
-export const musicRepository = pgMusicRepository;
+export const musicRepository = restMusicRepository;
+export const telegramUploadRepository = telegramUploadRepositoryRest;

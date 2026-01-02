@@ -1,0 +1,12 @@
+
+> wasp-ai@1.25.0 check-types G:\project\better-chatbot
+> tsc --noEmit
+
+src/lib/ai/tools/image/image-generation-tools.ts(5,3): error TS2724: '"lib/ai/image/generate-image"' has no exported member named 'generateImageWithImgCV'. Did you mean 'generateImageWithInfip'?
+src/lib/ai/tools/image/image-generation-tools.ts(6,3): error TS2305: Module '"lib/ai/image/generate-image"' has no exported member 'generateImageWithFluxMax'.
+src/lib/ai/tools/image/image-generation-tools.ts(7,3): error TS2305: Module '"lib/ai/image/generate-image"' has no exported member 'generateImageWithGPTImager'.
+src/lib/ai/tools/image/image-generation-tools.ts(8,3): error TS2724: '"lib/ai/image/generate-image"' has no exported member named 'generateImageWithImagen3'. Did you mean 'generateImageWithInfip'?
+src/lib/ai/tools/image/image-generation-tools.ts(9,3): error TS2305: Module '"lib/ai/image/generate-image"' has no exported member 'generateImageWithNanoBananaAPI'.
+src/lib/db/pg/repositories/agent-repository.rest.ts(3,27): error TS6133: 'AgentSummary' is declared but its value is never read.
+src/lib/db/pg/repositories/chat-export-repository.rest.ts(4,1): error TS6133: 'UserTable' is declared but its value is never read.
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.

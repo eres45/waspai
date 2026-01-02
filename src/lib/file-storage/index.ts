@@ -4,7 +4,7 @@ import type { FileStorage } from "./file-storage.interface";
 import { createS3FileStorage } from "./s3-file-storage";
 import { createVercelBlobStorage } from "./vercel-blob-storage";
 import { createSupabaseFileStorage } from "./supabase-file-storage";
-import { createSnapzionFileStorage } from "./snapzion-file-storage";
+import { createTelegramFileStorage } from "./telegram-file-storage";
 import { createHybridFileStorage } from "./hybrid-file-storage";
 import logger from "logger";
 
@@ -12,7 +12,7 @@ export type FileStorageDriver =
   | "vercel-blob"
   | "s3"
   | "supabase"
-  | "snapzion"
+  | "telegram"
   | "hybrid";
 
 const resolveDriver = (): FileStorageDriver => {
@@ -23,7 +23,7 @@ const resolveDriver = (): FileStorageDriver => {
     normalized === "vercel-blob" ||
     normalized === "s3" ||
     normalized === "supabase" ||
-    normalized === "snapzion" ||
+    normalized === "telegram" ||
     normalized === "hybrid"
   ) {
     return normalized;
@@ -49,8 +49,8 @@ const createFileStorage = (): FileStorage => {
       return createS3FileStorage();
     case "supabase":
       return createSupabaseFileStorage();
-    case "snapzion":
-      return createSnapzionFileStorage();
+    case "telegram":
+      return createTelegramFileStorage();
     case "hybrid":
       return createHybridFileStorage();
     default: {

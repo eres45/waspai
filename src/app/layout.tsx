@@ -23,10 +23,6 @@ export const metadata: Metadata = {
   title: "Wasp AI",
   description:
     "Wasp AI is an intelligent chatbot that uses advanced tools to answer your questions.",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/wasp-ai-logo.png?v=2",
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

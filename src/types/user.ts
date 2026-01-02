@@ -43,6 +43,13 @@ export type UserSession = NonNullable<Awaited<ReturnType<typeof getSession>>>;
 export type UserSessionUser = UserSession["user"];
 
 export type UserRepository = {
+  createOrUpdateUser: (
+    userId: string,
+    email: string,
+    name?: string,
+    avatarUrl?: string | null,
+  ) => Promise<User | null>;
+  userExists: (userId: string) => Promise<boolean>;
   existsByEmail: (email: string) => Promise<boolean>;
   updateUserDetails: (data: {
     userId: string;

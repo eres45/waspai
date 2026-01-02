@@ -53,6 +53,9 @@ export async function GET(request: NextRequest) {
 
           // Create or update user in database with avatar
           try {
+            logger.info(
+              `[AuthCallback] Attempting to sync user ${user.id} (${email}) with name "${name}" and avatar "${avatarUrl}"`,
+            );
             await userRepositoryRest.createOrUpdateUser(
               user.id,
               email,
@@ -60,11 +63,11 @@ export async function GET(request: NextRequest) {
               avatarUrl,
             );
             logger.info(
-              `GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
+              `[AuthCallback] GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
             );
           } catch (dbErr) {
             logger.error(
-              `Failed to create/update user in database: ${email}`,
+              `[AuthCallback] Failed to create/update user in database: ${email}`,
               dbErr,
             );
             // Continue anyway - user is authenticated in Supabase

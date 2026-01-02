@@ -19,6 +19,18 @@ export default () => {
       taint: true,
       authInterrupts: true,
     },
+    images: {
+      remotePatterns: [
+        {
+          protocol: "https",
+          hostname: "api.telegram.org",
+        },
+        {
+          protocol: "https",
+          hostname: "api.infip.pro",
+        },
+      ],
+    },
   };
   const withNextIntl = createNextIntlPlugin();
   return withNextIntl(nextConfig);

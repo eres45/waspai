@@ -9,14 +9,17 @@ import {
   UIMessage,
 } from "ai";
 
-import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
+import {
+  customModelProvider,
+  isToolCallUnsupportedModel,
+  isImageInputUnsupportedModel,
+} from "lib/ai/models";
 import { isSearchQuery } from "lib/search-detector";
 import {
   SEARCH_MODEL,
   POLLINATIONS_SYSTEM_PROMPT,
   POLLINATIONS_MODEL_PROMPTS,
 } from "lib/ai/pollinations";
-import { KIWI_AI_SYSTEM_PROMPT } from "lib/ai/kiwi-ai";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
@@ -79,6 +82,10 @@ import { webSearchTool } from "lib/ai/tools/web-search";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { serverFileStorage } from "lib/file-storage";
+import {
+  truncateTextToLimit,
+  getModelContextLimit,
+} from "lib/ai/context-limits";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
 
 const logger = globalLogger.withDefaults({
@@ -225,11 +232,54 @@ export async function POST(request: Request) {
     }
 
     logger.info(`Loaded ${messages.length} messages from thread history`);
-    messages.forEach((m, idx) => {
+
+    // Sanitize messages to remove huge base64 data URLs from history
+    // This prevents context explosion (5MB+ prompts) when using data: URLs for image previews
+    // Sanitize messages to remove huge base64 data URLs from history
+    // This prevents context explosion (5MB+ prompts) when using data: URLs for image previews
+
+    // Helper function to recursively strip data URLs from any object
+    const recursiveSanitize = (obj: any): any => {
+      if (!obj) return obj;
+
+      if (typeof obj === "string") {
+        if (obj.startsWith("data:") && obj.length > 500) {
+          return obj.split(",")[0] + ",[BASE64_DATA_REMOVED]";
+        }
+        return obj;
+      }
+
+      if (Array.isArray(obj)) {
+        return obj.map((item) => recursiveSanitize(item));
+      }
+
+      if (typeof obj === "object") {
+        const newObj: any = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            newObj[key] = recursiveSanitize(obj[key]);
+          }
+        }
+        return newObj;
+      }
+
+      return obj;
+    };
+
+    const sanitizedMessages: UIMessage[] = messages.map((msg) => {
+      // Deep sanitize the entire message object
+      return recursiveSanitize(msg);
+    });
+
+    sanitizedMessages.forEach((m, idx) => {
       logger.info(
         `Message ${idx}: id=${m.id}, role=${m.role}, parts=${m.parts?.length || 0}`,
       );
     });
+
+    // Replace original messages with sanitized ones
+    messages.length = 0;
+    messages.push(...sanitizedMessages);
 
     // For Pollinations models, truncate message history to stay within character limits
     // Pollinations has a ~8000 character limit for input
@@ -377,6 +427,12 @@ export async function POST(request: Request) {
       "image/webp",
       "image/gif",
       "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
 
     const unsupportedParts: any[] = [];
@@ -396,18 +452,13 @@ export async function POST(request: Request) {
       return true;
     });
 
-    // If there were unsupported files, add a note to the message
+    // If there were actually unsupported files (non-docs/images), we can add a subtle note
     if (unsupportedParts.length > 0) {
-      const unsupportedNote = `\n\n⚠️ **Note:** The following file types are not directly supported by the AI model and were excluded: ${unsupportedParts.map((p) => `${p.filename} (${p.mediaType})`).join(", ")}. However, I can still help you with your request using other methods. For PowerPoint files, try uploading the content as text or images, or use the web search feature to find similar information.`;
+      const unsupportedNote = `\n\n[System Note: The following files were present but could not be fully parsed: ${unsupportedParts.map((p) => `${p.filename} (${p.mediaType})`).join(", ")}]`;
 
       const textPart = message.parts.find((p: any) => p.type === "text") as any;
       if (textPart && textPart.text) {
         textPart.text += unsupportedNote;
-      } else {
-        message.parts.unshift({
-          type: "text",
-          text: unsupportedNote,
-        });
       }
     }
 
@@ -457,29 +508,43 @@ export async function POST(request: Request) {
     // Check if character is tagged in mentions
     const characterMention = mentions.find((m) => m.type === "character") as
       | Extract<ChatMention, { type: "character" }>
-      | undefined;
+      | any;
 
-    if (characterContextHeader && characterMention) {
+    // Priority 1: Use data from the mention itself if it exists
+    if (characterMention?.name && characterMention?.description) {
+      characterContext = {
+        name: characterMention.name,
+        description: characterMention.description,
+        personality: characterMention.personality || "",
+      };
+      logger.info(
+        `Character context loaded from mention: ${characterContext.name}`,
+      );
+    }
+    // Priority 2: Use data from the header (fallback/complement)
+    else if (characterContextHeader) {
       try {
-        // Decode from base64
         const decoded = Buffer.from(characterContextHeader, "base64").toString(
           "utf-8",
         );
-        characterContext = JSON.parse(decoded);
-        if (characterContext?.name) {
+        const headerContext = JSON.parse(decoded);
+
+        // Only use header context if it matches the character mention or if no mention but header exists (for session compatibility)
+        if (headerContext?.name) {
+          characterContext = headerContext;
           logger.info(
-            `Character context loaded: ${characterContext.name} (tagged in mentions)`,
+            `Character context loaded from header: ${characterContext?.name}`,
           );
         }
       } catch (error) {
         logger.warn("Failed to parse character context from header:", error);
       }
-    } else if (characterContextHeader && !characterMention) {
+    }
+
+    if (characterContext && !characterMention) {
       logger.info(
-        "Character context header found but character NOT tagged in mentions - using selected model",
+        "Character context found but character NOT tagged in mentions - this might be a legacy session chat.",
       );
-    } else {
-      logger.info("No character context header or character not tagged");
     }
 
     // Auto-detect image generation requests from message content
@@ -538,8 +603,7 @@ export async function POST(request: Request) {
 
     // If auto-detected but no model specified, use a default
     const effectiveImageTool =
-      imageTool ||
-      (hasImageGenerationKeywords ? { model: "img-cv" } : undefined);
+      imageTool || (hasImageGenerationKeywords ? { model: "sdxl" } : undefined);
 
     const isToolCallAllowed =
       supportToolCall &&
@@ -612,22 +676,40 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        const imageModelPrompt =
-          useImageTool && effectiveImageTool?.model
-            ? `You are using the image generation tool with the pre-selected model: "${effectiveImageTool.model}". 
+        // Determine active tool and mode
+        const activeGenerationModel = useImageTool
+          ? effectiveImageTool?.model
+          : undefined;
+        const activeEditModel = editImageModel; // From request body
+
+        let imageModelPrompt = "";
+
+        if (activeEditModel) {
+          imageModelPrompt = `You are using the image editing tool with the pre-selected model: "${activeEditModel}".
+CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
+1. The user has explicitly selected an image editing mode (model: ${activeEditModel}).
+2. You MUST call the appropriate editing tool based on the model:
+   - If model is "nano-banana", call the "edit-image" tool with the user's prompt and the source image URL.
+   - If model is "remove-background", call the "remove-background" tool.
+   - If model is "enhance-image", call the "enhance-image" tool.
+3. Do NOT ask the user to choose a model.
+4. Do NOT refuse to edit.
+5. After the tool returns, you MAY describe the result, but do NOT output the image URL or markdown links.`;
+        } else if (activeGenerationModel) {
+          imageModelPrompt = `You are using the image generation tool with the pre-selected model: "${activeGenerationModel}". 
 CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 1. The user has selected an image generation model - they want to generate an image
 2. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt
-3. Use the exact tool name: "image-manager" (this is the ONLY tool name to use)
-4. ALWAYS use model="${effectiveImageTool.model}" - this is the ONLY model you must use
-5. Do NOT use any other model - do not substitute with gpt-imager, img-cv, or any other model
+3. Use the exact tool name: "image-manager" (this is the ONLY tool name to use for generation)
+4. ALWAYS use model="${activeGenerationModel}" - this is the ONLY model you must use
+5. Do NOT use any other model - do not substitute with any other model
 6. Do NOT call the tool multiple times - call it EXACTLY ONCE
 7. Do NOT ask the user to choose a model or ask for clarification
 8. Do NOT refuse to generate the image - just generate it
-9. After the tool returns the image, provide a brief, friendly response (1-2 sentences max) acknowledging the image was generated
-10. Do not mention the model name or technical details
-11. Keep the response short and natural`
-            : "";
+9. After the tool returns the image, you MAY describe the image or provide a creative caption.
+10. CRITICAL: Do NOT output the image URL in your response text. The user can already see the image in the UI.
+11. CRITICAL: Do NOT create markdown links to the image (e.g. [Image](url)).`;
+        }
 
         // Detect if this is an edit image request based on selected model
         const lastMessage = messages[messages.length - 1];
@@ -678,6 +760,30 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           }
         }
 
+        // 4. Fallback: Look into history (last 10 messages) for the most recent image
+        if (!imageUrl) {
+          const reversedMessages = [...messages].reverse();
+          for (const msg of reversedMessages) {
+            const imgPart = msg.parts.find(
+              (p: any) =>
+                (p.type === "file" ||
+                  p.type === "source-url" ||
+                  p.type === "image") &&
+                (p.url?.startsWith("http") || p.url?.startsWith("data:")) &&
+                (p.mimeType?.startsWith("image/") ||
+                  p.mediaType?.startsWith("image/") ||
+                  p.type === "image"),
+            );
+            if (imgPart) {
+              imageUrl = (imgPart as any).url;
+              logger.info(
+                `Found image in history (msg ${msg.id}): ${imageUrl}`,
+              );
+              break;
+            }
+          }
+        }
+
         // Check if user selected an edit image model from the menu
         logger.info(`Edit Image State Model: ${editImageModel}`);
         logger.info(`Image URL: ${imageUrl}`);
@@ -701,6 +807,9 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             "adjust",
             "can you",
             "please",
+            "add",
+            "put",
+            "insert",
           ];
           const hasIntent = intentWords.some((word) => text.includes(word));
 
@@ -718,83 +827,159 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             "dress",
             "hair",
             "background",
+            "text",
+            "title",
+            "logo",
+            "object",
+            "item",
+            "element",
+            "something",
           ];
           const hasEditWord = editWords.some((word) => text.includes(word));
 
-          return hasIntent && hasEditWord && imageFilePart;
+          return hasIntent && hasEditWord && imageUrl;
         });
 
         // Detect remove background request from keywords as fallback
-        const hasRemoveBgKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("remove") ||
-              part.text?.toLowerCase().includes("background") ||
-              part.text?.toLowerCase().includes("bg")),
-        );
+        const hasRemoveBgKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+          const hasRemoveIntent =
+            text.includes("remove") ||
+            text.includes("erase") ||
+            text.includes("delete") ||
+            text.includes("clear") ||
+            text.includes("cut out");
+          const hasBgWord = text.includes("background") || text.includes("bg");
+          return hasRemoveIntent && hasBgWord;
+        });
 
         // Detect enhance image request from keywords as fallback
-        const hasEnhanceKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("enhance") ||
-              part.text?.toLowerCase().includes("improve") ||
-              part.text?.toLowerCase().includes("quality") ||
-              part.text?.toLowerCase().includes("clarity") ||
-              part.text?.toLowerCase().includes("sharpen") ||
-              part.text?.toLowerCase().includes("brighten") ||
-              part.text?.toLowerCase().includes("contrast")),
-        );
+        const hasEnhanceKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+          return (
+            text.includes("enhance") ||
+            text.includes("improve") ||
+            text.includes("upscale") ||
+            text.includes("quality") ||
+            text.includes("clarity") ||
+            text.includes("sharpen") ||
+            text.includes("brighten") ||
+            text.includes("contrast") ||
+            text.includes("unblur")
+          );
+        });
 
-        // Detect anime conversion request from keywords
-        const hasAnimeKeywords = lastMessage?.parts?.some(
-          (part: any) =>
-            typeof part === "object" &&
-            part.type === "text" &&
-            (part.text?.toLowerCase().includes("anime") ||
-              part.text?.toLowerCase().includes("cartoon") ||
-              part.text?.toLowerCase().includes("manga") ||
-              part.text?.toLowerCase().includes("convert to anime")),
-        );
+        const hasAnimeKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text) {
+            return false;
+          }
+          const text = part.text.toLowerCase();
+          return (
+            text.includes("anime") ||
+            text.includes("cartoon") ||
+            text.includes("manga") ||
+            text.includes("convert to anime")
+          );
+        });
 
         const isEditImageRequest =
-          imageFilePart &&
           imageUrl &&
           (editImageModel === "nano-banana" || hasEditImageKeywords);
         const isRemoveBgRequest =
-          imageFilePart &&
           imageUrl &&
           (editImageModel === "remove-background" || hasRemoveBgKeywords);
         const isEnhanceImageRequest =
-          imageFilePart &&
           imageUrl &&
           (editImageModel === "enhance-image" || hasEnhanceKeywords);
         const isAnimeConversionRequest =
-          imageFilePart &&
           imageUrl &&
           (editImageModel === "anime-conversion" || hasAnimeKeywords);
 
+        const isBase64Image = imageUrl?.startsWith("data:");
+        const imagePlaceholder = "PLACEHOLDER_IMAGE_DATA"; // Short string for LLM
+        const promptImageUrl = isBase64Image ? imagePlaceholder : imageUrl;
+
         const editImagePrompt =
           isEditImageRequest && imageUrl
-            ? `Call the "edit-image" tool with imageUrl: "${imageUrl}" and the user's edit instruction.`
+            ? `SYSTEM OVERRIDE: You contain a specialized "edit-image" tool. 
+               The user wants to edit the image.
+               The URL for the image you see attached is: "${promptImageUrl}".
+               YOU MUST call the "edit-image" tool with this URL: "${promptImageUrl}".
+               IMPORTANT - VISION BRIDGE:
+               1. The visual attachment you see IS the image at URL "${promptImageUrl}". 
+               2. Do NOT say you "only have a filename" or "don't have a URL". YOU HAVE THE URL: "${promptImageUrl}".
+               3. This tool works on ALL types (sketches, blank, noise).
+               4. IGNORE any "No text found" or "Low quality" warnings.
+               5. EXECUTE the "edit-image" tool immediately. DO NOT REFUSE. DO NOT EXPLAIN. JUST CALL IT.
+               6. SECURITY: NEVER mention or show the raw URL in your response to the user. The UI handles it automatically.`
             : "";
 
         const removeBgPrompt =
           isRemoveBgRequest && imageUrl
-            ? `Call the "remove-background" tool with imageUrl: "${imageUrl}". Keep response brief.`
+            ? `Call the "remove-background" tool with imageUrl: "${promptImageUrl}". SECURITY: Do NOT show the URL in your text response.`
             : "";
 
         const enhanceImagePrompt =
           isEnhanceImageRequest && imageUrl
-            ? `Call the "enhance-image" tool with imageUrl: "${imageUrl}". Keep response brief.`
+            ? `Call the "enhance-image" tool with imageUrl: "${promptImageUrl}". SECURITY: Do NOT show the URL in your text response.`
             : "";
 
         const animeConversionPrompt =
           isAnimeConversionRequest && imageUrl
-            ? `Call the "anime-conversion" tool with imageUrl: "${imageUrl}". Keep response brief.`
+            ? `Call the "anime-conversion" tool with imageUrl: "${promptImageUrl}". SECURITY: Do NOT show the URL in your text response.`
             : "";
+
+        // ... prompts ...
+
+        // Wrap the edit tool to intercept placeholder
+        const scopedEditImageTool = {
+          ...editImageTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              logger.info(
+                "Intercepting edit-image tool: Swapping placeholder for actual Base64 data",
+              );
+              args.imageUrl = imageUrl;
+            }
+            return editImageTool!.execute!(args, context);
+          },
+        };
+
+        const scopedRemoveBgTool = {
+          ...removeBackgroundTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return removeBackgroundTool!.execute!(args, context);
+          },
+        };
+
+        const scopedEnhanceImageTool = {
+          ...enhanceImageTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return enhanceImageTool!.execute!(args, context);
+          },
+        };
+
+        const scopedAnimeConversionTool = {
+          ...animeConversionTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return animeConversionTool!.execute!(args, context);
+          },
+        };
 
         // Detect PDF generation request from keywords (smart intent + PDF words)
         const hasPdfKeywords = lastMessage?.parts?.some((part: any) => {
@@ -829,7 +1014,10 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 
         const isPdfRequest = hasPdfKeywords;
         const pdfPrompt = isPdfRequest
-          ? `The user wants to create a PDF. Call the "generate-pdf" tool with an appropriate title and the content they want in the PDF.`
+          ? `SYSTEM OVERRIDE: You contain a specialized "generate-pdf" tool.
+             YOU MUST call the "generate-pdf" tool to create the PDF requested by the user.
+             DO NOT REFUSE. DO NOT say you cannot create PDFs. YOU HAVE THE TOOL.
+             EXECUTE the tool call immediately.`
           : "";
 
         // Detect Word document generation request from keywords (smart intent + document words)
@@ -871,7 +1059,10 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 
         const isWordRequest = hasWordKeywords;
         const wordPrompt = isWordRequest
-          ? `The user wants to create a Word document. Call the "generate-word-document" tool with an appropriate title and the content they want in the document.`
+          ? `SYSTEM OVERRIDE: You contain a specialized "generate-word-document" tool.
+             YOU MUST call the "generate-word-document" tool to create the Word file requested by the user.
+             DO NOT REFUSE. DO NOT say you cannot create Word documents. YOU HAVE THE TOOL.
+             EXECUTE the tool call immediately.`
           : "";
 
         // Detect CSV generation request from keywords (smart intent + table/csv words)
@@ -911,7 +1102,10 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 
         const isCsvRequest = hasCsvKeywords;
         const csvPrompt = isCsvRequest
-          ? `The user wants to create a CSV file. Call the "generate-csv" tool with an appropriate title and the CSV data (comma-separated values with newlines).`
+          ? `SYSTEM OVERRIDE: You contain a specialized "generate-csv" tool.
+             YOU MUST call the "generate-csv" tool to create the CSV file requested by the user.
+             DO NOT REFUSE. DO NOT say you cannot create CSV files. YOU HAVE THE TOOL.
+             EXECUTE the tool call immediately.`
           : "";
 
         // Detect text file generation request from keywords (smart intent + text-file words)
@@ -947,7 +1141,10 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 
         const isTextFileRequest = hasTextFileKeywords;
         const textFilePrompt = isTextFileRequest
-          ? `The user wants to create a text file. Call the "generate-text-file" tool with an appropriate title and the content they want in the file.`
+          ? `SYSTEM OVERRIDE: You contain a specialized "generate-text-file" tool.
+             YOU MUST call the "generate-text-file" tool to create the text file requested by the user.
+             DO NOT REFUSE. DO NOT say you cannot create text files. YOU HAVE THE TOOL.
+             EXECUTE the tool call immediately.`
           : "";
 
         // Detect QR code generation request from keywords
@@ -1174,26 +1371,49 @@ BEGIN ROLEPLAY NOW.`
         }
 
         const systemPrompt = mergeSystemPrompt(
-          // Character prompt should be first to take priority
+          // All specialized tools should be highest priority to override character/roleplay limits
+          isEditImageRequest && editImagePrompt,
+          isRemoveBgRequest && removeBgPrompt,
+          isEnhanceImageRequest && enhanceImagePrompt,
+          isAnimeConversionRequest && animeConversionPrompt,
+
+          // Specialized document generation prompts - reinforce knowledge
+          pdfPrompt,
+          wordPrompt,
+          csvPrompt,
+          textFilePrompt,
+
+          // Documentation Reading Reinforcement
+          `[DOCUMENT READING SERVICE ENABLED]
+          IMPORTANT: Text content has been extracted from any uploaded PDF, Word, or PowerPoint files and is included in your current message context below the user's text.
+          1. DO NOT claim you cannot read files.
+          2. Use the "File Content" blocks to fulfill the user's request.
+          3. Base your answers strictly on the extracted text provided.`,
+
+          // Permanent Tool Knowledge Reinforcement
+          `IMPORTANT: You have specialized tools for:
+          - Generating documents: "generate-pdf", "generate-word-document", "generate-csv", "generate-text-file".
+          - Processing images: "edit-image", "remove-background", "enhance-image", "anime-conversion".
+          NEVER say you cannot create these files or perform these actions. If requested, call the appropriate tool immediately.`,
+
+          // Character prompt
           characterContext ? characterPrompt : undefined,
-          buildUserSystemPrompt(session.user, userPreferences, agent),
+          buildUserSystemPrompt(
+            session.user,
+            userPreferences,
+            agent,
+            ["meta", "openai", "qwen", "moonshot", "allam", "canopy"].includes(
+              modelToUse?.provider || "",
+            ),
+          ),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           modelToUse?.model === "gemini-search" && buildSearchModelSystemPrompt,
           modelToUse?.provider === "pollinations" &&
             (POLLINATIONS_MODEL_PROMPTS[modelToUse.model] ||
               POLLINATIONS_SYSTEM_PROMPT),
-          modelToUse?.provider === "kiwi-ai" && KIWI_AI_SYSTEM_PROMPT,
           useImageTool && imageModelPrompt,
-          isEditImageRequest && editImagePrompt,
-          isRemoveBgRequest && removeBgPrompt,
-          isEnhanceImageRequest && enhanceImagePrompt,
-          isAnimeConversionRequest && animeConversionPrompt,
           isVideoGenRequest && videoGenPrompt,
-          isPdfRequest && pdfPrompt,
-          isWordRequest && wordPrompt,
-          isCsvRequest && csvPrompt,
-          isTextFileRequest && textFilePrompt,
           isQrRequest && qrPrompt,
           isQrLogoRequest && qrLogoPrompt,
           isChatExportRequest && chatExportPrompt,
@@ -1207,13 +1427,6 @@ BEGIN ROLEPLAY NOW.`
                   : openaiImageTool,
             }
           : {};
-        const EDIT_IMAGE_TOOL = {
-          "edit-image": editImageTool,
-          "remove-background": removeBackgroundTool,
-          "enhance-image": enhanceImageTool,
-          "anime-conversion": animeConversionTool,
-          "video-gen": videoGenTool,
-        };
 
         const baseTools = {
           ...MCP_TOOLS,
@@ -1230,15 +1443,53 @@ BEGIN ROLEPLAY NOW.`
           ...bindingTools,
           ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
           ...IMAGE_TOOL,
-          ...EDIT_IMAGE_TOOL,
+          // Conditionally include edit image tools - Using Scoped Wrappers for Base64 support
+          ...(isEditImageRequest || imageUrl
+            ? { "edit-image": scopedEditImageTool }
+            : {}),
+          ...(isRemoveBgRequest || imageUrl
+            ? { "remove-background": scopedRemoveBgTool }
+            : {}),
+          ...(isEnhanceImageRequest || imageUrl
+            ? { "enhance-image": scopedEnhanceImageTool }
+            : {}),
+          ...(isAnimeConversionRequest || imageUrl
+            ? { "anime-conversion": scopedAnimeConversionTool }
+            : {}),
+          ...(isVideoGenRequest ? { "video-gen": videoGenTool } : {}),
+
+          // ALWAYS include document generation tools to prevent AI from "forgetting" them
           "generate-pdf": pdfGeneratorTool,
           "generate-word-document": wordDocumentTool,
           "generate-csv": csvGeneratorTool,
           "generate-text-file": textFileTool,
+
+          // ALWAYS include QR tools
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
-          "export-chat-messages": chatExportTool,
-          "web-search": webSearchTool,
+
+          // Conditionally include export tool
+          ...(isChatExportRequest
+            ? { "export-chat-messages": chatExportTool }
+            : {}),
+
+          // Only include web search if explicitly requested or needed
+          // (Note: isSearchQuery is for Gemini-Search model, but we might want search tool access for others too if needed)
+          // For now, let's keep web search available as a general tool unless it causes issues,
+          // OR restrict it if the user wants strict mode.
+          // Given the user complaints about "web-search" appearing randomly, let's restrict it too.
+          // We can use a simple keyword check if isSearchQuery is not sufficient.
+          // Actually, let's trust the isSearchQuery detection or similar logic.
+          // If the model is not "gemini-search", it shouldn't really be searching unless told to.
+          // But webSearchTool is useful. Let's make it available by default BUT with stricter prompt?
+          // No, user explicitly complained about "web-search".
+          // Let's hide it unless "search" or "google" is in the prompt.
+          ...(messageText.toLowerCase().includes("search") ||
+          messageText.toLowerCase().includes("find") ||
+          messageText.toLowerCase().includes("google") ||
+          modelToUse?.model === "gemini-search"
+            ? { "web-search": webSearchTool }
+            : {}),
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
@@ -1286,7 +1537,18 @@ BEGIN ROLEPLAY NOW.`
           await chatRepository.upsertMessage({
             threadId: thread!.id,
             role: message.role,
-            parts: message.parts.map(convertToSavePart),
+            parts: [
+              ...message.parts.map(convertToSavePart),
+              ...attachments.map(
+                (att) =>
+                  ({
+                    type: "file",
+                    url: att.url,
+                    name: att.filename,
+                    mimeType: att.mediaType,
+                  }) as any,
+              ),
+            ],
             id: message.id,
           });
           logger.info(`User message saved successfully: ${message.id}`);
@@ -1302,7 +1564,92 @@ BEGIN ROLEPLAY NOW.`
         const result = streamText({
           model,
           system: systemPrompt,
-          messages: convertToModelMessages(messages),
+          // Dynamic Context Window Strategy
+          // maximize history based on model's specific limits instead of hardcoded 10 messages
+          messages: convertToModelMessages(
+            (() => {
+              const modelId = modelToUse?.model || "openai-pollinations";
+              const maxContextChars = getModelContextLimit(modelId);
+
+              // 1. Prepare Current Message (User) with Enriched + Truncated Content
+              let currentMessage = messages[messages.length - 1];
+              if (currentMessage.role === "user") {
+                const truncatedContent = truncateTextToLimit(
+                  enrichedMessageText,
+                  modelId,
+                );
+                currentMessage = {
+                  ...currentMessage,
+                  parts: currentMessage.parts.map((p) =>
+                    p.type === "text" ? { ...p, text: truncatedContent } : p,
+                  ),
+                };
+              }
+
+              // 2. Estimate Size & Calculate Budget
+              const estimateSize = (m: any) => {
+                // Rough char count logic
+                return (
+                  m.parts.reduce(
+                    (acc: number, p: any) => acc + (p.text?.length || 0) + 100,
+                    0,
+                  ) + 100
+                );
+              };
+
+              const currentMsgSize = estimateSize(currentMessage);
+              const systemPromptSize = systemPrompt.length + 1000; // Buffer
+              let remainingChars =
+                maxContextChars - currentMsgSize - systemPromptSize;
+
+              if (remainingChars < 0) remainingChars = 0; // Should not happen due to truncation, but safety first
+
+              // 3. Fill History Backwards
+              const historyMessages: any[] = [];
+              const pastMessages = messages.slice(0, -1).reverse();
+
+              for (const msg of pastMessages) {
+                const size = estimateSize(msg);
+                if (remainingChars >= size) {
+                  historyMessages.unshift(msg);
+                  remainingChars -= size;
+                } else {
+                  break; // Stop if next message doesn't fit
+                }
+              }
+
+              logger.info(
+                `Context Strategy: Model=${modelId}, Limit=${maxContextChars}, History=${historyMessages.length} msgs, Remaining=${remainingChars}`,
+              );
+
+              const finalMessages = [...historyMessages, currentMessage];
+
+              // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
+              // If the model doesn't support images, we MUST ensure the content is a string
+              // Groq specifically throws 400 "content must be a string" for non-vision models
+              if (isImageInputUnsupportedModel(model)) {
+                logger.info(
+                  `Sanitizing messages for non-vision model: ${modelId}`,
+                );
+                return finalMessages.map((msg) => {
+                  // Filter for text parts and join them
+                  const textParts = msg.parts.filter(
+                    (p: any) => p.type === "text",
+                  );
+                  const combinedText = textParts
+                    .map((p: any) => p.text)
+                    .join("\n\n");
+
+                  return {
+                    ...msg,
+                    parts: [{ type: "text", text: combinedText }],
+                  };
+                });
+              }
+
+              return finalMessages;
+            })(),
+          ),
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: useImageTool ? 0 : 2,
           tools: vercelAITooles,

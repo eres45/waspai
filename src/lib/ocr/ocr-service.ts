@@ -3,20 +3,21 @@
  * Uses sii3.top/api/OCR.php for document processing
  */
 
-const OCR_API_URL = "https://sii3.top/api/OCR.php";
+import mammoth from "mammoth";
+import officeparser from "officeparser";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+// const pdf = require("pdf-parse"); // Lazy loaded below
+
+const OCR_API_URL = "https://vetrex.x10.mx/api/extract_text.php";
 
 interface OCRResponse {
   success: boolean;
-  data?: string;
+  text?: string;
   error?: string;
 }
 
-/**
- * Extract text from images and PDFs using OCR API
- * @param text - User query/instruction
- * @param links - Array of image/PDF URLs to process
- * @returns Extracted text from documents
- */
 export async function extractTextFromDocuments(
   text: string,
   links?: string[],
@@ -28,44 +29,116 @@ export async function extractTextFromDocuments(
     }
 
     console.log(`OCR: Processing ${links.length} files`);
-    console.log(`OCR: Links:`, links);
 
-    // Format links as comma-separated string
-    const linkString = links.join(",");
+    // 1. Try local extraction for text/doc/pdf files first
+    let extractedContent = "";
+    const remainingLinks: string[] = [];
 
-    // Build form data
-    const formData = new URLSearchParams();
-    formData.append("text", text);
-    formData.append("link", linkString);
+    for (const link of links) {
+      const lowerLink = link.toLowerCase();
+      try {
+        // Simple text formats
+        if (
+          lowerLink.endsWith(".txt") ||
+          lowerLink.endsWith(".md") ||
+          lowerLink.endsWith(".json") ||
+          lowerLink.endsWith(".csv")
+        ) {
+          console.log(`OCR: Fetching text content locally from ${link}`);
+          const res = await fetch(link);
+          if (res.ok) {
+            const content = await res.text();
+            extractedContent += `\n\n[File Content: ${link.split("/").pop()}]\n${content}\n`;
+            continue; // Handled locally
+          }
+        }
+        // Word Documents (.docx)
+        else if (lowerLink.endsWith(".docx")) {
+          console.log(`OCR: Fetching DOCX content locally from ${link}`);
+          const res = await fetch(link);
+          if (res.ok) {
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const result = await mammoth.extractRawText({ buffer });
+            extractedContent += `\n\n[Document Content: ${link.split("/").pop()}]\n${result.value}\n`;
+            continue;
+          }
+        }
+        // PDF Documents (.pdf)
+        else if (lowerLink.endsWith(".pdf")) {
+          console.log(`OCR: Fetching PDF content locally from ${link}`);
+          const res = await fetch(link);
+          if (res.ok) {
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const pdf = require("pdf-parse");
+            const data = await pdf(buffer);
+            extractedContent += `\n\n[Document Content: ${link.split("/").pop()}]\n${data.text}\n`;
+            continue;
+          }
+        }
+        // PowerPoint and Excel Documents (.ppt, .pptx, .xls, .xlsx)
+        else if (
+          lowerLink.endsWith(".ppt") ||
+          lowerLink.endsWith(".pptx") ||
+          lowerLink.endsWith(".xls") ||
+          lowerLink.endsWith(".xlsx")
+        ) {
+          console.log(`OCR: Fetching Office content locally from ${link}`);
+          const res = await fetch(link);
+          if (res.ok) {
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const result = await officeparser.parseOfficeAsync(buffer);
+            extractedContent += `\n\n[Document Content: ${link.split("/").pop()}]\n${result}\n`;
+            continue;
+          }
+        }
+      } catch (e) {
+        console.error(`OCR: Local processing failed for ${link}`, e);
+        // Fallback to external if local fails
+      }
 
-    console.log(`OCR: Sending request to ${OCR_API_URL}`);
-    const response = await fetch(OCR_API_URL, {
-      method: "POST",
-      body: formData,
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    console.log(`OCR: Response status: ${response.status}`);
-
-    if (!response.ok) {
-      console.error(`OCR API error: ${response.status}`);
-      return text; // Fallback to original text
+      // If not handled locally, add to remaining
+      remainingLinks.push(link);
     }
 
-    const result = (await response.json()) as OCRResponse;
-    console.log(`OCR: Response success: ${result.success}`);
-    console.log(`OCR: Extracted data length: ${result.data?.length || 0}`);
+    // 2. Process remaining (PDF/Image/Doc) via External API
+    if (remainingLinks.length > 0) {
+      console.log(`OCR: Sending ${remainingLinks.length} files to Vetrex API`);
 
-    if (result.success && result.data) {
-      const enriched = `${text}\n\n[Document Content]\n${result.data}`;
-      console.log(`OCR: Enriched message length: ${enriched.length}`);
-      // Combine original text with extracted data
-      return enriched;
+      const externalResults = await Promise.all(
+        remainingLinks.map(async (link) => {
+          try {
+            const response = await fetch(OCR_API_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image_url: link }),
+            });
+
+            if (!response.ok) {
+              console.error(`OCR API error for ${link}: ${response.status}`);
+              return "";
+            }
+
+            const result = (await response.json()) as OCRResponse;
+            if (result.success && result.text) {
+              return `\n\n[Document Content: ${link.split("/").pop()}]\n${result.text}`;
+            }
+          } catch (err) {
+            console.error(`OCR extraction error for ${link}:`, err);
+          }
+          return "";
+        }),
+      );
+
+      extractedContent += externalResults.join("");
     }
 
-    console.log("OCR: No data in response");
+    if (extractedContent) {
+      return `${text}\n\n=== EXTRACTED DOCUMENT CONTENT ===\n${extractedContent}\n=== END OF DOCUMENTS ===`;
+    }
+
     return text;
   } catch (error) {
     console.error("OCR extraction error:", error);

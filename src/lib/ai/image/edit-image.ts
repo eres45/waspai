@@ -28,8 +28,9 @@ export async function removeImageBackground(
         `Remove BG: Starting background removal (attempt ${attempt}/${retries})`,
       );
 
-      const params = new URLSearchParams();
-      params.append("url", options.imageUrl);
+      const body = {
+        imageUrl: options.imageUrl,
+      };
 
       logger.info(`Remove BG: Image URL: ${options.imageUrl}`);
       logger.info(`Remove BG: Sending request with timeout of 60 seconds...`);
@@ -39,13 +40,14 @@ export async function removeImageBackground(
       const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       try {
-        const response = await fetch(
-          `https://sii3.top/api/remove-bg.php?${params.toString()}`,
-          {
-            method: "GET",
-            signal: controller.signal,
+        const response = await fetch("https://vetrex.x10.mx/api/removebg.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
 
         clearTimeout(timeoutId);
 
@@ -57,7 +59,7 @@ export async function removeImageBackground(
         }
 
         const data = await response.json();
-        const imageUrl = data.response || data.image || data.url;
+        const imageUrl = data.url;
 
         if (!imageUrl) {
           throw new Error("No image URL in response");
@@ -113,108 +115,117 @@ export async function removeImageBackground(
   );
 }
 
-export async function editImageWithNanoBanana(
+/**
+ * Edit images using Infip (GhostAPI)
+ * Supports editing existing images with text prompts via /v1/images/edits
+ */
+export async function editImageWithInfip(
   options: EditImageOptions,
-  retries: number = 3,
 ): Promise<{ image: EditedImage }> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      logger.info(
-        `Nano-Banana Edit: Starting image edit with prompt: "${options.prompt}" (attempt ${attempt}/${retries})`,
-      );
-
-      logger.info(`Nano-Banana Edit: Image URL: ${options.imageUrl}`);
-      logger.info(
-        `Nano-Banana Edit: Sending request with timeout of 60 seconds...`,
-      );
-
-      // Use AbortController with 60 second timeout (Edit is faster than generation)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
-
-      try {
-        // Try GET method first (more reliable for this API)
-        const params = new URLSearchParams();
-        params.append("prompt", options.prompt);
-        params.append("imageUrl", options.imageUrl);
-
-        const url = `https://vetrex.x10.mx/api/nano_banana.php?${params.toString()}`;
-        logger.info(`Nano-Banana Edit: Using GET request to ${url}`);
-
-        const response = await fetch(url, {
-          method: "GET",
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => "");
-          throw new Error(
-            `HTTP ${response.status}${errorText ? `: ${errorText}` : ""}`,
-          );
-        }
-
-        const data = await response.json();
-
-        if (!data.url) {
-          throw new Error("No image URL in response");
-        }
-
-        logger.info(
-          `Nano-Banana Edit: Image edited successfully, downloading from ${data.url}...`,
-        );
-
-        // Fetch the edited image and convert to base64
-        const imageResponse = await fetch(data.url);
-        const buffer = await imageResponse.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-
-        logger.info(`Nano-Banana Edit: Image successfully converted to base64`);
-
-        return {
-          image: {
-            url: base64,
-            mimeType: "image/png",
-          },
-        };
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      logger.warn(
-        `Nano-Banana Edit attempt ${attempt} failed: ${lastError.message}`,
-      );
-
-      // If it's a 502/503 error and we have retries left, wait and retry
-      if (
-        attempt < retries &&
-        (lastError.message.includes("HTTP 502") ||
-          lastError.message.includes("HTTP 503") ||
-          lastError.message.includes("HTTP 504"))
-      ) {
-        const waitTime = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
-        logger.info(`Nano-Banana Edit: Waiting ${waitTime}ms before retry...`);
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
-        continue;
-      }
-
-      // If it's the last attempt or a non-retryable error, throw
-      if (attempt === retries) {
-        break;
-      }
-    }
+  const apiKey = process.env.INFIP_API_KEY;
+  if (!apiKey) {
+    throw new Error("INFIP_API_KEY is not set");
   }
 
-  logger.error("Nano-Banana Edit failed after all retries:", lastError);
-  throw new Error(
-    `Failed to edit image with Nano-Banana after ${retries} attempts: ${lastError?.message || "Unknown error"}`,
-  );
+  try {
+    logger.info(
+      `Infip Edit: Fetching source image from ${options.imageUrl}...`,
+    );
+
+    // Fetch source image
+    const sourceImageResponse = await fetch(options.imageUrl);
+    if (!sourceImageResponse.ok) {
+      throw new Error(
+        `Failed to fetch source image: ${sourceImageResponse.status}`,
+      );
+    }
+
+    // Determine MIME type
+    let contentType =
+      sourceImageResponse.headers.get("content-type") ||
+      "application/octet-stream";
+    logger.info(`Infip Edit: Source content-type: ${contentType}`);
+
+    // If generic, try to infer from URL
+    if (
+      contentType === "application/octet-stream" ||
+      !contentType.includes("image/")
+    ) {
+      const url = options.imageUrl.toLowerCase();
+      if (url.endsWith(".png")) contentType = "image/png";
+      else if (url.endsWith(".jpg") || url.endsWith(".jpeg"))
+        contentType = "image/jpeg";
+      else if (url.endsWith(".webp")) contentType = "image/webp";
+      else if (url.endsWith(".gif")) contentType = "image/gif";
+      else contentType = "image/jpeg"; // Default fallback
+      logger.info(`Infip Edit: Inferred content-type: ${contentType}`);
+    }
+
+    const sourceImageBuffer = await sourceImageResponse.arrayBuffer();
+    const sourceImageBlob = new Blob([sourceImageBuffer], {
+      type: contentType,
+    });
+
+    const formData = new FormData();
+    const filename = options.imageUrl.split("/").pop() || "image.png";
+    formData.append("image", sourceImageBlob, filename);
+    formData.append("prompt", options.prompt);
+    formData.append("model", "nano-banana"); // User specified model
+    formData.append("n", "1");
+    formData.append("size", "1024x1024");
+    formData.append("response_format", "url");
+
+    logger.info(`Infip Edit: Sending edit request...`);
+
+    const response = await fetch("https://api.infip.pro/v1/images/edits", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        // Content-Type header is set automatically with FormData
+      },
+      body: formData,
+      signal: options.abortSignal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // Check for b64_json
+    if (data.data && data.data.length > 0 && data.data[0].b64_json) {
+      return {
+        image: {
+          url: data.data[0].b64_json,
+          mimeType: "image/png",
+        },
+      };
+    } else if (data.data && data.data.length > 0 && data.data[0].url) {
+      // Fetch URL if returned
+      const imgRes = await fetch(data.data[0].url);
+      const buf = await imgRes.arrayBuffer();
+      const b64 = Buffer.from(buf).toString("base64");
+      return {
+        image: {
+          url: b64,
+          mimeType: "image/png",
+        },
+      };
+    }
+
+    throw new Error("Invalid response format from Infip Edit API");
+  } catch (error) {
+    logger.error("Infip Edit failed:", error);
+    throw new Error(
+      `Failed to edit image with Infip: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
+
+// Alias for compatibility if needed, but better to update calls
+export const editImageWithNanoBanana = editImageWithInfip;
 
 /**
  * Convert image to anime style using sii3.top API

@@ -82,9 +82,7 @@ import { handleErrorWithToast } from "ui/shared-toast";
 import { useAgents } from "@/hooks/queries/use-agents";
 import { useCharacters } from "@/hooks/queries/use-characters";
 import { redriectMcpOauth } from "lib/ai/mcp/oauth-redirect";
-import { GeminiIcon } from "ui/gemini-icon";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
-import { OpenAIIcon } from "ui/openai-icon";
 
 interface ToolSelectDropdownProps {
   align?: "start" | "end" | "center";
@@ -93,7 +91,22 @@ interface ToolSelectDropdownProps {
   mentions?: ChatMention[];
   onSelectWorkflow?: (workflow: WorkflowSummary) => void;
   onSelectAgent?: (agent: AgentSummary) => void;
-  onGenerateImage?: (provider?: "google" | "openai") => void;
+  onGenerateImage?: (
+    model?:
+      | "sdxl"
+      | "chalk"
+      | "img3"
+      | "img4"
+      | "qwen"
+      | "nano-banana"
+      | "flux-schnell"
+      | "lucid-origin"
+      | "phoenix"
+      | "sdxl-lite",
+  ) => void;
+  onEditImage?: (
+    tool: "nano-banana" | "remove-background" | "enhance-image",
+  ) => void;
   className?: string;
 }
 
@@ -113,6 +126,7 @@ export function ToolSelectDropdown({
   onSelectWorkflow,
   onSelectAgent,
   onGenerateImage,
+  onEditImage,
   mentions,
   className,
 }: ToolSelectDropdownProps) {
@@ -253,6 +267,17 @@ export function ToolSelectDropdown({
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="md:w-72" align={align} side={side}>
+        <ImageGeneratorSelector
+          onGenerateImage={onGenerateImage}
+          modelInfo={modelInfo}
+        />
+        <div className="py-1">
+          <DropdownMenuSeparator />
+        </div>
+        <ImageEditingSelector onEditImage={onEditImage} />
+        <div className="py-1">
+          <DropdownMenuSeparator />
+        </div>
         <WorkflowToolSelector onSelectWorkflow={onSelectWorkflow} />
         <div className="py-1">
           <DropdownMenuSeparator />
@@ -261,17 +286,7 @@ export function ToolSelectDropdown({
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
-        <ImageGeneratorSelector
-          onGenerateImage={onGenerateImage}
-          modelInfo={modelInfo}
-        />
-        <div className="py-1">
-          <DropdownMenuSeparator />
-        </div>
-        <ImageEditingSelector />
-        <div className="py-1">
-          <DropdownMenuSeparator />
-        </div>
+
         <VideoGenerationSelector />
         <div className="py-1">
           <DropdownMenuSeparator />
@@ -1070,13 +1085,13 @@ function AgentSelector({
   );
 }
 
-function ImageEditingSelector() {
-  const handleImageEditClick = () => {
-    toast.info(
-      "Upload an image first, then use the Edit Image menu to edit it",
-    );
-  };
-
+function ImageEditingSelector({
+  onEditImage,
+}: {
+  onEditImage?: (
+    tool: "nano-banana" | "remove-background" | "enhance-image",
+  ) => void;
+}) {
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
@@ -1087,16 +1102,16 @@ function ImageEditingSelector() {
         <DropdownMenuPortal>
           <DropdownMenuSubContent>
             <DropdownMenuItem
-              onClick={handleImageEditClick}
+              onClick={() => onEditImage?.("nano-banana")}
               className="cursor-pointer text-xs"
             >
               <span className="mr-2 size-4 flex items-center justify-center">
                 ✏️
               </span>
-              Edit Image
+              Nano Banana (Edit)
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={handleImageEditClick}
+              onClick={() => onEditImage?.("remove-background")}
               className="cursor-pointer text-xs"
             >
               <span className="mr-2 size-4 flex items-center justify-center">
@@ -1105,7 +1120,7 @@ function ImageEditingSelector() {
               Remove Background
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={handleImageEditClick}
+              onClick={() => onEditImage?.("enhance-image")}
               className="cursor-pointer text-xs"
             >
               <span className="mr-2 size-4 flex items-center justify-center">
@@ -1119,6 +1134,13 @@ function ImageEditingSelector() {
     </DropdownMenuGroup>
   );
 }
+
+// ... (skip intermediate code, I should use multi_replace or separate checks, but definitions are far apart.
+// Actually line 89-98 is Props. lines 1073 is Selector. I can do replace of Selector and Props separately or together if allowed.
+// replace_file_content doesn't allow multiple chunks unless allowMultiple=true with generic match. But ToolSelectDropdownProps is unique.
+// I'll do props first, then Selector.
+// Wait, I already did props lines 93-97 last time.
+// I'll update it again to add onEditImage.
 
 function VideoGenerationSelector() {
   const handleVideoGenClick = () => {
@@ -1244,7 +1266,19 @@ function ImageGeneratorSelector({
   onGenerateImage,
   modelInfo,
 }: {
-  onGenerateImage?: (provider?: "google" | "openai") => void;
+  onGenerateImage?: (
+    model?:
+      | "sdxl"
+      | "chalk"
+      | "img3"
+      | "img4"
+      | "qwen"
+      | "nano-banana"
+      | "flux-schnell"
+      | "lucid-origin"
+      | "phoenix"
+      | "sdxl-lite",
+  ) => void;
   modelInfo?: { isToolCallUnsupported?: boolean };
 }) {
   const t = useTranslations("Chat");
@@ -1257,69 +1291,79 @@ function ImageGeneratorSelector({
           {t("generateImage")}
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
-          <DropdownMenuSubContent>
-            <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
-              Fast & Realistic
-            </DropdownMenuLabel>
+          <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("google")}
+              onClick={() => onGenerateImage?.("sdxl")}
               className="cursor-pointer text-xs"
             >
-              <GeminiIcon className="mr-2 size-4" />
-              Img-CV (Ultra-Fast)
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
-              High Quality
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("openai")}
-              className="cursor-pointer text-xs"
-            >
-              <OpenAIIcon className="mr-2 size-4" />
-              DALL-E 3
+              <ImagesIcon className="mr-2 size-4" />
+              Stable Diffusion XL
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("sdxl-lite")}
               className="cursor-pointer text-xs"
             >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                ⚡
-              </span>
-              Flux Pro
+              <ImagesIcon className="mr-2 size-4" />
+              SDXL Lite
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("img3")}
               className="cursor-pointer text-xs"
             >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                🎨
-              </span>
-              Imagen 3
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1.5">
-              Specialized
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              disabled={modelInfo?.isToolCallUnsupported}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                ✏️
-              </span>
-              Chalk (Text Art)
+              <ImagesIcon className="mr-2 size-4" />
+              IMG3
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("img4")}
               className="cursor-pointer text-xs"
             >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                😂
-              </span>
-              Meme Generator
+              <ImagesIcon className="mr-2 size-4" />
+              IMG4
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("flux-schnell")}
+              className="cursor-pointer text-xs"
+            >
+              <ImagesIcon className="mr-2 size-4" />
+              Flux Schnell
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("nano-banana")}
+              className="cursor-pointer text-xs"
+            >
+              <ImagesIcon className="mr-2 size-4" />
+              Nano Banana
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("lucid-origin")}
+              className="cursor-pointer text-xs"
+            >
+              <ImagesIcon className="mr-2 size-4" />
+              Lucid Origin
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("phoenix")}
+              className="cursor-pointer text-xs"
+            >
+              <ImagesIcon className="mr-2 size-4" />
+              Phoenix
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("chalk")}
+              className="cursor-pointer text-xs"
+            >
+              <ImagesIcon className="mr-2 size-4" />
+              Chalk Name Style
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>

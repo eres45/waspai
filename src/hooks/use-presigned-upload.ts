@@ -8,7 +8,14 @@ import { getStorageInfoAction } from "@/app/api/storage/actions";
 
 // Types
 interface StorageInfo {
-  type: "local" | "vercel-blob" | "s3" | "supabase" | "snapzion" | "hybrid";
+  type:
+    | "local"
+    | "vercel-blob"
+    | "s3"
+    | "supabase"
+    | "snapzion"
+    | "hybrid"
+    | string;
   supportsDirectUpload: boolean;
 }
 

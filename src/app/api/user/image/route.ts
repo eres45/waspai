@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "auth/server";
-import logger from "logger";
+import logger from "@/lib/logger";
 import { updateUserDetails } from "lib/user/server";
 import { getUser } from "lib/user/server";
 

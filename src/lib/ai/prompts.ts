@@ -52,18 +52,19 @@ export const buildUserSystemPrompt = (
   user?: User,
   userPreferences?: UserPreferences,
   agent?: Agent,
+  isPro?: boolean,
 ) => {
   const assistantName =
-    agent?.name || userPreferences?.botName || "Wasp AI";
+    agent?.name || userPreferences?.botName || (isPro ? "" : "Wasp AI");
   const currentTime = format(new Date(), "EEEE, MMMM d, yyyy 'at' h:mm:ss a");
 
-  let prompt = `You are ${assistantName}`;
+  let prompt = assistantName ? `You are ${assistantName}. ` : "";
 
   if (agent?.instructions?.role) {
-    prompt += `. You are an expert in ${agent.instructions.role}`;
+    prompt += `You are an expert in ${agent.instructions.role}. `;
   }
 
-  prompt += `. The current date and time is ${currentTime}.`;
+  prompt += `The current date and time is ${currentTime}.`;
 
   // Agent-specific instructions as primary core
   if (agent?.instructions?.systemPrompt) {

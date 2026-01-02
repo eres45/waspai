@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import logger from "@/lib/logger";
+import { userRepository } from "@/lib/db/repository";
 
 // Initialize Supabase client - only on server
 let supabaseAuthInstance: ReturnType<typeof createClient> | null = null;
@@ -76,6 +77,15 @@ export async function signUpWithEmail(
       `User created successfully: ${data.user.id}. Verification email sent.`,
     );
 
+    // Sync to public.user table
+    try {
+      await userRepository.createOrUpdateUser(data.user.id, email, name);
+    } catch (syncError) {
+      logger.error("Failed to sync user to public table:", syncError);
+      // We don't block the auth flow but log the error (or should we?)
+      // Ideally we ensure it exists.
+    }
+
     return {
       user: {
         id: data.user.id,
@@ -113,6 +123,17 @@ export async function signInWithEmail(email: string, password: string) {
     }
 
     logger.info(`User signed in successfully: ${data.user.id}`);
+
+    // Sync to public.user table to ensure FK constraints are met
+    try {
+      await userRepository.createOrUpdateUser(
+        data.user.id,
+        data.user.email || email,
+        data.user.user_metadata?.name,
+      );
+    } catch (syncError) {
+      logger.error("Failed to sync user to public table on signin:", syncError);
+    }
 
     return {
       user: {

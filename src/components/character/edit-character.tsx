@@ -72,6 +72,9 @@ export default function EditCharacter({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [showLoadingDialog, setShowLoadingDialog] = useState(false);
+  const [privacyAction, setPrivacyAction] = useState<
+    "generate" | "save" | null
+  >(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
@@ -141,17 +144,62 @@ export default function EditCharacter({
     [character.icon?.style?.backgroundColor],
   );
 
+  const performSave = useCallback(
+    async (privacy: "public" | "private") => {
+      setIsSaving(true);
+      try {
+        const payload = {
+          name: character.name,
+          description: character.description,
+          personality: character.personality,
+          icon: character.icon,
+          privacy,
+        };
+
+        const response = await fetch("/api/character", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save character");
+        }
+
+        toast.success("Character saved successfully");
+        router.push("/characters");
+      } catch (error) {
+        toast.error("Failed to save character");
+        console.error(error);
+      } finally {
+        setIsSaving(false);
+        setShowPrivacyDialog(false);
+      }
+    },
+    [character, router],
+  );
+
   const handleGenerateClick = useCallback(() => {
     if (!character.name.trim()) {
       toast.error("Character name is required");
       return;
     }
+    setPrivacyAction("generate");
     setShowPrivacyDialog(true);
   }, [character.name]);
 
-  const handlePrivacySelect = useCallback(
-    async (_privacy: "public" | "private") => {
+  const onPrivacySelection = useCallback(
+    async (privacy: "public" | "private") => {
       setShowPrivacyDialog(false);
+
+      if (privacyAction === "save") {
+        await performSave(privacy);
+        return;
+      }
+
+      // Action is "generate"
       setShowLoadingDialog(true);
       setIsGenerating(true);
 
@@ -218,7 +266,7 @@ Format the response as a structured character profile.`;
         setIsGenerating(false);
       }
     },
-    [character.name, character.origin],
+    [character.name, character.origin, privacyAction, performSave],
   );
 
   const handleSaveClick = useCallback(() => {
@@ -237,51 +285,9 @@ Format the response as a structured character profile.`;
       return;
     }
 
-    // For manual mode, show privacy dialog
-    if (mode === "manual") {
-      setShowPrivacyDialog(true);
-    } else {
-      // For auto mode, save directly
-      performSave("private");
-    }
+    setPrivacyAction("save");
+    setShowPrivacyDialog(true);
   }, [character, mode]);
-
-  const performSave = useCallback(
-    async (privacy: "public" | "private") => {
-      setIsSaving(true);
-      try {
-        const payload = {
-          name: character.name,
-          description: character.description,
-          personality: character.personality,
-          icon: character.icon,
-          privacy,
-        };
-
-        const response = await fetch("/api/character", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to save character");
-        }
-
-        toast.success("Character saved successfully");
-        router.push("/characters");
-      } catch (error) {
-        toast.error("Failed to save character");
-        console.error(error);
-      } finally {
-        setIsSaving(false);
-        setShowPrivacyDialog(false);
-      }
-    },
-    [character, router],
-  );
 
   const handleCancel = useCallback(() => {
     router.back();
@@ -561,7 +567,7 @@ Format the response as a structured character profile.`;
           <div className="grid grid-cols-2 gap-4">
             <Button
               variant="outline"
-              onClick={() => handlePrivacySelect("public")}
+              onClick={() => onPrivacySelection("public")}
               className="h-24 flex flex-col items-center justify-center gap-2"
             >
               <span className="text-2xl">🌍</span>
@@ -569,7 +575,7 @@ Format the response as a structured character profile.`;
             </Button>
             <Button
               variant="outline"
-              onClick={() => handlePrivacySelect("private")}
+              onClick={() => onPrivacySelection("private")}
               className="h-24 flex flex-col items-center justify-center gap-2"
             >
               <span className="text-2xl">🔒</span>
@@ -595,9 +601,9 @@ Format the response as a structured character profile.`;
                   <Loader className="w-full h-full animate-spin text-primary" />
                   <Sparkles className="absolute inset-0 w-full h-full text-yellow-400 animate-pulse" />
                 </div>
-                <h2 className="text-xl font-bold text-center">
+                <DialogTitle className="text-xl font-bold text-center">
                   Creating Your Character
-                </h2>
+                </DialogTitle>
               </div>
 
               {/* Tips */}

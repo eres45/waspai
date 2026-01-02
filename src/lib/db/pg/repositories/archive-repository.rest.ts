@@ -11,6 +11,23 @@ import {
 import { supabaseRest } from "../../supabase-rest";
 import { generateUUID } from "lib/utils";
 
+const mapArchiveToEntity = (data: any): Archive => ({
+  id: data.id,
+  name: data.name,
+  description: data.description,
+  userId: data.user_id,
+  createdAt: data.created_at,
+  updatedAt: data.updated_at,
+});
+
+const mapArchiveItemToEntity = (data: any): ArchiveItem => ({
+  id: data.id,
+  archiveId: data.archive_id,
+  itemId: data.item_id,
+  userId: data.user_id,
+  addedAt: data.added_at,
+});
+
 export const archiveRepository: ArchiveRepository = {
   async createArchive(archive) {
     console.log("[Archive REST] Creating archive:", archive.name);
@@ -33,7 +50,7 @@ export const archiveRepository: ArchiveRepository = {
       throw new Error(error.message || "Failed to create archive");
     }
 
-    return data as Archive;
+    return mapArchiveToEntity(data);
   },
 
   async getArchivesByUserId(userId) {
@@ -73,7 +90,10 @@ export const archiveRepository: ArchiveRepository = {
         }),
       );
 
-      return result as ArchiveWithItemCount[];
+      return result.map((a) => ({
+        ...mapArchiveToEntity(a),
+        itemCount: (a as any).item_count,
+      })) as ArchiveWithItemCount[];
     } catch (error) {
       console.error("[Archive REST] getArchivesByUserId error:", error);
       return [];
@@ -94,7 +114,7 @@ export const archiveRepository: ArchiveRepository = {
         throw error;
       }
 
-      return data as Archive | null;
+      return data ? mapArchiveToEntity(data) : null;
     } catch (error) {
       console.error("[Archive REST] getArchiveById error:", error);
       return null;
@@ -120,7 +140,7 @@ export const archiveRepository: ArchiveRepository = {
         throw error;
       }
 
-      return data as Archive;
+      return mapArchiveToEntity(data);
     } catch (error) {
       console.error("[Archive REST] updateArchive error:", error);
       throw error;
@@ -164,10 +184,10 @@ export const archiveRepository: ArchiveRepository = {
         .from("archive_item")
         .insert({
           id: generateUUID(),
-          archiveId,
-          itemId,
-          userId,
-          addedAt: new Date().toISOString(),
+          archive_id: archiveId,
+          item_id: itemId,
+          user_id: userId,
+          added_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -176,7 +196,7 @@ export const archiveRepository: ArchiveRepository = {
         throw error;
       }
 
-      return data as ArchiveItem;
+      return mapArchiveItemToEntity(data);
     } catch (error) {
       console.error("[Archive REST] addItemToArchive error:", error);
       throw error;
@@ -214,13 +234,13 @@ export const archiveRepository: ArchiveRepository = {
         .from("archive_item")
         .select()
         .eq("archive_id", archiveId)
-        .order("addedAt", { ascending: true });
+        .order("added_at", { ascending: true });
 
       if (error) {
         throw error;
       }
 
-      return (data as ArchiveItem[]) || [];
+      return (data as any[])?.map(mapArchiveItemToEntity) || [];
     } catch (error) {
       console.error("[Archive REST] getArchiveItems error:", error);
       return [];
@@ -235,14 +255,14 @@ export const archiveRepository: ArchiveRepository = {
         .from("archive_item")
         .select(
           `
-          archiveId,
-          Archive:archiveId (
+          archive_id,
+          Archive:archive_id (
             id,
             name,
             description,
-            userId,
-            createdAt,
-            updatedAt
+            user_id,
+            created_at,
+            updated_at
           )
         `,
         )
@@ -255,9 +275,10 @@ export const archiveRepository: ArchiveRepository = {
       // Filter by userId and extract archives
       const archives = (data || [])
         .map((item: any) => item.Archive)
-        .filter((archive: any) => archive && archive.userId === userId);
+        .filter((archive: any) => archive && archive.user_id === userId)
+        .map(mapArchiveToEntity);
 
-      return archives as Archive[];
+      return archives;
     } catch (error) {
       console.error("[Archive REST] getItemArchives error:", error);
       return [];
