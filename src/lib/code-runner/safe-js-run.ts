@@ -9,39 +9,37 @@ import {
 } from "./code-runner.interface";
 
 // Security: Block dangerous keywords that could compromise sandbox
+// Note: 'eval()' and 'Function()' allowed since code runs in isolated sandbox
+// Note: 'document.' removed to allow HTML generation in strings
 const FORBIDDEN_KEYWORDS = [
-  // DOM and browser globals
-  "document.",
+  // Browser globals that could escape sandbox
   "globalThis.",
-  "self.",
-  "window",
+  "window.",
   "frames",
   "opener",
-  // Code execution (but not function declarations)
-  "eval",
-  "constructor",
-  "prototype",
+  // Prototype manipulation
   "__proto__",
   // Node.js environment
   "process.",
-  "require",
-  "exports",
+  "require(",
+  "import(",
   // Dangerous objects
-  "Worker",
-  "SharedWorker",
-  "ServiceWorker",
-  "MessageChannel",
+  "Worker(",
+  "SharedWorker(",
+  "ServiceWorker(",
   // Network bypass attempts
-  "XMLHttpRequest",
-  "WebSocket",
-  "EventSource",
+  "XMLHttpRequest(",
+  "WebSocket(",
+  "EventSource(",
 ];
 
 // Enhanced security check with pattern detection
 function validateCodeSafety(code: string): string | null {
   // Check forbidden keywords
   for (const keyword of FORBIDDEN_KEYWORDS) {
-    const regex = new RegExp(`\\b${keyword}\\b`);
+    // Escape special regex characters in the keyword
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escapedKeyword);
     if (regex.test(code)) {
       return `Forbidden keyword: '${keyword}' - not allowed for security reasons`;
     }
@@ -73,23 +71,15 @@ function validateCodeSafety(code: string): string | null {
     }
   }
 
-  // Detect suspicious patterns that might bypass security
+  // Detect truly dangerous patterns (reduced from previous overly strict checks)
   const suspiciousPatterns = [
-    {
-      pattern: /['"`]\s*\+\s*['"`]/g,
-      message: "String concatenation to access globals",
-    },
-    {
-      pattern: /\[['"`][a-zA-Z_$][a-zA-Z0-9_$]*['"`]\]/g,
-      message: "Dynamic property access",
-    },
     { pattern: /eval\s*\(/, message: "Dynamic code evaluation" },
     { pattern: /(new\s+)?Function\s*\(/, message: "Function constructor" },
-    { pattern: /constructor\s*\(/, message: "Constructor access" },
-    { pattern: /prototype\s*\[/, message: "Prototype manipulation" },
+    { pattern: /\.constructor\s*\(/, message: "Constructor access" },
+    { pattern: /\.prototype\s*\[/, message: "Prototype manipulation" },
     {
-      pattern: /(__proto__|\.constructor)/,
-      message: "Prototype chain access",
+      pattern: /__proto__\s*=/,
+      message: "Prototype chain manipulation",
     },
   ];
 

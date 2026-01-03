@@ -77,6 +77,7 @@ import {
   qrCodeGeneratorTool,
   qrCodeWithLogoTool,
 } from "lib/ai/tools/qr-code-generator";
+import { htmlPreviewTool } from "lib/ai/tools/html-preview";
 import { chatExportTool } from "lib/ai/tools/chat-export";
 import { webSearchTool } from "lib/ai/tools/web-search";
 import { ImageToolName } from "lib/ai/tools";
@@ -1467,6 +1468,7 @@ BEGIN ROLEPLAY NOW.`
           // ALWAYS include QR tools
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
+          html_preview: htmlPreviewTool,
 
           // Conditionally include export tool
           ...(isChatExportRequest
@@ -1653,7 +1655,7 @@ BEGIN ROLEPLAY NOW.`
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: useImageTool ? 0 : 2,
           tools: vercelAITooles,
-          stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(10),
+          stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(3),
           toolChoice: "auto",
           abortSignal: request.signal,
         });

@@ -830,6 +830,14 @@ const QRCodeGeneratorToolInvocation = dynamic(
   },
 );
 
+const HtmlPreview = dynamic(
+  () => import("./tool-invocation/html-preview").then((mod) => mod.HtmlPreview),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -1001,6 +1009,10 @@ export const ToolMessagePart = memo(
         toolName === "generate-qr-code-with-logo"
       ) {
         return <QRCodeGeneratorToolInvocation part={part} />;
+      }
+
+      if (toolName === "html_preview") {
+        return <HtmlPreview part={part} />;
       }
 
       if (toolName === DefaultToolName.JavascriptExecution) {

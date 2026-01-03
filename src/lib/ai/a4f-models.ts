@@ -6,7 +6,16 @@ import { LanguageModel } from "ai";
  * Aggregates various high-performance models including LLMs, TTS, and ASR.
  */
 export function createA4FModels() {
-  const keys = [process.env.A4F_API_KEY || ""];
+  const keys = [
+    process.env.A4F_API_KEY_1,
+    process.env.A4F_API_KEY_2,
+    process.env.A4F_API_KEY_3,
+    process.env.A4F_API_KEY_4,
+    process.env.A4F_API_KEY_5,
+    process.env.A4F_API_KEY,
+  ].filter((k) => !!k) as string[];
+
+  if (keys.length === 0) keys.push("");
 
   const getRotatedKey = () => {
     const intervalMs = 2 * 60 * 1000; // 2 minutes
