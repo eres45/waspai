@@ -17,11 +17,18 @@ export function createGoogleModels() {
     .filter((k) => k.length > 0);
 
   if (apiKeys.length === 0) {
-    console.warn("No Google API keys found in GOOGLE_GENERATIVE_AI_API_KEY");
+    console.error(
+      "❌ No Google API keys found. Please check GOOGLE_GENERATIVE_AI_API_KEY env var.",
+    );
+  } else {
+    console.log(`✅ Loaded ${apiKeys.length} Google API keys for rotation.`);
   }
 
   // Key rotation helper
   const getProvider = () => {
+    if (apiKeys.length === 0) {
+      throw new Error("No Google API keys available.");
+    }
     const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
     return createGoogleGenerativeAI({
       apiKey: randomKey,
