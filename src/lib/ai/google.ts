@@ -95,7 +95,6 @@ export function createGoogleModels() {
     return {
       specificationVersion: "v2",
       modelId: modelId,
-      // @ts-expect-error - Internal AI SDK properties
       provider: template.provider || "google",
       // @ts-expect-error - Internal AI SDK config
       config: template.config,
