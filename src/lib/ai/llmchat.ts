@@ -31,9 +31,11 @@ export function createLLMChatModels() {
         body: llmchatBody,
         headers: {
           "Content-Type": "application/json",
-          Accept: "*/*",
+          Accept: "text/event-stream, */*",
+          Origin: "https://llmchat.in",
+          Referer: "https://llmchat.in/",
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         },
       });
 
@@ -44,6 +46,8 @@ export function createLLMChatModels() {
       // If non-streaming, LLMChat returns a custom JSON structure
       if (!body.stream) {
         const data = await response.json();
+        const content =
+          data?.result?.response || data?.response || data?.result || "";
         const openaiResponse = {
           id: `llmchat-${Date.now()}`,
           object: "chat.completion",
@@ -54,7 +58,7 @@ export function createLLMChatModels() {
               index: 0,
               message: {
                 role: "assistant",
-                content: data?.result?.response || "",
+                content: content,
               },
               finish_reason: "stop",
             },
@@ -111,8 +115,15 @@ export function createLLMChatModels() {
                         try {
                           const json = JSON.parse(jsonStr);
 
+                          const content =
+                            json.result?.response ||
+                            json.response ||
+                            (typeof json.result === "string"
+                              ? json.result
+                              : null);
+
                           // Convert to OpenAI SSE format
-                          if (json.result?.response) {
+                          if (content) {
                             const sseChunk = {
                               id: `chatcmpl-${Date.now()}`,
                               object: "chat.completion.chunk",
@@ -121,7 +132,7 @@ export function createLLMChatModels() {
                               choices: [
                                 {
                                   index: 0,
-                                  delta: { content: json.result.response },
+                                  delta: { content: content },
                                   finish_reason: null,
                                 },
                               ],
@@ -132,11 +143,8 @@ export function createLLMChatModels() {
                               ),
                             );
                           }
-                        } catch (e) {
-                          console.error(
-                            "Error parsing JSON chunk from LLMChat",
-                            e,
-                          );
+                        } catch (_e) {
+                          // Ignore partial or malformed chunks
                         }
 
                         // Move start index to next char
