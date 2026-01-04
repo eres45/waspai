@@ -71,7 +71,7 @@ export async function extractTextFromDocuments(
           if (res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            const pdf = require("pdf-parse");
+            const pdf = require("pdf-parse-fork");
             const data = await pdf(buffer);
             extractedContent += `\n\n[Document Content: ${link.split("/").pop()}]\n${data.text}\n`;
             continue;
