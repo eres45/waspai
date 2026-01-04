@@ -5,6 +5,7 @@ import { createA4FModels } from "./a4f-models";
 import { createDeepInfraModels } from "./deepinfra";
 import { createLLMChatModels } from "./llmchat";
 import { createTypeGPTModels } from "./typegpt";
+import { createGoogleModels } from "./google";
 import { ChatModel } from "app-types/chat";
 
 // A4F Models - Professional tier
@@ -17,10 +18,18 @@ const deepInfraModels = createDeepInfraModels();
 const llmChatModels = createLLMChatModels();
 
 // TypeGPT Models
+// TypeGPT Models
 const typegptModels = createTypeGPTModels();
+
+// Google Models (with key rotation)
+const googleModels = createGoogleModels();
 
 const staticModels = {
   google: {
+    // Official Google Models (with key rotation)
+    ...googleModels,
+
+    // Legacy mapping (keep existing references working)
     "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
     "google-gemma-2-12b-it": deepInfraModels["google-gemma-2-12b-it"],
     "google-gemma-3-27b-it": typegptModels["google-gemma-3-27b-it"], // New
