@@ -13,7 +13,7 @@ export function createGoogleModels() {
   const keysString = process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
   const apiKeys = keysString
     .split(",")
-    .map((k) => k.trim())
+    .map((k) => k.replace(/['"\[\]]/g, "").trim()) // Remove quotes and brackets
     .filter((k) => k.length > 0);
 
   if (apiKeys.length === 0) {
