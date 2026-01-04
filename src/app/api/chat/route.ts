@@ -14,12 +14,6 @@ import {
   isToolCallUnsupportedModel,
   isImageInputUnsupportedModel,
 } from "lib/ai/models";
-import { isSearchQuery } from "lib/search-detector";
-import {
-  SEARCH_MODEL,
-  POLLINATIONS_SYSTEM_PROMPT,
-  POLLINATIONS_MODEL_PROMPTS,
-} from "lib/ai/pollinations";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
@@ -166,11 +160,6 @@ export async function POST(request: Request) {
       logger.info(`No file URLs found, skipping OCR`);
     }
 
-    if (isSearchQuery(enrichedMessageText)) {
-      modelToUse = SEARCH_MODEL;
-      logger.info(`Search query detected, using gemini-search model`);
-    }
-
     logger.info(`Getting model: ${modelToUse?.provider}/${modelToUse?.model}`);
     let model;
     try {
@@ -281,43 +270,6 @@ export async function POST(request: Request) {
     // Replace original messages with sanitized ones
     messages.length = 0;
     messages.push(...sanitizedMessages);
-
-    // For Pollinations models, truncate message history to stay within character limits
-    // Pollinations has a ~8000 character limit for input
-    if (
-      modelToUse?.provider === "pollinations" ||
-      modelToUse?.provider === "google"
-    ) {
-      const MAX_HISTORY_CHARS = 6000; // Leave 2000 chars for current message + system prompt
-      let totalChars = 0;
-      const truncatedMessages: UIMessage[] = [];
-
-      // Add messages from the end (most recent) until we hit the limit
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const msg = messages[i];
-        const msgChars = JSON.stringify(msg).length;
-
-        if (
-          totalChars + msgChars > MAX_HISTORY_CHARS &&
-          truncatedMessages.length > 0
-        ) {
-          // Stop adding if we'd exceed the limit (but keep at least one message)
-          break;
-        }
-
-        truncatedMessages.unshift(msg);
-        totalChars += msgChars;
-      }
-
-      if (truncatedMessages.length < messages.length) {
-        logger.warn(
-          `Truncated message history for ${modelToUse.provider}/${modelToUse.model}: ${messages.length} → ${truncatedMessages.length} messages (${totalChars} chars)`,
-        );
-      }
-
-      messages.length = 0;
-      messages.push(...truncatedMessages);
-    }
 
     const ingestionPreviewParts = await buildCsvIngestionPreviewParts(
       attachments,
@@ -1410,9 +1362,6 @@ BEGIN ROLEPLAY NOW.`
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           modelToUse?.model === "gemini-search" && buildSearchModelSystemPrompt,
-          modelToUse?.provider === "pollinations" &&
-            (POLLINATIONS_MODEL_PROMPTS[modelToUse.model] ||
-              POLLINATIONS_SYSTEM_PROMPT),
           useImageTool && imageModelPrompt,
           isVideoGenRequest && videoGenPrompt,
           isQrRequest && qrPrompt,
@@ -1570,7 +1519,7 @@ BEGIN ROLEPLAY NOW.`
           // maximize history based on model's specific limits instead of hardcoded 10 messages
           messages: convertToModelMessages(
             (() => {
-              const modelId = modelToUse?.model || "openai-pollinations";
+              const modelId = modelToUse?.model || "google-gemma-2-9b-it";
               const maxContextChars = getModelContextLimit(modelId);
 
               // 1. Prepare Current Message (User) with Enriched + Truncated Content

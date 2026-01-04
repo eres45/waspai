@@ -204,64 +204,13 @@ export default function EditCharacter({
       setIsGenerating(true);
 
       try {
-        // Create prompt for Pollinations API
-        const prompt = `Generate a detailed character profile for "${character.name}".
-Origin/Source: ${character.origin}
-
-Please provide:
-1. A detailed description of the character (2-3 sentences)
-2. Personality traits and characteristics (5-7 key traits)
-3. Speaking style and mannerisms
-4. Background and history
-5. Key characteristics and quirks
-
-Format the response as a structured character profile.`;
-
-        // Call Pollinations API
-        const response = await fetch("https://text.pollinations.ai/openai", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-            model: "openai",
-            stream: false,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to generate character");
-        }
-
-        const data = await response.json();
-        const generatedContent = data.choices?.[0]?.message?.content || "";
-
-        // Parse the generated content
-        const lines = generatedContent
-          .split("\n")
-          .filter((line: string) => line.trim());
-
-        // Extract description and personality from generated content
-        const description = lines.slice(0, 3).join(" ").substring(0, 200);
-        const personality = lines.slice(3).join(" ").substring(0, 500);
-
-        setCharacter({
-          description: description || "Character generated successfully",
-          personality: personality || "Generated personality traits",
-        });
-
+        // Character generation is temporarily disabled after removing Pollinations AI.
+        throw new Error(
+          "Character automation is temporarily undergoing maintenance. Please fill in the details manually for now.",
+        );
+      } catch (error: any) {
         setShowLoadingDialog(false);
-        toast.success("Your character is ready!");
-      } catch (error) {
-        setShowLoadingDialog(false);
-        toast.error("Failed to generate character");
-        console.error(error);
+        toast.error(error.message || "Failed to generate character");
       } finally {
         setIsGenerating(false);
       }
