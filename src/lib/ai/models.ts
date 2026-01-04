@@ -83,7 +83,6 @@ const staticModels = {
     "moonshotai-Kimi-K2-Thinking":
       deepInfraModels["moonshotai-Kimi-K2-Thinking"],
   },
-  allam: {},
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
   },
@@ -198,7 +197,6 @@ export const customModelProvider = {
             "openai",
             "qwen",
             "moonshot",
-            "allam",
             "canopy",
             "deepseek",
             "minimax",

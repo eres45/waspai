@@ -1355,7 +1355,7 @@ BEGIN ROLEPLAY NOW.`
             session.user,
             userPreferences,
             agent,
-            ["meta", "openai", "qwen", "moonshot", "allam", "canopy"].includes(
+            ["meta", "openai", "qwen", "moonshot", "canopy"].includes(
               modelToUse?.provider || "",
             ),
           ),

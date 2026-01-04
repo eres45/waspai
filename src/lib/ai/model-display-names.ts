@@ -6,7 +6,6 @@ export const PROVIDER_ORDER = [
   "meta", // Meta (Groq)
   "qwen", // Qwen (Groq)
   "moonshot", // Moonshot (Groq)
-  "allam", // Allam (Groq)
   "canopy", // Canopy (Groq)
   "deepseek", // DeepSeek (Groq)
   "minimax", // MiniMax (Groq)
@@ -25,7 +24,6 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   meta: "Meta",
   qwen: "Qwen",
   moonshot: "Moonshot",
-  allam: "Allam",
   canopy: "Canopy",
   deepseek: "DeepSeek",
   minimax: "MiniMax",

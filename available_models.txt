@@ -1,5 +1,5 @@
 === AVAILABLE MODELS INVENTORY ===
-Total Count: 68 Models
+Total Count: 67 Models
 
 --- Google (5) ---
 Gemma 2 9B (google-gemma-2-9b-it)
