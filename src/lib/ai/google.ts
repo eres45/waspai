@@ -49,19 +49,29 @@ export function createGoogleModels() {
         const errorMessage = error?.message?.toLowerCase() || "";
         const statusCode = error?.statusCode;
 
-        // Retriable Errors: Quota (429) or Key Issues (Leaked/Invalid)
+        console.error(
+          `[Google Rotation] Error using key ${keyIndex + 1}: Status=${statusCode}, Message="${error?.message}"`,
+        );
+
+        // Retriable Errors:
+        // 429 = Quota
+        // 400/401/403 = Often returned for Leaked/Invalid keys in Google's API
         const isQuotaError =
           statusCode === 429 ||
           errorMessage.includes("quota") ||
           errorMessage.includes("429");
         const isKeyError =
+          statusCode === 400 ||
+          statusCode === 401 ||
+          statusCode === 403 ||
           errorMessage.includes("leaked") ||
           errorMessage.includes("valid api key") ||
-          errorMessage.includes("expired");
+          errorMessage.includes("expired") ||
+          errorMessage.includes("key not valid");
 
         if (isQuotaError || isKeyError) {
           console.warn(
-            `[Google Rotation] Key ${keyIndex + 1}/${apiKeys.length} failed (${isQuotaError ? "Quota" : "Leak"}). trying next...`,
+            `⚠️ [Google Rotation] Key ${keyIndex + 1}/${apiKeys.length} failed (${isQuotaError ? "Quota" : "Validity"}). trying next...`,
           );
           continue;
         }
