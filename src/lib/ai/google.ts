@@ -30,22 +30,19 @@ export function createGoogleModels() {
 
   // Helper to create a model instance with a rotated key
   const createModel = (modelId: string) => {
-    return {
-      get provider() {
-        return "google";
+    // Return a Proxy that intercepts all property access
+    return new Proxy({} as any, {
+      get(_target, prop, _receiver) {
+        // Static properties
+        if (prop === "provider") return "google";
+        if (prop === "modelId") return modelId;
+
+        // Dynamic properties: create a fresh provider instance for each access
+        const provider = getProvider();
+        const model = provider(modelId);
+        return Reflect.get(model, prop);
       },
-      get modelId() {
-        return modelId;
-      },
-      // Proxy the call to a fresh provider instance with a random key
-      ...new Proxy({} as LanguageModel, {
-        get(_target, prop, _receiver) {
-          const provider = getProvider();
-          const model = provider(modelId);
-          return Reflect.get(model, prop);
-        },
-      }),
-    } as LanguageModel;
+    });
   };
 
   // Top 20 Gemini Models
