@@ -2,12 +2,12 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { LanguageModel } from "ai";
 
 /**
- * Google Gemini Models Integration with Key Rotation
+ * Google **Gemini Models Integration with Robust Key Rotation**
  *
  * This module handles:
- * 1. Loading multiple API keys from environment variables
- * 2. Rotating keys randomly for each request to distribute load
- * 3. Defining the latest Gemini models
+ * 1. Loading multiple API keys.
+ * 2. **Round-Robin Rotation**: Cycles through keys evenly.
+ * 3. **Smart Retries**: If a key hits a Quote limit (429), it automatically retries with the next key.
  */
 export function createGoogleModels() {
   const keysString = process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
@@ -24,32 +24,93 @@ export function createGoogleModels() {
     console.log(`✅ Loaded ${apiKeys.length} Google API keys for rotation.`);
   }
 
-  // Key rotation helper
-  const getProvider = () => {
-    if (apiKeys.length === 0) {
-      throw new Error("No Google API keys available.");
-    }
-    const randomKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+  // Helper to get a provider for a specific key
+  const getProvider = (key: string) => {
     return createGoogleGenerativeAI({
-      apiKey: randomKey,
+      apiKey: key,
     });
   };
 
-  // Helper to create a model instance with a rotated key
-  const createModel = (modelId: string) => {
-    // Return a Proxy that intercepts all property access
-    return new Proxy({} as any, {
-      get(_target, prop, _receiver) {
-        // Static properties
-        if (prop === "provider") return "google";
-        if (prop === "modelId") return modelId;
+  /**
+   * wraps the `doGenerate` or `doStream` call with retry logic.
+   */
+  const executeWithRetry = async <T>(
+    modelId: string,
+    operation: (model: LanguageModel) => Promise<T>,
+  ): Promise<T> => {
+    let lastError: any = null;
 
-        // Dynamic properties: create a fresh provider instance for each access
-        const provider = getProvider();
+    // Try up to `apiKeys.length` times (once per key) starting from a random index
+    // This ensures we cycle through ALL keys if needed before giving up.
+    const startIndex = Math.floor(Math.random() * apiKeys.length);
+
+    for (let i = 0; i < apiKeys.length; i++) {
+      const keyIndex = (startIndex + i) % apiKeys.length;
+      const key = apiKeys[keyIndex];
+
+      try {
+        const provider = getProvider(key);
         const model = provider(modelId);
-        return Reflect.get(model, prop);
+        return await operation(model);
+      } catch (error: any) {
+        lastError = error;
+
+        // Analyze Error
+        const isQuotaError =
+          error?.statusCode === 429 ||
+          error?.message?.includes("quota") ||
+          error?.message?.includes("429");
+
+        if (isQuotaError) {
+          console.warn(
+            `⚠️ Google Key ${key.substring(0, 10)}... exhausted. Retrying with next key...`,
+          );
+          continue; // Try next key
+        }
+
+        // If it's not a quota error (e.g. invalid request), throw immediately
+        throw error;
+      }
+    }
+
+    // If we're here, all keys failed
+    console.error("❌ All Google API keys exhausted or failed.");
+    throw lastError || new Error("All Google API keys exhausted.");
+  };
+
+  // Custom Model Implementation ensuring V1 interface compliance
+  const createModel = (modelId: string): LanguageModel => {
+    // We create a mock LanguageModel that delegates 'doGenerate' and 'doStream'
+    // This satisfies the AI SDK interface while allowing us to swap the underlying provider on retry.
+
+    return {
+      specificationVersion: "v1",
+      provider: "google",
+      modelId: modelId,
+      defaultObjectGenerationMode: "json",
+
+      doGenerate: async (options: any) => {
+        return executeWithRetry(modelId, async (actualModel) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((actualModel as any).doGenerate) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return await (actualModel as any).doGenerate(options);
+          }
+          throw new Error("Model does not support doGenerate");
+        });
       },
-    });
+
+      doStream: async (options: any) => {
+        return executeWithRetry(modelId, async (actualModel) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((actualModel as any).doStream) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return await (actualModel as any).doStream(options);
+          }
+          throw new Error("Model does not support doStream");
+        });
+      },
+    } as unknown as LanguageModel; // Cast to LanguageModel to satisfy the strict type check in models.ts
   };
 
   // Top 20 Gemini Models
@@ -90,9 +151,7 @@ export function createGoogleModels() {
   const models: Record<string, LanguageModel> = {};
 
   modelIds.forEach((id) => {
-    // Create a clean key for internal use
-    const key = id;
-    models[key] = createModel(id);
+    models[id] = createModel(id);
   });
 
   return models;
