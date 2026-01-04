@@ -4,10 +4,7 @@ import { LanguageModel } from "ai";
 /**
  * Google **Gemini Models Integration with Robust Key Rotation**
  *
- * This module handles:
- * 1. Loading multiple API keys.
- * 2. **Round-Robin Rotation**: Cycles through keys evenly.
- * 3. **Smart Retries**: If a key hits a Quote limit (429), it automatically retries with the next key.
+ * Optimized for AI SDK 5 (v2 Specification)
  */
 export function createGoogleModels() {
   const keysString = process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
@@ -21,18 +18,13 @@ export function createGoogleModels() {
       "❌ No Google API keys found. Please check GOOGLE_GENERATIVE_AI_API_KEY env var.",
     );
   } else {
-    console.log(`✅ Loaded ${apiKeys.length} Google API keys for rotation.`);
+    console.log(
+      `✅ Google Provider: Loaded ${apiKeys.length} keys for rotation.`,
+    );
   }
 
-  // Helper to get a provider for a specific key
-  const getProvider = (key: string) => {
-    return createGoogleGenerativeAI({
-      apiKey: key,
-    });
-  };
-
   /**
-   * wraps the `doGenerate` or `doStream` call with retry logic.
+   * wraps a call with exhaustive retry logic across ALL keys.
    */
   const executeWithRetry = async <T>(
     modelId: string,
@@ -40,8 +32,7 @@ export function createGoogleModels() {
   ): Promise<T> => {
     let lastError: any = null;
 
-    // Try up to `apiKeys.length` times (once per key) starting from a random index
-    // This ensures we cycle through ALL keys if needed before giving up.
+    // Shuffle or random start to distribute load among keys
     const startIndex = Math.floor(Math.random() * apiKeys.length);
 
     for (let i = 0; i < apiKeys.length; i++) {
@@ -49,121 +40,92 @@ export function createGoogleModels() {
       const key = apiKeys[keyIndex];
 
       try {
-        const provider = getProvider(key);
+        const provider = createGoogleGenerativeAI({ apiKey: key });
         const model = provider(modelId);
         return await operation(model);
       } catch (error: any) {
         lastError = error;
 
-        // Analyze Error
-        const isQuotaError =
-          error?.statusCode === 429 ||
-          error?.message?.includes("quota") ||
-          error?.message?.includes("429");
-
-        if (isQuotaError) {
-          console.warn(
-            `⚠️ Google Key ${key.substring(0, 10)}... exhausted. Retrying with next key...`,
-          );
-          continue; // Try next key
-        }
-
-        // If it's not a quota error, check for key validity errors
         const errorMessage = error?.message?.toLowerCase() || "";
+        const statusCode = error?.statusCode;
+
+        // Retriable Errors: Quota (429) or Key Issues (Leaked/Invalid)
+        const isQuotaError =
+          statusCode === 429 ||
+          errorMessage.includes("quota") ||
+          errorMessage.includes("429");
         const isKeyError =
           errorMessage.includes("leaked") ||
           errorMessage.includes("valid api key") ||
           errorMessage.includes("expired");
 
-        if (isKeyError) {
-          console.error(
-            `🚫 Google Key ${key.substring(0, 10)}... is INVALID/LEAKED. Skipping...`,
+        if (isQuotaError || isKeyError) {
+          console.warn(
+            `[Google Rotation] Key ${keyIndex + 1}/${apiKeys.length} failed (${isQuotaError ? "Quota" : "Leak"}). trying next...`,
           );
-          continue; // Try next key
+          continue;
         }
 
-        // If it's not a quota or key error, throw immediately
+        // Normal errors (like safety filters or invalid prompts) should not retry keys
         throw error;
       }
     }
 
-    // If we're here, all keys failed
-    console.error("❌ All Google API keys exhausted or failed.");
     throw lastError || new Error("All Google API keys exhausted.");
   };
 
-  // Custom Model Implementation ensuring V1 interface compliance
   const createModel = (modelId: string): LanguageModel => {
-    // We create a mock LanguageModel that delegates 'doGenerate' and 'doStream'
-    // This satisfies the AI SDK interface while allowing us to swap the underlying provider on retry.
+    // Create a base model to inherit all internal configurations and properties
+    const dummyProvider = createGoogleGenerativeAI({
+      apiKey: apiKeys[0] || "dummy",
+    });
+    const baseModel = dummyProvider(modelId);
 
+    // In AI SDK 5, we must return an object that adheres to the LanguageModelV3 interface (specificationVersion: 'v2')
+    // The easiest way is to spread the base model and override doGenerate/doStream.
     return {
+      ...baseModel,
       specificationVersion: "v2",
-      provider: "google",
-      modelId: modelId,
-      defaultObjectGenerationMode: "json",
-
       doGenerate: async (options: any) => {
-        return executeWithRetry(modelId, async (actualModel) => {
+        return executeWithRetry(modelId, (actualModel) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((actualModel as any).doGenerate) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return await (actualModel as any).doGenerate(options);
-          }
-          throw new Error("Model does not support doGenerate");
+          return (actualModel as any).doGenerate(options);
         });
       },
-
       doStream: async (options: any) => {
-        return executeWithRetry(modelId, async (actualModel) => {
+        return executeWithRetry(modelId, (actualModel) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if ((actualModel as any).doStream) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return await (actualModel as any).doStream(options);
-          }
-          throw new Error("Model does not support doStream");
+          return (actualModel as any).doStream(options);
         });
       },
-    } as unknown as LanguageModel; // Cast to LanguageModel to satisfy the strict type check in models.ts
+    } as unknown as LanguageModel;
   };
 
   // Top 20 Gemini Models
   const modelIds = [
-    // Latest Flash 2.0 (Fast & Efficient)
     "gemini-2.0-flash",
     "gemini-2.0-flash-001",
     "gemini-2.0-flash-exp",
     "gemini-2.0-flash-lite",
     "gemini-2.0-flash-lite-001",
     "gemini-2.0-flash-lite-preview-02-05",
-
-    // Pro & High Intelligence
     "gemini-2.5-pro",
     "gemini-pro-latest",
     "gemini-exp-1206",
-
-    // Legacy / Stable Fallbacks
     "gemini-1.5-pro",
     "gemini-1.5-flash",
     "gemini-flash-latest",
-
-    // Next-Gen Previews (Gemini 3.0)
     "gemini-3-pro-preview",
     "gemini-3-flash-preview",
-
-    // Specialized 2.5 Series
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
-    "gemini-2.5-flash-image", // Specialized image handling
-
-    // Multimodal / Experimental
+    "gemini-2.5-flash-image",
     "gemini-2.5-pro-preview-tts",
     "gemini-2.5-flash-preview-tts",
     "gemini-2.0-flash-exp-image-generation",
   ];
 
   const models: Record<string, LanguageModel> = {};
-
   modelIds.forEach((id) => {
     models[id] = createModel(id);
   });
