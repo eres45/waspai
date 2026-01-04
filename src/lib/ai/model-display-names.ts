@@ -1,8 +1,7 @@
 // Provider display order
 export const PROVIDER_ORDER = [
-  "openai-free", // OpenAI (Pollinations)
-  "google", // Google (Pollinations)
-  "mistral", // Mistral (Pollinations)
+  "google", // Google
+  "mistral", // Mistral
   "openai", // OpenAI Pro (Groq)
   "meta", // Meta (Groq)
   "qwen", // Qwen (Groq)
@@ -20,7 +19,6 @@ export const PROVIDER_ORDER = [
 
 // Map backend provider names to display names
 export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  "openai-free": "OpenAI (Free)",
   google: "Google",
   mistral: "Mistral",
   openai: "OpenAI",
@@ -111,16 +109,6 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-llama-2-13b": "Llama 2 13B",
   "cf-llama-guard": "Llama Guard",
   "cf-llama-3-8b-awq": "Llama 3 8B AWQ",
-  // Pollinations Gemini models
-  gemini: "Gemini 2.5 Flash Lite",
-  "gemini-search": "Gemini 2.5 Flash Lite with Search",
-  // Pollinations Mistral
-  mistral: "Mistral Small 3.2 24B",
-  // Pollinations OpenAI models
-  "openai-pollinations": "ChatGPT GPT-5 Nano",
-  "openai-fast-pollinations": "ChatGPT GPT-4.1 Nano",
-  "openai-large-pollinations": "ChatGPT GPT-4.1",
-  "openai-reasoning-pollinations": "ChatGPT o4 Mini",
 };
 
 // Create reverse mapping from display names to backend names

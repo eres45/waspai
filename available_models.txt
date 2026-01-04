@@ -1,17 +1,14 @@
 === AVAILABLE MODELS INVENTORY ===
-Total Count: 75 Models
+Total Count: 68 Models
 
---- Google (7) ---
-Gemini 2.5 Flash Lite (gemini)
-Gemini 2.5 Flash Lite with Search (gemini-search)
+--- Google (5) ---
 Gemma 2 9B (google-gemma-2-9b-it)
 Gemma 2 12B (google-gemma-2-12b-it)
 Gemma 3 27B (google-gemma-3-27b-it)
 Gemma 7B IT (cf-google-gemma-7b-it)
 Gemma 2B LoRA (cf-google-gemma-2b-it-lora)
 
---- Mistral (10) ---
-Mistral Small 3.2 24B (mistral)
+--- Mistral (9) ---
 Mistral 7B v0.1 (mistralai-Mistral-7B-Instruct-v0.1)
 Mistral 7B v0.2 (mistralai-Mistral-7B-Instruct-v0.2)
 Mistral Small 2409 (mistralai-Mistral-Small-Instruct-2409)
@@ -21,12 +18,6 @@ Mistral Small 3.1 (cf-mistralai-mistral-small-3.1-24b-instruct)
 Mistral 7B (cf-mistralai-mistral-7b-instruct-v0.1)
 Mistral 7B v0.2 (cf-mistralai-mistral-7b-instruct-v0.2)
 OpenHermes 2.5 (cf-mistralai-openhermes-2.5-mistral-7b)
-
---- OpenAI (Free) (4) ---
-ChatGPT GPT-5 Nano (openai-pollinations)
-ChatGPT GPT-4.1 Nano (openai-fast-pollinations)
-ChatGPT GPT-4.1 (openai-large-pollinations)
-ChatGPT o4 Mini (openai-reasoning-pollinations)
 
 --- OpenAI (3) ---
 GPT-OSS 120B (openai-gpt-oss-120b)
@@ -102,7 +93,7 @@ Llama 3.3 70B (Llama-3.3-70B-DeepInfra)
 Llama 3.1 8B (Llama-3.1-8B-DeepInfra)
 Llama 3.2 3B (Llama-3.2-3B-DeepInfra)
 Llama 3.2 1B (Llama-3.2-1B-DeepInfra)
-Llama 3 8B (Llama-3-8B-DeepInfra)
+Llama 3-8B (Llama-3-8B-DeepInfra)
 Llama 3 8B (CF) (cf-llama-3-8b)
 Llama 3.1 8B (CF) (cf-llama-3.1-8b)
 Llama 2 7B (cf-llama-2-7b)
