@@ -84,7 +84,7 @@ export function createGoogleModels() {
     // This satisfies the AI SDK interface while allowing us to swap the underlying provider on retry.
 
     return {
-      specificationVersion: "v1",
+      specificationVersion: "v2",
       provider: "google",
       modelId: modelId,
       defaultObjectGenerationMode: "json",
