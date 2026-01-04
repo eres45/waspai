@@ -2,38 +2,35 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { LanguageModel } from "ai";
 
 /**
- * Google **Gemini Models Integration with Robust Key Rotation**
+ * Google Gemini Provider with Exhaustive Key Rotation
  *
- * Optimized for AI SDK 5 (v2 Specification)
+ * This implementation creates a fresh provider for EACH request,
+ * ensuring no key is cached and retry logic works correctly.
  */
 export function createGoogleModels() {
   const keysString = process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
+  // Split by comma, newline, or semicolon
   const apiKeys = keysString
-    .split(",")
-    .map((k) => k.replace(/['"\[\]]/g, "").trim()) // Remove quotes and brackets
-    .filter((k) => k.length > 0);
+    .split(/,|\n|;/)
+    .map((k) => k.replace(/['"\[\]]/g, "").trim())
+    .filter((k) => k.length >= 10); // Valid keys are at least 10 chars
 
   if (apiKeys.length === 0) {
-    console.error(
-      "❌ No Google API keys found. Please check GOOGLE_GENERATIVE_AI_API_KEY env var.",
-    );
-  } else {
-    console.log(
-      `✅ Google Provider: Loaded ${apiKeys.length} keys for rotation.`,
-    );
+    console.error("❌ [Google] No API keys found!");
+    throw new Error("GOOGLE_GENERATIVE_AI_API_KEY not configured");
   }
 
+  console.log(`✅ [Google] Loaded ${apiKeys.length} keys for rotation.`);
+
   /**
-   * wraps a call with exhaustive retry logic across ALL keys.
+   * Try a model operation with exhaustive key rotation
    */
-  const executeWithRetry = async <T>(
+  const executeWithKeyRotation = async <T>(
     modelId: string,
     operation: (model: LanguageModel) => Promise<T>,
   ): Promise<T> => {
-    let lastError: any = null;
-
-    // Shuffle or random start to distribute load among keys
     const startIndex = Math.floor(Math.random() * apiKeys.length);
+    let lastError: any = null;
 
     for (let i = 0; i < apiKeys.length; i++) {
       const keyIndex = (startIndex + i) % apiKeys.length;
@@ -42,76 +39,87 @@ export function createGoogleModels() {
       try {
         const provider = createGoogleGenerativeAI({ apiKey: key });
         const model = provider(modelId);
-        return await operation(model);
+
+        console.log(
+          `🔑 [Google] Try ${i + 1}/${apiKeys.length}: Key ${key.substring(0, 8)}...`,
+        );
+        const result = await operation(model);
+        console.log(`✅ [Google] Success with key ${key.substring(0, 8)}...`);
+        return result;
       } catch (error: any) {
         lastError = error;
-
-        const errorMessage = error?.message?.toLowerCase() || "";
-        const statusCode = error?.statusCode;
+        const msg = (error?.message || "").toLowerCase();
+        const status = error?.statusCode;
 
         console.error(
-          `[Google Rotation] Error using key ${keyIndex + 1}: Status=${statusCode}, Message="${error?.message}"`,
+          `❌ [Google] Key ${key.substring(0, 8)}... failed: ${status} - ${error?.message}`,
         );
 
-        // Retriable Errors:
-        // 429 = Quota
-        // 400/401/403 = Often returned for Leaked/Invalid keys in Google's API
-        const isQuotaError =
-          statusCode === 429 ||
-          errorMessage.includes("quota") ||
-          errorMessage.includes("429");
-        const isKeyError =
-          statusCode === 400 ||
-          statusCode === 401 ||
-          statusCode === 403 ||
-          errorMessage.includes("leaked") ||
-          errorMessage.includes("valid api key") ||
-          errorMessage.includes("expired") ||
-          errorMessage.includes("key not valid");
+        // Retriable errors: Quota (429) or Invalid/Leaked keys (400/401/403)
+        const isRetriable =
+          status === 429 ||
+          status === 400 ||
+          status === 401 ||
+          status === 403 ||
+          msg.includes("quota") ||
+          msg.includes("leaked") ||
+          msg.includes("expired") ||
+          msg.includes("invalid") ||
+          msg.includes("not valid");
 
-        if (isQuotaError || isKeyError) {
+        if (isRetriable) {
           console.warn(
-            `⚠️ [Google Rotation] Key ${keyIndex + 1}/${apiKeys.length} failed (${isQuotaError ? "Quota" : "Validity"}). trying next...`,
+            `⚠️  [Google] Rotating to next key (${isRetriable ? "retriable error" : ""})`,
           );
-          continue;
+          continue; // Try next key
         }
 
-        // Normal errors (like safety filters or invalid prompts) should not retry keys
+        // Non-retriable error (e.g., safety filter, bad prompt)
+        console.error(`🚫 [Google] Non-retriable error, stopping rotation.`);
         throw error;
       }
     }
 
-    throw lastError || new Error("All Google API keys exhausted.");
+    console.error(`💥 [Google] All ${apiKeys.length} keys exhausted!`);
+    throw lastError || new Error("All Google API keys failed");
   };
 
-  const createModel = (modelId: string): LanguageModel => {
-    // Create a base model to inherit all internal configurations and properties
-    const dummyProvider = createGoogleGenerativeAI({
-      apiKey: apiKeys[0] || "dummy",
-    });
-    const baseModel = dummyProvider(modelId);
+  /**
+   * Create a proxy model that delegates to fresh providers with rotation
+   */
+  const createRotatingModel = (modelId: string): LanguageModel => {
+    // Get a template model to extract static properties
+    const template = createGoogleGenerativeAI({ apiKey: "TEMP" })(modelId);
 
-    // In AI SDK 5, we must return an object that adheres to the LanguageModelV3 interface (specificationVersion: 'v2')
-    // The easiest way is to spread the base model and override doGenerate/doStream.
+    // Create a fully custom model that uses rotation for every request
     return {
-      ...baseModel,
       specificationVersion: "v2",
-      doGenerate: async (options: any) => {
-        return executeWithRetry(modelId, (actualModel) => {
+      modelId: modelId,
+      // @ts-expect-error - Internal AI SDK properties
+      provider: template.provider || "google",
+      // @ts-expect-error - Internal AI SDK config
+      config: template.config,
+      // @ts-expect-error - generateId might exist
+      generateId: template.generateId,
+      defaultObjectGenerationMode: "json",
+
+      doGenerate: (options: any) => {
+        return executeWithKeyRotation(modelId, (model) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (actualModel as any).doGenerate(options);
+          return (model as any).doGenerate(options);
         });
       },
-      doStream: async (options: any) => {
-        return executeWithRetry(modelId, (actualModel) => {
+
+      doStream: (options: any) => {
+        return executeWithKeyRotation(modelId, (model) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return (actualModel as any).doStream(options);
+          return (model as any).doStream(options);
         });
       },
     } as unknown as LanguageModel;
   };
 
-  // Top 20 Gemini Models
+  // Model IDs
   const modelIds = [
     "gemini-2.0-flash",
     "gemini-2.0-flash-001",
@@ -137,7 +145,7 @@ export function createGoogleModels() {
 
   const models: Record<string, LanguageModel> = {};
   modelIds.forEach((id) => {
-    models[id] = createModel(id);
+    models[id] = createRotatingModel(id);
   });
 
   return models;
