@@ -68,7 +68,21 @@ export function createGoogleModels() {
           continue; // Try next key
         }
 
-        // If it's not a quota error (e.g. invalid request), throw immediately
+        // If it's not a quota error, check for key validity errors
+        const errorMessage = error?.message?.toLowerCase() || "";
+        const isKeyError =
+          errorMessage.includes("leaked") ||
+          errorMessage.includes("valid api key") ||
+          errorMessage.includes("expired");
+
+        if (isKeyError) {
+          console.error(
+            `🚫 Google Key ${key.substring(0, 10)}... is INVALID/LEAKED. Skipping...`,
+          );
+          continue; // Try next key
+        }
+
+        // If it's not a quota or key error, throw immediately
         throw error;
       }
     }
