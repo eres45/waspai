@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "ui/dialog";
 import { BackgroundPaths } from "ui/background-paths";
-import Image from "next/image";
 
 interface Character {
   id?: string;
@@ -358,15 +357,11 @@ export default function EditCharacter({
                     }}
                   >
                     {character.icon?.type === "image" ? (
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={character.icon.value}
-                          alt="Character"
-                          fill
-                          className="object-cover rounded-lg"
-                          unoptimized
-                        />
-                      </div>
+                      <img
+                        src={character.icon.value}
+                        alt="Character"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
                     ) : (
                       character.icon?.value
                     )}
@@ -440,15 +435,11 @@ export default function EditCharacter({
                     }}
                   >
                     {character.icon?.type === "image" ? (
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={character.icon.value}
-                          alt="Character"
-                          fill
-                          className="object-cover rounded-lg"
-                          unoptimized
-                        />
-                      </div>
+                      <img
+                        src={character.icon.value}
+                        alt="Character"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
                     ) : (
                       character.icon?.value
                     )}

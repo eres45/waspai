@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -138,12 +137,10 @@ export function CharactersList({
           }}
         >
           {character.icon?.type === "image" ? (
-            <Image
+            <img
               src={character.icon.value}
               alt={character.name}
-              className="object-cover rounded-lg"
-              fill
-              unoptimized
+              className="w-full h-full object-cover rounded-lg"
             />
           ) : (
             character.icon?.value || "🎭"

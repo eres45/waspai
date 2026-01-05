@@ -5,7 +5,6 @@ import equal from "lib/equal";
 import { Download } from "lucide-react";
 import { memo, useMemo, useCallback } from "react";
 import { TextShimmer } from "ui/text-shimmer";
-import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "ui/button";
 
@@ -82,12 +81,10 @@ function PureImageEnhancerToolInvocation({
             Original
           </div>
           <div className="relative w-full bg-muted rounded-lg overflow-hidden border border-border/40">
-            <Image
+            <img
               src={result.originalImage.url}
               alt="Original image"
-              className="object-cover"
-              fill
-              unoptimized
+              className="w-full h-auto object-cover"
             />
           </div>
           <Button
@@ -109,12 +106,10 @@ function PureImageEnhancerToolInvocation({
             Enhanced
           </div>
           <div className="relative w-full bg-muted rounded-lg overflow-hidden border border-border/40">
-            <Image
+            <img
               src={result.enhancedImage.url}
               alt="Enhanced image"
-              className="object-cover"
-              fill
-              unoptimized
+              className="w-full h-auto object-cover"
             />
           </div>
           <Button

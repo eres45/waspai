@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useRef } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { Button } from "ui/button";
@@ -162,12 +161,10 @@ export function FileUploadButton({
               {/* Preview */}
               <div className="relative w-full bg-muted rounded-lg overflow-hidden">
                 {isImage && (
-                  <Image
+                  <img
                     src={preview.url}
                     alt={preview.name}
-                    className="object-contain"
-                    fill
-                    unoptimized
+                    className="w-full h-auto max-h-64 object-contain"
                   />
                 )}
                 {isVideo && (

@@ -5,7 +5,6 @@ import equal from "lib/equal";
 import { ImagesIcon, Download } from "lucide-react";
 import { memo, useMemo, useCallback } from "react";
 import { TextShimmer } from "ui/text-shimmer";
-import Image from "next/image";
 import { toast } from "sonner";
 
 interface ImageEditorToolInvocationProps {
@@ -99,12 +98,10 @@ function PureImageEditorToolInvocation({
       {image?.url && (
         <div className="flex flex-col gap-2 w-full">
           <div className="relative group w-full rounded-lg overflow-hidden border border-border bg-card">
-            <Image
+            <img
               src={image.url}
               alt="Edited image"
-              className="object-contain"
-              fill
-              unoptimized
+              className="w-full h-auto object-contain"
             />
             {/* Download button - top right corner */}
             <button

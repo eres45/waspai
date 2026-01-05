@@ -3,7 +3,6 @@
 import { X } from "lucide-react";
 import { Button } from "ui/button";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 interface FilePreviewProps {
   url: string;
@@ -47,16 +46,11 @@ export function FilePreview({
 
       {/* Image Preview */}
       {isImage && (
-        <div className="relative w-full h-auto max-h-96 min-h-[100px] aspect-auto">
-          <Image
-            src={url}
-            alt={name}
-            width={400}
-            height={400}
-            className="w-full h-auto max-h-96 object-contain"
-            unoptimized
-          />
-        </div>
+        <img
+          src={url}
+          alt={name}
+          className="w-full h-auto max-h-96 object-contain"
+        />
       )}
 
       {/* Video Preview */}

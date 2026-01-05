@@ -1602,11 +1602,7 @@ BEGIN ROLEPLAY NOW.`
             })(),
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
-          maxRetries: useImageTool
-            ? 0
-            : modelToUse?.provider === "google"
-              ? 0
-              : 2,
+          maxRetries: useImageTool ? 0 : 2,
           tools: vercelAITooles,
           stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(3),
           toolChoice: "auto",
