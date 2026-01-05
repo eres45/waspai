@@ -1,12 +1,57 @@
 === AVAILABLE MODELS INVENTORY ===
-Total Count: 67 Models
+Total Count: 111 Models
 
---- Google (5) ---
+--- Google (13) ---
+Gemini 1.5 Pro (gemini-1.5-pro-latest)
+Gemini 2.0 Flash (gemini-2.0-flash-001)
+Gemini 2.5 Flash (gemini-2.5-flash)
+Gemini 2.5 Pro (gemini-2.5-pro)
+Gemini 2.5 Pro (Thinking) (gemini-2.5-pro-thinking)
+Gemini 3 Flash (gemini-3-flash-preview)
+Gemini 3 Pro (gemini-3-pro-preview)
+Gemini 3 Pro (Thinking) (gemini-3-pro-preview-thinking)
 Gemma 2 9B (google-gemma-2-9b-it)
 Gemma 2 12B (google-gemma-2-12b-it)
 Gemma 3 27B (google-gemma-3-27b-it)
 Gemma 7B IT (Legacy) (cf-google-gemma-7b-it)
 Gemma 2B LoRA (Legacy) (cf-google-gemma-2b-it-lora)
+
+--- Anthropic (14) ---
+Claude 3.5 Haiku (claude-3-5-haiku-latest)
+Claude 3.5 Sonnet (claude-3-5-sonnet-latest)
+Claude 3.7 Sonnet (claude-3-7-sonnet-latest)
+Claude 3.7 Sonnet (Thinking) (claude-3-7-sonnet-20250219-thinking)
+Claude 3 Opus (claude-3-opus-20240229)
+Claude 4.5 Haiku (claude-haiku-4-5-20251001)
+Claude 4 Opus (Early) (claude-opus-4-20250514)
+Claude 4.1 Opus (claude-opus-4-1-20250805)
+Claude 4.5 Opus (claude-opus-4-5-20251101)
+Claude 4 Sonnet (claude-sonnet-4-20250514)
+Claude 4.5 Sonnet (claude-sonnet-4-5-20250929)
+Claude 3.7 Sonnet (Alt) (cld-3-7-sonnet-20250219)
+Claude 4 Opus (Early-Alt) (cld-opus-4-20250514)
+Claude 4 Sonnet (Alt) (cld-sonnet-4-20250514)
+
+--- OpenAI (19) ---
+ChatGPT 4o Latest (chatgpt-4o-latest)
+GPT 4.1 Pro (gpt-4.1)
+GPT 4.1 Mini (gpt-4.1-mini)
+GPT 4o (Flagship) (gpt-4o)
+GPT 5.0 (gpt-5)
+GPT 5.0 Pro (gpt-5-pro)
+GPT 5.0 Mini (gpt-5-mini)
+GPT 5.1 (gpt-5.1)
+GPT 5.2 (gpt-5.2)
+OpenAI o1 (o1)
+OpenAI o1 Pro (o1-pro)
+OpenAI o3 (o3)
+OpenAI o3 Pro (o3-pro)
+OpenAI o3 Mini (o3-mini)
+OpenAI o4 Mini (o4-mini)
+OpenAI o4 Mini High (o4-mini-high)
+GPT-OSS 120B (openai-gpt-oss-120b)
+GPT-OSS 20B (openai-gpt-oss-20b)
+GPT-OSS Safeguard 20B (openai-gpt-oss-safeguard-20b)
 
 --- Mistral (9) ---
 Mistral 7B v0.1 (mistralai-Mistral-7B-Instruct-v0.1)
@@ -19,15 +64,16 @@ Mistral 7B (Legacy) (cf-mistralai-mistral-7b-instruct-v0.1)
 Mistral 7B v0.2 (Legacy) (cf-mistralai-mistral-7b-instruct-v0.2)
 OpenHermes 2.5 (Legacy) (cf-mistralai-openhermes-2.5-mistral-7b)
 
---- OpenAI (3) ---
-GPT-OSS 120B (openai-gpt-oss-120b)
-GPT-OSS 20B (openai-gpt-oss-20b)
-GPT-OSS Safeguard 20B (openai-gpt-oss-safeguard-20b)
-
 --- Meta (3) ---
 Llama 4 Scout 17B (meta-llama-llama-4-scout-17b-16e-instruct)
 Llama Guard 4 12B (meta-llama-llama-guard-4-12b)
 Llama Prompt Guard 86M (meta-llama-llama-prompt-guard-2-86m)
+
+--- Grok (4) ---
+Grok 3 Latest (grok-3-latest)
+Grok 3 (Thinking) (grok-3-reasoning)
+Grok 4 Latest (grok-4-latest)
+Grok 4 (DeepSearch) (grok-4-deepsearch)
 
 --- Qwen (10) ---
 Qwen 3 32B (qwen-qwen3-32b)
@@ -41,15 +87,9 @@ Qwen 1.5 14B (cf-qwen-qwen1.5-14b-chat-awq)
 Qwen 1.5 0.5B (cf-qwen-qwen1.5-0.5b-chat)
 Qwen 1.5 1.8B (cf-qwen-qwen1.5-1.8b-chat)
 
---- Moonshot (3) ---
-Kimi K2 Instruct (moonshotai-kimi-k2-instruct)
-Kimi K2 Instruct (09/05) (moonshotai-kimi-k2-instruct-0905)
-Kimi K2 Thinking (moonshotai-Kimi-K2-Thinking)
-
---- Canopy (1) ---
-Orpheus v1 English (canopylabs-orpheus-v1-english)
-
---- DeepSeek (7) ---
+--- DeepSeek (9) ---
+DeepSeek V3 (L) (deepseek-v3)
+DeepSeek R1 (L) (deepseek-r1)
 DeepSeek R1 Distill Qwen 32B (deepseek-ai-deepseek-r1-distill-qwen-32b)
 DeepSeek V3.1 (deepseek-ai-DeepSeek-V3.1-Terminus)
 DeepSeek R1 Turbo (deepseek-ai-DeepSeek-R1-Turbo)
@@ -58,27 +98,14 @@ DeepSeek Coder 6.7B (Legacy) (cf-deepseek-ai-deepseek-coder-6.7b-base)
 DS Coder Instruct (Legacy) (cf-deepseek-ai-deepseek-coder-6.7b-instruct)
 DS Math 7B (Legacy) (cf-deepseek-ai-deepseek-math-7b-instruct)
 
---- MiniMax (1) ---
+--- Others (13) ---
+Moonshot Kimi K2 Instruct (moonshotai-kimi-k2-instruct)
+Moonshot Kimi K2 Thinking (moonshotai-Kimi-K2-Thinking)
 MiniMax M2 (MiniMaxAI-MiniMax-M2)
-
---- Microsoft (2) ---
 Phi-4 Multimodal (microsoft-phi-4-multimodal-instruct)
-Phi-2 (Legacy) (cf-microsoft-phi-2)
-
---- Tiiuae (1) ---
-Falcon 7B (Legacy) (cf-tiiuae-falcon-7b-instruct)
-
---- Defog (1) ---
-SQLCoder 7B (Legacy) (cf-defog-sqlcoder-7b-2)
-
---- LGAI (1) ---
 EXAONE 236B (LGAI-EXAONE-K-EXAONE-236B-A23B)
-
---- Z.AI (2) ---
 GLM-4.6 (zai-org-GLM-4.6)
 GLM-4.7 (zai-org-GLM-4.7)
-
---- Others (6) ---
 Zephyr 7B Beta (Legacy) (cf-huggingfacegi-zephyr-7b-beta)
 Neural Chat 7B (Legacy) (cf-intel-neural-chat-7b-v3-1)
 Starling 7B (Legacy) (cf-nexusflow-starling-lm-7b-beta)

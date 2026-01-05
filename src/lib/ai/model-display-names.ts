@@ -1,9 +1,11 @@
 // Provider display order
 export const PROVIDER_ORDER = [
   "google", // Google
+  "anthropic", // Anthropic
   "mistral", // Mistral
   "openai", // OpenAI Pro (Groq)
   "meta", // Meta (Groq)
+  "grok", // Grok
   "qwen", // Qwen (Groq)
   "moonshot", // Moonshot (Groq)
   "canopy", // Canopy (Groq)
@@ -19,9 +21,11 @@ export const PROVIDER_ORDER = [
 // Map backend provider names to display names
 export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   google: "Google",
+  anthropic: "Anthropic",
   mistral: "Mistral",
   openai: "OpenAI",
   meta: "Meta",
+  grok: "Grok",
   qwen: "Qwen",
   moonshot: "Moonshot",
   canopy: "Canopy",
@@ -51,6 +55,15 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen-qwen3-32b": "Qwen 3 32B",
   "google-gemma-2-9b-it": "Gemma 2 9B",
   "google-gemma-2-12b-it": "Gemma 2 12B",
+  "google-gemma-3-27b-it": "Gemma 3 27B",
+  "gemini-1.5-pro-latest": "Gemini 1.5 Pro",
+  "gemini-2.0-flash-001": "Gemini 2.0 Flash",
+  "gemini-2.5-flash": "Gemini 2.5 Flash",
+  "gemini-2.5-pro": "Gemini 2.5 Pro",
+  "gemini-2.5-pro-thinking": "Gemini 2.5 Pro (Thinking)",
+  "gemini-3-flash-preview": "Gemini 3 Flash",
+  "gemini-3-pro-preview": "Gemini 3 Pro",
+  "gemini-3-pro-preview-thinking": "Gemini 3 Pro (Thinking)",
   "cf-google-gemma-7b-it": "Gemma 7B IT (Legacy)",
   "cf-google-gemma-2b-it-lora": "Gemma 2B LoRA (Legacy)",
   "mistralai-Mistral-7B-Instruct-v0.1": "Mistral 7B v0.1",
@@ -85,7 +98,6 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-tinyllama-tinyllama-1.1b-chat-v1.0": "TinyLlama 1.1B (Legacy)",
   // TypeGPT Models
   "deepseek-ai-deepseek-r1-distill-qwen-32b": "DeepSeek R1 Distill Qwen 32B",
-  "google-gemma-3-27b-it": "Gemma 3 27B",
   "LGAI-EXAONE-K-EXAONE-236B-A23B": "EXAONE 236B",
   "microsoft-phi-4-multimodal-instruct": "Phi-4 Multimodal",
   "mistralai-Devstral-Small-2505": "Devstral Small 24B",
@@ -107,6 +119,46 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-llama-2-13b": "Llama 2 13B (Legacy)",
   "cf-llama-guard": "Llama Guard (Legacy)",
   "cf-llama-3-8b-awq": "Llama 3 8B AWQ (Legacy)",
+  // Anthropic
+  "claude-3-5-haiku-latest": "Claude 3.5 Haiku",
+  "claude-3-5-sonnet-latest": "Claude 3.5 Sonnet",
+  "claude-3-7-sonnet-latest": "Claude 3.7 Sonnet",
+  "claude-3-7-sonnet-20250219-thinking": "Claude 3.7 Sonnet (Thinking)",
+  "claude-3-opus-20240229": "Claude 3 Opus",
+  "claude-haiku-4-5-20251001": "Claude 4.5 Haiku",
+  "claude-opus-4-20250514": "Claude 4 Opus (Early)",
+  "claude-opus-4-1-20250805": "Claude 4.1 Opus",
+  "claude-opus-4-5-20251101": "Claude 4.5 Opus",
+  "claude-sonnet-4-20250514": "Claude 4 Sonnet",
+  "claude-sonnet-4-5-20250929": "Claude 4.5 Sonnet",
+  "cld-3-7-sonnet-20250219": "Claude 3.7 Sonnet (Alt)",
+  "cld-opus-4-20250514": "Claude 4 Opus (Early-Alt)",
+  "cld-sonnet-4-20250514": "Claude 4 Sonnet (Alt)",
+  // OpenAI Latest
+  "chatgpt-4o-latest": "ChatGPT 4o Latest",
+  "gpt-4.1": "GPT 4.1 Pro",
+  "gpt-4.1-mini": "GPT 4.1 Mini",
+  "gpt-4o": "GPT 4o (Flagship)",
+  "gpt-5": "GPT 5.0",
+  "gpt-5-pro": "GPT 5.0 Pro",
+  "gpt-5-mini": "GPT 5.0 Mini",
+  "gpt-5.1": "GPT 5.1",
+  "gpt-5.2": "GPT 5.2",
+  o1: "OpenAI o1",
+  "o1-pro": "OpenAI o1 Pro",
+  o3: "OpenAI o3",
+  "o3-pro": "OpenAI o3 Pro",
+  "o3-mini": "OpenAI o3 Mini",
+  "o4-mini": "OpenAI o4 Mini",
+  "o4-mini-high": "OpenAI o4 Mini High",
+  // Grok
+  "grok-3-latest": "Grok 3 Latest",
+  "grok-3-reasoning": "Grok 3 (Thinking)",
+  "grok-4-latest": "Grok 4 Latest",
+  "grok-4-deepsearch": "Grok 4 (DeepSearch)",
+  // DeepSeek Latest
+  "deepseek-v3": "DeepSeek V3 (L)",
+  "deepseek-r1": "DeepSeek R1 (L)",
 };
 
 // Create reverse mapping from display names to backend names
