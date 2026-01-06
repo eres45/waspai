@@ -448,4 +448,24 @@ export type MusicGenerationEntity = typeof MusicGenerationTable.$inferSelect;
 export type ArchiveEntity = typeof ArchiveTable.$inferSelect;
 export type ArchiveItemEntity = typeof ArchiveItemTable.$inferSelect;
 export type BookmarkEntity = typeof BookmarkTable.$inferSelect;
-export type FileUploadEntity = typeof FileUploadTable.$inferSelect;
+
+export const UserMemoryTable = pgTable(
+  "user_memory",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    tags: json("tags").$type<string[]>().default([]),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("user_memory_user_id_idx").on(table.userId)],
+);
+
+export type UserMemoryEntity = typeof UserMemoryTable.$inferSelect;

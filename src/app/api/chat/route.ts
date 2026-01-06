@@ -18,7 +18,11 @@ import { createReverseModelMapping } from "lib/ai/model-display-names";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
-import { agentRepository, chatRepository } from "lib/db/repository";
+import {
+  agentRepository,
+  chatRepository,
+  memoryRepository,
+} from "lib/db/repository";
 import globalLogger from "logger";
 import {
   buildMcpServerCustomizationsSystemPrompt,
@@ -76,6 +80,7 @@ import { chatExportTool } from "lib/ai/tools/chat-export";
 import { webSearchTool } from "lib/ai/tools/web-search";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
+import { saveMemoryTool, searchMemoriesTool } from "lib/ai/tools/memory-tools";
 import { serverFileStorage } from "lib/file-storage";
 import {
   truncateTextToLimit,
@@ -1323,7 +1328,24 @@ BEGIN ROLEPLAY NOW.`
           logger.info(`Using character prompt for: ${characterContext?.name}`);
         }
 
+        // Load User Memories
+        let userMemoriesPrompt = "";
+        try {
+          const memories = await memoryRepository.list(session.user.id, 20);
+          if (memories.length > 0) {
+            userMemoriesPrompt = `\n\n[User Long-Term Memory]\nThe following facts are known about the user from previous interactions:\n${memories
+              .map((m) => `- ${m.content} [${m.tags?.join(", ")}]`)
+              .join(
+                "\n",
+              )}\n\nUse this information to personalize your responses.`;
+          }
+        } catch (error) {
+          logger.error("Failed to load user memories", error);
+        }
+
         const systemPrompt = mergeSystemPrompt(
+          userMemoriesPrompt, // Inject memories high priority
+
           // All specialized tools should be highest priority to override character/roleplay limits
           isEditImageRequest && editImagePrompt,
           isRemoveBgRequest && removeBgPrompt,
@@ -1441,6 +1463,9 @@ BEGIN ROLEPLAY NOW.`
           modelToUse?.model === "gemini-search"
             ? { "web-search": webSearchTool }
             : {}),
+          // ALWAYS include memory tools for "strong memory"
+          save_memory: saveMemoryTool,
+          search_memories: searchMemoriesTool,
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
