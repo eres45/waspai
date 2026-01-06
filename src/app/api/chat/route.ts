@@ -1395,6 +1395,12 @@ BEGIN ROLEPLAY NOW.`
           3. SILENT OPERATION: Do not ask for permission. Do not announce "I am saving this." Just use the tool in the background.
           4. RETRIEVAL: If the user asks about themselves, use 'search-memories'.`,
 
+          // Tool Calling Format Reinforcement (fixes some models leaking XML)
+          `[TOOL USE STANDARD]
+           1. Use the standard OpenAI tool calling format (JSON in tool_calls field).
+           2. DO NOT output XML tag <invoke> or <tool_code> or <minimax:tool_call> in your text response.
+           3. If you want to call a tool, generate the tool call object, do not write code to call it.`,
+
           // Character prompt
           characterContext ? characterPrompt : undefined,
           buildUserSystemPrompt(
