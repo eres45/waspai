@@ -1378,6 +1378,7 @@ BEGIN ROLEPLAY NOW.`
              \`\`\`mermaid
              graph TD; A-->B;
              \`\`\`
+             IMPORTANT: DO NOT use the 'html-preview' tool for Mermaid diagrams. Just output the markdown block directly.
           2. CHARTS (Pie, Bar, Line): You have specific tools ('create-pie-chart', 'create-bar-chart', 'create-line-chart'). Use them for data visualization.
           3. TABLES: Use 'create-table' for structured data.`,
 
