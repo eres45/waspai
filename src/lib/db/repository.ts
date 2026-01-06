@@ -13,7 +13,7 @@ import { restChatExportRepository } from "./pg/repositories/chat-export-reposito
 import { characterRepository as restCharacterRepository } from "./pg/repositories/character-repository.rest";
 import { restMusicRepository } from "./pg/repositories/music-repository.rest";
 import { telegramUploadRepositoryRest } from "./pg/repositories/telegram-upload-repository.rest";
-import { memoryRepository as pgMemoryRepository } from "./pg/repositories/memory-repository.pg";
+import { memoryRepository as restMemoryRepository } from "./pg/repositories/memory-repository.rest";
 
 export const chatRepository = restChatRepository;
 // Use REST API for user operations to avoid direct PostgreSQL connection issues on Vercel
@@ -33,4 +33,4 @@ export const chatExportRepository = restChatExportRepository;
 export const characterRepository = restCharacterRepository;
 export const musicRepository = restMusicRepository;
 export const telegramUploadRepository = telegramUploadRepositoryRest;
-export const memoryRepository = pgMemoryRepository;
+export const memoryRepository = restMemoryRepository;
