@@ -396,14 +396,60 @@ export default function PromptInput({
     [addMention],
   );
 
-  const submit = () => {
+  const submit = async () => {
     if (isLoading) return;
     if (uploadedFiles.some((file) => file.isUploading)) {
       toast.error("Please wait for files to finish uploading before sending.");
       return;
     }
-    const userMessage = input?.trim() || "";
+    let userMessage = input?.trim() || "";
     if (userMessage.length === 0) return;
+
+    // Auto-fetch YouTube transcript if URL detected (client-side, bypasses Vercel IP blocking)
+    if (
+      userMessage.match(
+        /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      )
+    ) {
+      try {
+        // Import utilities dynamically to avoid SSR issues
+        const { extractYouTubeUrls, fetchTranscriptFromUrl } = await import(
+          "@/lib/youtube-client"
+        );
+
+        const youtubeUrls = extractYouTubeUrls(userMessage);
+        if (youtubeUrls.length > 0) {
+          toast.loading("Fetching YouTube transcript...", {
+            id: "youtube-fetch",
+          });
+
+          try {
+            // Fetch only the first video's transcript
+            const result = await fetchTranscriptFromUrl(youtubeUrls[0]);
+
+            // Inject transcript into message
+            const transcriptHeader = `\n\n[YouTube Transcript${result.title ? ` - ${result.title}` : ""}]:\n`;
+            const transcriptText = result.transcript.slice(0, 15000); // Limit to reasonable size
+            userMessage = userMessage + transcriptHeader + transcriptText;
+
+            toast.success("✓ Transcript fetched", { id: "youtube-fetch" });
+          } catch (error: any) {
+            console.error("[YouTube Auto-Fetch] Error:", error);
+            toast.error(
+              error.message?.includes("No captions") ||
+                error.message?.includes("No English")
+                ? "Video doesn't have English captions"
+                : "Couldn't fetch transcript (continuing without it)",
+              { id: "youtube-fetch" },
+            );
+            // Continue sending message even if transcript fetch fails
+          }
+        }
+      } catch (importError) {
+        console.error("[YouTube Auto-Fetch] Import error:", importError);
+        // Continue without YouTube enhancement
+      }
+    }
 
     setInput("");
     const attachmentParts = uploadedFiles.reduce<
