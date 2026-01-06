@@ -1,6 +1,9 @@
 import { tool as createTool } from "ai";
 import { z } from "zod";
-import { YoutubeTranscript } from "youtube-transcript";
+// Deep import to avoid CLI side-effects
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { YouTubeTranscriptApi } from "@playzone/youtube-transcript/dist/api/index.js";
 
 export const youtubeTranscriptTool = createTool({
   name: "get-youtube-transcript",
@@ -11,35 +14,77 @@ export const youtubeTranscriptTool = createTool({
   }),
   execute: async ({ url }) => {
     try {
-      // 1. Fetch transcript
-      const transcriptItems = await YoutubeTranscript.fetchTranscript(url);
+      // 1. URL Normalization
+      let videoId = "";
 
-      if (!transcriptItems || transcriptItems.length === 0) {
-        return "No transcript found for this video. Captions might be disabled.";
+      if (url.includes("youtu.be/")) {
+        videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      } else if (url.includes("youtube.com/shorts/")) {
+        videoId = url.split("youtube.com/shorts/")[1]?.split("?")[0];
+      } else if (url.includes("v=")) {
+        const urlParams = new URL(url).searchParams;
+        videoId = urlParams.get("v") || "";
+      } else {
+        // If it looks like a ID, use it
+        if (url.length === 11) videoId = url;
+        else return "Invalid YouTube URL format.";
       }
 
-      // 2. Enforce 30-minute limit (Approximate)
-      // We check the 'offset' (start time in seconds) of the last item.
-      // 30 mins = 1800 seconds.
-      const lastItem = transcriptItems[transcriptItems.length - 1];
-      const videoDurationSeconds = lastItem.offset + lastItem.duration;
+      // console.log(`[YouTube Tool] Fetching transcript for: ${videoId}`);
 
-      if (videoDurationSeconds > 1800) {
+      // 2. Fetch transcript using @playzone/youtube-transcript
+      const api = new YouTubeTranscriptApi();
+      const transcriptList = await api.list(videoId);
+
+      // Try to find English or English (Auto)
+      // The library's findTranscript helper is robust
+      const transcript = transcriptList.findTranscript(["en", "en-US"]);
+
+      if (!transcript) {
+        return "No English transcript found for this video.";
+      }
+
+      const result = await transcript.fetch();
+
+      // result is { snippets: [ { text, start, duration } ], ... }
+      if (!result.snippets || result.snippets.length === 0) {
+        return "Transcript was found but contained no text.";
+      }
+
+      // 3. Enforce 30-minute limit
+      // Check the start time + duration of the last snippet
+      const lastSnippet = result.snippets[result.snippets.length - 1];
+      const durationSeconds = lastSnippet.start + lastSnippet.duration;
+
+      if (durationSeconds > 1800) {
         return "This video is longer than 30 minutes. The free plan only supports videos up to 30 minutes. Please upgrade to Premium for unlimited access.";
       }
 
-      // 3. Combine text
-      const fullText = transcriptItems.map((item) => item.text).join(" ");
+      // 4. Combine text
+      const fullText = result.snippets.map((s: any) => s.text).join(" ");
 
-      // Limit text length just in case (e.g. fast talkers) to avoid context overflow
-      // 30 mins of speaking is roughly 4000-6000 words.
-      return fullText.slice(0, 25000); // ~5000-6000 words safe limit
-    } catch (error: any) {
+      // Decode HTML entities (the library might leave them)
+      // We can use a simple replace for common ones or just return as is (LLMs handle it fine)
+      const cleanText = fullText
+        .replace(/&amp;#39;/g, "'")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"');
+
+      return cleanText.slice(0, 25000);
+    } catch (error: unknown) {
+      // eslint-disable-next-line no-console
       console.error("YouTube Transcript Error:", error);
-      if (error.toString().includes("Transcript is disabled")) {
+
+      const err = error as Error;
+      if (err.message && err.message.includes("is disabled")) {
         return "Transcripts are disabled for this video.";
       }
-      return `Failed to fetch transcript: ${error.message || "Unknown error"}`;
+      if (err.message && err.message.includes("Could not retrieve")) {
+        // Generic library error
+        return "Could not retrieve transcript. The video might not have captions or is age-restricted.";
+      }
+
+      return `Failed to fetch transcript: ${err.message || "Unknown error"}`;
     }
   },
 });
