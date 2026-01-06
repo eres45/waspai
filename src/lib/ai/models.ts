@@ -178,6 +178,10 @@ const staticModels = {
     "zai-org-GLM-4.6": typegptModels["zai-org-GLM-4.6"], // New
     "zai-org-GLM-4.7": typegptModels["zai-org-GLM-4.7"], // New
   },
+  allenai: {
+    "allenai-OLMo-2-0325-32B-Instruct":
+      typegptModels["allenai-OLMo-2-0325-32B-Instruct"], // New
+  },
   others: {
     "cf-huggingfacegi-zephyr-7b-beta":
       llmChatModels["cf-huggingfacegi-zephyr-7b-beta"],

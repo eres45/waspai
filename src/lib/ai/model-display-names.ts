@@ -14,6 +14,7 @@ export const PROVIDER_ORDER = [
   "microsoft", // Microsoft
   "tiiuae", // Tiiuae
   "defog", // Defog
+  "allenai", // AllenAI
   "others", // Others
   "llm", // LLM Section
 ];
@@ -34,6 +35,7 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   microsoft: "Microsoft",
   tiiuae: "Tiiuae",
   defog: "Defog",
+  allenai: "AllenAI",
   others: "Others",
   llm: "LLM (Llama)",
 };
@@ -108,6 +110,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen-qwen3-next-80b-a3b-thinking": "Qwen 3 Next 80B Thinking",
   "zai-org-GLM-4.6": "GLM-4.6",
   "zai-org-GLM-4.7": "GLM-4.7",
+  "allenai-OLMo-2-0325-32B-Instruct": "OLMo 2 32B Instruct",
   "Llama-3.3-70B-DeepInfra": "Llama 3.3 70B",
   "Llama-3.1-8B-DeepInfra": "Llama 3.1 8B",
   "Llama-3.2-3B-DeepInfra": "Llama 3.2 3B",
