@@ -81,7 +81,6 @@ import { webSearchTool } from "lib/ai/tools/web-search";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { saveMemoryTool, searchMemoriesTool } from "lib/ai/tools/memory-tools";
-import { youtubeTranscriptTool } from "lib/ai/tools/web/youtube-transcript";
 import { serverFileStorage } from "lib/file-storage";
 import {
   truncateTextToLimit,
@@ -1509,8 +1508,7 @@ BEGIN ROLEPLAY NOW.`
           // ALWAYS include memory tools for "strong memory"
           save_memory: saveMemoryTool,
           search_memories: searchMemoriesTool,
-          // ALWAYS include YouTube transcript tool
-          "get-youtube-transcript": youtubeTranscriptTool,
+          // Note: YouTube transcript now handled client-side (bypasses IP blocking)
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
