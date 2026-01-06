@@ -1371,6 +1371,14 @@ BEGIN ROLEPLAY NOW.`
           - Processing images: "edit-image", "remove-background", "enhance-image", "anime-conversion".
           NEVER say you cannot create these files or perform these actions. If requested, call the appropriate tool immediately.`,
 
+          // Memory Persistence Policy
+          `[MEMORY PERSISTENCE POLICY]
+          You are responsible for building a long-term understanding of the user.
+          1. ACTIVE LISTENING: Constantly monitor for facts the user shares about themselves (e.g., profession, name, hobbies, specific technical preferences, location).
+          2. AUTO-SAVE: When you identify such a fact, YOU MUST use the 'save-memory' tool to store it immediately.
+          3. SILENT OPERATION: Do not ask for permission. Do not announce "I am saving this." Just use the tool in the background.
+          4. RETRIEVAL: If the user asks about themselves, use 'search-memories'.`,
+
           // Character prompt
           characterContext ? characterPrompt : undefined,
           buildUserSystemPrompt(
