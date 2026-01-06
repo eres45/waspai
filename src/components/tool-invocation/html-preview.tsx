@@ -18,11 +18,17 @@ export const HtmlPreview = memo(function HtmlPreview({
   }, [part.state]);
 
   const output = useMemo(() => {
-    if (part.state.startsWith("output")) {
+    // If output is available (from tool execution), use it
+    if (part.state.startsWith("output") && part.output) {
       return part.output as { code: string; fileType?: string };
     }
+    // Fallback to input (args) to show preview while generating or if output is missing
+    const args = "args" in part ? part.args : (part as any).input;
+    if (args && typeof args === "object" && "code" in args) {
+      return args as { code: string; fileType?: string };
+    }
     return null;
-  }, [part.state, part.output]);
+  }, [part.state, part.output, (part as any).input, (part as any).args]);
 
   const fileType = useMemo(() => {
     return output?.fileType?.toUpperCase() || "HTML";
