@@ -603,6 +603,18 @@ export async function POST(request: Request) {
             }),
           )
           .orElse({});
+
+        logger.info(
+          `[TOOLS] APP_DEFAULT_TOOLS count: ${Object.keys(APP_DEFAULT_TOOLS).length}`,
+        );
+        logger.info(
+          `[TOOLS] APP_DEFAULT_TOOLS keys: ${Object.keys(APP_DEFAULT_TOOLS).join(", ")}`,
+        );
+        logger.info(
+          `[TOOLS] allowedAppDefaultToolkit: ${JSON.stringify(allowedAppDefaultToolkit)}`,
+        );
+        logger.info(`[TOOLS] isToolCallAllowed: ${isToolCallAllowed}`);
+
         const inProgressToolParts = extractInProgressToolPart(message);
         if (inProgressToolParts.length) {
           await Promise.all(
