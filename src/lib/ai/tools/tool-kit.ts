@@ -9,6 +9,7 @@ import { httpFetchTool } from "./http/fetch";
 import { jsExecutionTool } from "./code/js-run-tool";
 import { pythonExecutionTool } from "./code/python-run-tool";
 import { saveMemoryTool, searchMemoriesTool } from "./memory-tools";
+import { youtubeTranscriptTool } from "./web/youtube-transcript";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -23,6 +24,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   [AppDefaultToolkit.WebSearch]: {
     [DefaultToolName.WebSearch]: exaSearchTool,
     [DefaultToolName.WebContent]: exaContentsTool,
+    [DefaultToolName.YouTubeTranscript]: youtubeTranscriptTool,
   },
   [AppDefaultToolkit.Http]: {
     [DefaultToolName.Http]: httpFetchTool,

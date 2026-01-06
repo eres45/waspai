@@ -18,6 +18,7 @@ export enum DefaultToolName {
   PythonExecution = "python-execution",
   SaveMemory = "saveMemory",
   SearchMemories = "searchMemories",
+  YouTubeTranscript = "get-youtube-transcript",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";

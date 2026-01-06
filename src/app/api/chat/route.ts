@@ -1380,7 +1380,12 @@ BEGIN ROLEPLAY NOW.`
              \`\`\`
              IMPORTANT: DO NOT use the 'html-preview' tool for Mermaid diagrams. Just output the markdown block directly.
           2. CHARTS (Pie, Bar, Line): You have specific tools ('create-pie-chart', 'create-bar-chart', 'create-line-chart'). Use them for data visualization.
-          3. TABLES: Use 'create-table' for structured data.`,
+          3. TABLES: Use 'create-table' for structured data.
+          
+          [VIDEO ANALYSIS]
+          You can analyze YouTube videos using the "get-youtube-transcript" tool.
+          1. TRIGGER: Only call this if the user shares a YouTube URL.
+          2. LIMIT: The tool has a 30-minute video limit. If the tool returns a limit error, politely inform the user about the Premium requirement.`,
 
           // Memory Persistence Policy
           `[MEMORY PERSISTENCE POLICY]
