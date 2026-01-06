@@ -1,6 +1,6 @@
 import { eq, desc, and, ilike } from "drizzle-orm";
 import { pgDb } from "../db.pg";
-import { UserMemoryTable, UserMemoryEntity } from "../schema.pg";
+import { UserMemoryTable } from "../schema.pg";
 
 export const memoryRepository = {
   async create(userId: string, content: string, tags: string[] = []) {
