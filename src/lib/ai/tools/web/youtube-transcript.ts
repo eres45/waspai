@@ -33,6 +33,8 @@ export const youtubeTranscriptTool = createTool({
       // console.log(`[YouTube Tool] Fetching transcript for: ${videoId}`);
 
       // 2. Fetch transcript using @playzone/youtube-transcript
+      // Note: Library uses its own fetch with limited customization
+      // YouTube blocks Vercel IPs aggressively - works locally but may fail on serverless
       const api = new YouTubeTranscriptApi();
       const transcriptList = await api.list(videoId);
 
@@ -75,7 +77,24 @@ export const youtubeTranscriptTool = createTool({
       // eslint-disable-next-line no-console
       console.error("YouTube Transcript Error:", error);
 
-      const err = error as Error;
+      const err = error as any;
+
+      // Check for bot detection / IP blocking
+      if (
+        err.message?.includes("Sign in") ||
+        err.message?.includes("not a bot") ||
+        err.reason?.includes("not a bot")
+      ) {
+        return `YouTube is currently blocking transcript requests from this server due to bot detection. This is a temporary issue with YouTube's anti-scraping protection.
+
+Alternatives:
+1. Try a different video (some work, some don't depending on YouTube's current blocking)
+2. Use a video summary service like you-tldr.com and paste the summary
+3. Manually enable captions on YouTube and copy/paste the key points you'd like me to analyze
+
+I apologize for the inconvenience - this is a YouTube limitation, not an issue with the tool itself.`;
+      }
+
       if (err.message && err.message.includes("is disabled")) {
         return "Transcripts are disabled for this video.";
       }
