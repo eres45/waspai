@@ -396,136 +396,148 @@ export default function PromptInput({
     [addMention],
   );
 
+  const isSubmittingRef = useRef(false);
+
   const submit = async () => {
-    if (isLoading) return;
+    // Prevent concurrent submissions
+    if (isLoading || isSubmittingRef.current) return;
     if (uploadedFiles.some((file) => file.isUploading)) {
       toast.error("Please wait for files to finish uploading before sending.");
       return;
     }
+
     let userMessage = input?.trim() || "";
     if (userMessage.length === 0) return;
 
-    // Auto-fetch YouTube transcript if URL detected (client-side, bypasses Vercel IP blocking)
-    if (
-      userMessage.match(
-        /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-      )
-    ) {
-      try {
-        // Import utilities dynamically to avoid SSR issues
-        const { extractYouTubeUrls, fetchTranscriptFromUrl } = await import(
-          "@/lib/youtube-client"
-        );
+    // Lock to prevent concurrent submissions
+    isSubmittingRef.current = true;
 
-        const youtubeUrls = extractYouTubeUrls(userMessage);
-        if (youtubeUrls.length > 0) {
-          toast.loading("Fetching YouTube transcript...", {
-            id: "youtube-fetch",
-          });
+    try {
+      // Auto-fetch YouTube transcript if URL detected (client-side, bypasses Vercel IP blocking)
+      if (
+        userMessage.match(
+          /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+        )
+      ) {
+        try {
+          // Import utilities dynamically to avoid SSR issues
+          const { extractYouTubeUrls, fetchTranscriptFromUrl } = await import(
+            "@/lib/youtube-client"
+          );
 
-          try {
-            // Fetch only the first video's transcript
-            const result = await fetchTranscriptFromUrl(youtubeUrls[0]);
+          const youtubeUrls = extractYouTubeUrls(userMessage);
+          if (youtubeUrls.length > 0) {
+            toast.loading("Fetching YouTube transcript...", {
+              id: "youtube-fetch",
+            });
 
-            // Inject transcript into message
-            const transcriptHeader = `\n\n[YouTube Transcript${result.title ? ` - ${result.title}` : ""}]:\n`;
-            const transcriptText = result.transcript.slice(0, 15000); // Limit to reasonable size
-            userMessage = userMessage + transcriptHeader + transcriptText;
+            try {
+              // Fetch only the first video's transcript
+              const result = await fetchTranscriptFromUrl(youtubeUrls[0]);
 
-            toast.success("✓ Transcript fetched", { id: "youtube-fetch" });
-          } catch (error: any) {
-            console.error("[YouTube Auto-Fetch] Error:", error);
-            toast.error(
-              error.message?.includes("No captions") ||
-                error.message?.includes("No English")
-                ? "Video doesn't have English captions"
-                : "Couldn't fetch transcript (continuing without it)",
-              { id: "youtube-fetch" },
-            );
-            // Continue sending message even if transcript fetch fails
+              // Inject transcript into message
+              const transcriptHeader = `\n\n[YouTube Transcript${result.title ? ` - ${result.title}` : ""}]:\n`;
+              const transcriptText = result.transcript.slice(0, 15000); // Limit to reasonable size
+              userMessage = userMessage + transcriptHeader + transcriptText;
+
+              toast.success("✓ Transcript fetched", { id: "youtube-fetch" });
+            } catch (error: any) {
+              console.error("[YouTube Auto-Fetch] Error:", error);
+              toast.error(
+                error.message?.includes("No captions") ||
+                  error.message?.includes("No English")
+                  ? "Video doesn't have English captions"
+                  : "Couldn't fetch transcript (continuing without it)",
+                { id: "youtube-fetch" },
+              );
+              // Continue sending message even if transcript fetch fails
+            }
           }
+        } catch (importError) {
+          console.error("[YouTube Auto-Fetch] Import error:", importError);
+          // Continue without YouTube enhancement
         }
-      } catch (importError) {
-        console.error("[YouTube Auto-Fetch] Import error:", importError);
-        // Continue without YouTube enhancement
       }
-    }
 
-    setInput("");
-    const attachmentParts = uploadedFiles.reduce<
-      Array<FileUIPart | TextUIPart | any>
-    >((acc, file) => {
-      const isFileSupported = isFilePartSupported(
-        file.mimeType,
-        supportedFileMimeTypes,
-      );
-      const link = file.url || file.dataUrl || "";
-      if (!link) return acc;
-      if (isFileSupported) {
-        acc.push({
-          type: "file",
-          url: link,
-          mediaType: file.mimeType,
-          filename: file.name,
-        } as FileUIPart);
-      } else {
-        // Use a rich UI part for unsupported file types; will be filtered out for model input
-        acc.push({
-          type: "source-url",
-          url: link,
-          title: file.name,
-          mediaType: file.mimeType,
-        } as any);
+      setInput("");
+      const attachmentParts = uploadedFiles.reduce<
+        Array<FileUIPart | TextUIPart | any>
+      >((acc, file) => {
+        const isFileSupported = isFilePartSupported(
+          file.mimeType,
+          supportedFileMimeTypes,
+        );
+        const link = file.url || file.dataUrl || "";
+        if (!link) return acc;
+        if (isFileSupported) {
+          acc.push({
+            type: "file",
+            url: link,
+            mediaType: file.mimeType,
+            filename: file.name,
+          } as FileUIPart);
+        } else {
+          // Use a rich UI part for unsupported file types; will be filtered out for model input
+          acc.push({
+            type: "source-url",
+            url: link,
+            title: file.name,
+            mediaType: file.mimeType,
+          } as any);
+        }
+        return acc;
+      }, []);
+
+      if (attachmentParts.length) {
+        const summary = uploadedFiles
+          .map((file, index) => {
+            const type = file.mimeType || "unknown";
+            return `${index + 1}. ${file.name} (${type})`;
+          })
+          .join("\n");
+
+        attachmentParts.unshift({
+          type: "text",
+          text: `Attached files:\n${summary}`,
+          ingestionPreview: true,
+        });
       }
-      return acc;
-    }, []);
 
-    if (attachmentParts.length) {
-      const summary = uploadedFiles
-        .map((file, index) => {
-          const type = file.mimeType || "unknown";
-          return `${index + 1}. ${file.name} (${type})`;
-        })
-        .join("\n");
-
-      attachmentParts.unshift({
-        type: "text",
-        text: `Attached files:\n${summary}`,
-        ingestionPreview: true,
+      sendMessage({
+        role: "user",
+        parts: [...attachmentParts, { type: "text", text: userMessage }],
+        metadata: {
+          ...(editImageState?.isOpen && editImageState?.model
+            ? {
+                editImageModel: editImageState.model,
+              }
+            : {}),
+          ...(videoGenState?.model
+            ? {
+                videoGenModel: videoGenState.model,
+              }
+            : {}),
+        },
       });
+      appStoreMutate((prev) => ({
+        threadFiles: {
+          ...prev.threadFiles,
+          [threadId!]: [],
+        },
+        editImageState: {
+          isOpen: false,
+          selectedImageUrl: undefined,
+          model: undefined,
+        },
+        videoGenState: {
+          isOpen: false,
+          model: undefined,
+        },
+      }));
+    } finally {
+      // Always unlock after submission attempt
+      isSubmittingRef.current = false;
     }
-
-    sendMessage({
-      role: "user",
-      parts: [...attachmentParts, { type: "text", text: userMessage }],
-      metadata: {
-        ...(editImageState?.isOpen && editImageState?.model
-          ? {
-              editImageModel: editImageState.model,
-            }
-          : {}),
-        ...(videoGenState?.model
-          ? {
-              videoGenModel: videoGenState.model,
-            }
-          : {}),
-      },
-    });
-    appStoreMutate((prev) => ({
-      threadFiles: {
-        ...prev.threadFiles,
-        [threadId!]: [],
-      },
-      editImageState: {
-        isOpen: false,
-        selectedImageUrl: undefined,
-        model: undefined,
-      },
-      videoGenState: {
-        isOpen: false,
-        model: undefined,
-      },
-    }));
   };
 
   // Handle ESC key to clear mentions

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcript Test</title>
+</head>
+<body>
+    <h1>YouTube Transcript Client-Side Test</h1>
+    <input type="text" id="urlInput" placeholder="Paste YouTube URL" style="width: 400px; padding: 8px;">
+    <button onclick="testFetch()" style="padding: 8px 16px;">Fetch Transcript</button>
+    <div id="output" style="margin-top: 20px; white-space: pre-wrap;"></div>
+
+    <script type="module">
+        // Import the YouTube client
+        import { fetchTranscriptFromUrl } from './src/lib/youtube-client.ts';
+
+        window.testFetch = async function() {
+            const url = document.getElementById('urlInput').value;
+            const output = document.getElementById('output');
+            
+            output.textContent = 'Fetching...';
+            
+            try {
+                const result = await fetchTranscriptFromUrl(url);
+                output.textContent = `SUCCESS!\n\nTitle: ${result.title}\nTranscript length: ${result.transcript.length} chars\n\nFirst 500 chars:\n${result.transcript.substring(0, 500)}...`;
+            } catch (error) {
+                output.textContent = `ERROR: ${error.message}\n\n${error.stack}`;
+            }
+        };
+    </script>
+</body>
+</html>
