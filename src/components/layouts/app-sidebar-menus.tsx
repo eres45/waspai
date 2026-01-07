@@ -23,7 +23,6 @@ import {
   FolderSearchIcon,
   PlusIcon,
   Waypoints,
-  Music,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Skeleton } from "ui/skeleton";
@@ -97,18 +96,6 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
                 <SidebarMenuButton className="font-semibold">
                   <Waypoints className="size-4" />
                   {t("Layout.workflow")}
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          </Tooltip>
-        </SidebarMenu>
-        <SidebarMenu>
-          <Tooltip>
-            <SidebarMenuItem>
-              <Link href="/music-gen">
-                <SidebarMenuButton className="font-semibold">
-                  <Music className="size-4" />
-                  Music Gen
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
