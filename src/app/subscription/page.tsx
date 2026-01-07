@@ -107,7 +107,8 @@ export default function SubscriptionPage() {
       name: "Free",
       icon: Sparkles,
       price: "0",
-      description: "Essential features for casual AI users. Perfect to get started.",
+      description:
+        "Essential features for casual AI users. Perfect to get started.",
       features: [
         {
           category: "AI Models",
@@ -391,7 +392,10 @@ export default function SubscriptionPage() {
                         </h4>
                         <div className="space-y-3">
                           {section.items.map((feature) => (
-                            <div key={feature} className="flex items-start gap-3">
+                            <div
+                              key={feature}
+                              className="flex items-start gap-3"
+                            >
                               <Check className="size-5 text-primary flex-shrink-0 mt-0.5" />
                               <span className="text-sm text-foreground leading-relaxed">
                                 {feature}
@@ -428,7 +432,10 @@ export default function SubscriptionPage() {
             All prices shown in{" "}
             <span className="font-semibold">{CURRENCIES[currency].code}</span>.
             Enterprise plans available -{" "}
-            <a href="mailto:sales@example.com" className="text-primary hover:underline">
+            <a
+              href="mailto:sales@example.com"
+              className="text-primary hover:underline"
+            >
               contact us
             </a>
             .
@@ -446,12 +453,12 @@ export default function SubscriptionPage() {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-foreground">
-                What does "fair-use" mean?
+                What does &quot;fair-use&quot; mean?
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Fair-use means reasonable daily limits that work for 99% of users.
-                We don't show exact numbers to avoid confusion - just use the AI
-                naturally!
+                Fair-use means reasonable daily limits that work for 99% of
+                users. We don&apos;t show exact numbers to avoid confusion -
+                just use the AI naturally!
               </p>
             </div>
 
@@ -460,8 +467,8 @@ export default function SubscriptionPage() {
                 Can I change plans anytime?
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Yes! Upgrade or downgrade anytime. Changes take effect immediately,
-                and we'll pro-rate your billing.
+                Yes! Upgrade or downgrade anytime. Changes take effect
+                immediately, and we&apos;ll pro-rate your billing.
               </p>
             </div>
 
@@ -480,8 +487,8 @@ export default function SubscriptionPage() {
                 Do you offer refunds?
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Yes! We offer a 30-day money-back guarantee if you're not satisfied
-                with your purchase.
+                Yes! We offer a 30-day money-back guarantee if you&apos;re not
+                satisfied with your purchase.
               </p>
             </div>
 
@@ -500,8 +507,8 @@ export default function SubscriptionPage() {
                 How do I contact support?
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Email us at support@example.com or use live chat (Pro/Ultra). Free
-                users can access community forums.
+                Email us at support@example.com or use live chat (Pro/Ultra).
+                Free users can access community forums.
               </p>
             </div>
           </div>
@@ -522,7 +529,11 @@ export default function SubscriptionPage() {
             . Start free, upgrade anytime.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" onClick={() => handleUpgrade("pro")} className="min-w-[200px]">
+            <Button
+              size="lg"
+              onClick={() => handleUpgrade("pro")}
+              className="min-w-[200px]"
+            >
               Upgrade to Pro
             </Button>
             <Button size="lg" variant="outline" className="min-w-[200px]">
