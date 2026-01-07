@@ -20,7 +20,6 @@ import {
 } from "ui/card";
 import { Badge } from "ui/badge";
 import { Check } from "lucide-react";
-import { useState } from "react";
 
 // Simple pricing data (INR default for popup)
 const plans = [
