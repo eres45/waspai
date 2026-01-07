@@ -10,55 +10,73 @@ import {
   DrawerTitle,
 } from "ui/drawer";
 import { Button } from "ui/button";
-import { X } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "ui/card";
+import { X, Sparkles, Zap, Crown } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "ui/card";
+import { Badge } from "ui/badge";
 import { Check } from "lucide-react";
+import { useState } from "react";
 
+// Simple pricing data (INR default for popup)
 const plans = [
   {
+    id: "free",
     name: "Free",
-    price: "$0",
-    description: "Perfect for getting started",
+    icon: Sparkles,
+    price: "₹0",
+    description: "Essential features for casual AI users",
     features: [
-      "5 file uploads per day",
-      "Access to free AI models",
-      "Basic chat features",
-      "Message history",
+      "Gemma 2, Qwen, Phi-4, Llama 3.3",
+      "5 file uploads/day",
+      "5 image generations/day",
+      "5 tooluses/day",
+      "Community support",
     ],
     cta: "Current Plan",
     highlighted: false,
   },
   {
+    id: "pro",
     name: "Pro",
-    price: "$9.99",
+    icon: Zap,
+    price: "₹830",
     period: "/month",
-    description: "For power users",
+    description: "Access to most top AIs and features",
     features: [
-      "Unlimited file uploads",
-      "Access to all AI models",
-      "Advanced chat features",
-      "Priority support",
-      "Custom model selection",
-      "Image generation (6 models)",
-      "Export conversations",
+      "GPT-4o Mini, Claude Haiku, Gemini Flash",
+      "All Free models with higher limits",
+      "Pro image generation models",
+      "Unlimited tools & characters",
+      "MCP Servers + HTTP workflows",
+      "Memory + YouTube Analyzer",
+      "Email support (24h)",
     ],
     cta: "Upgrade to Pro",
     highlighted: true,
+    savings: "60% cheaper than competitors",
   },
   {
-    name: "Enterprise",
-    price: "Custom",
-    description: "For teams and organizations",
+    id: "ultra",
+    name: "Ultra",
+    icon: Crown,
+    price: "₹2,660",
+    period: "/month",
+    description: "Maximum power for heavy users",
     features: [
-      "Everything in Pro",
-      "Team collaboration",
-      "API access",
-      "Custom integrations",
-      "Dedicated support",
-      "Advanced analytics",
-      "SSO authentication",
+      "GPT-4o, Claude Opus, Gemini Ultra",
+      "All Pro models with extended limits",
+      "DeathPix Studio (Music Gen)",
+      "Advanced video generation",
+      "Voice Generation (ElevenLabs)",
+      "Priority live chat support",
+      "Early access to features",
     ],
-    cta: "Contact Sales",
+    cta: "Upgrade to Ultra",
     highlighted: false,
   },
 ];
@@ -72,11 +90,14 @@ export function SubscriptionPopup() {
     appStoreMutate({ openSubscription: false });
   };
 
-  const handleUpgrade = (planName: string) => {
-    if (planName === "Enterprise") {
-      window.location.href = "mailto:sales@example.com?subject=Enterprise Plan Inquiry";
-    } else if (planName === "Pro") {
+  const handleUpgrade = (planId: string) => {
+    if (planId === "pro") {
       window.location.href = "/checkout/pro";
+    } else if (planId === "ultra") {
+      window.location.href = "/checkout/ultra";
+    } else {
+      // Redirect to full plans page
+      window.location.href = "/subscription";
     }
   };
 
@@ -96,9 +117,14 @@ export function SubscriptionPopup() {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <DrawerTitle className="text-2xl">Subscription Plans</DrawerTitle>
+              <DrawerTitle className="text-2xl flex items-center gap-2">
+                Choose Your Plan
+                <Badge variant="secondary" className="text-xs">
+                  60% cheaper
+                </Badge>
+              </DrawerTitle>
               <DrawerDescription>
-                Choose the perfect plan for your needs
+                Fair-use limits. Premium features. Unbeatable value.
               </DrawerDescription>
             </div>
             <Button
@@ -113,101 +139,140 @@ export function SubscriptionPopup() {
 
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <div className="grid md:grid-cols-3 gap-6 pb-6">
-              {plans.map((plan) => (
-                <Card
-                  key={plan.name}
-                  className={`relative flex flex-col ${
-                    plan.highlighted
-                      ? "border-primary shadow-lg"
-                      : "border-border"
-                  }`}
-                >
-                  {plan.highlighted && (
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                        Most Popular
-                      </span>
-                    </div>
-                  )}
+              {plans.map((plan) => {
+                const Icon = plan.icon;
+                return (
+                  <Card
+                    key={plan.id}
+                    className={`relative flex flex-col transition-all ${
+                      plan.highlighted
+                        ? "border-primary shadow-lg ring-1 ring-primary/20"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {plan.highlighted && (
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                        <Badge className="bg-gradient-to-r from-primary to-primary/80 text-xs">
+                          Most Popular
+                        </Badge>
+                      </div>
+                    )}
 
-                  <CardHeader>
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
-                    <div className="mt-4">
-                      <span className="text-4xl font-bold text-foreground">
-                        {plan.price}
-                      </span>
-                      {plan.period && (
-                        <span className="text-muted-foreground ml-2">
-                          {plan.period}
-                        </span>
-                      )}
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 flex flex-col">
-                    <div className="space-y-3 flex-1">
-                      {plan.features.map((feature) => (
-                        <div key={feature} className="flex items-start gap-2">
-                          <Check className="size-4 text-primary flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-foreground">{feature}</span>
+                    <CardHeader className="pb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Icon className="size-5 text-primary" />
                         </div>
-                      ))}
-                    </div>
+                        {plan.savings && (
+                          <Badge variant="secondary" className="text-xs">
+                            {plan.savings}
+                          </Badge>
+                        )}
+                      </div>
 
-                    <Button
-                      onClick={() => handleUpgrade(plan.name)}
-                      variant={plan.highlighted ? "default" : "outline"}
-                      className="w-full mt-6"
-                      disabled={plan.name === "Free"}
-                    >
-                      {plan.cta}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {plan.description}
+                      </CardDescription>
+
+                      <div className="mt-4">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold">
+                            {plan.price}
+                          </span>
+                          {plan.period && (
+                            <span className="text-muted-foreground text-sm">
+                              {plan.period}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 flex flex-col">
+                      <div className="space-y-2 flex-1">
+                        {plan.features.map((feature) => (
+                          <div key={feature} className="flex items-start gap-2">
+                            <Check className="size-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-xs text-foreground leading-relaxed">
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        onClick={() => handleUpgrade(plan.id)}
+                        variant={plan.highlighted ? "default" : "outline"}
+                        size="sm"
+                        className={`w-full mt-4 ${
+                          plan.highlighted
+                            ? "bg-gradient-to-r from-primary to-primary/90"
+                            : ""
+                        }`}
+                        disabled={plan.id === "free"}
+                      >
+                        {plan.cta}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
-            {/* FAQ Section */}
-            <div className="border-t border-border pt-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">
-                Frequently Asked Questions
-              </h2>
+            {/* View Full Details Link */}
+            <div className="text-center pt-4 border-t border-border">
+              <Button
+                variant="link"
+                onClick={() => (window.location.href = "/subscription")}
+                className="text-sm"
+              >
+                View full pricing details & features →
+              </Button>
+            </div>
+
+            {/* Compact FAQ */}
+            <div className="border-t border-border pt-6 mt-2">
+              <h3 className="text-lg font-bold text-foreground mb-4">
+                Quick FAQ
+              </h3>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
                     Can I change plans anytime?
-                  </h3>
+                  </h4>
                   <p className="text-xs text-muted-foreground">
-                    Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
+                    Yes! Upgrade or downgrade anytime. Changes take effect
+                    immediately.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2">
-                    What payment methods do you accept?
-                  </h3>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    What payment methods?
+                  </h4>
                   <p className="text-xs text-muted-foreground">
-                    We accept all major credit cards, PayPal, and other popular payment methods.
+                    Credit cards, UPI (India), PayPal, and more.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2">
-                    Is there a free trial?
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Yes! Start with our Free plan and upgrade whenever you&apos;re ready. No credit card required.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
                     Do you offer refunds?
-                  </h3>
+                  </h4>
                   <p className="text-xs text-muted-foreground">
-                    We offer a 30-day money-back guarantee if you&apos;re not satisfied with your purchase.
+                    30-day money-back guarantee if not satisfied.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    Why so cheap?
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Client-side processing and multi-provider architecture keep
+                    costs low!
                   </p>
                 </div>
               </div>
