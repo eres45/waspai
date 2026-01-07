@@ -26,10 +26,7 @@ import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
 import { DefaultToolName } from "lib/ai/tools";
-import {
-  exaSearchToolForWorkflow,
-  exaContentsToolForWorkflow,
-} from "lib/ai/tools/web/web-search";
+import { webSearchTool } from "lib/ai/tools/web-search";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 /**
@@ -249,12 +246,11 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       tool_result: toolResult,
     };
   } else if (node.tool.type == "app-tool") {
+    // Use SearchFlox-based web search tool (no API key required)
     const executor =
-      node.tool.id == DefaultToolName.WebContent
-        ? exaContentsToolForWorkflow.execute
-        : node.tool.id == DefaultToolName.WebSearch
-          ? exaSearchToolForWorkflow.execute
-          : () => "Unknown tool";
+      node.tool.id == DefaultToolName.WebSearch
+        ? webSearchTool.execute
+        : () => ({ error: "Unknown tool" });
 
     const toolResult = await executor?.(result.input.parameter, {
       messages: [],
