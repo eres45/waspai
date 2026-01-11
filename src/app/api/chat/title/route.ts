@@ -34,23 +34,37 @@ export async function POST(request: Request) {
     }
 
     logger.info(
-      `chatModel: ${chatModel?.provider}/${chatModel?.model}, threadId: ${threadId}`,
+      `Generating title for thread: ${threadId} using Model: ${chatModel?.provider}/${chatModel?.model}`,
     );
 
     // Convert display names back to backend names
-    const { models: modelReverseMapping, providers: providerReverseMapping } = createReverseModelMapping();
+    const { models: modelReverseMapping, providers: providerReverseMapping } =
+      createReverseModelMapping();
     let modelToUse = chatModel;
     if (modelToUse) {
-      const backendProvider = providerReverseMapping[modelToUse.provider] || modelToUse.provider;
-      const backendModel = modelReverseMapping[modelToUse.model] || modelToUse.model;
+      const backendProvider =
+        providerReverseMapping[modelToUse.provider] || modelToUse.provider;
+      const backendModel =
+        modelReverseMapping[modelToUse.model] || modelToUse.model;
       modelToUse = {
         provider: backendProvider,
         model: backendModel,
       };
     }
 
+    let model;
+    try {
+      model = customModelProvider.getModel(modelToUse);
+    } catch (_e) {
+      logger.warn("Title Model not found, falling back to gemma-2-9b-it");
+      model = customModelProvider.getModel({
+        provider: "google",
+        model: "google-gemma-2-9b-it",
+      });
+    }
+
     const result = streamText({
-      model: customModelProvider.getModel(modelToUse),
+      model: model,
       system: CREATE_THREAD_TITLE_PROMPT,
       experimental_transform: smoothStream({ chunking: "word" }),
       prompt: message,

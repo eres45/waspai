@@ -100,6 +100,8 @@ export function createDeepInfraModels() {
     "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
     "Qwen/Qwen3-235B-A22B-Instruct-2507",
     "Qwen/Qwen3-Next-80B-A3B-Instruct",
+    "google/gemma-2-9b-it",
+    "MiniMaxAI/MiniMax-M2",
     "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
   ];
