@@ -48,6 +48,8 @@ const staticModels = {
       typegptModels["mistralai-Devstral-Small-2505"], // New
     "mistralai-Mistral-Small-3.1-24B-Instruct-2503":
       typegptModels["mistralai-Mistral-Small-3.1-24B-Instruct-2503"], // New
+    "mistralai-Mistral-Small-3.2-24B-Instruct-2506":
+      deepInfraModels["mistralai-Mistral-Small-3.2-24B-Instruct-2506"], // New Verified
     "cf-mistralai-mistral-small-3.1-24b-instruct":
       llmChatModels["cf-mistralai-mistral-small-3.1-24b-instruct"],
     "cf-mistralai-mistral-7b-instruct-v0.1":
@@ -91,14 +93,18 @@ const staticModels = {
     "o3-mini": laozhangModels["o3-mini"],
     "o4-mini": laozhangModels["o4-mini"],
     "o4-mini-high": laozhangModels["o4-mini-high"],
-    "openai-gpt-oss-120b": a4fModels["openai-gpt-oss-120b"],
-    "openai-gpt-oss-20b": a4fModels["openai-gpt-oss-20b"],
+    "openai-gpt-oss-120b": deepInfraModels["openai-gpt-oss-120b"], // Switched to DeepInfra free
+    "openai-gpt-oss-20b": deepInfraModels["openai-gpt-oss-20b"], // Switched to DeepInfra free
     "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
   },
   meta: {
     "llama-4-scout-17b-16e-instruct":
-      a4fModels["meta-llama-llama-4-scout-17b-16e-instruct"],
-    "llama-guard-4-12b": a4fModels["meta-llama-llama-guard-4-12b"],
+      deepInfraModels["meta-llama-Llama-4-Scout-17B-16E-Instruct"], // Switched to DeepInfra free
+    "llama-4-maverick-17b-128e-instruct-fp8":
+      deepInfraModels["meta-llama-Llama-4-Maverick-17B-128E-Instruct-FP8"], // New Verified
+    "llama-guard-4-12b": deepInfraModels["meta-llama-Llama-Guard-4-12B"], // Switched to DeepInfra free
+    "llama-3.3-70b-deepinfra-turbo":
+      deepInfraModels["meta-llama-Llama-3.3-70B-Instruct-Turbo"], // New Verified
     "llama-prompt-guard-2-86m":
       a4fModels["meta-llama-llama-prompt-guard-2-86m"],
   },
@@ -114,11 +120,11 @@ const staticModels = {
     "Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo":
       deepInfraModels["Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo"],
     "Qwen-Qwen3-235B-A22B-Instruct-2507":
-      typegptModels["Qwen-Qwen3-235B-A22B-Instruct-2507"], // New
+      deepInfraModels["Qwen-Qwen3-235B-A22B-Instruct-2507"], // Switched to DeepInfra free
     "qwen-qwen3-next-80b-a3b-instruct":
-      typegptModels["qwen-qwen3-next-80b-a3b-instruct"], // New
+      deepInfraModels["Qwen-Qwen3-Next-80B-A3B-Instruct"], // Switched to DeepInfra free
     "qwen-qwen3-next-80b-a3b-thinking":
-      typegptModels["qwen-qwen3-next-80b-a3b-thinking"], // New
+      typegptModels["qwen-qwen3-next-80b-a3b-thinking"],
     "cf-qwen-qwen1.5-7b-chat-awq": llmChatModels["cf-qwen-qwen1.5-7b-chat-awq"],
     "cf-qwen-qwen1.5-14b-chat-awq":
       llmChatModels["cf-qwen-qwen1.5-14b-chat-awq"],
@@ -128,22 +134,32 @@ const staticModels = {
   moonshot: {
     "moonshotai-kimi-k2-instruct": a4fModels["moonshotai-kimi-k2-instruct"],
     "moonshotai-kimi-k2-instruct-0905":
-      a4fModels["moonshotai-kimi-k2-instruct-0905"],
+      deepInfraModels["moonshotai-Kimi-K2-Instruct-0905"], // Switched to DeepInfra free
     "moonshotai-Kimi-K2-Thinking":
-      deepInfraModels["moonshotai-Kimi-K2-Thinking"],
+      deepInfraModels["moonshotai-Kimi-K2-Instruct-0905"], // Map to instruct as failure fallback if needed, or keep generic
   },
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
   },
   deepseek: {
     "deepseek-ai-deepseek-r1-distill-qwen-32b":
-      typegptModels["deepseek-ai-deepseek-r1-distill-qwen-32b"], // New
+      typegptModels["deepseek-ai-deepseek-r1-distill-qwen-32b"],
+    "deepseek-ai-deepseek-r1-distill-llama-70b":
+      deepInfraModels["deepseek-ai-DeepSeek-R1-Distill-Llama-70B"], // New Verified
+    "deepseek-ai-deepseek-r1-0528-turbo":
+      deepInfraModels["deepseek-ai-DeepSeek-R1-0528-Turbo"], // New Verified
+    "deepseek-ai-deepseek-r1-0528":
+      deepInfraModels["deepseek-ai-DeepSeek-R1-0528"], // New Verified
     "deepseek-ai-DeepSeek-V3.1-Terminus":
       deepInfraModels["deepseek-ai-DeepSeek-V3.1-Terminus"],
+    "deepseek-ai-DeepSeek-V3.1": deepInfraModels["deepseek-ai-DeepSeek-V3.1"], // New Verified
+    "deepseek-ai-DeepSeek-V3.2": deepInfraModels["deepseek-ai-DeepSeek-V3.2"], // New Verified
+    "deepseek-ai-DeepSeek-V3-0324":
+      deepInfraModels["deepseek-ai-DeepSeek-V3-0324"], // New Verified
+    "deepseek-ai-DeepSeek-V3": deepInfraModels["deepseek-ai-DeepSeek-V3"], // New Verified
     "deepseek-ai-DeepSeek-R1-Turbo":
-      deepInfraModels["deepseek-ai-DeepSeek-R1-Turbo"],
-    "deepseek-ai-DeepSeek-R1": deepInfraModels["deepseek-ai-DeepSeek-R1"],
-    "deepseek-v3": laozhangModels["deepseek-v3"],
+      deepInfraModels["deepseek-ai-DeepSeek-R1-0528-Turbo"], // Map to new turbo
+    "deepseek-ai-DeepSeek-R1": deepInfraModels["deepseek-ai-DeepSeek-R1-0528"], // Map to new R1
     "deepseek-r1": laozhangModels["deepseek-r1"],
     "cf-deepseek-ai-deepseek-coder-6.7b-base":
       llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-base"],
@@ -157,7 +173,7 @@ const staticModels = {
   },
   microsoft: {
     "microsoft-phi-4-multimodal-instruct":
-      typegptModels["microsoft-phi-4-multimodal-instruct"], // New
+      typegptModels["microsoft-phi-4-multimodal-instruct"],
     "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
   },
   tiiuae: {
@@ -169,15 +185,15 @@ const staticModels = {
   },
   lgai: {
     "LGAI-EXAONE-K-EXAONE-236B-A23B":
-      typegptModels["LGAI-EXAONE-K-EXAONE-236B-A23B"], // New
+      typegptModels["LGAI-EXAONE-K-EXAONE-236B-A23B"],
   },
   zai: {
-    "zai-org-GLM-4.6": typegptModels["zai-org-GLM-4.6"], // New
-    "zai-org-GLM-4.7": typegptModels["zai-org-GLM-4.7"], // New
+    "zai-org-GLM-4.6": typegptModels["zai-org-GLM-4.6"],
+    "zai-org-GLM-4.7": typegptModels["zai-org-GLM-4.7"],
   },
   allenai: {
     "allenai-OLMo-2-0325-32B-Instruct":
-      typegptModels["allenai-OLMo-2-0325-32B-Instruct"], // New
+      typegptModels["allenai-OLMo-2-0325-32B-Instruct"],
   },
   others: {
     "cf-huggingfacegi-zephyr-7b-beta":
@@ -196,7 +212,7 @@ const staticModels = {
     "llama-3.1-8b-instant": a4fModels["llama-3.1-8b-instant"],
     "llama-3.3-70b-versatile": a4fModels["llama-3.3-70b-versatile"],
     "Llama-3.3-70B-DeepInfra":
-      deepInfraModels["meta-llama-Llama-3.3-70B-Instruct"],
+      deepInfraModels["meta-llama-Llama-3.3-70B-Instruct-Turbo"], // Updated to verified turbo
     "cf-llama-3-8b": llmChatModels["cf-meta-llama-3-8b-instruct"],
     "cf-llama-3.1-8b": llmChatModels["cf-meta-llama-3.1-8b-instruct"],
     "cf-llama-2-7b": llmChatModels["cf-meta-llama-2-7b-chat-fp16"],
