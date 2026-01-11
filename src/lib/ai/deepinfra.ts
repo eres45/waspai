@@ -82,17 +82,26 @@ export function createDeepInfraModels() {
   });
 
   const modelIds = [
+    "deepseek-ai/DeepSeek-R1-0528-Turbo",
+    "deepseek-ai/DeepSeek-V3.1",
     "deepseek-ai/DeepSeek-V3.1-Terminus",
-    "deepseek-ai/DeepSeek-R1-Turbo",
-    "deepseek-ai/DeepSeek-R1",
-    "moonshotai/Kimi-K2-Thinking",
-    "google/gemma-2-9b-it",
-    "Qwen/Qwen2-7B-Instruct",
-    "mistralai/Mistral-7B-Instruct-v0.1",
-    "mistralai/Mistral-7B-Instruct-v0.2",
-    "MiniMaxAI/MiniMax-M2",
+    "deepseek-ai/DeepSeek-V3",
+    "deepseek-ai/DeepSeek-V3-0324",
+    "deepseek-ai/DeepSeek-V3.2",
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+    "deepseek-ai/DeepSeek-R1-0528",
+    "deepseek-ai/DeepSeek-OCR",
+    "moonshotai/Kimi-K2-Instruct-0905",
+    "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+    "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+    "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+    "meta-llama/Llama-Guard-4-12B",
+    "meta-llama/Llama-3.3-70B-Instruct-Turbo",
     "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
-    "meta-llama/Llama-3.3-70B-Instruct",
+    "Qwen/Qwen3-235B-A22B-Instruct-2507",
+    "Qwen/Qwen3-Next-80B-A3B-Instruct",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
   ];
 
   const models: Record<string, LanguageModel> = {};
