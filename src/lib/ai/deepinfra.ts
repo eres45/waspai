@@ -28,7 +28,8 @@ export function createDeepInfraModels() {
       // Helper to generate headers
       const getSpoofHeaders = () => {
         const headers = new Headers(options?.headers);
-        headers.set("Accept", "text/event-stream");
+        headers.set("Accept", "*/*");
+        headers.set("Accept-Language", "en-US,en;q=0.9");
         headers.set("Origin", "https://deepinfra.com");
         headers.set("Referer", "https://deepinfra.com/");
         headers.set(
@@ -37,6 +38,9 @@ export function createDeepInfraModels() {
         );
         headers.set("X-Deepinfra-Source", "web-page");
         headers.set("X-Forwarded-For", getRandomIP());
+        headers.set("Sec-Fetch-Dest", "empty");
+        headers.set("Sec-Fetch-Mode", "cors");
+        headers.set("Sec-Fetch-Site", "same-site");
         headers.delete("Authorization"); // Crucial for spoofing
         return headers;
       };
@@ -63,6 +67,9 @@ export function createDeepInfraModels() {
           }
 
           // If 403 or 429, continue to next iteration (try new IP/UA)
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.random() * 500 + 200),
+          );
         } catch (_e) {
           // Network errors, continue to retry
         }

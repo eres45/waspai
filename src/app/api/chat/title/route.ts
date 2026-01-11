@@ -81,7 +81,11 @@ export async function POST(request: Request) {
     });
 
     return result.toUIMessageStreamResponse();
-  } catch (err) {
+  } catch (err: any) {
+    logger.error("Title API Error:", err?.message || err);
+    if (err?.statusCode === 403) {
+      logger.warn("Forbidden error in Title API, likely DeepInfra blocked us.");
+    }
     return new Response(handleError(err), { status: 500 });
   }
 }
