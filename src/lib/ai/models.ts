@@ -26,7 +26,6 @@ const laozhangModels = createLaoZhangModels();
 const staticModels = {
   google: {
     "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
-    "google-gemma-2-12b-it": deepInfraModels["google-gemma-2-12b-it"],
     "google-gemma-3-27b-it": typegptModels["google-gemma-3-27b-it"], // New
     "gemini-1.5-pro-latest": laozhangModels["gemini-1.5-pro-latest"],
     "gemini-2.0-flash-001": laozhangModels["gemini-2.0-flash-001"],
@@ -45,8 +44,6 @@ const staticModels = {
       deepInfraModels["mistralai-Mistral-7B-Instruct-v0.1"],
     "mistralai-Mistral-7B-Instruct-v0.2":
       deepInfraModels["mistralai-Mistral-7B-Instruct-v0.2"],
-    "mistralai-Mistral-Small-Instruct-2409":
-      deepInfraModels["mistralai-Mistral-Small-Instruct-2409"],
     "mistralai-Devstral-Small-2505":
       typegptModels["mistralai-Devstral-Small-2505"], // New
     "mistralai-Mistral-Small-3.1-24B-Instruct-2503":
@@ -200,13 +197,6 @@ const staticModels = {
     "llama-3.3-70b-versatile": a4fModels["llama-3.3-70b-versatile"],
     "Llama-3.3-70B-DeepInfra":
       deepInfraModels["meta-llama-Llama-3.3-70B-Instruct"],
-    "Llama-3.1-8B-DeepInfra":
-      deepInfraModels["meta-llama-Llama-3.1-8B-Instruct"],
-    "Llama-3.2-3B-DeepInfra":
-      deepInfraModels["meta-llama-Llama-3.2-3B-Instruct"],
-    "Llama-3.2-1B-DeepInfra":
-      deepInfraModels["meta-llama-Llama-3.2-1B-Instruct"],
-    "Llama-3-8B-DeepInfra": deepInfraModels["meta-llama-Llama-3-8B-Instruct"],
     "cf-llama-3-8b": llmChatModels["cf-meta-llama-3-8b-instruct"],
     "cf-llama-3.1-8b": llmChatModels["cf-meta-llama-3.1-8b-instruct"],
     "cf-llama-2-7b": llmChatModels["cf-meta-llama-2-7b-chat-fp16"],
