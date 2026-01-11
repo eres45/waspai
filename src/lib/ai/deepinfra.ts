@@ -22,32 +22,46 @@ export function createDeepInfraModels() {
 
   const provider = createOpenAICompatible({
     name: "deepinfra",
-    apiKey: "none", // Placeholder, we will override headers in fetch
+    apiKey: process.env.DEEPINFRA_API_KEY || "none",
     baseURL: "https://api.deepinfra.com/v1",
     fetch: async (url, options) => {
-      const headers = new Headers(options?.headers);
-
-      // Inject browser-mocking headers from user docs
-      headers.set("Accept", "text/event-stream");
-      headers.set("Origin", "https://deepinfra.com");
-      headers.set("Referer", "https://deepinfra.com/");
-      headers.set(
+      // 1. Try with spoofed headers (Free Tier)
+      const spoofHeaders = new Headers(options?.headers);
+      spoofHeaders.set("Accept", "text/event-stream");
+      spoofHeaders.set("Origin", "https://deepinfra.com");
+      spoofHeaders.set("Referer", "https://deepinfra.com/");
+      spoofHeaders.set(
         "User-Agent",
         userAgents[Math.floor(Math.random() * userAgents.length)],
       );
-      headers.set("X-Deepinfra-Source", "web-page");
-      headers.set("X-Forwarded-For", getRandomIP());
-      headers.set("Accept-Language", "en-US,en;q=0.9");
-      headers.set("Accept-Encoding", "gzip, deflate, br");
-      headers.set("Connection", "keep-alive");
-      headers.set("Sec-Fetch-Dest", "empty");
-      headers.set("Sec-Fetch-Mode", "cors");
-      headers.set("Sec-Fetch-Site", "same-site");
+      spoofHeaders.set("X-Deepinfra-Source", "web-page");
+      spoofHeaders.set("X-Forwarded-For", getRandomIP());
+      spoofHeaders.delete("Authorization"); // Crucial for spoofing
 
-      // Remove Authorization header as it's not needed for web-page source
-      headers.delete("Authorization");
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers: spoofHeaders,
+        });
+        if (response.ok) return response;
 
-      return fetch(url, { ...options, headers });
+        // If 401/403 and we have an API key, fallback to official auth
+        if (
+          (response.status === 401 || response.status === 403) &&
+          process.env.DEEPINFRA_API_KEY
+        ) {
+          console.log("[DeepInfra] Spoofing failed, falling back to API key");
+          return fetch(url, options); // Uses default headers with Authorization
+        }
+
+        return response;
+      } catch (e) {
+        // Fallback on network error if key exists
+        if (process.env.DEEPINFRA_API_KEY) {
+          return fetch(url, options);
+        }
+        throw e;
+      }
     },
   });
 
