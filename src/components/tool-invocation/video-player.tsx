@@ -33,7 +33,9 @@ export const VideoPlayer = memo(function VideoPlayer({
           {/* Header */}
           <div className="py-2.5 bg-muted px-4 flex items-center gap-1.5 z-10 min-h-[37px]">
             <PlayCircleIcon className="size-4 text-primary" />
-            <span className="text-xs font-semibold">OpenTube Player</span>
+            <span className="text-xs font-semibold">
+              Invidious Player (Verified)
+            </span>
             <div className="flex-1" />
             {output?.openTubeUrl && (
               <a
