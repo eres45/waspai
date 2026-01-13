@@ -22,13 +22,7 @@ export const videoPlayerTool = createTool({
 
       // 1. Handle Native Search
       if (searchQuery && !url) {
-        const instances = [
-          "https://inv.tux.pizza",
-          "https://vid.priv.au",
-          "https://invidious.jing.rocks",
-          "https://y.com.sb",
-          "https://invidious.nerdvpn.de",
-        ];
+        const instances = ["https://y.com.sb"];
 
         let searchSuccess = false;
 
