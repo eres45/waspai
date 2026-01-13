@@ -1,5 +1,5 @@
 import { ToolUIPart } from "ai";
-import { ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
+import { ExternalLinkIcon, PlayCircleIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 import { TextShimmer } from "ui/text-shimmer";
 
@@ -25,10 +25,6 @@ export const VideoPlayer = memo(function VideoPlayer({
     }
     return null;
   }, [part.state, part.output]);
-
-  const _isSearch = useMemo(() => {
-    return output?.mode === "search";
-  }, [output]);
 
   return (
     <div className="flex flex-col">
