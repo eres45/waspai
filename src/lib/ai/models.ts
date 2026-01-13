@@ -264,9 +264,12 @@ export const customModelProvider = {
         supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
         isPro:
           !MODEL_DISPLAY_NAMES[name]?.includes("(Free)") &&
-          ([
-            "meta",
+          [
+            "anthropic",
+            "grok",
             "openai",
+            "google",
+            "mistral",
             "qwen",
             "moonshot",
             "canopy",
@@ -275,14 +278,13 @@ export const customModelProvider = {
             "microsoft",
             "tiiuae",
             "defog",
-            "other",
             "llm",
             "lgai",
             "zai",
-            "anthropic",
-            "grok",
-          ].includes(provider) ||
-            (["google", "mistral"].includes(provider) && name.includes("-"))),
+          ].includes(provider),
+        isUltra:
+          !MODEL_DISPLAY_NAMES[name]?.includes("(Free)") &&
+          Object.keys(laozhangModels).includes(name),
       })),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
   })),

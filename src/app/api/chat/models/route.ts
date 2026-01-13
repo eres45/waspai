@@ -10,10 +10,12 @@ export const GET = async () => {
     customModelProvider.modelsInfo
       .map((provider) => ({
         ...provider,
-        provider: PROVIDER_DISPLAY_NAMES[provider.provider] || provider.provider,
+        provider:
+          PROVIDER_DISPLAY_NAMES[provider.provider] || provider.provider,
         models: provider.models.map((model) => ({
           ...model,
           name: MODEL_DISPLAY_NAMES[model.name] || model.name,
+          isUltra: (model as any).isUltra,
         })),
       }))
       .sort((a, b) => {
@@ -22,9 +24,9 @@ export const GET = async () => {
         const bIndex = PROVIDER_ORDER.indexOf(b.provider);
         const aOrder = aIndex === -1 ? PROVIDER_ORDER.length : aIndex;
         const bOrder = bIndex === -1 ? PROVIDER_ORDER.length : bIndex;
-        
+
         if (aOrder !== bOrder) return aOrder - bOrder;
-        
+
         // Then sort by API key availability
         if (a.hasAPIKey && !b.hasAPIKey) return -1;
         if (!a.hasAPIKey && b.hasAPIKey) return 1;

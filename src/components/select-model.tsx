@@ -57,7 +57,9 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                   className="size-2.5 mr-1"
                 />
               )}
-              <p data-testid="selected-model-name">{model?.model || "model"}</p>
+              <p data-testid="selected-model-name">
+                {model?.model?.replace(" (Free)", "") || "model"}
+              </p>
             </div>
             <ChevronDown className="size-3" />
           </Button>
@@ -98,45 +100,62 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                   data-testid={`model-provider-${provider.provider}`}
                 >
                   {provider.models.map((item) => (
-                    <CommandItem
-                      key={item.name}
-                      disabled={!provider.hasAPIKey}
-                      className="cursor-pointer"
-                      onSelect={() => {
-                        setModel({
-                          provider: provider.provider,
-                          model: item.name,
-                        });
-                        props.onSelect({
-                          provider: provider.provider,
-                          model: item.name,
-                        });
-                        setOpen(false);
-                      }}
-                      value={item.name}
-                      data-testid={`model-option-${provider.provider}-${item.name}`}
-                    >
-                      {model?.provider === provider.provider &&
-                      model?.model === item.name ? (
-                        <CheckIcon
-                          className="size-3"
-                          data-testid="selected-model-check"
-                        />
-                      ) : (
-                        <div className="ml-3" />
-                      )}
-                      <span className="pr-2">{item.name}</span>
-                      {item.isPro && (
-                        <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground mr-1 h-fit">
-                          PRO
-                        </div>
-                      )}
-                      {item.isToolCallUnsupported && (
-                        <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-                          No tools
-                        </div>
-                      )}
-                    </CommandItem>
+                    <Fragment key={item.name}>
+                      {(() => {
+                        const isFree = item.name.includes("(Free)");
+                        const displayName = item.name
+                          .replace(" (Free)", "")
+                          .trim();
+                        const tagClassName =
+                          "bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground mr-1 h-fit shrink-0";
+
+                        return (
+                          <CommandItem
+                            key={item.name}
+                            disabled={!provider.hasAPIKey}
+                            className="cursor-pointer"
+                            onSelect={() => {
+                              setModel({
+                                provider: provider.provider,
+                                model: item.name,
+                              });
+                              props.onSelect({
+                                provider: provider.provider,
+                                model: item.name,
+                              });
+                              setOpen(false);
+                            }}
+                            value={item.name}
+                            data-testid={`model-option-${provider.provider}-${item.name}`}
+                          >
+                            {model?.provider === provider.provider &&
+                            model?.model === item.name ? (
+                              <CheckIcon
+                                className="size-3"
+                                data-testid="selected-model-check"
+                              />
+                            ) : (
+                              <div className="ml-3" />
+                            )}
+                            <span className="pr-2 truncate">{displayName}</span>
+
+                            {item.isUltra ? (
+                              <div className={tagClassName}>ULTRA</div>
+                            ) : item.isPro ? (
+                              <div className={tagClassName}>PRO</div>
+                            ) : isFree ? (
+                              <div className={tagClassName}>FREE</div>
+                            ) : null}
+
+                            {item.isToolCallUnsupported && (
+                              <div className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/70 italic shrink-0">
+                                No tools
+                              </div>
+                            )}
+                          </CommandItem>
+                        );
+                      })()}
+                    </Fragment>
                   ))}
                 </CommandGroup>
                 {i < providers?.length - 1 && <CommandSeparator />}
