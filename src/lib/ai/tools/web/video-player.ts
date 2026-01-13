@@ -4,12 +4,36 @@ import { z } from "zod";
 export const videoPlayerTool = createTool({
   name: "video-player",
   description:
-    "**IMPORTANT: use 'search_web' FIRST to find a YouTube URL.** This tool ONLY plays specific YouTube videos given a direct URL. It cannot search. Once you have a URL from your search, use this tool to play it and automatically fetch its transcript.",
+    "Play a specific YouTube video or search for one. If you have a URL, use 'url'. If you only have a name (e.g. 'cat videos'), use 'searchQuery'. The tool will guide you to the content.",
   inputSchema: z.object({
-    url: z.string().describe("The specific YouTube video URL to play."),
+    url: z
+      .string()
+      .optional()
+      .describe("The specific YouTube video URL to play."),
+    searchQuery: z
+      .string()
+      .optional()
+      .describe("Topic or name of video to search for if URL is not known."),
   }),
-  execute: async ({ url }) => {
+  execute: async ({ url, searchQuery }) => {
     try {
+      // 1. Handle Search Intent (Agent Redirect)
+      if (searchQuery && !url) {
+        return {
+          success: false, // "False" to force the model to rethink/retry
+          error: `To play '${searchQuery}', you must FIRST find the specific YouTube URL. Please use your 'search_web' tool to find the best YouTube video URL for this query, then call this tool again with the specific 'url'.`,
+          mode: "search_guidance",
+        };
+      }
+
+      // 2. Handle Play Intent
+      if (!url) {
+        return {
+          success: false,
+          error: "Please provide a 'url' or 'searchQuery'.",
+        };
+      }
+
       let videoId = "";
       if (url.includes("youtu.be/")) {
         videoId = url.split("youtu.be/")[1]?.split("?")[0];
