@@ -17,7 +17,10 @@ export const videoPlayerTool = createTool({
   }),
   execute: async ({ url, searchQuery }) => {
     try {
-      // 1. Handle Search Internally (Native YouTube Search)
+      let videoId = "";
+      let title = "";
+
+      // 1. Handle Native Search
       if (searchQuery && !url) {
         try {
           const searchRes = await fetch(
@@ -39,7 +42,7 @@ export const videoPlayerTool = createTool({
           // Pick the first video
           const firstVideo = searchResults[0];
           videoId = firstVideo.videoId;
-          // We can optionally use the title if we want, but videoId is critical
+          title = firstVideo.title;
         } catch (err: any) {
           return {
             success: false,
@@ -48,28 +51,26 @@ export const videoPlayerTool = createTool({
         }
       }
 
-      // 2. Handle Play Intent
-      if (!url) {
-        return {
-          success: false,
-          error: "Please provide a 'url' or 'searchQuery'.",
-        };
-      }
-
-      let videoId = "";
-      if (url.includes("youtu.be/")) {
-        videoId = url.split("youtu.be/")[1]?.split("?")[0];
-      } else if (url.includes("youtube.com/shorts/")) {
-        videoId = url.split("youtube.com/shorts/")[1]?.split("?")[0];
-      } else if (url.includes("v=")) {
-        const urlParams = new URL(url).searchParams;
-        videoId = urlParams.get("v") || "";
-      } else if (url.length === 11) {
-        videoId = url;
+      // 2. Handle Direct URL (if no videoId from search)
+      if (!videoId && url) {
+        if (url.includes("youtu.be/")) {
+          videoId = url.split("youtu.be/")[1]?.split("?")[0];
+        } else if (url.includes("youtube.com/shorts/")) {
+          videoId = url.split("youtube.com/shorts/")[1]?.split("?")[0];
+        } else if (url.includes("v=")) {
+          const urlParams = new URL(url).searchParams;
+          videoId = urlParams.get("v") || "";
+        } else if (url.length === 11) {
+          videoId = url;
+        }
       }
 
       if (!videoId) {
-        return { success: false, error: "Invalid YouTube URL" };
+        return {
+          success: false,
+          error:
+            "Please provide a valid 'url' or 'searchQuery' to find a video.",
+        };
       }
 
       const openTubeUrl = `https://opentubee.vercel.app/watch?v=${videoId}`;
@@ -77,8 +78,11 @@ export const videoPlayerTool = createTool({
       // Auto-fetch transcript
       let transcriptSummary: string | null = null;
       try {
+        // Use the URL if we have it, otherwise reconstruct a standard YouTube URL for the transcript tool
+        const transcriptUrl =
+          url || `https://www.youtube.com/watch?v=${videoId}`;
         const transcriptRes = await fetch(
-          `https://socialdown.itz-ashlynn.workers.dev/yt-trans?url=${encodeURIComponent(url)}`,
+          `https://socialdown.itz-ashlynn.workers.dev/yt-trans?url=${encodeURIComponent(transcriptUrl)}`,
         );
         if (transcriptRes.ok) {
           const transcriptData = await transcriptRes.json();
@@ -91,6 +95,10 @@ export const videoPlayerTool = createTool({
         // Transcript fetch failed, but video player still works
       }
 
+      const successMessage = title
+        ? `Playing "${title}" (ID: ${videoId}).`
+        : `Playing video ${videoId}.`;
+
       return {
         success: true,
         mode: "video",
@@ -98,8 +106,8 @@ export const videoPlayerTool = createTool({
         openTubeUrl,
         transcriptSummary,
         message: transcriptSummary
-          ? `Playing video ${videoId}. Video is about: ${transcriptSummary.substring(0, 150)}...`
-          : `Playing video ${videoId} in OpenTube.`,
+          ? `${successMessage} Video is about: ${transcriptSummary.substring(0, 150)}...`
+          : `${successMessage} Playing in OpenTube.`,
       };
     } catch (error: any) {
       return { success: false, error: error.message };
