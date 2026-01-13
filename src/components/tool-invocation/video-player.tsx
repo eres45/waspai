@@ -64,13 +64,15 @@ export const VideoPlayer = memo(function VideoPlayer({
                   onLoad={(e) => {
                     const iframe = e.currentTarget;
                     // Wait a brief moment for the app to initialize listeners
-                    setTimeout(() => {
-                      // Send search command if we have a query but no specific video ID yet
-                      // OR if we just want to ensure it plays
+                    // Retry sending the message a few times to ensure the iframe is ready
+                    let attempts = 0;
+                    const interval = setInterval(() => {
+                      attempts++;
+                      if (attempts > 5) clearInterval(interval);
+
                       if (output.videoId) {
-                        // Assuming OpenTube accepts a 'play' or 'search' command
-                        // We'll try sending the ID
                         iframe.contentWindow?.postMessage(
+                          // Use OPEN_VIDEO as per OpenTube V1 spec
                           { type: "OPEN_VIDEO", videoId: output.videoId },
                           "*",
                         );
@@ -80,7 +82,7 @@ export const VideoPlayer = memo(function VideoPlayer({
                           "*",
                         );
                       }
-                    }, 2000);
+                    }, 1000); // Try every second for 5 seconds
                   }}
                 />
               ) : (

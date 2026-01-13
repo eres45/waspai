@@ -4,7 +4,7 @@ import { z } from "zod";
 export const videoPlayerTool = createTool({
   name: "video-player",
   description:
-    "Play a specific YouTube video or search for one. If you have a URL, use 'url'. If you only have a name (e.g. 'cat videos'), use 'searchQuery'. The tool will guide you to the content.",
+    "Play a specific YouTube video or search for one. This tool handles EVERYTHING: it searches, plays the video in the UI, and fetches transcripts internally. You do NOT need to do anything else. Input: 'url' OR 'searchQuery'.",
   inputSchema: z.object({
     url: z
       .string()
