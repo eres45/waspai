@@ -4,7 +4,7 @@ import { z } from "zod";
 export const videoPlayerTool = createTool({
   name: "video-player",
   description:
-    "Search for YouTube videos or play a specific video using OpenTube. When playing a video, automatically fetches the transcript so you can understand what it's about. Use 'searchQuery' to search YouTube, or 'url' to play a specific video.",
+    "**IMPORTANT: You CAN play YouTube videos!** Use this tool whenever the user asks to play, watch, or search for YouTube videos. Opens an OpenTube player directly in the chat. Use 'searchQuery' for searches like 'find cat videos' OR 'url' for specific videos. Automatically fetches transcripts so you understand video content.",
   inputSchema: z.object({
     url: z
       .string()
