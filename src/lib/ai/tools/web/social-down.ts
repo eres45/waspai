@@ -58,8 +58,9 @@ export const getTempEmailMessagesTool = createTool({
         messages: data.messages.data.map((m: any) => ({
           from: m.from,
           subject: m.subject,
-          text: m.text,
-          date: m.date,
+          text: m.text_content || m.content || "No text content",
+          html: m.html_content,
+          date: m.created_at || m.date,
         })),
       };
     } catch (error: any) {
