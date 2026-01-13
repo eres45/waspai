@@ -17,13 +17,35 @@ export const videoPlayerTool = createTool({
   }),
   execute: async ({ url, searchQuery }) => {
     try {
-      // 1. Handle Search Intent (Agent Redirect)
+      // 1. Handle Search Internally (Native YouTube Search)
       if (searchQuery && !url) {
-        return {
-          success: false, // "False" to force the model to rethink/retry
-          error: `To play '${searchQuery}', you must FIRST find the specific YouTube URL. Please use your 'webSearch' tool to find the best YouTube video URL for this query, then call this tool again with the specific 'url'.`,
-          mode: "search_guidance",
-        };
+        try {
+          const searchRes = await fetch(
+            `https://y.com.sb/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`,
+          );
+
+          if (!searchRes.ok) {
+            throw new Error(`Search failed with status ${searchRes.status}`);
+          }
+
+          const searchResults = await searchRes.json();
+          if (!searchResults || searchResults.length === 0) {
+            return {
+              success: false,
+              error: `No videos found for query: "${searchQuery}"`,
+            };
+          }
+
+          // Pick the first video
+          const firstVideo = searchResults[0];
+          videoId = firstVideo.videoId;
+          // We can optionally use the title if we want, but videoId is critical
+        } catch (err: any) {
+          return {
+            success: false,
+            error: `Internal YouTube search failed: ${err.message}. Please try providing a specific URL.`,
+          };
+        }
       }
 
       // 2. Handle Play Intent
