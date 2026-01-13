@@ -838,6 +838,14 @@ const HtmlPreview = dynamic(
   },
 );
 
+const VideoPlayer = dynamic(
+  () => import("./tool-invocation/video-player").then((mod) => mod.VideoPlayer),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -1035,6 +1043,10 @@ export const ToolMessagePart = memo(
             type="python"
           />
         );
+      }
+
+      if (toolName === DefaultToolName.VideoPlayer) {
+        return <VideoPlayer part={part} />;
       }
 
       if (state === "output-available") {

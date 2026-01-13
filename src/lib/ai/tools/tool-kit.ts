@@ -15,6 +15,7 @@ import {
   getTempEmailMessagesTool,
   sendEmailTool,
 } from "./web/social-down";
+import { videoPlayerTool } from "./web/video-player";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -46,5 +47,8 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.CreateTempEmail]: createTempEmailTool,
     [DefaultToolName.GetTempEmailMessages]: getTempEmailMessagesTool,
     [DefaultToolName.SendEmail]: sendEmailTool,
+  },
+  [AppDefaultToolkit.Media]: {
+    [DefaultToolName.VideoPlayer]: videoPlayerTool,
   },
 };

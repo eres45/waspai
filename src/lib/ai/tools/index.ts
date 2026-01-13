@@ -5,6 +5,7 @@ export enum AppDefaultToolkit {
   Code = "code",
   Memory = "memory",
   Utilities = "utilities",
+  Media = "media",
 }
 
 export enum DefaultToolName {
@@ -23,6 +24,7 @@ export enum DefaultToolName {
   CreateTempEmail = "create-temp-email",
   GetTempEmailMessages = "get-temp-email-messages",
   SendEmail = "send-email",
+  VideoPlayer = "video-player",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";
