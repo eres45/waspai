@@ -55,11 +55,33 @@ export const VideoPlayer = memo(function VideoPlayer({
             <div className="aspect-video w-full relative bg-black rounded-lg overflow-hidden border shadow-inner">
               {output?.openTubeUrl ? (
                 <iframe
+                  id="opentube-frame"
                   src={output.openTubeUrl}
                   className="absolute inset-0 w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   title="OpenTube Video Player"
+                  onLoad={(e) => {
+                    const iframe = e.currentTarget;
+                    // Wait a brief moment for the app to initialize listeners
+                    setTimeout(() => {
+                      // Send search command if we have a query but no specific video ID yet
+                      // OR if we just want to ensure it plays
+                      if (output.videoId) {
+                        // Assuming OpenTube accepts a 'play' or 'search' command
+                        // We'll try sending the ID
+                        iframe.contentWindow?.postMessage(
+                          { type: "PLAY_VIDEO", videoId: output.videoId },
+                          "*",
+                        );
+                      } else if (output.searchQuery) {
+                        iframe.contentWindow?.postMessage(
+                          { type: "SEARCH", query: output.searchQuery },
+                          "*",
+                        );
+                      }
+                    }, 2000);
+                  }}
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">

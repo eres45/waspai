@@ -83,8 +83,8 @@ export const videoPlayerTool = createTool({
         };
       }
 
-      // Use the same verified instance for playback as we used for search
-      const openTubeUrl = `https://y.com.sb/embed/${videoId}?autoplay=1`;
+      // Use the user's OpenTube app. The frontend component will handle the search via postMessage.
+      const openTubeUrl = `https://opentubee.vercel.app`;
 
       // Auto-fetch transcript
       let transcriptSummary: string | null = null;
