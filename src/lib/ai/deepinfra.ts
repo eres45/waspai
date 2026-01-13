@@ -28,8 +28,10 @@ export function createDeepInfraModels() {
       // Helper to generate headers
       const getSpoofHeaders = () => {
         const headers = new Headers(options?.headers);
-        headers.set("Accept", "*/*");
+        headers.set("Accept", options?.headers?.["Accept"] || "*/*");
         headers.set("Accept-Language", "en-US,en;q=0.9");
+        headers.set("Accept-Encoding", "gzip, deflate, br");
+        headers.set("Connection", "keep-alive");
         headers.set("Origin", "https://deepinfra.com");
         headers.set("Referer", "https://deepinfra.com/");
         headers.set(
