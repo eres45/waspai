@@ -21,7 +21,7 @@ export const videoPlayerTool = createTool({
       if (searchQuery && !url) {
         return {
           success: false, // "False" to force the model to rethink/retry
-          error: `To play '${searchQuery}', you must FIRST find the specific YouTube URL. Please use your 'search_web' tool to find the best YouTube video URL for this query, then call this tool again with the specific 'url'.`,
+          error: `To play '${searchQuery}', you must FIRST find the specific YouTube URL. Please use your 'webSearch' tool to find the best YouTube video URL for this query, then call this tool again with the specific 'url'.`,
           mode: "search_guidance",
         };
       }
