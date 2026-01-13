@@ -8,6 +8,7 @@ import { createTypeGPTModels } from "./typegpt";
 import { createLaoZhangModels } from "./laozhang";
 import { createWorkersModels } from "./workers";
 import { ChatModel } from "app-types/chat";
+import { MODEL_DISPLAY_NAMES } from "./model-display-names";
 
 // A4F Models - Professional tier
 const a4fModels = createA4FModels();
@@ -262,7 +263,8 @@ export const customModelProvider = {
         isImageInputUnsupported: isImageInputUnsupportedModel(model),
         supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
         isPro:
-          [
+          !MODEL_DISPLAY_NAMES[name]?.includes("(Free)") &&
+          ([
             "meta",
             "openai",
             "qwen",
@@ -280,7 +282,7 @@ export const customModelProvider = {
             "anthropic",
             "grok",
           ].includes(provider) ||
-          (["google", "mistral"].includes(provider) && name.includes("-")),
+            (["google", "mistral"].includes(provider) && name.includes("-"))),
       })),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
   })),
