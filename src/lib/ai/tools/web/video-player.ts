@@ -83,7 +83,7 @@ export const videoPlayerTool = createTool({
         };
       }
 
-      const openTubeUrl = `https://opentubee.vercel.app/watch?v=${videoId}`;
+      const openTubeUrl = `https://opentubee.vercel.app/?view=video&video=${videoId}`;
 
       // Auto-fetch transcript
       let transcriptSummary: string | null = null;
