@@ -1,32 +1,50 @@
-import { tool as createTool } from "ai";
-import { z } from "zod";
+const API_KEY = process.env.EXA_API_KEY;
+
+const fetchExa = async (query: string): Promise<string | null> => {
+  if (!API_KEY) return null;
+  try {
+    const res = await fetch("https://api.exa.ai/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      body: JSON.stringify({
+        query: `site:youtube.com ${query}`,
+        numResults: 1,
+        type: "keyword",
+      }),
+    });
+    const data = await res.json();
+    return data.results?.[0]?.url || null;
+  } catch (_e) {
+    return null;
+  }
+};
 
 export const videoPlayerTool = createTool({
   name: "video-player",
   description:
-    "Play a specific YouTube video or search for one. If you have a URL, use 'url'. If you only have a name (e.g. 'cat videos'), use 'searchQuery'. The tool will guide you to the content.",
+    "Play a YouTube video. You can provide a specific 'url' OR a 'searchQuery'. If you provide a query, I will find and play the best match for you.",
   inputSchema: z.object({
-    url: z
-      .string()
-      .optional()
-      .describe("The specific YouTube video URL to play."),
+    url: z.string().optional().describe("The specific YouTube video URL."),
     searchQuery: z
       .string()
       .optional()
-      .describe("Topic or name of video to search for if URL is not known."),
+      .describe("Topic to search for (e.g. 'cat videos')"),
   }),
   execute: async ({ url, searchQuery }) => {
     try {
-      // 1. Handle Search Intent (Agent Redirect)
-      if (searchQuery && !url) {
-        return {
-          success: false, // "False" to force the model to rethink/retry
-          error: `To play '${searchQuery}', you must FIRST find the specific YouTube URL. Please use your 'webSearch' tool to find the best YouTube video URL for this query, then call this tool again with the specific 'url'.`,
-          mode: "search_guidance",
-        };
+      // 1. Internal Search (Smart Mode)
+      if (!url && searchQuery) {
+        const foundUrl = await fetchExa(searchQuery);
+        if (foundUrl) {
+          url = foundUrl; // Upgrade query to URL
+        } else {
+          return {
+            success: false,
+            error: `Could not find any YouTube videos for '${searchQuery}'. Please try a different query or find the URL yourself.`,
+          };
+        }
       }
 
-      // 2. Handle Play Intent
       if (!url) {
         return {
           success: false,
@@ -61,7 +79,6 @@ export const videoPlayerTool = createTool({
         if (transcriptRes.ok) {
           const transcriptData = await transcriptRes.json();
           if (transcriptData.success && transcriptData.transcript) {
-            // Get first 500 chars as summary for the AI to understand context
             transcriptSummary = transcriptData.transcript.slice(0, 500);
           }
         }
@@ -76,7 +93,7 @@ export const videoPlayerTool = createTool({
         openTubeUrl,
         transcriptSummary,
         message: transcriptSummary
-          ? `Playing video ${videoId}. Video is about: ${transcriptSummary.substring(0, 150)}...`
+          ? `Playing '${searchQuery || "video"}' (${videoId}). Content: ${transcriptSummary.substring(0, 150)}...`
           : `Playing video ${videoId} in OpenTube.`,
       };
     } catch (error: any) {
