@@ -1,3 +1,6 @@
+import { tool as createTool } from "ai";
+import { z } from "zod";
+
 const API_KEY = process.env.EXA_API_KEY;
 
 const fetchExa = async (query: string): Promise<string | null> => {
