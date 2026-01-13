@@ -136,7 +136,7 @@ const staticModels = {
     "moonshotai-kimi-k2-instruct-0905":
       deepInfraModels["moonshotai-Kimi-K2-Instruct-0905"], // Switched to DeepInfra free
     "moonshotai-Kimi-K2-Thinking":
-      deepInfraModels["moonshotai-Kimi-K2-Instruct-0905"], // Map to instruct as failure fallback if needed, or keep generic
+      deepInfraModels["moonshotai-Kimi-K2-Thinking"],
   },
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],

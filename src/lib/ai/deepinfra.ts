@@ -99,6 +99,7 @@ export function createDeepInfraModels() {
     "deepseek-ai/DeepSeek-R1-0528",
     "deepseek-ai/DeepSeek-OCR",
     "moonshotai/Kimi-K2-Instruct-0905",
+    "moonshotai/Kimi-K2-Thinking",
     "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
     "meta-llama/Llama-4-Scout-17B-16E-Instruct",
     "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
