@@ -58,7 +58,7 @@ export const videoPlayerTool = createTool({
       const openTubeUrl = `https://opentubee.vercel.app/watch?v=${videoId}`;
 
       // Auto-fetch transcript
-      let transcriptSummary = null;
+      let transcriptSummary: string | null = null;
       try {
         const transcriptRes = await fetch(
           `https://socialdown.itz-ashlynn.workers.dev/yt-trans?url=${encodeURIComponent(url)}`,
@@ -81,7 +81,7 @@ export const videoPlayerTool = createTool({
         openTubeUrl,
         transcriptSummary,
         message: transcriptSummary
-          ? `Playing video ${videoId}. Video is about: ${transcriptSummary.slice(0, 150)}...`
+          ? `Playing video ${videoId}. Video is about: ${transcriptSummary.substring(0, 150)}...`
           : `Playing video ${videoId} in OpenTube.`,
       };
     } catch (error: any) {
