@@ -6,6 +6,7 @@ import { createDeepInfraModels } from "./deepinfra";
 import { createLLMChatModels } from "./llmchat";
 import { createTypeGPTModels } from "./typegpt";
 import { createLaoZhangModels } from "./laozhang";
+import { createWorkersModels } from "./workers";
 import { ChatModel } from "app-types/chat";
 
 // A4F Models - Professional tier
@@ -22,6 +23,9 @@ const typegptModels = createTypeGPTModels();
 
 // LaoZhang Models - Pro Flagships
 const laozhangModels = createLaoZhangModels();
+
+// Workers Models - Free Workers
+const workersModels = createWorkersModels();
 
 const staticModels = {
   google: {
@@ -72,6 +76,7 @@ const staticModels = {
     "claude-opus-4-5-20251101": laozhangModels["claude-opus-4-5-20251101"],
     "claude-sonnet-4-20250514": laozhangModels["claude-sonnet-4-20250514"],
     "claude-sonnet-4-5-20250929": laozhangModels["claude-sonnet-4-5-20250929"],
+    "claude-sonnet-4.5-proxy": workersModels["claude-sonnet-4.5-proxy"], // New Free Proxy
     "cld-3-7-sonnet-20250219": laozhangModels["cld-3-7-sonnet-20250219"],
     "cld-opus-4-20250514": laozhangModels["cld-opus-4-20250514"],
     "cld-sonnet-4-20250514": laozhangModels["cld-sonnet-4-20250514"],
@@ -137,6 +142,7 @@ const staticModels = {
       deepInfraModels["moonshotai-Kimi-K2-Instruct-0905"], // Switched to DeepInfra free
     "moonshotai-Kimi-K2-Thinking":
       deepInfraModels["moonshotai-Kimi-K2-Thinking"],
+    wormgpt: workersModels["wormgpt"], // New Free Worker
   },
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
@@ -188,8 +194,8 @@ const staticModels = {
       typegptModels["LGAI-EXAONE-K-EXAONE-236B-A23B"],
   },
   zai: {
-    "zai-org-GLM-4.6": typegptModels["zai-org-GLM-4.6"],
-    "zai-org-GLM-4.7": typegptModels["zai-org-GLM-4.7"],
+    "zai-org-GLM-4.7": workersModels["glm-4.7"], // Upgraded to free worker
+    "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"], // Upgraded to free worker
   },
   allenai: {
     "allenai-OLMo-2-0325-32B-Instruct":

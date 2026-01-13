@@ -109,7 +109,6 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen-qwen3-next-80b-a3b-instruct": "Qwen 3 Next 80B Instruct",
   "qwen-qwen3-next-80b-a3b-thinking": "Qwen 3 Next 80B Thinking",
   "zai-org-GLM-4.6": "GLM-4.6",
-  "zai-org-GLM-4.7": "GLM-4.7",
   "allenai-OLMo-2-0325-32B-Instruct": "OLMo 2 32B Instruct",
   "Llama-3.3-70B-DeepInfra": "Llama 3.3 70B",
   "Llama-3.1-8B-DeepInfra": "Llama 3.1 8B",
@@ -162,6 +161,10 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // DeepSeek Latest
   "deepseek-v3": "DeepSeek V3 (L)",
   "deepseek-r1": "DeepSeek R1 (L)",
+  "claude-sonnet-4.5-proxy": "Claude 4.5 Sonnet (Free)",
+  wormgpt: "WormGPT (Uncensored)",
+  "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
+  "zai-org-GLM-4.5-air": "GLM-4.5 Air (Free)",
 };
 
 // Create reverse mapping from display names to backend names
