@@ -103,6 +103,20 @@ I apologize for the inconvenience - this is a YouTube limitation, not an issue w
         return "Could not retrieve transcript. The video might not have captions or is age-restricted.";
       }
 
+      // 5. Fallback if primary fails
+      try {
+        // console.log(`[YouTube Tool] Falling back to SocialDown API for: ${videoId}`);
+        const socialRes = await fetch(
+          `https://socialdown.itz-ashlynn.workers.dev/yt-trans?url=${encodeURIComponent(url)}`,
+        );
+        if (socialRes.ok) {
+          const socialData = await socialRes.json();
+          if (socialData.success && socialData.transcript) {
+            return socialData.transcript.slice(0, 25000);
+          }
+        }
+      } catch (_e) {}
+
       return `Failed to fetch transcript: ${err.message || "Unknown error"}`;
     }
   },

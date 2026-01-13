@@ -4,6 +4,7 @@ export enum AppDefaultToolkit {
   Http = "http",
   Code = "code",
   Memory = "memory",
+  Utilities = "utilities",
 }
 
 export enum DefaultToolName {
@@ -19,6 +20,9 @@ export enum DefaultToolName {
   SaveMemory = "saveMemory",
   SearchMemories = "searchMemories",
   YouTubeTranscript = "get-youtube-transcript",
+  CreateTempEmail = "create-temp-email",
+  GetTempEmailMessages = "get-temp-email-messages",
+  SendEmail = "send-email",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";

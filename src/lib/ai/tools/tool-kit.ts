@@ -10,6 +10,11 @@ import { jsExecutionTool } from "./code/js-run-tool";
 import { pythonExecutionTool } from "./code/python-run-tool";
 import { saveMemoryTool, searchMemoriesTool } from "./memory-tools";
 import { youtubeTranscriptTool } from "./web/youtube-transcript";
+import {
+  createTempEmailTool,
+  getTempEmailMessagesTool,
+  sendEmailTool,
+} from "./web/social-down";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -36,5 +41,10 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   [AppDefaultToolkit.Memory]: {
     [DefaultToolName.SaveMemory]: saveMemoryTool,
     [DefaultToolName.SearchMemories]: searchMemoriesTool,
+  },
+  [AppDefaultToolkit.Utilities]: {
+    [DefaultToolName.CreateTempEmail]: createTempEmailTool,
+    [DefaultToolName.GetTempEmailMessages]: getTempEmailMessagesTool,
+    [DefaultToolName.SendEmail]: sendEmailTool,
   },
 };
