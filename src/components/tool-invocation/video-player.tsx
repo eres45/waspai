@@ -1,5 +1,5 @@
 import { ToolUIPart } from "ai";
-import { ExternalLinkIcon, PlayCircleIcon } from "lucide-react";
+import { ExternalLinkIcon, PlayCircleIcon, SearchIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 import { TextShimmer } from "ui/text-shimmer";
 
@@ -17,17 +17,18 @@ export const VideoPlayer = memo(function VideoPlayer({
       return part.output as {
         success: boolean;
         openTubeUrl: string;
+        mode?: string;
         videoId?: string;
+        searchQuery?: string;
+        transcriptSummary?: string;
       };
-    }
-    const args = "args" in part ? part.args : (part as any).input;
-    if (args && typeof args === "object" && "url" in args) {
-      // We can't easily extract videoId here without duplicating logic,
-      // so we'll just wait for the tool output or show a generic loading state
-      return null;
     }
     return null;
   }, [part.state, part.output]);
+
+  const isSearch = useMemo(() => {
+    return output?.mode === "search";
+  }, [output]);
 
   return (
     <div className="flex flex-col">
@@ -35,8 +36,17 @@ export const VideoPlayer = memo(function VideoPlayer({
         <div className="border overflow-hidden relative rounded-xl shadow-lg fade-in animate-in duration-500 bg-card">
           {/* Header */}
           <div className="py-2.5 bg-muted px-4 flex items-center gap-1.5 z-10 min-h-[37px]">
-            <PlayCircleIcon className="size-4 text-primary" />
-            <span className="text-xs font-semibold">OpenTube Player</span>
+            {isSearch ? (
+              <>
+                <SearchIcon className="size-4 text-primary" />
+                <span className="text-xs font-semibold">YouTube Search</span>
+              </>
+            ) : (
+              <>
+                <PlayCircleIcon className="size-4 text-primary" />
+                <span className="text-xs font-semibold">OpenTube Player</span>
+              </>
+            )}
             <div className="flex-1" />
             {output?.openTubeUrl && (
               <a
@@ -46,12 +56,12 @@ export const VideoPlayer = memo(function VideoPlayer({
                 className="flex items-center gap-1 text-[10px] text-muted-foreground px-2 py-1 transition-all rounded-sm cursor-pointer hover:bg-input hover:text-foreground font-semibold"
               >
                 <ExternalLinkIcon className="size-2" />
-                Open Original
+                {isSearch ? "Open Search" : "Open Original"}
               </a>
             )}
           </div>
 
-          {/* Player Area */}
+          {/* Player/Search Area */}
           <div className="p-4">
             <div className="aspect-video w-full relative bg-black rounded-lg overflow-hidden border shadow-inner">
               {output?.openTubeUrl ? (
@@ -60,24 +70,44 @@ export const VideoPlayer = memo(function VideoPlayer({
                   className="absolute inset-0 w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  title="OpenTube Video Player"
+                  title={
+                    isSearch
+                      ? "YouTube Search Results"
+                      : "OpenTube Video Player"
+                  }
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                   <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   <TextShimmer className="text-sm font-medium">
-                    Initializing Player...
+                    {isSearch ? "Loading Search..." : "Initializing Player..."}
                   </TextShimmer>
                 </div>
               )}
             </div>
           </div>
 
+          {/* Transcript Summary */}
+          {output?.transcriptSummary && (
+            <div className="px-4 pb-3">
+              <div className="bg-muted/50 rounded-lg p-3 border">
+                <h4 className="text-[10px] font-semibold text-muted-foreground mb-1.5">
+                  AUTO-TRANSCRIPT SUMMARY
+                </h4>
+                <p className="text-xs text-foreground leading-relaxed">
+                  {output.transcriptSummary}...
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Status Message */}
           {isRunning && (
             <div className="px-4 pb-3 flex items-center gap-2">
               <TextShimmer className="text-[10px] text-muted-foreground">
-                Preparing secure stream via OpenTube Proxy...
+                {isSearch
+                  ? "Loading YouTube search via OpenTube..."
+                  : "Preparing secure stream via OpenTube Proxy..."}
               </TextShimmer>
             </div>
           )}
