@@ -83,7 +83,8 @@ export const videoPlayerTool = createTool({
         };
       }
 
-      const openTubeUrl = `https://opentubee.vercel.app/?view=video&video=${videoId}`;
+      // Use the same verified instance for playback as we used for search
+      const openTubeUrl = `https://y.com.sb/embed/${videoId}?autoplay=1`;
 
       // Auto-fetch transcript
       let transcriptSummary: string | null = null;
