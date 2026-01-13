@@ -34,7 +34,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           <div className="py-2.5 bg-muted px-4 flex items-center gap-1.5 z-10 min-h-[37px]">
             <PlayCircleIcon className="size-4 text-primary" />
             <span className="text-xs font-semibold">
-              Invidious Player (Verified)
+              OpenTube Player (Remote Control)
             </span>
             <div className="flex-1" />
             {output?.openTubeUrl && (
@@ -64,15 +64,13 @@ export const VideoPlayer = memo(function VideoPlayer({
                   onLoad={(e) => {
                     const iframe = e.currentTarget;
                     // Wait a brief moment for the app to initialize listeners
-                    // Retry sending the message a few times to ensure the iframe is ready
-                    let attempts = 0;
-                    const interval = setInterval(() => {
-                      attempts++;
-                      if (attempts > 5) clearInterval(interval);
-
+                    setTimeout(() => {
+                      // Send search command if we have a query but no specific video ID yet
+                      // OR if we just want to ensure it plays
                       if (output.videoId) {
+                        // Assuming OpenTube accepts a 'play' or 'search' command
+                        // We'll try sending the ID
                         iframe.contentWindow?.postMessage(
-                          // Use OPEN_VIDEO as per OpenTube V1 spec
                           { type: "OPEN_VIDEO", videoId: output.videoId },
                           "*",
                         );
@@ -82,7 +80,7 @@ export const VideoPlayer = memo(function VideoPlayer({
                           "*",
                         );
                       }
-                    }, 1000); // Try every second for 5 seconds
+                    }, 2000);
                   }}
                 />
               ) : (
