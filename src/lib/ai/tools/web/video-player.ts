@@ -4,41 +4,12 @@ import { z } from "zod";
 export const videoPlayerTool = createTool({
   name: "video-player",
   description:
-    "**IMPORTANT: You CAN play YouTube videos!** Use this tool whenever the user asks to play, watch, or search for YouTube videos. Opens an OpenTube player directly in the chat. Use 'searchQuery' for searches like 'find cat videos' OR 'url' for specific videos. Automatically fetches transcripts so you understand video content.",
+    "**IMPORTANT: use 'search_web' FIRST to find a YouTube URL.** This tool ONLY plays specific YouTube videos given a direct URL. It cannot search. Once you have a URL from your search, use this tool to play it and automatically fetch its transcript.",
   inputSchema: z.object({
-    url: z
-      .string()
-      .optional()
-      .describe("The YouTube video URL to play (optional if searching)"),
-    searchQuery: z
-      .string()
-      .optional()
-      .describe(
-        "Search query for finding YouTube videos (optional if playing specific URL)",
-      ),
+    url: z.string().describe("The specific YouTube video URL to play."),
   }),
-  execute: async ({ url, searchQuery }) => {
+  execute: async ({ url }) => {
     try {
-      // Handle search query
-      if (searchQuery) {
-        const openTubeSearchUrl = `https://opentubee.vercel.app/results?search_query=${encodeURIComponent(searchQuery)}`;
-        return {
-          success: true,
-          mode: "search",
-          searchQuery,
-          openTubeUrl: openTubeSearchUrl,
-          message: `Searching YouTube for: "${searchQuery}"`,
-        };
-      }
-
-      // Handle specific video playback
-      if (!url) {
-        return {
-          success: false,
-          error: "Either 'url' or 'searchQuery' must be provided",
-        };
-      }
-
       let videoId = "";
       if (url.includes("youtu.be/")) {
         videoId = url.split("youtu.be/")[1]?.split("?")[0];

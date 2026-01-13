@@ -26,7 +26,7 @@ export const VideoPlayer = memo(function VideoPlayer({
     return null;
   }, [part.state, part.output]);
 
-  const isSearch = useMemo(() => {
+  const _isSearch = useMemo(() => {
     return output?.mode === "search";
   }, [output]);
 
@@ -36,17 +36,8 @@ export const VideoPlayer = memo(function VideoPlayer({
         <div className="border overflow-hidden relative rounded-xl shadow-lg fade-in animate-in duration-500 bg-card">
           {/* Header */}
           <div className="py-2.5 bg-muted px-4 flex items-center gap-1.5 z-10 min-h-[37px]">
-            {isSearch ? (
-              <>
-                <SearchIcon className="size-4 text-primary" />
-                <span className="text-xs font-semibold">YouTube Search</span>
-              </>
-            ) : (
-              <>
-                <PlayCircleIcon className="size-4 text-primary" />
-                <span className="text-xs font-semibold">OpenTube Player</span>
-              </>
-            )}
+            <PlayCircleIcon className="size-4 text-primary" />
+            <span className="text-xs font-semibold">OpenTube Player</span>
             <div className="flex-1" />
             {output?.openTubeUrl && (
               <a
@@ -56,12 +47,12 @@ export const VideoPlayer = memo(function VideoPlayer({
                 className="flex items-center gap-1 text-[10px] text-muted-foreground px-2 py-1 transition-all rounded-sm cursor-pointer hover:bg-input hover:text-foreground font-semibold"
               >
                 <ExternalLinkIcon className="size-2" />
-                {isSearch ? "Open Search" : "Open Original"}
+                Open Original
               </a>
             )}
           </div>
 
-          {/* Player/Search Area */}
+          {/* Player Area */}
           <div className="p-4">
             <div className="aspect-video w-full relative bg-black rounded-lg overflow-hidden border shadow-inner">
               {output?.openTubeUrl ? (
@@ -70,17 +61,13 @@ export const VideoPlayer = memo(function VideoPlayer({
                   className="absolute inset-0 w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  title={
-                    isSearch
-                      ? "YouTube Search Results"
-                      : "OpenTube Video Player"
-                  }
+                  title="OpenTube Video Player"
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                   <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                   <TextShimmer className="text-sm font-medium">
-                    {isSearch ? "Loading Search..." : "Initializing Player..."}
+                    Initializing Player...
                   </TextShimmer>
                 </div>
               )}
@@ -105,9 +92,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           {isRunning && (
             <div className="px-4 pb-3 flex items-center gap-2">
               <TextShimmer className="text-[10px] text-muted-foreground">
-                {isSearch
-                  ? "Loading YouTube search via OpenTube..."
-                  : "Preparing secure stream via OpenTube Proxy..."}
+                Preparing secure stream via OpenTube Proxy...
               </TextShimmer>
             </div>
           )}
