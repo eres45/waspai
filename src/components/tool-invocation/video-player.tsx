@@ -71,7 +71,7 @@ export const VideoPlayer = memo(function VideoPlayer({
                         // Assuming OpenTube accepts a 'play' or 'search' command
                         // We'll try sending the ID
                         iframe.contentWindow?.postMessage(
-                          { type: "PLAY_VIDEO", videoId: output.videoId },
+                          { type: "OPEN_VIDEO", videoId: output.videoId },
                           "*",
                         );
                       } else if (output.searchQuery) {
