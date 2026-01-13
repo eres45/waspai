@@ -128,7 +128,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       <span className="pr-2">{item.name}</span>
                       <div className="ml-auto flex items-center gap-1">
                         {item.isUltra && (
-                          <div className="bg-primary/20 px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-bold text-primary h-fit">
+                          <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground h-fit">
                             ULTRA
                           </div>
                         )}
@@ -138,7 +138,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                           </div>
                         )}
                         {item.isFree && (
-                          <div className="bg-green-500/20 px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-bold text-green-600 dark:text-green-400 h-fit">
+                          <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground h-fit">
                             FREE
                           </div>
                         )}
