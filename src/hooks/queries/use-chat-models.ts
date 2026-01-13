@@ -14,6 +14,7 @@ export const useChatModels = (options?: SWRConfiguration) => {
         supportedFileMimeTypes: string[];
         isPro?: boolean;
         isUltra?: boolean;
+        isFree?: boolean;
       }[];
     }[]
   >("/api/chat/models", fetcher, {

@@ -15,7 +15,6 @@ export const GET = async () => {
         models: provider.models.map((model) => ({
           ...model,
           name: MODEL_DISPLAY_NAMES[model.name] || model.name,
-          isUltra: (model as any).isUltra,
         })),
       }))
       .sort((a, b) => {

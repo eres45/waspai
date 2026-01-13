@@ -1,7 +1,7 @@
 import { pgDb } from "lib/db/pg/db.pg";
-import { eq, sql } from "drizzle-orm";
-import { UserTable } from "lib/db/pg/schema.pg";
-import { UPLOAD_LIMITS, USER_ROLES } from "@/types/roles";
+import { sql } from "drizzle-orm";
+
+const DAILY_UPLOAD_LIMIT = 5;
 
 /**
  * Check if user has reached daily upload limit
@@ -12,16 +12,6 @@ export async function checkDailyUploadLimit(userId: string): Promise<{
   limit: number;
   resetTime: Date;
 }> {
-  // Fetch user role
-  const [user] = await pgDb
-    .select({ role: UserTable.role })
-    .from(UserTable)
-    .where(eq(UserTable.id, userId));
-
-  const role = user?.role || USER_ROLES.USER;
-  const limit =
-    UPLOAD_LIMITS[role as keyof typeof UPLOAD_LIMITS] || UPLOAD_LIMITS.user;
-
   // Get today's start time (UTC)
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
@@ -36,8 +26,8 @@ export async function checkDailyUploadLimit(userId: string): Promise<{
     `,
   );
 
-  const uploadCount = Number(result.rows?.[0]?.count) || 0;
-  const remaining = Math.max(0, limit - uploadCount);
+  const uploadCount = (result.rows?.[0]?.count as number) || 0;
+  const remaining = Math.max(0, DAILY_UPLOAD_LIMIT - uploadCount);
 
   // Calculate reset time (next day at 00:00 UTC)
   const resetTime = new Date(today);
@@ -46,7 +36,7 @@ export async function checkDailyUploadLimit(userId: string): Promise<{
   return {
     allowed: remaining > 0,
     remaining,
-    limit,
+    limit: DAILY_UPLOAD_LIMIT,
     resetTime,
   };
 }

@@ -38,9 +38,3 @@ export const userRolesInfo: UserRolesInfo = {
     description: "Basic user role",
   },
 };
-
-export const UPLOAD_LIMITS: Record<UserRoleNames, number> = {
-  admin: 1000,
-  editor: 100,
-  user: 5,
-};

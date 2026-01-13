@@ -8,7 +8,6 @@ import { createTypeGPTModels } from "./typegpt";
 import { createLaoZhangModels } from "./laozhang";
 import { createWorkersModels } from "./workers";
 import { ChatModel } from "app-types/chat";
-import { MODEL_DISPLAY_NAMES } from "./model-display-names";
 
 // A4F Models - Professional tier
 const a4fModels = createA4FModels();
@@ -229,6 +228,66 @@ const staticModels = {
   },
 };
 
+const laozhangModelValues = new Set(Object.values(laozhangModels));
+
+const FREE_MODEL_IDS = new Set([
+  "google-gemma-2-9b-it",
+  "google-gemma-2-12b-it",
+  "google-gemma-3-27b-it",
+  "cf-google-gemma-7b-it",
+  "cf-google-gemma-2b-it-lora",
+  "mistralai-Mistral-Small-3.1-24B-Instruct-2503",
+  "cf-mistralai-mistral-small-3.1-24b-instruct",
+  "cf-mistralai-mistral-7b-instruct-v0.1",
+  "cf-mistralai-mistral-7b-instruct-v0.2",
+  "cf-mistralai-openhermes-2.5-mistral-7b",
+  "claude-sonnet-4.5-proxy",
+  "openai-gpt-oss-120b",
+  "openai-gpt-oss-20b",
+  "meta-llama-llama-4-scout-17b-16e-instruct",
+  "meta-llama-llama-guard-4-12b",
+  "meta-llama-llama-prompt-guard-2-86m",
+  "llama-3.3-70b-deepinfra-turbo",
+  "Qwen-Qwen2-7B-Instruct",
+  "Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo",
+  "Qwen-Qwen3-235B-A22B-Instruct-2507",
+  "qwen-qwen3-next-80b-a3b-instruct",
+  "qwen-qwen3-next-80b-a3b-thinking",
+  "cf-qwen-qwen1.5-7b-chat-awq",
+  "cf-qwen-qwen1.5-14b-chat-awq",
+  "cf-qwen-qwen1.5-0.5b-chat",
+  "cf-qwen-qwen1.5-1.8b-chat",
+  "moonshotai-kimi-k2-instruct",
+  "moonshotai-kimi-k2-instruct-0905",
+  "moonshotai-Kimi-K2-Thinking",
+  "wormgpt",
+  "deepseek-ai-DeepSeek-V3.1-Terminus",
+  "deepseek-ai-DeepSeek-R1-Turbo",
+  "deepseek-ai-DeepSeek-R1",
+  "deepseek-v3",
+  "deepseek-r1",
+  "cf-deepseek-ai-deepseek-coder-6.7b-base",
+  "cf-deepseek-ai-deepseek-coder-6.7b-instruct",
+  "cf-deepseek-ai-deepseek-math-7b-instruct",
+  "MiniMaxAI-MiniMax-M2",
+  "cf-microsoft-phi-2",
+  "zai-org-GLM-4.7",
+  "zai-org-GLM-4.5-air",
+  "allenai-OLMo-2-0325-32B-Instruct",
+  "Llama-3.3-70B-DeepInfra",
+  "Llama-3.1-8B-DeepInfra",
+  "Llama-3.2-3B-DeepInfra",
+  "Llama-3.2-1B-DeepInfra",
+  "Llama-3-8B-DeepInfra",
+  "cf-llama-3-8b",
+  "cf-llama-3.1-8b",
+  "cf-llama-2-7b",
+  "cf-llama-2-13b",
+  "cf-llama-guard",
+  "cf-llama-3-8b-awq",
+  "qwen-qwen3-32b",
+]);
+
 const staticUnsupportedModels = new Set<LanguageModel>([]);
 
 const staticSupportImageInputModels = {};
@@ -262,14 +321,14 @@ export const customModelProvider = {
         isToolCallUnsupported: isToolCallUnsupportedModel(model),
         isImageInputUnsupported: isImageInputUnsupportedModel(model),
         supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
+        isUltra: laozhangModelValues.has(model),
+        isFree: FREE_MODEL_IDS.has(name),
         isPro:
-          !MODEL_DISPLAY_NAMES[name]?.includes("(Free)") &&
-          [
-            "anthropic",
-            "grok",
+          !FREE_MODEL_IDS.has(name) &&
+          !laozhangModelValues.has(model) &&
+          ([
+            "meta",
             "openai",
-            "google",
-            "mistral",
             "qwen",
             "moonshot",
             "canopy",
@@ -278,13 +337,14 @@ export const customModelProvider = {
             "microsoft",
             "tiiuae",
             "defog",
+            "other",
             "llm",
             "lgai",
             "zai",
-          ].includes(provider),
-        isUltra:
-          !MODEL_DISPLAY_NAMES[name]?.includes("(Free)") &&
-          Object.keys(laozhangModels).includes(name),
+            "anthropic",
+            "grok",
+          ].includes(provider) ||
+            (["google", "mistral"].includes(provider) && name.includes("-"))),
       })),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
   })),

@@ -1,6 +1,7 @@
 import { supabaseRest } from "@/lib/db/supabase-rest";
 import logger from "@/lib/logger";
-import { UPLOAD_LIMITS, USER_ROLES } from "@/types/roles";
+
+const DAILY_UPLOAD_LIMIT = 5;
 
 /**
  * Check if user has reached daily upload limit (REST API version)
@@ -12,26 +13,11 @@ export async function checkDailyUploadLimitRest(userId: string): Promise<{
   resetTime: Date;
 }> {
   try {
-    // 1. Fetch user role
-    const { data: userData, error: userError } = await supabaseRest
-      .from("user")
-      .select("role")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (userError) {
-      logger.error("Error fetching user role for limit:", userError);
-    }
-
-    const role = (userData as any)?.role || USER_ROLES.USER;
-    const limit =
-      UPLOAD_LIMITS[role as keyof typeof UPLOAD_LIMITS] || UPLOAD_LIMITS.user;
-
-    // 2. Get today's start time (UTC)
+    // Get today's start time (UTC)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    // 3. Query to count uploads today
+    // Query to count uploads today
     const { data, error } = await supabaseRest
       .from("file_uploads")
       .select("id", { count: "exact" })
@@ -43,29 +29,28 @@ export async function checkDailyUploadLimitRest(userId: string): Promise<{
       // On error, allow upload (fail open)
       return {
         allowed: true,
-        remaining: limit,
-        limit,
+        remaining: DAILY_UPLOAD_LIMIT,
+        limit: DAILY_UPLOAD_LIMIT,
         resetTime: getResetTime(),
       };
     }
 
     const uploadCount = data?.length || 0;
-    const remaining = Math.max(0, limit - uploadCount);
+    const remaining = Math.max(0, DAILY_UPLOAD_LIMIT - uploadCount);
 
     return {
       allowed: remaining > 0,
       remaining,
-      limit,
+      limit: DAILY_UPLOAD_LIMIT,
       resetTime: getResetTime(),
     };
   } catch (error) {
     logger.error("Error in checkDailyUploadLimitRest:", error);
-    const fallbackLimit = UPLOAD_LIMITS.user;
     // On error, allow upload (fail open)
     return {
       allowed: true,
-      remaining: fallbackLimit,
-      limit: fallbackLimit,
+      remaining: DAILY_UPLOAD_LIMIT,
+      limit: DAILY_UPLOAD_LIMIT,
       resetTime: getResetTime(),
     };
   }
