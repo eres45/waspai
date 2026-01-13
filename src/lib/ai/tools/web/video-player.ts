@@ -83,8 +83,8 @@ export const videoPlayerTool = createTool({
         };
       }
 
-      // Use the user's OpenTube app. The frontend component will handle the search via postMessage.
-      const openTubeUrl = `https://opentubee.vercel.app`;
+      // Reverting to verified Invidious embed for stability
+      const openTubeUrl = `https://y.com.sb/embed/${videoId}?autoplay=1`;
 
       // Auto-fetch transcript
       let transcriptSummary: string | null = null;

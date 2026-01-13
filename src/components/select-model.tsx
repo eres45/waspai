@@ -126,28 +126,16 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         <div className="ml-3" />
                       )}
                       <span className="pr-2">{item.name}</span>
-                      <div className="ml-auto flex items-center gap-1">
-                        {item.isUltra && (
-                          <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground h-fit">
-                            ULTRA
-                          </div>
-                        )}
-                        {item.isPro && !item.isUltra && (
-                          <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground h-fit">
-                            PRO
-                          </div>
-                        )}
-                        {item.isFree && (
-                          <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground h-fit">
-                            FREE
-                          </div>
-                        )}
-                        {item.isToolCallUnsupported && (
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium italic">
-                            No tools
-                          </div>
-                        )}
-                      </div>
+                      {item.isPro && (
+                        <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground mr-1 h-fit">
+                          PRO
+                        </div>
+                      )}
+                      {item.isToolCallUnsupported && (
+                        <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                          No tools
+                        </div>
+                      )}
                     </CommandItem>
                   ))}
                 </CommandGroup>
