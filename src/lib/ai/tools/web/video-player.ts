@@ -22,31 +22,47 @@ export const videoPlayerTool = createTool({
 
       // 1. Handle Native Search
       if (searchQuery && !url) {
-        try {
-          const searchRes = await fetch(
-            `https://y.com.sb/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`,
-          );
+        const instances = [
+          "https://inv.tux.pizza",
+          "https://vid.priv.au",
+          "https://invidious.jing.rocks",
+          "https://y.com.sb",
+          "https://invidious.nerdvpn.de",
+        ];
 
-          if (!searchRes.ok) {
-            throw new Error(`Search failed with status ${searchRes.status}`);
+        let searchSuccess = false;
+
+        for (const instance of instances) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+            const searchRes = await fetch(
+              `${instance}/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`,
+              { signal: controller.signal },
+            );
+            clearTimeout(timeoutId);
+
+            if (searchRes.ok) {
+              const searchResults = await searchRes.json();
+              if (searchResults && searchResults.length > 0) {
+                const firstVideo = searchResults[0];
+                videoId = firstVideo.videoId;
+                title = firstVideo.title;
+                searchSuccess = true;
+                break; // Found it!
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to search on ${instance}:`, e);
+            // Continue to next instance
           }
+        }
 
-          const searchResults = await searchRes.json();
-          if (!searchResults || searchResults.length === 0) {
-            return {
-              success: false,
-              error: `No videos found for query: "${searchQuery}"`,
-            };
-          }
-
-          // Pick the first video
-          const firstVideo = searchResults[0];
-          videoId = firstVideo.videoId;
-          title = firstVideo.title;
-        } catch (err: any) {
+        if (!searchSuccess) {
           return {
             success: false,
-            error: `Internal YouTube search failed: ${err.message}. Please try providing a specific URL.`,
+            error: `Could not find any videos for "${searchQuery}" after trying multiple sources. Please try a specific URL.`,
           };
         }
       }
