@@ -198,10 +198,6 @@ const staticModels = {
     "zai-org-GLM-4.7": workersModels["glm-4.7"], // Upgraded to free worker
     "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"], // Upgraded to free worker
   },
-  allenai: {
-    "allenai-OLMo-2-0325-32B-Instruct":
-      typegptModels["allenai-OLMo-2-0325-32B-Instruct"],
-  },
   others: {
     "cf-huggingfacegi-zephyr-7b-beta":
       llmChatModels["cf-huggingfacegi-zephyr-7b-beta"],

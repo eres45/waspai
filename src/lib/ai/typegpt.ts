@@ -16,7 +16,6 @@ export function createTypeGPTModels() {
     "deepseek-ai/deepseek-r1-distill-qwen-32b",
     "google/gemma-3-27b-it",
     "LGAI-EXAONE/K-EXAONE-236B-A23B",
-    "allenai/OLMo-2-0325-32B-Instruct",
     "microsoft/phi-4-multimodal-instruct",
     "mistralai/Devstral-Small-2505",
     "mistralai/Mistral-Small-3.1-24B-Instruct-2503",
