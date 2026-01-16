@@ -137,7 +137,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                             className={cn(
                               "relative px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold flex items-center justify-center backface-visible",
                               (item as any).tier === "Ultra"
-                                ? "bg-black text-white border border-transparent"
+                                ? "bg-background/90 backdrop-blur-xl text-foreground border border-transparent"
                                 : "bg-muted text-muted-foreground"
                             )}
                           >
