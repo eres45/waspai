@@ -129,9 +129,9 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       {(item as any).tier !== "Free" || (item as any).tier === "Free" ? (
                         <div
                           className={cn(
-                            "px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold mr-1 h-fit",
+                            "px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold mr-1 h-fit transition-all",
                             (item as any).tier === "Ultra"
-                               ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                               ? "bg-muted text-muted-foreground border border-amber-500/60 shadow-[0_0_6px_-2px_rgba(245,158,11,0.5)]"
                                : "bg-muted text-muted-foreground"
                           )}
                         >
