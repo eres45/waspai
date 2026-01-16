@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.BETTER_AUTH_URL || "https://example.com";
+  const baseUrl = process.env.BETTER_AUTH_URL || "https://waspai.in";
 
   return [
     {
