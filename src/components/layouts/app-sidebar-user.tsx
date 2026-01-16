@@ -43,6 +43,7 @@ import { useThemeStyle } from "@/hooks/use-theme-style";
 import { BasicUser } from "app-types/user";
 import { getUserAvatar } from "lib/user/utils";
 import { Skeleton } from "ui/skeleton";
+import { ServicesMenu } from "./services-menu";
 
 export function AppSidebarUserInner(props: {
   user?: BasicUser;
@@ -130,6 +131,7 @@ export function AppSidebarUserInner(props: {
             </DropdownMenuItem>
             <SelectTheme />
             <SelectLanguage />
+            <ServicesMenu />
             <DropdownMenuItem asChild>
               <Link href="/subscription" className="cursor-pointer">
                 <CreditCard className="size-4 text-foreground" />
