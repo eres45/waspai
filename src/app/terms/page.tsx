@@ -15,14 +15,14 @@ export default function TermsPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
           <p>
-            By accessing and using <strong>Wasp AI Solutions</strong> ("Service"), you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
+            By accessing and using <strong>Wasp AI Solutions</strong> (&quot;Service&quot;), you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.
           </p>
         </section>
 
         <section>
           <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
           <p>
-            Wasp AI is a multi-model AI platform providing access to various Large Language Models (LLMs), image generation tools, and utility features. You understand and agree that the Service is provided "AS-IS" and that Wasp AI assumes no responsibility for the timeliness, deletion, mis-delivery or failure to store any user communications or personalization settings.
+            Wasp AI is a multi-model AI platform providing access to various Large Language Models (LLMs), image generation tools, and utility features. You understand and agree that the Service is provided &quot;AS-IS&quot; and that Wasp AI assumes no responsibility for the timeliness, deletion, mis-delivery or failure to store any user communications or personalization settings.
           </p>
         </section>
 

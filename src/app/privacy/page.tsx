@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
           <p>
-            Welcome to <strong>Wasp AI Solutions</strong> ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website (waspai.in) and use our AI services.
+            Welcome to <strong>Wasp AI Solutions</strong> (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website (waspai.in) and use our AI services.
           </p>
         </section>
 
