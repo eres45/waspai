@@ -127,15 +127,22 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       )}
                       <span className="pr-2">{item.name}</span>
                       {(item as any).tier !== "Free" || (item as any).tier === "Free" ? (
-                        <div
-                          className={cn(
-                            "px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold mr-1 h-fit transition-all",
-                            (item as any).tier === "Ultra"
-                               ? "bg-muted text-muted-foreground border border-amber-500/60 shadow-[0_0_6px_-2px_rgba(245,158,11,0.5)]"
-                               : "bg-muted text-muted-foreground"
+                        <div className="relative mr-1 h-fit">
+                          {(item as any).tier === "Ultra" && (
+                            <div className="absolute inset-0 rounded-sm overflow-hidden p-[1px]">
+                              <div className="absolute inset-[-1000%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#00000000_50%,#ffffff_100%)] opacity-70" />
+                            </div>
                           )}
-                        >
-                          {(item as any).tier}
+                          <div
+                            className={cn(
+                              "relative px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold flex items-center justify-center backface-visible",
+                              (item as any).tier === "Ultra"
+                                ? "bg-black text-white border border-transparent"
+                                : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {(item as any).tier}
+                          </div>
                         </div>
                       ) : null}
                       {item.isToolCallUnsupported && (
