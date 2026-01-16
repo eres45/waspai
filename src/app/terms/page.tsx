@@ -31,7 +31,7 @@ export default function TermsPage() {
           <p>You agree to not use the Service to:</p>
           <ul className="list-disc pl-6 space-y-2 mt-2">
             <li>Generate content that is unlawful, harmful, threatening, abusive, harassing, defamatory, vulgar, obscene, or libellous.</li>
-            <li>Generte content that promotes discrimination, hatred, or violence.</li>
+            <li>Generate content that promotes discrimination, hatred, or violence.</li>
             <li>Impersonate any person or entity.</li>
             <li>Upload any material that contains software viruses or any other computer code designed to interrupt, destroy or limit the functionality of any computer software or hardware.</li>
           </ul>

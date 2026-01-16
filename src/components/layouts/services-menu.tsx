@@ -56,6 +56,17 @@ export function ServicesMenu() {
              <span>Sitemap</span>
           </DropdownMenuItem>
 
+          <DropdownMenuSeparator />
+
+          <DropdownMenuLabel className="text-muted-foreground text-xs uppercase tracking-wider">
+            Community
+          </DropdownMenuLabel>
+
+          <DropdownMenuItem onClick={() => window.open("https://discord.gg/XBC6TN4FqV", "_blank")} className="cursor-pointer">
+             <Briefcase className="mr-2 size-4 text-muted-foreground" />
+             <span>Join Discord</span>
+          </DropdownMenuItem>
+
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
