@@ -29,6 +29,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { appStore } from "@/app/store";
 import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
 import { capitalizeFirstLetter, cn, fetcher } from "lib/utils";
@@ -129,12 +130,11 @@ export function AppSidebarUserInner(props: {
             </DropdownMenuItem>
             <SelectTheme />
             <SelectLanguage />
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => appStoreMutate({ openSubscription: true })}
-            >
-              <CreditCard className="size-4 text-foreground" />
-              <span>Subscription</span>
+            <DropdownMenuItem asChild>
+              <Link href="/subscription" className="cursor-pointer">
+                <CreditCard className="size-4 text-foreground" />
+                <span>Subscription</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
