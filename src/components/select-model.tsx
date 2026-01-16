@@ -126,11 +126,18 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         <div className="ml-3" />
                       )}
                       <span className="pr-2">{item.name}</span>
-                      {item.isPro && (
-                        <div className="bg-muted px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold text-muted-foreground mr-1 h-fit">
-                          PRO
+                      {(item as any).tier !== "Free" || (item as any).tier === "Free" ? (
+                        <div
+                          className={cn(
+                            "px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold mr-1 h-fit",
+                            (item as any).tier === "Ultra"
+                               ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                               : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {(item as any).tier}
                         </div>
-                      )}
+                      ) : null}
                       {item.isToolCallUnsupported && (
                         <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                           No tools

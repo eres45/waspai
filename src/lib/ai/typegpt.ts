@@ -13,17 +13,18 @@ export function createTypeGPTModels() {
   });
 
   const modelIds = [
-    "deepseek-ai/deepseek-r1-distill-qwen-32b",
-    "google/gemma-3-27b-it",
-    "LGAI-EXAONE/K-EXAONE-236B-A23B",
-    "microsoft/phi-4-multimodal-instruct",
-    "mistralai/Devstral-Small-2505",
-    "mistralai/Mistral-Small-3.1-24B-Instruct-2503",
-    "Qwen/Qwen3-235B-A22B-Instruct-2507",
-    "qwen/qwen3-next-80b-a3b-instruct",
-    "qwen/qwen3-next-80b-a3b-thinking",
-    "zai-org/GLM-4.6",
-    "zai-org/GLM-4.7",
+    "command-r-plus-08-2024",
+    "command-r7b-12-2024",
+    "deepseek-ai/deepseek-r1",
+    "deepseek-ai/deepseek-v3.1",
+    "glm-4.5-air",
+    "meta/llama-3.2-90b-vision-instruct",
+    "meta/llama-4-scout-17b-16e-instruct",
+    "nemotron-3-nano-30b-a3b",
+    "nemotron-nano-9b-v2",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "umbra",
   ];
 
   const models: Record<string, LanguageModel> = {};

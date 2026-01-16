@@ -1,10 +1,10 @@
 "use client";
 
 import { isToolUIPart, type UIMessage } from "ai";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import equal from "lib/equal";
 
-import { cn, truncateString } from "lib/utils";
+import { cn } from "lib/utils";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import {
   UserMessagePart,
@@ -14,8 +14,7 @@ import {
   FileMessagePart,
   SourceUrlMessagePart,
 } from "./message-parts";
-import { ChevronDown, ChevronUp, TriangleAlertIcon } from "lucide-react";
-import { Button } from "ui/button";
+import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ChatMetadata } from "app-types/chat";
 
@@ -201,52 +200,49 @@ export const PreviewMessage = memo(
   },
 );
 
+const FRIENDLY_ERROR_MESSAGES = [
+  "Oh no! This model is slightly busy. Try another one! 😉",
+  "Oops! The AI is taking a coffee break. Please try again or switch models. ☕",
+  "System overload! Give it a sec or pick a different model. 🤖",
+  "Looks like this model is having a nap. Wake it up or try another! 🌙",
+  "This model is a bit shy right now. Maybe try its sibling? 🙈",
+  "Traffic jam in the neural network! 🚦 Try switching models.",
+];
+
 export const ErrorMessage = ({
   error,
 }: {
   error: Error;
   message?: UIMessage;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const maxLength = 200;
   const t = useTranslations();
+  
+  // Pick a random message on mount
+  const friendlyMessage = useMemo(() => {
+    return FRIENDLY_ERROR_MESSAGES[
+      Math.floor(Math.random() * FRIENDLY_ERROR_MESSAGES.length)
+    ];
+  }, []);
+
   return (
     <div className="w-full mx-auto max-w-3xl px-6 animate-in fade-in mt-4">
       <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-4 px-2 opacity-70">
+        <div className="flex flex-col gap-4 px-2 opacity-90">
           <div className="flex items-start gap-3">
-            <div className="p-1.5 bg-muted rounded-sm">
+            <div className="p-1.5 bg-destructive/10 rounded-sm">
               <TriangleAlertIcon className="h-3.5 w-3.5 text-destructive" />
             </div>
             <div className="flex-1">
-              <p className="font-medium text-sm mb-2">{t("Chat.Error")}</p>
+              <p className="font-medium text-sm mb-1 text-destructive">
+                {t("Chat.Error")}
+              </p>
               <div className="text-sm text-muted-foreground">
-                <div className="whitespace-pre-wrap">
-                  {isExpanded
-                    ? error.message
-                    : truncateString(error.message, maxLength)}
-                </div>
-                {error.message.length > maxLength && (
-                  <Button
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    variant={"ghost"}
-                    className="h-auto p-1 text-xs mt-2"
-                    size={"sm"}
-                  >
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="h-3 w-3 mr-1" />
-                        {t("Common.showLess")}
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-3 w-3 mr-1" />
-                        {t("Common.showMore")}
-                      </>
-                    )}
-                  </Button>
-                )}
-                <p className="text-xs text-muted-foreground mt-3 italic">
+                <p>{friendlyMessage}</p>
+                {/* 
+                  Hidden actual error for debugging if needed:
+                  <p className="hidden">{error.message}</p> 
+                */}
+                <p className="text-xs text-muted-foreground mt-2 italic opacity-70">
                   {t("Chat.thisMessageWasNotSavedPleaseTryTheChatAgain")}
                 </p>
               </div>

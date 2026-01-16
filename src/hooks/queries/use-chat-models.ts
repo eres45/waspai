@@ -13,6 +13,7 @@ export const useChatModels = (options?: SWRConfiguration) => {
         isImageInputUnsupported: boolean;
         supportedFileMimeTypes: string[];
         isPro?: boolean;
+        tier?: string;
       }[];
     }[]
   >("/api/chat/models", fetcher, {

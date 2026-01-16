@@ -1,5 +1,4 @@
 import "server-only";
-
 import { LanguageModel } from "ai";
 import { createA4FModels } from "./a4f-models";
 import { createDeepInfraModels } from "./deepinfra";
@@ -8,7 +7,6 @@ import { createTypeGPTModels } from "./typegpt";
 import { createLaoZhangModels } from "./laozhang";
 import { createWorkersModels } from "./workers";
 import { ChatModel } from "app-types/chat";
-import { MODEL_DISPLAY_NAMES } from "./model-display-names";
 
 // A4F Models - Professional tier
 const a4fModels = createA4FModels();
@@ -29,9 +27,16 @@ const laozhangModels = createLaoZhangModels();
 const workersModels = createWorkersModels();
 
 const staticModels = {
+  cohere: {
+    "command-r-plus-08-2024": typegptModels["command-r-plus-08-2024"],
+    "command-r7b-12-2024": typegptModels["command-r7b-12-2024"],
+  },
+  nvidia: {
+    "nemotron-3-nano-30b-a3b": typegptModels["nemotron-3-nano-30b-a3b"],
+    "nemotron-nano-9b-v2": typegptModels["nemotron-nano-9b-v2"],
+  },
   google: {
     "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
-    "google-gemma-3-27b-it": typegptModels["google-gemma-3-27b-it"], // New
     "gemini-1.5-pro-latest": laozhangModels["gemini-1.5-pro-latest"],
     "gemini-2.0-flash-001": laozhangModels["gemini-2.0-flash-001"],
     "gemini-2.5-flash": laozhangModels["gemini-2.5-flash"],
@@ -49,10 +54,6 @@ const staticModels = {
       deepInfraModels["mistralai-Mistral-7B-Instruct-v0.1"],
     "mistralai-Mistral-7B-Instruct-v0.2":
       deepInfraModels["mistralai-Mistral-7B-Instruct-v0.2"],
-    "mistralai-Devstral-Small-2505":
-      typegptModels["mistralai-Devstral-Small-2505"], // New
-    "mistralai-Mistral-Small-3.1-24B-Instruct-2503":
-      typegptModels["mistralai-Mistral-Small-3.1-24B-Instruct-2503"], // New
     "mistralai-Mistral-Small-3.2-24B-Instruct-2506":
       deepInfraModels["mistralai-Mistral-Small-3.2-24B-Instruct-2506"], // New Verified
     "cf-mistralai-mistral-small-3.1-24b-instruct":
@@ -92,20 +93,22 @@ const staticModels = {
     "gpt-5-mini": laozhangModels["gpt-5-mini"],
     "gpt-5.1": laozhangModels["gpt-5.1"],
     "gpt-5.2": laozhangModels["gpt-5.2"],
-    o1: laozhangModels["o1"],
+    "o1": laozhangModels["o1"],
     "o1-pro": laozhangModels["o1-pro"],
-    o3: laozhangModels["o3"],
+    "o3": laozhangModels["o3"],
     "o3-pro": laozhangModels["o3-pro"],
     "o3-mini": laozhangModels["o3-mini"],
     "o4-mini": laozhangModels["o4-mini"],
     "o4-mini-high": laozhangModels["o4-mini-high"],
-    "openai-gpt-oss-120b": deepInfraModels["openai-gpt-oss-120b"], // Switched to DeepInfra free
-    "openai-gpt-oss-20b": deepInfraModels["openai-gpt-oss-20b"], // Switched to DeepInfra free
+    "openai-gpt-oss-120b": typegptModels["openai-gpt-oss-120b"], // Switched to TypeGPT
+    "openai-gpt-oss-20b": typegptModels["openai-gpt-oss-20b"], // Switched to TypeGPT
     "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
   },
   meta: {
     "llama-4-scout-17b-16e-instruct":
-      deepInfraModels["meta-llama-Llama-4-Scout-17B-16E-Instruct"], // Switched to DeepInfra free
+      typegptModels["meta-llama-4-scout-17b-16e-instruct"], // Switched to TypeGPT
+    "llama-3.2-90b-vision-instruct":
+      typegptModels["meta-llama-3.2-90b-vision-instruct"], // New TypeGPT
     "llama-4-maverick-17b-128e-instruct-fp8":
       deepInfraModels["meta-llama-Llama-4-Maverick-17B-128E-Instruct-FP8"], // New Verified
     "llama-guard-4-12b": deepInfraModels["meta-llama-Llama-Guard-4-12B"], // Switched to DeepInfra free
@@ -129,8 +132,6 @@ const staticModels = {
       deepInfraModels["Qwen-Qwen3-235B-A22B-Instruct-2507"], // Switched to DeepInfra free
     "qwen-qwen3-next-80b-a3b-instruct":
       deepInfraModels["Qwen-Qwen3-Next-80B-A3B-Instruct"], // Switched to DeepInfra free
-    "qwen-qwen3-next-80b-a3b-thinking":
-      typegptModels["qwen-qwen3-next-80b-a3b-thinking"],
     "cf-qwen-qwen1.5-7b-chat-awq": llmChatModels["cf-qwen-qwen1.5-7b-chat-awq"],
     "cf-qwen-qwen1.5-14b-chat-awq":
       llmChatModels["cf-qwen-qwen1.5-14b-chat-awq"],
@@ -149,8 +150,8 @@ const staticModels = {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
   },
   deepseek: {
-    "deepseek-ai-deepseek-r1-distill-qwen-32b":
-      typegptModels["deepseek-ai-deepseek-r1-distill-qwen-32b"],
+    "deepseek-ai-deepseek-r1": typegptModels["deepseek-ai-deepseek-r1"], // TypeGPT
+    "deepseek-ai-deepseek-v3.1": typegptModels["deepseek-ai-deepseek-v3.1"], // TypeGPT
     "deepseek-ai-deepseek-r1-distill-llama-70b":
       deepInfraModels["deepseek-ai-DeepSeek-R1-Distill-Llama-70B"], // New Verified
     "deepseek-ai-deepseek-r1-0528-turbo":
@@ -166,7 +167,6 @@ const staticModels = {
     "deepseek-ai-DeepSeek-V3": deepInfraModels["deepseek-ai-DeepSeek-V3"], // New Verified
     "deepseek-ai-DeepSeek-R1-Turbo":
       deepInfraModels["deepseek-ai-DeepSeek-R1-0528-Turbo"], // Map to new turbo
-    "deepseek-ai-DeepSeek-R1": deepInfraModels["deepseek-ai-DeepSeek-R1-0528"], // Map to new R1
     "deepseek-r1": laozhangModels["deepseek-r1"],
     "cf-deepseek-ai-deepseek-coder-6.7b-base":
       llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-base"],
@@ -179,8 +179,6 @@ const staticModels = {
     "MiniMaxAI-MiniMax-M2": deepInfraModels["MiniMaxAI-MiniMax-M2"],
   },
   microsoft: {
-    "microsoft-phi-4-multimodal-instruct":
-      typegptModels["microsoft-phi-4-multimodal-instruct"],
     "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
   },
   tiiuae: {
@@ -190,13 +188,14 @@ const staticModels = {
   defog: {
     "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
   },
-  lgai: {
-    "LGAI-EXAONE-K-EXAONE-236B-A23B":
-      typegptModels["LGAI-EXAONE-K-EXAONE-236B-A23B"],
-  },
+  lgai: {},
   zai: {
+    "glm-4.5-air": typegptModels["glm-4.5-air"], // TypeGPT
     "zai-org-GLM-4.7": workersModels["glm-4.7"], // Upgraded to free worker
     "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"], // Upgraded to free worker
+  },
+  umbra: {
+     "umbra": typegptModels["umbra"],
   },
   others: {
     "cf-huggingfacegi-zephyr-7b-beta":
@@ -250,36 +249,39 @@ export const getFilePartSupportedMimeTypes = (_model: LanguageModel) => {
 export const customModelProvider = {
   modelsInfo: Object.entries(allModels).map(([provider, models]) => ({
     provider,
-    // Filter out gemini-search from the model menu (it's used automatically for search queries)
     models: Object.entries(models)
       .filter(([name]) => name !== "gemini-search")
-      .map(([name, model]) => ({
-        name,
-        isToolCallUnsupported: isToolCallUnsupportedModel(model),
-        isImageInputUnsupported: isImageInputUnsupportedModel(model),
-        supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
-        isPro:
-          !MODEL_DISPLAY_NAMES[name]?.includes("(Free)") &&
-          ([
-            "meta",
-            "openai",
-            "qwen",
-            "moonshot",
-            "canopy",
-            "deepseek",
-            "minimax",
-            "microsoft",
-            "tiiuae",
-            "defog",
-            "other",
-            "llm",
-            "lgai",
-            "zai",
-            "anthropic",
-            "grok",
-          ].includes(provider) ||
-            (["google", "mistral"].includes(provider) && name.includes("-"))),
-      })),
+      .map(([name, model]) => {
+        let tier = "Free"; // Default to Free
+        // Determine tier based on logic
+        // 1. "Ultra" for LaoZhang
+        if (Object.values(laozhangModels).includes(model)) {
+          tier = "Ultra";
+        }
+        // 2. "Pro" for TypeGPT, A4F, DeepInfra
+        else if (
+          Object.values(typegptModels).includes(model) ||
+          Object.values(a4fModels).includes(model) ||
+          Object.values(deepInfraModels).includes(model)
+        ) {
+          tier = "Pro";
+        }
+        // 3. "Free" for Workers, LLMChat
+        else if (
+          Object.values(workersModels).includes(model) ||
+          Object.values(llmChatModels).includes(model)
+        ) {
+          tier = "Free";
+        }
+        
+        return {
+          name,
+          isToolCallUnsupported: isToolCallUnsupportedModel(model),
+          isImageInputUnsupported: isImageInputUnsupportedModel(model),
+          supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
+          tier, // New property
+        };
+      }),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
   })),
   getModel: (model?: ChatModel): LanguageModel => {
