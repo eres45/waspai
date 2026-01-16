@@ -29,7 +29,7 @@ export default function RefundPage() {
           </p>
           <ul className="list-disc pl-6 space-y-2 mt-2">
              <li>Partial months of service.</li>
-             <li>"Accidental" purchases where the service was used.</li>
+             <li>&quot;Accidental&quot; purchases where the service was used.</li>
              <li>Change of mind after extensive usage.</li>
           </ul>
           <p className="mt-4">
