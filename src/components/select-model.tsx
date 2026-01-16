@@ -130,7 +130,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         <div className="relative mr-1 h-fit">
                           {(item as any).tier === "Ultra" && (
                             <div className="absolute inset-0 rounded-sm overflow-hidden p-[1px]">
-                              <div className="absolute inset-[-1000%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#00000000_50%,#ffffff_100%)] opacity-70" />
+                              <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#00000000_50%,#ffffff_100%)] opacity-100 blur-[2px]" />
                             </div>
                           )}
                           <div
