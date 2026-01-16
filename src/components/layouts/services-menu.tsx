@@ -9,7 +9,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "ui/dropdown-menu";
-import { Briefcase, FileText, Shield, Globe, ChevronRight } from "lucide-react";
+import {
+  LifeBuoyIcon,
+  TruckIcon,
+  CreditCardIcon,
+  Briefcase,
+  FileText,
+  Shield,
+  Globe,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
 // import { useTranslations } from "next-intl";
 
@@ -30,6 +39,24 @@ export function ServicesMenu() {
           <DropdownMenuLabel className="text-muted-foreground text-xs uppercase tracking-wider">
             Company
           </DropdownMenuLabel>
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/contact" className="w-full flex items-center gap-2">
+              <LifeBuoyIcon className="size-4 text-muted-foreground" />
+              <span>Contact Us</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/shipping" className="w-full flex items-center gap-2">
+              <TruckIcon className="size-4 text-muted-foreground" />
+              <span>Shipping Policy</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/refund" className="w-full flex items-center gap-2">
+              <CreditCardIcon className="size-4 text-muted-foreground" />
+              <span>Refund Policy</span>
+            </Link>
+          </DropdownMenuItem>
           
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link href="/privacy">
