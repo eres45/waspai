@@ -188,7 +188,6 @@ const staticModels = {
   defog: {
     "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
   },
-  lgai: {},
   zai: {
     "glm-4.5-air": typegptModels["glm-4.5-air"], // TypeGPT
     "zai-org-GLM-4.7": workersModels["glm-4.7"], // Upgraded to free worker
