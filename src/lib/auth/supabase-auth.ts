@@ -61,7 +61,7 @@ export async function signUpWithEmail(
       user_metadata: {
         name,
       },
-      email_confirm: false, // Require email verification
+      email_confirm: true, // Auto-confirm email (No verification required)
     });
 
     if (error) {
@@ -93,7 +93,8 @@ export async function signUpWithEmail(
         name: name || data.user.user_metadata?.name || "",
         email_confirmed_at: data.user.email_confirmed_at,
       },
-      requiresEmailVerification: !data.user.email_confirmed_at,
+      // requiresEmailVerification: !data.user.email_confirmed_at,
+      requiresEmailVerification: false, // Forced to false for auto-confirm
     };
   } catch (error) {
     logger.error("Sign up error:", error);
