@@ -4,7 +4,7 @@ import { appStore } from "@/app/store";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
 import { ChatModel } from "app-types/chat";
 import { cn } from "lib/utils";
-import { CheckIcon, ChevronDown } from "lucide-react";
+import { CheckIcon, ChevronDown, ListFilter } from "lucide-react";
 import { Fragment, memo, PropsWithChildren, useEffect, useState } from "react";
 import { Button } from "ui/button";
 
@@ -19,6 +19,12 @@ import {
 } from "ui/command";
 import { ModelProviderIcon } from "ui/model-provider-icon";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "ui/dropdown-menu";
 
 interface SelectModelProps {
   onSelect: (model: ChatModel) => void;
@@ -31,6 +37,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
   const [open, setOpen] = useState(false);
   const { data: providers } = useChatModels();
   const [model, setModel] = useState(props.currentModel);
+  const [filter, setFilter] = useState<"All" | "Free" | "Pro" | "Ultra">("All");
 
   useEffect(() => {
     const modelToUse = props.currentModel ?? appStore.getState().chatModel;
@@ -39,6 +46,15 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
       setModel(modelToUse);
     }
   }, [props.currentModel]);
+
+  const filteredProviders = providers?.map((provider) => ({
+    ...provider,
+    models: provider.models.filter(
+      (m) =>
+        filter === "All" ||
+        (m as any).tier === filter
+    ),
+  })).filter((p) => p.models.length > 0);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -73,13 +89,43 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
           value={JSON.stringify(model)}
           onClick={(e) => e.stopPropagation()}
         >
-          <CommandInput
-            placeholder="search model..."
-            data-testid="model-search-input"
-          />
+          <div className="relative">
+            <CommandInput
+              placeholder="search model..."
+              data-testid="model-search-input"
+              className="pr-10" 
+            />
+            <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <ListFilter className={cn("h-4 w-4", filter !== "All" && "text-primary")} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setFilter("All")}>
+                      Default (All)
+                      {filter === "All" && <CheckIcon className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("Free")}>
+                      Free Models
+                      {filter === "Free" && <CheckIcon className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("Pro")}>
+                      Pro Models
+                       {filter === "Pro" && <CheckIcon className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setFilter("Ultra")}>
+                      Ultra Models
+                       {filter === "Ultra" && <CheckIcon className="ml-auto h-4 w-4" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+          </div>
           <CommandList className="p-2">
             <CommandEmpty>No results found.</CommandEmpty>
-            {providers?.map((provider, i) => (
+            {filteredProviders?.map((provider, i) => (
               <Fragment key={provider.provider}>
                 <CommandGroup
                   heading={
@@ -153,7 +199,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {i < providers?.length - 1 && <CommandSeparator />}
+                {i < filteredProviders?.length - 1 && <CommandSeparator />}
               </Fragment>
             ))}
           </CommandList>
