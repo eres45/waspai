@@ -99,10 +99,11 @@ export async function signUpAction(data: {
 export async function signInWithGitHubAction() {
   try {
     // Get the base URL - use NEXT_PUBLIC_BASE_URL if available, otherwise use BETTER_AUTH_URL
+    // Get the base URL - Enforce waspai.in in production to avoid Vercel subdomain redirects
     const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.BETTER_AUTH_URL ||
-      "http://localhost:3000";
+      process.env.NODE_ENV === "production"
+        ? "https://waspai.in"
+        : process.env.BETTER_AUTH_URL || "http://localhost:3000";
 
     const { data, error } = await supabaseAuth.auth.signInWithOAuth({
       provider: "github",

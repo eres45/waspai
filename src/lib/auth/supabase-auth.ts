@@ -202,7 +202,9 @@ export async function emailExists(email: string): Promise<boolean> {
  */
 export async function resetPasswordForEmail(
   email: string,
-  redirectTo: string = `${process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL}/auth/reset-password`,
+  redirectTo: string = process.env.NODE_ENV === "production"
+    ? "https://waspai.in/auth/reset-password"
+    : `${process.env.BETTER_AUTH_URL || "http://localhost:3000"}/auth/reset-password`,
 ) {
   try {
     logger.info(`Password reset requested for: ${email}`);
@@ -263,7 +265,9 @@ export async function updateUserPassword(userId: string, newPassword: string) {
  */
 export async function sendEmailVerification(
   email: string,
-  redirectTo: string = `${process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL}/auth/verify-email`,
+  redirectTo: string = process.env.NODE_ENV === "production"
+    ? "https://waspai.in/auth/verify-email"
+    : `${process.env.BETTER_AUTH_URL || "http://localhost:3000"}/auth/verify-email`,
 ) {
   try {
     logger.info(`Email verification requested for: ${email}`);
