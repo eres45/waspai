@@ -599,7 +599,8 @@ export async function POST(request: Request) {
           .map(() =>
             loadAppDefaultTools({
               mentions,
-              allowedAppDefaultToolkit,
+              allowedAppDefaultToolkit:
+                toolChoice === "auto" ? undefined : allowedAppDefaultToolkit,
             }),
           )
           .orElse({});
