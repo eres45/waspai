@@ -86,6 +86,14 @@ export const metadata: Metadata = {
     title: "Wasp AI",
   },
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/wasp-ai-logo.png", sizes: "192x192", type: "image/png" },
+      { url: "/wasp-ai-logo.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/wasp-ai-logo.png", sizes: "180x180", type: "image/png" }],
+  },
   robots: {
     index: true,
     follow: true,
@@ -102,15 +110,15 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "Wasp AI",
-  "applicationCategory": "ProductivityApplication",
-  "operatingSystem": "Web",
-  "offers": {
+  name: "Wasp AI",
+  applicationCategory: "ProductivityApplication",
+  operatingSystem: "Web",
+  offers: {
     "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD",
+    price: "0",
+    priceCurrency: "USD",
   },
-  "featureList": [
+  featureList: [
     "Multi-model AI Chat",
     "Image Generation",
     "Video Generation",

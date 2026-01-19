@@ -4,8 +4,8 @@ import { join } from "path";
 
 // Image metadata
 export const size = {
-  width: 32,
-  height: 32,
+  width: 48,
+  height: 48,
 };
 export const contentType = "image/png";
 
@@ -52,7 +52,7 @@ export default function Icon() {
     return new ImageResponse(
       <div
         style={{
-          fontSize: 20,
+          fontSize: 32,
           background: "black",
           width: "100%",
           height: "100%",
@@ -60,7 +60,7 @@ export default function Icon() {
           alignItems: "center",
           justifyContent: "center",
           color: "white",
-          borderRadius: "50%",
+          borderRadius: "12px",
           fontWeight: "bold",
         }}
       >
