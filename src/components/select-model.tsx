@@ -7,6 +7,7 @@ import { cn } from "lib/utils";
 import { CheckIcon, ChevronDown, ListFilter } from "lucide-react";
 import { Fragment, memo, PropsWithChildren, useEffect, useState } from "react";
 import { Button } from "ui/button";
+import { MODEL_DISPLAY_NAMES } from "lib/ai/model-display-names";
 
 import {
   Command,
@@ -159,7 +160,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         });
                         setOpen(false);
                       }}
-                      value={item.name}
+                      value={MODEL_DISPLAY_NAMES[item.name] || item.name}
                       data-testid={`model-option-${provider.provider}-${item.name}`}
                     >
                       {model?.provider === provider.provider &&
@@ -171,7 +172,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       ) : (
                         <div className="ml-3" />
                       )}
-                      <span className="pr-2">{item.name}</span>
+                      <span className="pr-2">{MODEL_DISPLAY_NAMES[item.name] || item.name}</span>
                       {(item as any).tier !== "Free" || (item as any).tier === "Free" ? (
                         <div className="relative mr-1 h-fit">
                           {(item as any).tier === "Ultra" && (
