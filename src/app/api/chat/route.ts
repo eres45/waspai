@@ -35,7 +35,6 @@ import {
   ChatMention,
   ChatMetadata,
 } from "app-types/chat";
-import { stripReasoning, isLeakyReasoningModel } from "lib/ai/reasoning-detector";
 
 import { errorIf, safe } from "ts-safe";
 
