@@ -1667,14 +1667,11 @@ BEGIN ROLEPLAY NOW.`
                 });
               }
 
-              // STRONG SYSTEM PROMPT INJECTION FOR IMAGE TOOLS
+              // Guide the model to use the tool, but don't break its thinking process with negative constraints
               if (useImageTool) {
                 const imageSystemMsg = {
                   role: "system",
-                  content: `CRITICAL INSTRUCTION: You MUST call the 'image-manager' tool. 
-Do NOT output the tool call as text, code block, or JSON inside the message. 
-Do NOT describe what you are going to do. 
-Just EXECUTE the tool call via the defined protocol immediately.`,
+                  content: `You have been requested to generate an image. Please use the 'image-manager' tool to fulfill this request.`,
                 };
                 return [...finalMessages, imageSystemMsg];
               }
