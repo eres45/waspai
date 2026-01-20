@@ -1722,6 +1722,17 @@ BEGIN ROLEPLAY NOW.`
                   );
                   return false; // Skip duplicates after the first
                 }
+              }
+              return true;
+            });
+          }
+
+          // Ensure responseMessage has an ID
+          const responseId = responseMessage.id || generateUUID();
+          logger.info(
+            `onFinish: Using response ID: ${responseId}, message ID: ${message.id}`,
+          );
+
           if (responseId == message.id) {
             logger.info(`onFinish: Saving single message (IDs match)`);
             await chatRepository.upsertMessage({
