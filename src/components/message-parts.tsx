@@ -1100,7 +1100,7 @@ export const ToolMessagePart = memo(
       <div className="group w-full">
         {CustomToolComponent ? (
           CustomToolComponent
-        ) :
+        ) : (
           <div className="flex flex-col fade-in duration-300 animate-in">
             <div
               className="flex gap-2 items-center cursor-pointer group/title"
