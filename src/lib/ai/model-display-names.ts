@@ -161,7 +161,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // DeepSeek Latest
   "deepseek-v3": "DeepSeek V3 (L)",
   "deepseek-r1": "DeepSeek R1 (L)",
-  "claude-sonnet-4.5-proxy": "Claude 4.5 Sonnet",
+  "claude-sonnet-4.5-proxy": "Claude 4.5 Sonnet (Free)",
   wormgpt: "WormGPT (Uncensored)",
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
   "zai-org-GLM-4.5-air": "GLM-4.5 Air",
