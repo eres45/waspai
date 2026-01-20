@@ -1683,7 +1683,9 @@ BEGIN ROLEPLAY NOW.`
           maxRetries: useImageTool ? 1 : 2,
           tools: vercelAITooles,
           stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(3),
-          toolChoice: "auto",
+          toolChoice: (useImageTool
+            ? { type: "tool", toolName: "image-manager" }
+            : "auto") as any,
           abortSignal: request.signal,
         });
         result.consumeStream();
