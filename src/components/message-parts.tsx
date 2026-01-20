@@ -714,8 +714,10 @@ ReasoningPart.displayName = "ReasoningPart";
 
 const loading = memo(function Loading() {
   return (
-    <div className="px-6 py-4">
-      <div className="h-44 w-full rounded-md opacity-0" />
+    <div className="px-6 py-4 flex items-center justify-center">
+      <div className="h-44 w-full rounded-md bg-muted/30 animate-pulse flex items-center justify-center">
+        <Loader className="size-8 animate-spin text-muted-foreground" />
+      </div>
     </div>
   );
 });
@@ -1098,7 +1100,7 @@ export const ToolMessagePart = memo(
       <div className="group w-full">
         {CustomToolComponent ? (
           CustomToolComponent
-        ) : (
+        ) :
           <div className="flex flex-col fade-in duration-300 animate-in">
             <div
               className="flex gap-2 items-center cursor-pointer group/title"
