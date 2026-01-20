@@ -1644,7 +1644,7 @@ BEGIN ROLEPLAY NOW.`
 
               const finalMessages = [...historyMessages, currentMessage];
 
-              // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
+                  // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
               // If the model doesn't support images, we MUST ensure the content is a string
               // Groq specifically throws 400 "content must be a string" for non-vision models
               if (isImageInputUnsupportedModel(model)) {
@@ -1667,16 +1667,26 @@ BEGIN ROLEPLAY NOW.`
                 });
               }
 
+              // STRONG SYSTEM PROMPT INJECTION FOR IMAGE TOOLS
+              if (useImageTool) {
+                const imageSystemMsg = {
+                  role: "system",
+                  content: `CRITICAL INSTRUCTION: You MUST call the 'image-manager' tool. 
+Do NOT output the tool call as text, code block, or JSON inside the message. 
+Do NOT describe what you are going to do. 
+Just EXECUTE the tool call via the defined protocol immediately.`,
+                };
+                return [...finalMessages, imageSystemMsg];
+              }
+
               return finalMessages;
             })(),
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
-          maxRetries: useImageTool ? 0 : 2,
+          maxRetries: useImageTool ? 1 : 2,
           tools: vercelAITooles,
           stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(3),
-          toolChoice: (useImageTool
-            ? { type: "tool", toolName: "image-manager" }
-            : "auto") as any,
+          toolChoice: "auto",
           abortSignal: request.signal,
         });
         result.consumeStream();
