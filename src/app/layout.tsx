@@ -65,20 +65,20 @@ export const metadata: Metadata = {
       "Access the future of AI: GPT-5 Pro, Gemini 3, Claude 4.5, and Grok 4 in one professional interface. Generate images, videos, and code with the world's most advanced models on Wasp AI.",
     images: [
       {
-        url: "https://waspai.in/og-image.jpg", // We should ideally add a real route for this later
-        width: 1200,
-        height: 630,
-        alt: "Wasp AI Interface",
+        url: "https://waspai.in/wasp-ai-logo.png",
+        width: 512,
+        height: 512,
+        alt: "Wasp AI Logo",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Wasp AI | Advanced Multi-Model AI Assistant",
     description:
       "Access the world's best AI models (GPT-4, Gemini, Claude, DeepSeek) in one professional interface.",
     creator: "@waspai",
-    images: ["https://waspai.in/og-image.jpg"],
+    images: ["https://waspai.in/wasp-ai-logo.png"],
   },
   appleWebApp: {
     capable: true,
@@ -86,14 +86,6 @@ export const metadata: Metadata = {
     title: "Wasp AI",
   },
   manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/wasp-ai-logo.png", sizes: "192x192", type: "image/png" },
-      { url: "/wasp-ai-logo.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/wasp-ai-logo.png", sizes: "180x180", type: "image/png" }],
-  },
   robots: {
     index: true,
     follow: true,
