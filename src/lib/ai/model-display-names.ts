@@ -181,6 +181,17 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "codex-llama-4-maverick": "Llama 4 Maverick (Free)",
   "codex-kimi-k2.5": "Kimi K2.5 (Free)",
   "codex-grok-4": "Grok 4 (Free)",
+  "codex-chatgpt-4o": "ChatGPT 4o Latest (Free)",
+  "codex-mercury": "Mercury Coder (Free)",
+  "codex-olmo-3.1": "Olmo 3.1 32B (Free)",
+  "codex-deepseek-v3.1": "DeepSeek V3.1 (Free)",
+  "codex-qwen-3-coder": "Qwen 3 Coder (Free)",
+  "codex-kimi-k2-thinking": "Kimi K2 Thinking (Free)",
+  "codex-gpt-oss-120b": "GPT OSS 120B (Free)",
+  "codex-llama-405b": "Llama 3.1 405B (Free)",
+  "codex-llama-4-scout": "Llama 4 Scout (Free)",
+  "codex-gemma-3": "Gemma 3 27B (Free)",
+  "codex-nemotron": "Nemotron 3 Nano (Free)",
 };
 
 // Create reverse mapping from display names to backend names
