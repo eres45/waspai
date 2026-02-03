@@ -6,6 +6,8 @@ import { createLLMChatModels } from "./llmchat";
 import { createTypeGPTModels } from "./typegpt";
 import { createLaoZhangModels } from "./laozhang";
 import { createWorkersModels } from "./workers";
+import { createMakeHubModels } from "./makehub";
+import { createCodexModels } from "./codex";
 import { ChatModel } from "app-types/chat";
 
 // A4F Models - Professional tier
@@ -26,6 +28,12 @@ const laozhangModels = createLaoZhangModels();
 // Workers Models - Free Workers
 const workersModels = createWorkersModels();
 
+// MakeHub Models - Premium Router
+const makehubModels = createMakeHubModels();
+
+// Codex Models - Free Tier
+const codexModels = createCodexModels();
+
 const staticModels = {
   anthropic: {
     "claude-3-5-haiku-latest": laozhangModels["claude-3-5-haiku-latest"],
@@ -44,9 +52,33 @@ const staticModels = {
     "cld-3-7-sonnet-20250219": laozhangModels["cld-3-7-sonnet-20250219"],
     "cld-opus-4-20250514": laozhangModels["cld-opus-4-20250514"],
     "cld-sonnet-4-20250514": laozhangModels["cld-sonnet-4-20250514"],
+    "cld-opus-4-20250514": laozhangModels["cld-opus-4-20250514"],
+    "cld-sonnet-4-20250514": laozhangModels["cld-sonnet-4-20250514"],
+    // MakeHub Anthropic
+    "mh-claude-3-5-sonnet": makehubModels["anthropic-claude-3-5-sonnet"],
+    "mh-claude-3-7-sonnet": makehubModels["anthropic-claude-3-7-sonnet"],
+    "mh-claude-3-5-haiku": makehubModels["anthropic-claude-3-5-haiku"],
+    "mh-claude-4-sonnet": makehubModels["anthropic-claude-4-sonnet"],
+    "mh-claude-4-opus": makehubModels["anthropic-claude-4-opus"],
+    "mh-anthropic-router": makehubModels["anthropic-family"],
   },
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
+  },
+  codex: {
+    "codex-gpt-5.2": codexModels["gpt-5.2"],
+    "codex-gpt-5.1": codexModels["gpt-5.1"],
+    "codex-gpt-5": codexModels["gpt-5"],
+    "codex-gpt-4.1-mini": codexModels["gpt-4.1-mini"],
+    "codex-claude-sonnet-4": codexModels["anthropic-claude-sonnet-4"],
+    "codex-gemini-2.5-pro": codexModels["google-gemini-2.5-pro-preview-05-06"],
+    "codex-deepseek-v3.2": codexModels["deepseek-ai-deepseek-v3.2"],
+    "codex-deepseek-r1": codexModels["deepseek-ai-deepseek-R1-0528"],
+    "codex-o1-preview": codexModels["o1-preview"],
+    "codex-o3-mini": codexModels["o3-mini"],
+    "codex-llama-4-maverick": codexModels["meta-llama-4-maverick-17b-128e-instruct"],
+    "codex-kimi-k2.5": codexModels["moonshotai-kimi-k2.5"],
+    "codex-grok-4": codexModels["x-ai-grok-4"],
   },
   cohere: {
     "command-r-plus-08-2024": typegptModels["command-r-plus-08-2024"],
@@ -77,6 +109,12 @@ const staticModels = {
     "deepseek-ai-DeepSeek-V3-0324":
       deepInfraModels["deepseek-ai-DeepSeek-V3-0324"],
     "deepseek-r1": laozhangModels["deepseek-r1"],
+    "deepseek-r1": laozhangModels["deepseek-r1"],
+    // MakeHub DeepSeek
+    "mh-deepseek-r1": makehubModels["deepseek-deepseek-R1-fp8"],
+    "mh-deepseek-v3": makehubModels["deepseek-deepseek-V3-fp8"],
+    "mh-deepseek-r1-distill": makehubModels["deepseek-deepseek-R1-distill-llama-70b-fp16"],
+    "mh-deepseek-router": makehubModels["deepseek-family"],
   },
   defog: {
     "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
@@ -94,12 +132,23 @@ const staticModels = {
     "gemini-3-pro-preview-thinking":
       laozhangModels["gemini-3-pro-preview-thinking"],
     "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
+    "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
+    // MakeHub Google
+    "mh-gemini-2.5-pro": makehubModels["google-gemini-2.5-pro"],
+    "mh-gemini-2.5-flash": makehubModels["google-gemini-2.5-flash"],
+    "mh-gemini-2.0-flash-thinking": makehubModels["google-gemini-2.0-flash-thinking"],
+    "mh-google-router": makehubModels["google-family"],
   },
   grok: {
     "grok-3-latest": laozhangModels["grok-3-latest"],
     "grok-3-reasoning": laozhangModels["grok-3-reasoning"],
     "grok-4-deepsearch": laozhangModels["grok-4-deepsearch"],
     "grok-4-latest": laozhangModels["grok-4-latest"],
+    "grok-4-latest": laozhangModels["grok-4-latest"],
+    // MakeHub Grok
+    "mh-grok-3": makehubModels["xai-grok-3"],
+    "mh-grok-3-mini": makehubModels["xai-grok-3-mini"],
+    "mh-grok-4": makehubModels["xai-grok-4"],
   },
   llm: {
     "cf-llama-2-13b": llmChatModels["cf-meta-llama-2-13b-chat"],
@@ -125,12 +174,21 @@ const staticModels = {
     "llama-guard-4-12b": deepInfraModels["meta-llama-Llama-Guard-4-12B"],
     "llama-prompt-guard-2-86m":
       a4fModels["meta-llama-llama-prompt-guard-2-86m"],
+    "llama-prompt-guard-2-86m":
+      a4fModels["meta-llama-llama-prompt-guard-2-86m"],
+    // MakeHub Llama
+    "mh-llama-3.3-70b": makehubModels["meta-Llama-3.3-70B-fp16"],
+    "mh-llama-4-scout": makehubModels["meta-Llama-4-Scout-17B-16E-fp8"],
+    "mh-llama-4-maverick": makehubModels["meta-Llama-4-Maverick-17B-128E-fp8"],
+    "mh-meta-router": makehubModels["meta-family"],
   },
   microsoft: {
     "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
   },
   minimax: {
     "MiniMaxAI-MiniMax-M2": deepInfraModels["MiniMaxAI-MiniMax-M2"],
+    "MiniMaxAI-MiniMax-M2": deepInfraModels["MiniMaxAI-MiniMax-M2"],
+    "mh-minimax-m1": makehubModels["minimax-minimax-m1"],
   },
   mistral: {
     "cf-mistralai-mistral-7b-instruct-v0.1":
@@ -147,6 +205,11 @@ const staticModels = {
       deepInfraModels["mistralai-Mistral-7B-Instruct-v0.2"],
     "mistralai-Mistral-Small-3.2-24B-Instruct-2506":
       deepInfraModels["mistralai-Mistral-Small-3.2-24B-Instruct-2506"],
+    "mistralai-Mistral-Small-3.2-24B-Instruct-2506":
+      deepInfraModels["mistralai-Mistral-Small-3.2-24B-Instruct-2506"],
+    // MakeHub Mistral
+    "mh-mistral-nemo": makehubModels["mistral-open-mistral-nemo"],
+    "mh-codestral": makehubModels["mistral-codestral"],
   },
   moonshot: {
     "moonshotai-kimi-k2-instruct": a4fModels["moonshotai-kimi-k2-instruct"],
@@ -180,6 +243,14 @@ const staticModels = {
     "openai-gpt-oss-120b": typegptModels["openai-gpt-oss-120b"],
     "openai-gpt-oss-20b": typegptModels["openai-gpt-oss-20b"],
     "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
+    "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
+    // MakeHub OpenAI
+    "mh-gpt-4o": makehubModels["openai-gpt-4o"],
+    "mh-gpt-4o-mini": makehubModels["openai-gpt-4o-mini"],
+    "mh-gpt-4.5": makehubModels["openai-gpt-4.5"],
+    "mh-o3": makehubModels["openai-o3"],
+    "mh-o4-mini": makehubModels["openai-o4-mini"],
+    "mh-openai-router": makehubModels["openai-family"],
   },
   others: {
     "cf-huggingfacegi-zephyr-7b-beta":
@@ -208,6 +279,11 @@ const staticModels = {
       deepInfraModels["Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo"],
     "qwen-qwen3-next-80b-a3b-instruct":
       deepInfraModels["Qwen-Qwen3-Next-80B-A3B-Instruct"],
+    "qwen-qwen3-next-80b-a3b-instruct":
+      deepInfraModels["Qwen-Qwen3-Next-80B-A3B-Instruct"],
+    // MakeHub Qwen
+    "mh-qwen-3-235b": makehubModels["qwen-Qwen3-235B-A22B-fp8"],
+    "mh-qwq-32b": makehubModels["qwen-QWQ-32b-fp16"],
   },
   tiiuae: {
     "cf-tiiuae-falcon-7b-instruct":
@@ -215,6 +291,10 @@ const staticModels = {
   },
   umbra: {
      "umbra": typegptModels["umbra"],
+  },
+  makehub: {
+     "mh-sota-router": makehubModels["makehub-sota-family"],
+     "mh-cost-router": makehubModels["makehub-cost-family"],
   },
   zai: {
     "glm-4.5-air": typegptModels["glm-4.5-air"],
@@ -261,14 +341,17 @@ export const customModelProvider = {
         else if (
           Object.values(typegptModels).includes(model) ||
           Object.values(a4fModels).includes(model) ||
-          Object.values(deepInfraModels).includes(model)
+          Object.values(a4fModels).includes(model) ||
+          Object.values(deepInfraModels).includes(model) ||
+          Object.values(makehubModels).includes(model)
         ) {
           tier = "Pro";
         }
-        // 3. "Free" for Workers, LLMChat
+        // 3. "Free" for Workers, LLMChat, Codex
         else if (
           Object.values(workersModels).includes(model) ||
-          Object.values(llmChatModels).includes(model)
+          Object.values(llmChatModels).includes(model) ||
+          Object.values(codexModels).includes(model)
         ) {
           tier = "Free";
         }

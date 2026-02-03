@@ -1680,9 +1680,9 @@ BEGIN ROLEPLAY NOW.`
             })(),
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
-          maxRetries: useImageTool ? 1 : 2,
+          maxRetries: 3,
           tools: vercelAITooles,
-          stopWhen: useImageTool ? stepCountIs(2) : stepCountIs(3),
+          stopWhen: stepCountIs(5),
           toolChoice: "auto",
           abortSignal: request.signal,
         });
