@@ -27,9 +27,6 @@ const laozhangModels = createLaoZhangModels();
 // Workers Models - Free Workers
 const workersModels = createWorkersModels();
 
-// Workers Models - Free Workers
-const workersModels = createWorkersModels();
-
 // Codex Models - Free Tier
 const codexModels = createCodexModels();
 
@@ -246,7 +243,6 @@ const staticModels = {
   },
   umbra: {
      "umbra": typegptModels["umbra"],
-  },
   },
   zai: {
     "glm-4.5-air": typegptModels["glm-4.5-air"],
