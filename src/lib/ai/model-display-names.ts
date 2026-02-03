@@ -16,6 +16,7 @@ export const PROVIDER_ORDER = [
   "defog", // Defog
   "allenai", // AllenAI
   "others", // Others
+  "codex", // Codex (Free Tier)
   "llm", // LLM Section
 ];
 
@@ -37,6 +38,7 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   defog: "Defog",
   allenai: "AllenAI",
   others: "Others",
+  codex: "Codex",
   llm: "LLM (Llama)",
 };
 
@@ -165,6 +167,20 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   wormgpt: "WormGPT (Uncensored)",
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
   "zai-org-GLM-4.5-air": "GLM-4.5 Air",
+  // Codex Models
+  "codex-gpt-5.2": "GPT 5.2 (Free)",
+  "codex-gpt-5.1": "GPT 5.1 (Free)",
+  "codex-gpt-5": "GPT 5 (Free)",
+  "codex-gpt-4.1-mini": "GPT 4.1 Mini (Free)",
+  "codex-claude-sonnet-4": "Claude Sonnet 4 (Free)",
+  "codex-gemini-2.5-pro": "Gemini 2.5 Pro (Free)",
+  "codex-deepseek-v3.2": "DeepSeek V3.2 (Free)",
+  "codex-deepseek-r1": "DeepSeek R1 (Free)",
+  "codex-o1-preview": "o1 Preview (Free)",
+  "codex-o3-mini": "o3 Mini (Free)",
+  "codex-llama-4-maverick": "Llama 4 Maverick (Free)",
+  "codex-kimi-k2.5": "Kimi K2.5 (Free)",
+  "codex-grok-4": "Grok 4 (Free)",
 };
 
 // Create reverse mapping from display names to backend names
