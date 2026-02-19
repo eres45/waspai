@@ -3,8 +3,6 @@ import { LanguageModel } from "ai";
 import { createA4FModels } from "./a4f-models";
 import { createDeepInfraModels } from "./deepinfra";
 import { createLLMChatModels } from "./llmchat";
-import { createTypeGPTModels } from "./typegpt";
-import { createLaoZhangModels } from "./laozhang";
 import { createWorkersModels } from "./workers";
 import { createCodexModels } from "./codex";
 import { ChatModel } from "app-types/chat";
@@ -18,12 +16,6 @@ const deepInfraModels = createDeepInfraModels();
 // LLMChat Models - Free tier
 const llmChatModels = createLLMChatModels();
 
-// TypeGPT Models
-const typegptModels = createTypeGPTModels();
-
-// LaoZhang Models - Pro Flagships
-const laozhangModels = createLaoZhangModels();
-
 // Workers Models - Free Workers
 const workersModels = createWorkersModels();
 
@@ -32,20 +24,7 @@ const codexModels = createCodexModels();
 
 const staticModels = {
   anthropic: {
-    "claude-3-5-haiku-latest": laozhangModels["claude-3-5-haiku-latest"],
-    "claude-3-5-sonnet-latest": laozhangModels["claude-3-5-sonnet-latest"],
-    "claude-3-7-sonnet-20250219-thinking":
-      laozhangModels["claude-3-7-sonnet-20250219-thinking"],
-    "claude-3-7-sonnet-latest": laozhangModels["claude-3-7-sonnet-latest"],
-    "claude-3-opus-20240229": laozhangModels["claude-3-opus-20240229"],
-    "claude-haiku-4-5-20251001": laozhangModels["claude-haiku-4-5-20251001"],
-    "claude-opus-4-1-20250805": laozhangModels["claude-opus-4-1-20250805"],
-    "claude-opus-4-20250514": laozhangModels["claude-opus-4-20250514"],
-    "claude-opus-4-5-20251101": laozhangModels["claude-opus-4-5-20251101"],
-    "claude-sonnet-4-20250514": laozhangModels["claude-sonnet-4-20250514"],
-    "claude-sonnet-4-5-20250929": laozhangModels["claude-sonnet-4-5-20250929"],
     "claude-sonnet-4.5-proxy": workersModels["claude-sonnet-4.5-proxy"],
-    "cld-3-7-sonnet-20250219": laozhangModels["cld-3-7-sonnet-20250219"],
   },
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
@@ -61,7 +40,8 @@ const staticModels = {
     "codex-deepseek-r1": codexModels["deepseek-ai-deepseek-R1-0528"],
     "codex-o1-preview": codexModels["o1-preview"],
     "codex-o3-mini": codexModels["o3-mini"],
-    "codex-llama-4-maverick": codexModels["meta-llama-4-maverick-17b-128e-instruct"],
+    "codex-llama-4-maverick":
+      codexModels["meta-llama-4-maverick-17b-128e-instruct"],
     "codex-kimi-k2.5": codexModels["moonshotai-kimi-k2.5"],
     "codex-grok-4": codexModels["x-ai-grok-4"],
     "codex-chatgpt-4o": codexModels["chatgpt-4o-latest"],
@@ -75,10 +55,6 @@ const staticModels = {
     "codex-llama-4-scout": codexModels["meta-llama-4-scout-17b-16e-instruct"],
     "codex-gemma-3": codexModels["google-gemma-3-27b-it"],
     "codex-nemotron": codexModels["nvidia-nemotron-3-nano-30b-a3b"],
-  },
-  cohere: {
-    "command-r-plus-08-2024": typegptModels["command-r-plus-08-2024"],
-    "command-r7b-12-2024": typegptModels["command-r7b-12-2024"],
   },
   deepseek: {
     "cf-deepseek-ai-deepseek-coder-6.7b-base":
@@ -95,16 +71,13 @@ const staticModels = {
       deepInfraModels["deepseek-ai-DeepSeek-R1-Distill-Llama-70B"],
     "deepseek-ai-DeepSeek-R1-Turbo":
       deepInfraModels["deepseek-ai-DeepSeek-R1-0528-Turbo"],
-    "deepseek-ai-deepseek-r1": typegptModels["deepseek-ai-deepseek-r1"],
     "deepseek-ai-DeepSeek-V3": deepInfraModels["deepseek-ai-DeepSeek-V3"],
-    "deepseek-ai-deepseek-v3.1": typegptModels["deepseek-ai-deepseek-v3.1"],
     "deepseek-ai-DeepSeek-V3.1": deepInfraModels["deepseek-ai-DeepSeek-V3.1"],
     "deepseek-ai-DeepSeek-V3.1-Terminus":
       deepInfraModels["deepseek-ai-DeepSeek-V3.1-Terminus"],
     "deepseek-ai-DeepSeek-V3.2": deepInfraModels["deepseek-ai-DeepSeek-V3.2"],
     "deepseek-ai-DeepSeek-V3-0324":
       deepInfraModels["deepseek-ai-DeepSeek-V3-0324"],
-    "deepseek-r1": laozhangModels["deepseek-r1"],
   },
   defog: {
     "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
@@ -112,22 +85,7 @@ const staticModels = {
   google: {
     "cf-google-gemma-2b-it-lora": llmChatModels["cf-google-gemma-2b-it-lora"],
     "cf-google-gemma-7b-it": llmChatModels["cf-google-gemma-7b-it"],
-    "gemini-1.5-pro-latest": laozhangModels["gemini-1.5-pro-latest"],
-    "gemini-2.0-flash-001": laozhangModels["gemini-2.0-flash-001"],
-    "gemini-2.5-flash": laozhangModels["gemini-2.5-flash"],
-    "gemini-2.5-pro": laozhangModels["gemini-2.5-pro"],
-    "gemini-2.5-pro-thinking": laozhangModels["gemini-2.5-pro-thinking"],
-    "gemini-3-flash-preview": laozhangModels["gemini-3-flash-preview"],
-    "gemini-3-pro-preview": laozhangModels["gemini-3-pro-preview"],
-    "gemini-3-pro-preview-thinking":
-      laozhangModels["gemini-3-pro-preview-thinking"],
     "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
-  },
-  grok: {
-    "grok-3-latest": laozhangModels["grok-3-latest"],
-    "grok-3-reasoning": laozhangModels["grok-3-reasoning"],
-    "grok-4-deepsearch": laozhangModels["grok-4-deepsearch"],
-    "grok-4-latest": laozhangModels["grok-4-latest"],
   },
   llm: {
     "cf-llama-2-13b": llmChatModels["cf-meta-llama-2-13b-chat"],
@@ -142,14 +100,10 @@ const staticModels = {
       deepInfraModels["meta-llama-Llama-3.3-70B-Instruct-Turbo"],
   },
   meta: {
-    "llama-3.2-90b-vision-instruct":
-      typegptModels["meta-llama-3.2-90b-vision-instruct"],
     "llama-3.3-70b-deepinfra-turbo":
       deepInfraModels["meta-llama-Llama-3.3-70B-Instruct-Turbo"],
     "llama-4-maverick-17b-128e-instruct-fp8":
       deepInfraModels["meta-llama-Llama-4-Maverick-17B-128E-Instruct-FP8"],
-    "llama-4-scout-17b-16e-instruct":
-      typegptModels["meta-llama-4-scout-17b-16e-instruct"],
     "llama-guard-4-12b": deepInfraModels["meta-llama-Llama-Guard-4-12B"],
     "llama-prompt-guard-2-86m":
       a4fModels["meta-llama-llama-prompt-guard-2-86m"],
@@ -184,29 +138,7 @@ const staticModels = {
       deepInfraModels["moonshotai-Kimi-K2-Thinking"],
     wormgpt: workersModels["wormgpt"],
   },
-  nvidia: {
-    "nemotron-3-nano-30b-a3b": typegptModels["nemotron-3-nano-30b-a3b"],
-    "nemotron-nano-9b-v2": typegptModels["nemotron-nano-9b-v2"],
-  },
   openai: {
-    "chatgpt-4o-latest": laozhangModels["chatgpt-4o-latest"],
-    "gpt-4.1": laozhangModels["gpt-4.1"],
-    "gpt-4.1-mini": laozhangModels["gpt-4.1-mini"],
-    "gpt-4o": laozhangModels["gpt-4o"],
-    "gpt-5": laozhangModels["gpt-5"],
-    "gpt-5-mini": laozhangModels["gpt-5-mini"],
-    "gpt-5-pro": laozhangModels["gpt-5-pro"],
-    "gpt-5.1": laozhangModels["gpt-5.1"],
-    "gpt-5.2": laozhangModels["gpt-5.2"],
-    "o1": laozhangModels["o1"],
-    "o1-pro": laozhangModels["o1-pro"],
-    "o3": laozhangModels["o3"],
-    "o3-mini": laozhangModels["o3-mini"],
-    "o3-pro": laozhangModels["o3-pro"],
-    "o4-mini": laozhangModels["o4-mini"],
-    "o4-mini-high": laozhangModels["o4-mini-high"],
-    "openai-gpt-oss-120b": typegptModels["openai-gpt-oss-120b"],
-    "openai-gpt-oss-20b": typegptModels["openai-gpt-oss-20b"],
     "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
   },
   others: {
@@ -241,11 +173,7 @@ const staticModels = {
     "cf-tiiuae-falcon-7b-instruct":
       llmChatModels["cf-tiiuae-falcon-7b-instruct"],
   },
-  umbra: {
-     "umbra": typegptModels["umbra"],
-  },
   zai: {
-    "glm-4.5-air": typegptModels["glm-4.5-air"],
     "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"],
     "zai-org-GLM-4.7": workersModels["glm-4.7"],
   },
@@ -281,20 +209,14 @@ export const customModelProvider = {
       .map(([name, model]) => {
         let tier = "Free"; // Default to Free
         // Determine tier based on logic
-        // 1. "Ultra" for LaoZhang
-        if (Object.values(laozhangModels).includes(model)) {
-          tier = "Ultra";
-        }
-        // 2. "Pro" for TypeGPT, A4F, DeepInfra
-        else if (
-          Object.values(typegptModels).includes(model) ||
-          Object.values(a4fModels).includes(model) ||
+        // 1. "Pro" for A4F, DeepInfra
+        if (
           Object.values(a4fModels).includes(model) ||
           Object.values(deepInfraModels).includes(model)
         ) {
           tier = "Pro";
         }
-        // 3. "Free" for Workers, LLMChat, Codex
+        // 2. "Free" for Workers, LLMChat, Codex
         else if (
           Object.values(workersModels).includes(model) ||
           Object.values(llmChatModels).includes(model) ||
@@ -302,7 +224,7 @@ export const customModelProvider = {
         ) {
           tier = "Free";
         }
-        
+
         return {
           name,
           isToolCallUnsupported: isToolCallUnsupportedModel(model),
