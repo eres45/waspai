@@ -8,6 +8,7 @@ export const PROVIDER_ORDER = [
   "grok", // Grok
   "qwen", // Qwen (Groq)
   "moonshot", // Moonshot (Groq)
+  "zai", // Zhipu AI (GLM)
   "canopy", // Canopy (Groq)
   "deepseek", // DeepSeek (Groq)
   "microsoft", // Microsoft
@@ -28,6 +29,7 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   grok: "Grok",
   qwen: "Qwen",
   moonshot: "Moonshot",
+  zai: "Zhipu AI",
   canopy: "Canopy",
   deepseek: "DeepSeek",
   microsoft: "Microsoft",
@@ -88,6 +90,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   wormgpt: "WormGPT (Uncensored)",
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
   "zai-org-GLM-4.5-air": "GLM-4.5 Air",
+  "zai-org-GLM-5": "GLM-5 (Reasoning)",
 };
 
 // Create reverse mapping from display names to backend names

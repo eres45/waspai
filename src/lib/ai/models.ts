@@ -64,7 +64,7 @@ const staticModels = {
       llmChatModels["cf-mistralai-openhermes-2.5-mistral-7b"],
   },
   moonshot: {
-    "moonshotai-kimi-k2-instruct": a4fModels["moonshotai-kimi-k2-instruct"],
+    "moonshotai-kimi-k2-instruct": workersModels["kimi-k2-instruct"],
     wormgpt: workersModels["wormgpt"],
   },
   openai: {
@@ -98,6 +98,7 @@ const staticModels = {
   zai: {
     "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"],
     "zai-org-GLM-4.7": workersModels["glm-4.7"],
+    "zai-org-GLM-5": workersModels["glm-5"],
   },
 };
 

@@ -23,8 +23,9 @@ export const REASONING_LEAKY_MODELS = [
   /qwen.*next.*thinking/i,
   /kimi.*thinking/i,
 
-  // GLM Reasoning Models (all GLM-4.x variants output reasoning)
+  // GLM Reasoning Models (all GLM-4.x and GLM-5 variants output reasoning)
   /glm-4/i,
+  /glm-5/i,
   /glm.*reasoning/i,
 
   // OpenAI O-series (ALL of them use chain-of-thought that leaks)

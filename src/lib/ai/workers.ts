@@ -143,6 +143,14 @@ export function createWorkersModels() {
       },
     })(modelId);
 
+  // 4. FeatherLabs Provider (OpenAI-compatible)
+  const featherLabsProvider = (modelId: string) =>
+    createOpenAICompatible({
+      name: "featherlabs",
+      apiKey: "sk-mWdmd2RtRTNm2ndAtceylQ",
+      baseURL: "https://api.featherlabs.online/v1",
+    })(modelId);
+
   const models: Record<string, LanguageModel> = {
     "claude-sonnet-4.5-proxy": claudeProxyProvider(
       "anthropic/claude-sonnet-4.5",
@@ -154,6 +162,9 @@ export function createWorkersModels() {
       "https://glm-4-5-air.chutperplexity.workers.dev",
     )("glm-4.5-air"),
     wormgpt: wormGPTProvider("wormgpt"),
+    // FeatherLabs models
+    "glm-5": featherLabsProvider("GLM-5"),
+    "kimi-k2-instruct": featherLabsProvider("kimi-k2-instruct"),
   };
 
   return models;
