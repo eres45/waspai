@@ -32,7 +32,9 @@ export const pgMusicRepository = {
   /**
    * Get all music generations for a user
    */
-  async getMusicGenerationsByUserId(userId: string): Promise<MusicGenerationEntity[]> {
+  async getMusicGenerationsByUserId(
+    userId: string,
+  ): Promise<MusicGenerationEntity[]> {
     return pgDb
       .select()
       .from(MusicGenerationTable)
@@ -43,7 +45,9 @@ export const pgMusicRepository = {
   /**
    * Get a single music generation by ID
    */
-  async getMusicGenerationById(id: string): Promise<MusicGenerationEntity | null> {
+  async getMusicGenerationById(
+    id: string,
+  ): Promise<MusicGenerationEntity | null> {
     const [result] = await pgDb
       .select()
       .from(MusicGenerationTable)

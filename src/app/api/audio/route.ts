@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -37,9 +37,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error(
-        `[Audio Proxy] Failed to fetch audio: ${response.status}`
-      );
+      console.error(`[Audio Proxy] Failed to fetch audio: ${response.status}`);
       throw new Error(`Failed to fetch audio: ${response.status}`);
     }
 
@@ -47,7 +45,7 @@ export async function GET(request: NextRequest) {
     const buffer = await response.arrayBuffer();
 
     console.log(
-      `[Audio Proxy] Successfully fetched audio: ${buffer.byteLength} bytes`
+      `[Audio Proxy] Successfully fetched audio: ${buffer.byteLength} bytes`,
     );
 
     // Return the audio with proper headers
@@ -71,7 +69,7 @@ export async function GET(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 }

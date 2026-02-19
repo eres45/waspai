@@ -34,7 +34,7 @@ async function testGeminiSearchDetailed() {
             max_tokens: 1000,
             stream: false,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -63,12 +63,13 @@ async function testGeminiSearchDetailed() {
       }
 
       // Check for website mentions
-      const websiteMentions = content.match(
-        /(?:website|site|link|url|visit|check out|go to|source|reference)/gi
-      ) || [];
+      const websiteMentions =
+        content.match(
+          /(?:website|site|link|url|visit|check out|go to|source|reference)/gi,
+        ) || [];
       if (websiteMentions.length > 0) {
         console.log(
-          `✅ Contains ${websiteMentions.length} website reference(s)`
+          `✅ Contains ${websiteMentions.length} website reference(s)`,
         );
       }
 

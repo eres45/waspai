@@ -24,7 +24,9 @@ async function testEnhanceAPI() {
     console.log("Step 1: Checking if original image is accessible...");
     const originalResponse = await fetch(testImageUrl);
     if (!originalResponse.ok) {
-      console.error(`❌ Original image not accessible: ${originalResponse.statusText}`);
+      console.error(
+        `❌ Original image not accessible: ${originalResponse.statusText}`,
+      );
       return;
     }
     const originalBuffer = await originalResponse.arrayBuffer();
@@ -49,7 +51,9 @@ async function testEnhanceAPI() {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    console.log(`Response Status: ${enhanceResponse.status} ${enhanceResponse.statusText}`);
+    console.log(
+      `Response Status: ${enhanceResponse.status} ${enhanceResponse.statusText}`,
+    );
     console.log(`Response Time: ${duration}ms`);
     console.log(`Response Headers:`);
     enhanceResponse.headers.forEach((value, key) => {
@@ -72,7 +76,9 @@ async function testEnhanceAPI() {
     console.log(`✅ Enhanced image received`);
     console.log(`   - Size: ${(enhancedSize / 1024).toFixed(2)} KB`);
     console.log(`   - MIME Type: ${enhancedMimeType}`);
-    console.log(`   - Size Difference: ${((enhancedSize - originalSize) / 1024).toFixed(2)} KB`);
+    console.log(
+      `   - Size Difference: ${((enhancedSize - originalSize) / 1024).toFixed(2)} KB`,
+    );
 
     // Step 4: Check if it's a valid image
     console.log("\nStep 4: Validating image format...");
@@ -94,9 +100,11 @@ async function testEnhanceAPI() {
     }
 
     console.log(`   - Detected Format: ${imageType}`);
-    console.log(`   - Header Bytes: ${Array.from(header)
-      .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-      .join(" ")}`);
+    console.log(
+      `   - Header Bytes: ${Array.from(header)
+        .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
+        .join(" ")}`,
+    );
 
     // Step 5: Save the enhanced image for inspection
     console.log("\nStep 5: Saving enhanced image for inspection...");

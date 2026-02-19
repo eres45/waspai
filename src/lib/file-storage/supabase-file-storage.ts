@@ -42,13 +42,21 @@ export const createSupabaseFileStorage = (): FileStorage => {
   const bucketName = process.env.FILE_STORAGE_SUPABASE_BUCKET || "uploads";
 
   // Create a custom fetch that handles SSL certificate issues
-  const customFetch = async (input: RequestInfo | URL, options?: RequestInit) => {
+  const customFetch = async (
+    input: RequestInfo | URL,
+    options?: RequestInit,
+  ) => {
     try {
       return await fetch(input, options);
     } catch (error: any) {
       // If SSL certificate error, try with verification disabled (development only)
-      if (error?.cause?.code === "CERT_HAS_EXPIRED" || error?.message?.includes("certificate")) {
-        console.warn("SSL certificate issue detected, retrying with verification disabled");
+      if (
+        error?.cause?.code === "CERT_HAS_EXPIRED" ||
+        error?.message?.includes("certificate")
+      ) {
+        console.warn(
+          "SSL certificate issue detected, retrying with verification disabled",
+        );
         const agent = new https.Agent({
           rejectUnauthorized: false,
         });
@@ -89,7 +97,9 @@ export const createSupabaseFileStorage = (): FileStorage => {
         }
       } catch (err) {
         console.error("Supabase upload exception:", err);
-        throw new Error(`Failed to upload to Supabase: ${err instanceof Error ? err.message : String(err)}`);
+        throw new Error(
+          `Failed to upload to Supabase: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
 
       // Get public URL
@@ -111,7 +121,9 @@ export const createSupabaseFileStorage = (): FileStorage => {
       };
     },
 
-    async createUploadUrl(options: UploadUrlOptions): Promise<UploadUrl | null> {
+    async createUploadUrl(
+      options: UploadUrlOptions,
+    ): Promise<UploadUrl | null> {
       const key = buildKey(options.filename);
       const expiresInSeconds = options.expiresInSeconds || 3600;
 
@@ -164,13 +176,10 @@ export const createSupabaseFileStorage = (): FileStorage => {
 
     async exists(key) {
       try {
-        const { data, error } = await storage.list(
-          path.posix.dirname(key),
-          {
-            limit: 1,
-            search: path.posix.basename(key),
-          },
-        );
+        const { data, error } = await storage.list(path.posix.dirname(key), {
+          limit: 1,
+          search: path.posix.basename(key),
+        });
 
         if (error) return false;
         return data && data.length > 0;
@@ -181,13 +190,10 @@ export const createSupabaseFileStorage = (): FileStorage => {
 
     async getMetadata(key) {
       try {
-        const { data, error } = await storage.list(
-          path.posix.dirname(key),
-          {
-            limit: 1,
-            search: path.posix.basename(key),
-          },
-        );
+        const { data, error } = await storage.list(path.posix.dirname(key), {
+          limit: 1,
+          search: path.posix.basename(key),
+        });
 
         if (error || !data || data.length === 0) {
           return null;

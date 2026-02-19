@@ -17,7 +17,10 @@ import {
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ChatMetadata } from "app-types/chat";
-import { stripReasoning, isLeakyReasoningModel } from "lib/ai/reasoning-detector";
+import {
+  stripReasoning,
+  isLeakyReasoningModel,
+} from "lib/ai/reasoning-detector";
 
 interface Props {
   message: UIMessage;
@@ -49,22 +52,30 @@ const PurePreviewMessage = ({
   sendMessage,
 }: Props) => {
   const isUserMessage = message.role === "user";
-  const modelId = (message.metadata as ChatMetadata)?.chatModel?.model || '';
+  const modelId = (message.metadata as ChatMetadata)?.chatModel?.model || "";
 
   // Process message parts to extract reasoning from leaky models
   const partsForDisplay = useMemo(() => {
     // Only process assistant messages from leaky models
-    if (message.role !== 'assistant' || !isLeakyReasoningModel(modelId)) {
+    const isLeaky = isLeakyReasoningModel(modelId);
+    if (message.role !== "assistant" || !isLeaky) {
       return message.parts.filter(
         (part) => !(part.type === "text" && (part as any).ingestionPreview),
       );
     }
 
+    console.log(
+      "[Reasoning Debug] Processing leaky model:",
+      modelId,
+      "isLeaky:",
+      isLeaky,
+    );
+
     const processedParts: typeof message.parts = [];
-    
+
     for (const part of message.parts) {
       // Only process text parts
-      if (part.type === 'text' && typeof part.text === 'string') {
+      if (part.type === "text" && typeof part.text === "string") {
         // Filter out ingestionPreview parts even if processing for reasoning
         if ((part as any).ingestionPreview) {
           continue;
@@ -72,13 +83,13 @@ const PurePreviewMessage = ({
 
         const { reasoning, cleanText, hasReasoning } = stripReasoning(
           part.text,
-          modelId
+          modelId,
         );
 
         if (hasReasoning && reasoning) {
           // Add reasoning part first
           processedParts.push({
-            type: 'reasoning',
+            type: "reasoning",
             text: reasoning,
           } as any);
 
@@ -256,13 +267,13 @@ const FRIENDLY_ERROR_MESSAGES = [
 ];
 
 export const ErrorMessage = ({
-  error,
+  error: _error,
 }: {
   error: Error;
   message?: UIMessage;
 }) => {
   const t = useTranslations();
-  
+
   // Pick a random message on mount
   const friendlyMessage = useMemo(() => {
     return FRIENDLY_ERROR_MESSAGES[

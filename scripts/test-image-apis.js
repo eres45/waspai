@@ -53,10 +53,12 @@ async function testAPI(api) {
     } else if (contentType?.includes("json")) {
       const json = await response.json();
       console.log(`📄 JSON Response:`, JSON.stringify(json, null, 2));
-      
+
       // Check if it contains image URL
       if (json.url || json.image_url || json.data) {
-        console.log(`✅ Image URL provided: ${json.url || json.image_url || json.data}`);
+        console.log(
+          `✅ Image URL provided: ${json.url || json.image_url || json.data}`,
+        );
         console.log(`✅ Status: WORKING`);
       } else {
         console.log(`⚠️  Status: PARTIAL (JSON but no image)`);
@@ -69,7 +71,9 @@ async function testAPI(api) {
   } catch (error) {
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    console.log(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.log(
+      `❌ Error: ${error instanceof Error ? error.message : String(error)}`,
+    );
     console.log(`⏱️  Response Time: ${responseTime}ms`);
     console.log(`❌ Status: FAILED`);
   }
@@ -77,7 +81,7 @@ async function testAPI(api) {
 
 async function runTests() {
   console.log("\n🚀 Starting Image API Tests...\n");
-  
+
   for (const api of apis) {
     await testAPI(api);
     // Wait 2 seconds between tests

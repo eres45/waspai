@@ -36,7 +36,9 @@ export function useCharacters(options: UseCharactersOptions = {}) {
         handleErrorWithToast(err);
       },
       onSuccess: (data) => {
-        console.log(`[useCharacters] Successfully fetched ${data.length} characters`);
+        console.log(
+          `[useCharacters] Successfully fetched ${data.length} characters`,
+        );
         // Update Zustand store for chat mentions
         appStore.setState({ characterList: data });
       },

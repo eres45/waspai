@@ -54,7 +54,7 @@ const APIs = {
 async function testImageGenerationAPI(
   name: string,
   url: string,
-  params: Record<string, string>
+  params: Record<string, string>,
 ): Promise<{
   name: string;
   status: "working" | "failed";
@@ -99,12 +99,12 @@ async function testImageGenerationAPI(
     console.log(`   Response:`, data);
 
     // Check if response contains image URL (handle different field names)
-    const imageUrl = 
-      data.url || 
-      data.image_url || 
-      data.result || 
-      data.data || 
-      data.image || 
+    const imageUrl =
+      data.url ||
+      data.image_url ||
+      data.result ||
+      data.data ||
+      data.image ||
       data.response;
 
     if (imageUrl) {
@@ -113,7 +113,8 @@ async function testImageGenerationAPI(
         name,
         status: "working",
         responseTime,
-        imageUrl: typeof imageUrl === "string" ? imageUrl : JSON.stringify(imageUrl),
+        imageUrl:
+          typeof imageUrl === "string" ? imageUrl : JSON.stringify(imageUrl),
       };
     } else {
       console.log(`   ⚠️ Response received but no image URL found`);
@@ -151,7 +152,11 @@ async function runTests() {
   }> = [];
 
   for (const [name, config] of Object.entries(APIs)) {
-    const result = await testImageGenerationAPI(name, config.url, config.params);
+    const result = await testImageGenerationAPI(
+      name,
+      config.url,
+      config.params,
+    );
     results.push(result);
     // Add delay between requests to avoid rate limiting
     await new Promise((resolve) => setTimeout(resolve, 1000));

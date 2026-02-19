@@ -88,18 +88,20 @@ export async function selectThreadWithMessagesAction(threadId: string) {
   // Retry logic to handle race condition where thread is being created
   let thread: any = null;
   const retries = 3;
-  
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     thread = await chatRepository.selectThread(threadId);
-    
+
     if (thread) {
       break;
     }
-    
+
     if (attempt < retries) {
       // Wait before retrying (exponential backoff: 100ms, 200ms)
       const waitTime = Math.pow(2, attempt - 1) * 100;
-      logger.info(`Thread ${threadId} not found on attempt ${attempt}, retrying in ${waitTime}ms...`);
+      logger.info(
+        `Thread ${threadId} not found on attempt ${attempt}, retrying in ${waitTime}ms...`,
+      );
       await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
   }
@@ -108,11 +110,11 @@ export async function selectThreadWithMessagesAction(threadId: string) {
     logger.error("Thread not found after retries", threadId);
     return null;
   }
-  
+
   if (thread?.userId !== session?.user.id) {
     return null;
   }
-  
+
   const messages = await chatRepository.selectMessagesByThreadId(threadId);
   return thread ? { ...thread, messages: messages ?? [] } : null;
 }

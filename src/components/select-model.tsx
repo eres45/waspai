@@ -48,14 +48,14 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
     }
   }, [props.currentModel]);
 
-  const filteredProviders = providers?.map((provider) => ({
-    ...provider,
-    models: provider.models.filter(
-      (m) =>
-        filter === "All" ||
-        (m as any).tier === filter
-    ),
-  })).filter((p) => p.models.length > 0);
+  const filteredProviders = providers
+    ?.map((provider) => ({
+      ...provider,
+      models: provider.models.filter(
+        (m) => filter === "All" || (m as any).tier === filter,
+      ),
+    }))
+    .filter((p) => p.models.length > 0);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -94,34 +94,47 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
             <CommandInput
               placeholder="search model..."
               data-testid="model-search-input"
-              className="pr-10" 
+              className="pr-10"
             />
             <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <ListFilter className={cn("h-4 w-4", filter !== "All" && "text-primary")} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setFilter("All")}>
-                      Default (All)
-                      {filter === "All" && <CheckIcon className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setFilter("Free")}>
-                      Free Models
-                      {filter === "Free" && <CheckIcon className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setFilter("Pro")}>
-                      Pro Models
-                       {filter === "Pro" && <CheckIcon className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setFilter("Ultra")}>
-                      Ultra Models
-                       {filter === "Ultra" && <CheckIcon className="ml-auto h-4 w-4" />}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <ListFilter
+                      className={cn(
+                        "h-4 w-4",
+                        filter !== "All" && "text-primary",
+                      )}
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setFilter("All")}>
+                    Default (All)
+                    {filter === "All" && (
+                      <CheckIcon className="ml-auto h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("Free")}>
+                    Free Models
+                    {filter === "Free" && (
+                      <CheckIcon className="ml-auto h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("Pro")}>
+                    Pro Models
+                    {filter === "Pro" && (
+                      <CheckIcon className="ml-auto h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("Ultra")}>
+                    Ultra Models
+                    {filter === "Ultra" && (
+                      <CheckIcon className="ml-auto h-4 w-4" />
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <CommandList className="p-2">
@@ -172,8 +185,11 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       ) : (
                         <div className="ml-3" />
                       )}
-                      <span className="pr-2">{MODEL_DISPLAY_NAMES[item.name] || item.name}</span>
-                      {(item as any).tier !== "Free" || (item as any).tier === "Free" ? (
+                      <span className="pr-2">
+                        {MODEL_DISPLAY_NAMES[item.name] || item.name}
+                      </span>
+                      {(item as any).tier !== "Free" ||
+                      (item as any).tier === "Free" ? (
                         <div className="relative mr-1 h-fit">
                           {(item as any).tier === "Ultra" && (
                             <div className="absolute inset-0 rounded-sm overflow-hidden p-[1px]">
@@ -185,7 +201,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                               "relative px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold flex items-center justify-center backface-visible",
                               (item as any).tier === "Ultra"
                                 ? "bg-background/90 backdrop-blur-xl text-foreground border border-transparent"
-                                : "bg-muted text-muted-foreground"
+                                : "bg-muted text-muted-foreground",
                             )}
                           >
                             {(item as any).tier}

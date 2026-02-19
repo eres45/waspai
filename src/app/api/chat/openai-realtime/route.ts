@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
   try {
     if (!process.env.OPENAI_API_KEY) {
       return new Response(
-        JSON.stringify({ 
-          error: "Voice chat requires OpenAI API key. Please configure OPENAI_API_KEY in your environment variables to use voice chat features.",
-          code: "OPENAI_API_KEY_NOT_SET"
+        JSON.stringify({
+          error:
+            "Voice chat requires OpenAI API key. Please configure OPENAI_API_KEY in your environment variables to use voice chat features.",
+          code: "OPENAI_API_KEY_NOT_SET",
         }),
         {
           status: 503,

@@ -10,7 +10,7 @@ interface TestModelFeatureResult {
 
 async function testModelFeature(
   modelName: string,
-  prompt: string
+  prompt: string,
 ): Promise<TestModelFeatureResult> {
   console.log(`\n🧪 Testing ${modelName}...`);
   console.log(`Prompt: ${prompt}\n`);
@@ -69,7 +69,9 @@ async function testModelFeature(
     if (data.choices?.[0]?.message?.search_results) {
       specialFields.push("search_results_in_message");
       console.log("\n🔍 Found 'search_results' in message:");
-      console.log(JSON.stringify(data.choices[0].message.search_results, null, 2));
+      console.log(
+        JSON.stringify(data.choices[0].message.search_results, null, 2),
+      );
     }
 
     return {
@@ -145,9 +147,13 @@ async function main() {
 
   const reasoningResult = results.find((r) => r.model === "openai-reasoning");
   if (reasoningResult?.specialFields.includes("reasoning")) {
-    console.log("✅ openai-reasoning: Returns 'reasoning' field with step-by-step thinking");
+    console.log(
+      "✅ openai-reasoning: Returns 'reasoning' field with step-by-step thinking",
+    );
   } else {
-    console.log("⚠️  openai-reasoning: Check response structure for reasoning data");
+    console.log(
+      "⚠️  openai-reasoning: Check response structure for reasoning data",
+    );
   }
 
   const searchResult = results.find((r) => r.model === "gemini-search");

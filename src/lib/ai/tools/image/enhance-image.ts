@@ -32,7 +32,7 @@ export const enhanceImageTool = createTool({
     try {
       // Call the new enhancement API that returns the enhanced image directly
       const enhanceApiUrl = "https://arimagex.netlify.app/api/enhance";
-      
+
       logger.info(`Calling enhance API: ${enhanceApiUrl}`);
 
       const apiResponse = await fetch(enhanceApiUrl, {
@@ -46,8 +46,12 @@ export const enhanceImageTool = createTool({
       });
 
       if (!apiResponse.ok) {
-        logger.error(`Enhance API failed with status: ${apiResponse.status} ${apiResponse.statusText}`);
-        throw new Error(`Enhance API failed: ${apiResponse.status} ${apiResponse.statusText}`);
+        logger.error(
+          `Enhance API failed with status: ${apiResponse.status} ${apiResponse.statusText}`,
+        );
+        throw new Error(
+          `Enhance API failed: ${apiResponse.status} ${apiResponse.statusText}`,
+        );
       }
 
       // Check content type to see if we got an image directly or JSON
@@ -75,19 +79,26 @@ export const enhanceImageTool = createTool({
 
         if (enhancedUrl) {
           logger.info(`Fetching enhanced image from URL: ${enhancedUrl}`);
-          const imageResponse = await fetch(enhancedUrl, { signal: abortSignal });
+          const imageResponse = await fetch(enhancedUrl, {
+            signal: abortSignal,
+          });
           if (!imageResponse.ok) {
-            throw new Error(`Failed to fetch enhanced image: ${imageResponse.status}`);
+            throw new Error(
+              `Failed to fetch enhanced image: ${imageResponse.status}`,
+            );
           }
           const arrayBuffer = await imageResponse.arrayBuffer();
           enhancedImageBuffer = Buffer.from(arrayBuffer);
-          enhancedMimeType = imageResponse.headers.get("content-type") || "image/jpeg";
+          enhancedMimeType =
+            imageResponse.headers.get("content-type") || "image/jpeg";
         } else {
           throw new Error("API response doesn't contain an image or image URL");
         }
       }
 
-      logger.info(`Image enhanced successfully, size: ${enhancedImageBuffer.length} bytes`);
+      logger.info(
+        `Image enhanced successfully, size: ${enhancedImageBuffer.length} bytes`,
+      );
 
       // Fetch original image for comparison
       let uploadedOriginal = {
@@ -100,7 +111,8 @@ export const enhanceImageTool = createTool({
         if (originalResponse.ok) {
           const originalArrayBuffer = await originalResponse.arrayBuffer();
           const originalBuffer = Buffer.from(originalArrayBuffer);
-          const originalMimeType = originalResponse.headers.get("content-type") || "image/jpeg";
+          const originalMimeType =
+            originalResponse.headers.get("content-type") || "image/jpeg";
 
           uploadedOriginal = await safe(originalBuffer)
             .map(async (buffer) => {
@@ -119,7 +131,9 @@ export const enhanceImageTool = createTool({
               }),
             )
             .ifFail(() => {
-              logger.warn("Failed to upload original image, using original URL");
+              logger.warn(
+                "Failed to upload original image, using original URL",
+              );
               return uploadedOriginal;
             })
             .unwrap();

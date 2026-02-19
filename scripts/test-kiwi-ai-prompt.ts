@@ -12,9 +12,9 @@ async function testKiwiAIPrompt() {
   });
 
   console.log("\n📝 System Prompt Content:");
-  console.log("=" .repeat(80));
+  console.log("=".repeat(80));
   console.log(KIWI_AI_SYSTEM_PROMPT);
-  console.log("=" .repeat(80));
+  console.log("=".repeat(80));
 
   console.log("\n🔄 Testing API call with system prompt...\n");
 
@@ -125,7 +125,9 @@ async function testKiwiAIPrompt() {
     console.log("\n" + "=".repeat(80));
     console.log("\n📊 Summary:");
     console.log("✨ Kiwi AI System Prompt Test Complete!");
-    console.log("\nNote: If the model still responds as DarkAI, the system prompt");
+    console.log(
+      "\nNote: If the model still responds as DarkAI, the system prompt",
+    );
     console.log("may not be properly integrated or the underlying API doesn't");
     console.log("support system prompts. Check the chat route integration.");
   } catch (error) {

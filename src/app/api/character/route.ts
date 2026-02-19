@@ -11,13 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      name,
-      description,
-      personality,
-      icon,
-      privacy,
-    } = body;
+    const { name, description, personality, icon, privacy } = body;
 
     if (!name || !description || !personality) {
       return NextResponse.json(
@@ -56,7 +50,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // "public", "private", or "all"
 
-    console.log(`[Character API] Fetching characters - type: ${type}, userId: ${session.user.id}`);
+    console.log(
+      `[Character API] Fetching characters - type: ${type}, userId: ${session.user.id}`,
+    );
 
     let characters;
 
@@ -68,12 +64,13 @@ export async function GET(request: NextRequest) {
       );
     } else if (type === "all") {
       // Get both user's private characters and all public characters
-      const userPrivateCharacters = await characterRepository.getPrivateCharactersByUserId(
-        session.user.id,
-      );
+      const userPrivateCharacters =
+        await characterRepository.getPrivateCharactersByUserId(session.user.id);
       const publicCharacters = await characterRepository.getPublicCharacters();
       characters = [...userPrivateCharacters, ...publicCharacters];
-      console.log(`[Character API] Found ${userPrivateCharacters.length} private + ${publicCharacters.length} public characters`);
+      console.log(
+        `[Character API] Found ${userPrivateCharacters.length} private + ${publicCharacters.length} public characters`,
+      );
     } else {
       // Default: get user's characters (both private and public)
       characters = await characterRepository.getCharactersByUserId(

@@ -1,6 +1,5 @@
-
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import 'dotenv/config';
+import "dotenv/config";
 
 // List extracted from user request
 const modelsToTest = [
@@ -38,21 +37,25 @@ const modelsToTest = [
   "openai/gpt-oss-120b",
   "openai/gpt-oss-20b",
   "qwen-3-235b-a22b-instruct-2507",
-  "umbra"
+  "umbra",
 ];
 
 async function testModels() {
   const apiKey = process.env.TYPEGPT_API_KEY;
   if (!apiKey) {
-    console.error("❌ No TYPEGPT_API_KEY found in environment environment variables.");
+    console.error(
+      "❌ No TYPEGPT_API_KEY found in environment environment variables.",
+    );
     console.log("Cannot test models without an API key.");
     return;
   }
 
-  console.log(`Starting test for ${modelsToTest.length} models using TypeGPT API...`);
+  console.log(
+    `Starting test for ${modelsToTest.length} models using TypeGPT API...`,
+  );
   console.log("---------------------------------------------------");
 
-  const results: { model: string, status: string, error?: string }[] = [];
+  const results: { model: string; status: string; error?: string }[] = [];
 
   for (const model of modelsToTest) {
     process.stdout.write(`Testing ${model}... `);
@@ -63,15 +66,15 @@ async function testModels() {
       const response = await fetch("https://typegpt.ai/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model: model,
           messages: [{ role: "user", content: "hi" }],
-          max_tokens: 5
+          max_tokens: 5,
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
       clearTimeout(timeoutId);
 
@@ -81,7 +84,11 @@ async function testModels() {
       } else {
         const text = await response.text();
         console.log(`❌ Failed (${response.status})`);
-        results.push({ model, status: "FAILED", error: `${response.status} ${response.statusText}` });
+        results.push({
+          model,
+          status: "FAILED",
+          error: `${response.status} ${response.statusText}`,
+        });
       }
     } catch (error: any) {
       console.log(`❌ Error: ${error.message}`);
@@ -91,15 +98,15 @@ async function testModels() {
 
   console.log("\n---------------------------------------------------");
   console.log("Summary:");
-  const working = results.filter(r => r.status === "OK");
-  const failed = results.filter(r => r.status !== "OK");
+  const working = results.filter((r) => r.status === "OK");
+  const failed = results.filter((r) => r.status !== "OK");
 
   console.log(`Working: ${working.length}`);
   console.log(`Failed: ${failed.length}`);
 
   if (working.length > 0) {
     console.log("\nWorking Models:");
-    working.forEach(w => console.log(`- ${w.model}`));
+    working.forEach((w) => console.log(`- ${w.model}`));
   }
 }
 

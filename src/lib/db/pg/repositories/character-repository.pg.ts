@@ -73,7 +73,9 @@ export const pgCharacterRepository = {
       .where(eq(CharacterTable.privacy, "public"));
   },
 
-  async getPrivateCharactersByUserId(userId: string): Promise<CharacterEntity[]> {
+  async getPrivateCharactersByUserId(
+    userId: string,
+  ): Promise<CharacterEntity[]> {
     return await db
       .select()
       .from(CharacterTable)
@@ -85,7 +87,9 @@ export const pgCharacterRepository = {
       );
   },
 
-  async getPublicCharactersByUserId(userId: string): Promise<CharacterEntity[]> {
+  async getPublicCharactersByUserId(
+    userId: string,
+  ): Promise<CharacterEntity[]> {
     return await db
       .select()
       .from(CharacterTable)
@@ -108,9 +112,7 @@ export const pgCharacterRepository = {
         ...input,
         updatedAt: new Date(),
       })
-      .where(
-        and(eq(CharacterTable.id, id), eq(CharacterTable.userId, userId)),
-      )
+      .where(and(eq(CharacterTable.id, id), eq(CharacterTable.userId, userId)))
       .returning();
 
     return character || null;
@@ -119,9 +121,7 @@ export const pgCharacterRepository = {
   async deleteCharacter(id: string, userId: string): Promise<boolean> {
     const result = await db
       .delete(CharacterTable)
-      .where(
-        and(eq(CharacterTable.id, id), eq(CharacterTable.userId, userId)),
-      );
+      .where(and(eq(CharacterTable.id, id), eq(CharacterTable.userId, userId)));
 
     return (result.rowCount ?? 0) > 0;
   },
@@ -147,9 +147,6 @@ export const pgCharacterRepository = {
       );
     }
 
-    return await db
-      .select()
-      .from(CharacterTable)
-      .where(whereClause);
+    return await db.select().from(CharacterTable).where(whereClause);
   },
 };

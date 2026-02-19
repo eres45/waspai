@@ -48,7 +48,9 @@ export async function generateVideoWithSora(
 
         if (!response.ok) {
           const errorText = await response.text().catch(() => "");
-          throw new Error(`HTTP ${response.status}${errorText ? `: ${errorText}` : ""}`);
+          throw new Error(
+            `HTTP ${response.status}${errorText ? `: ${errorText}` : ""}`,
+          );
         }
 
         const data = await response.json();

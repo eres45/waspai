@@ -22,7 +22,7 @@ interface TestResult {
 
 async function testModelRateLimit(
   modelName: string,
-  requestCount: number = 12
+  requestCount: number = 12,
 ): Promise<TestResult> {
   console.log(`\n🧪 Testing ${modelName} (${requestCount} requests)...`);
 
@@ -58,7 +58,7 @@ async function testModelRateLimit(
 
       if (response.status === 429) {
         console.log(
-          `  ⚠️  Request ${i + 1}: Rate limited (429) after ${responseTime}ms`
+          `  ⚠️  Request ${i + 1}: Rate limited (429) after ${responseTime}ms`,
         );
         rateLimited = true;
         failureCount++;
@@ -67,7 +67,7 @@ async function testModelRateLimit(
         successCount++;
       } else {
         console.log(
-          `  ✗ Request ${i + 1}: Failed (${response.status}) after ${responseTime}ms`
+          `  ✗ Request ${i + 1}: Failed (${response.status}) after ${responseTime}ms`,
         );
         failureCount++;
       }
@@ -84,7 +84,9 @@ async function testModelRateLimit(
 
   const avgResponseTime =
     responseTimes.length > 0
-      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+      ? Math.round(
+          responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
+        )
       : 0;
 
   return {
@@ -119,7 +121,7 @@ async function main() {
   console.log("✅ Models with 10+ successful requests:");
   goodModels.forEach((r) => {
     console.log(
-      `  • ${r.model}: ${r.successCount}/12 success (${r.avgResponseTime}ms avg)`
+      `  • ${r.model}: ${r.successCount}/12 success (${r.avgResponseTime}ms avg)`,
     );
   });
 
@@ -127,7 +129,7 @@ async function main() {
     console.log("\n⚠️  Models with rate limiting:");
     limitedModels.forEach((r) => {
       console.log(
-        `  • ${r.model}: ${r.successCount}/12 success (rate limited: ${r.rateLimited})`
+        `  • ${r.model}: ${r.successCount}/12 success (rate limited: ${r.rateLimited})`,
       );
     });
   }
@@ -135,10 +137,12 @@ async function main() {
   console.log("\n\n🎯 RECOMMENDED MODELS FOR YOUR APP:");
   console.log("===================================\n");
 
-  const recommended = goodModels.sort((a, b) => b.successCount - a.successCount);
+  const recommended = goodModels.sort(
+    (a, b) => b.successCount - a.successCount,
+  );
   recommended.forEach((r, i) => {
     console.log(
-      `${i + 1}. ${r.model} - ${r.successCount} successful requests, ${r.avgResponseTime}ms avg response`
+      `${i + 1}. ${r.model} - ${r.successCount} successful requests, ${r.avgResponseTime}ms avg response`,
     );
   });
 

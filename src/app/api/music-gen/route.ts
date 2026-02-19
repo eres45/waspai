@@ -3,20 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { musicRepository } from "@/lib/db/repository";
 
 // In-memory storage for generated music (temporary)
-const musicCache = new Map<string, { buffer: Buffer; lyrics: string; tags: string }>();
+const musicCache = new Map<
+  string,
+  { buffer: Buffer; lyrics: string; tags: string }
+>();
 
-const SNAPZION_API_TOKEN = process.env.SNAPZION_API_TOKEN || "NAI-StMBW6GLoPbEYHtnPVz2AOQV5KOijvvUt35ZrXgcoYSUbz1xnHGzvoXG3QEE";
+const SNAPZION_API_TOKEN =
+  process.env.SNAPZION_API_TOKEN ||
+  "NAI-StMBW6GLoPbEYHtnPVz2AOQV5KOijvvUt35ZrXgcoYSUbz1xnHGzvoXG3QEE";
 const SNAPZION_UPLOAD_URL = "https://upload.snapzion.com/api/public-upload";
 
 /**
  * Upload audio file to Snapzion
  */
-async function uploadToSnapzion(audioBuffer: Buffer, filename: string): Promise<string> {
+async function uploadToSnapzion(
+  audioBuffer: Buffer,
+  filename: string,
+): Promise<string> {
   try {
     console.log(`[Music Gen API] Uploading to Snapzion: ${filename}`);
 
     const formData = new FormData();
-    const blob = new Blob([new Uint8Array(audioBuffer)], { type: "audio/mpeg" });
+    const blob = new Blob([new Uint8Array(audioBuffer)], {
+      type: "audio/mpeg",
+    });
     formData.append("file", blob, filename);
 
     const response = await fetch(SNAPZION_UPLOAD_URL, {
@@ -28,7 +38,9 @@ async function uploadToSnapzion(audioBuffer: Buffer, filename: string): Promise<
     });
 
     if (!response.ok) {
-      console.error(`[Music Gen API] Snapzion upload failed: ${response.status}`);
+      console.error(
+        `[Music Gen API] Snapzion upload failed: ${response.status}`,
+      );
       throw new Error(`Upload failed: ${response.status}`);
     }
 
@@ -46,7 +58,7 @@ async function uploadToSnapzion(audioBuffer: Buffer, filename: string): Promise<
 /**
  * Music Generation API
  * Generates music with lyrics using sii3.top API
- * 
+ *
  * Supports:
  * - lyrics: Song lyrics (can be multi-line)
  * - tags: Music style tags (e.g., sad, piano, hop, pop, epic, orchestra, cinematic)
@@ -64,11 +76,13 @@ export async function POST(request: NextRequest) {
     if (!lyrics || typeof lyrics !== "string") {
       return NextResponse.json(
         { error: "Lyrics are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    console.log(`[Music Gen API] Generating music with lyrics: ${lyrics.substring(0, 50)}...`);
+    console.log(
+      `[Music Gen API] Generating music with lyrics: ${lyrics.substring(0, 50)}...`,
+    );
     console.log(`[Music Gen API] Tags: ${tags}`);
 
     // Call sii3.top music generation API
@@ -82,22 +96,21 @@ export async function POST(request: NextRequest) {
       tags: tags || "pop",
     });
 
-    const musicResponse = await fetch(
-      `https://sii3.top/api/music.php`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    const musicResponse = await fetch(`https://sii3.top/api/music.php`, {
+      method: "POST",
+      body: formData,
+    });
 
     if (!musicResponse.ok) {
-      console.error(`[Music Gen API] sii3.top API error: ${musicResponse.status}`);
+      console.error(
+        `[Music Gen API] sii3.top API error: ${musicResponse.status}`,
+      );
       throw new Error(`API error: ${musicResponse.status}`);
     }
 
     // The API returns JSON with a URL to the audio file
     const jsonResponse = await musicResponse.json();
-    
+
     console.log(`[Music Gen API] Got JSON response:`, jsonResponse);
 
     if (!jsonResponse.url) {
@@ -107,25 +120,31 @@ export async function POST(request: NextRequest) {
 
     // Download the actual MP3 file from the URL
     console.log(`[Music Gen API] Downloading audio from: ${jsonResponse.url}`);
-    const audioResponse = await Promise.race([
+    const audioResponse = (await Promise.race([
       fetch(jsonResponse.url),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Download timeout")), 120000)
+        setTimeout(() => reject(new Error("Download timeout")), 120000),
       ),
-    ]) as Response;
+    ])) as Response;
 
     if (!audioResponse.ok) {
-      console.error(`[Music Gen API] Failed to download audio: ${audioResponse.status}`);
+      console.error(
+        `[Music Gen API] Failed to download audio: ${audioResponse.status}`,
+      );
       throw new Error(`Failed to download audio: ${audioResponse.status}`);
     }
 
     const audioBuffer = await audioResponse.arrayBuffer();
-    
-    console.log(`[Music Gen API] Audio downloaded successfully (${audioBuffer.byteLength} bytes)`);
+
+    console.log(
+      `[Music Gen API] Audio downloaded successfully (${audioBuffer.byteLength} bytes)`,
+    );
 
     // Check if we got valid audio data
     if (audioBuffer.byteLength < 10000) {
-      console.error(`[Music Gen API] Audio buffer too small (${audioBuffer.byteLength} bytes), likely not valid MP3`);
+      console.error(
+        `[Music Gen API] Audio buffer too small (${audioBuffer.byteLength} bytes), likely not valid MP3`,
+      );
       throw new Error("Invalid audio file size");
     }
 
@@ -136,7 +155,10 @@ export async function POST(request: NextRequest) {
       permanentUrl = await uploadToSnapzion(Buffer.from(audioBuffer), filename);
       console.log(`[Music Gen API] Permanent URL: ${permanentUrl}`);
     } catch (uploadError) {
-      console.warn("[Music Gen API] Snapzion upload failed, using temporary cache:", uploadError);
+      console.warn(
+        "[Music Gen API] Snapzion upload failed, using temporary cache:",
+        uploadError,
+      );
       // Fall back to temporary cache if upload fails
     }
 
@@ -166,7 +188,9 @@ export async function POST(request: NextRequest) {
         tempUrl: `/api/music-gen/stream/${musicId}`,
         fileSize: audioBuffer.byteLength,
       });
-      console.log(`[Music Gen API] Saved to database with ID: ${savedMusic.id}`);
+      console.log(
+        `[Music Gen API] Saved to database with ID: ${savedMusic.id}`,
+      );
     } catch (dbError) {
       console.warn("[Music Gen API] Failed to save to database:", dbError);
       // Don't fail the request if database save fails
@@ -184,7 +208,7 @@ export async function POST(request: NextRequest) {
     console.error("[Music Gen API] Error:", error);
     return NextResponse.json(
       { error: "Failed to generate music. Please try again." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -194,27 +218,31 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   const { searchParams, pathname } = new URL(request.url);
-  
+
   console.log(`[Music Gen API] GET request - pathname: ${pathname}`);
   console.log(`[Music Gen API] Cache keys:`, Array.from(musicCache.keys()));
-  
+
   // Check if this is a stream request
   if (pathname.includes("/stream/")) {
     const musicId = pathname.split("/stream/")[1];
-    
+
     console.log(`[Music Gen API] Attempting to stream music ID: ${musicId}`);
     console.log(`[Music Gen API] Cache size: ${musicCache.size}`);
-    
+
     const music = musicCache.get(musicId);
     if (!music) {
-      console.error(`[Music Gen API] Music not found in cache for ID: ${musicId}`);
+      console.error(
+        `[Music Gen API] Music not found in cache for ID: ${musicId}`,
+      );
       return NextResponse.json(
         { error: "Music not found in cache" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    console.log(`[Music Gen API] Streaming music: ${musicId} (${music.buffer.length} bytes)`);
+    console.log(
+      `[Music Gen API] Streaming music: ${musicId} (${music.buffer.length} bytes)`,
+    );
 
     return new NextResponse(music.buffer as any, {
       headers: {
@@ -258,7 +286,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log(`[Music Gen API] GET request - Generating music with lyrics: ${lyrics.substring(0, 50)}...`);
+    console.log(
+      `[Music Gen API] GET request - Generating music with lyrics: ${lyrics.substring(0, 50)}...`,
+    );
 
     const params = new URLSearchParams({
       lyrics,
@@ -269,16 +299,18 @@ export async function GET(request: NextRequest) {
       `https://sii3.top/api/music.php?${params.toString()}`,
       {
         method: "GET",
-      }
+      },
     );
 
     if (!musicResponse.ok) {
-      console.error(`[Music Gen API] sii3.top API error: ${musicResponse.status}`);
+      console.error(
+        `[Music Gen API] sii3.top API error: ${musicResponse.status}`,
+      );
       throw new Error(`API error: ${musicResponse.status}`);
     }
 
     const audioBuffer = await musicResponse.arrayBuffer();
-    
+
     // Store in cache
     const musicId = Date.now().toString();
     musicCache.set(musicId, {
@@ -287,7 +319,9 @@ export async function GET(request: NextRequest) {
       tags,
     });
 
-    console.log(`[Music Gen API] Music generated successfully (${audioBuffer.byteLength} bytes)`);
+    console.log(
+      `[Music Gen API] Music generated successfully (${audioBuffer.byteLength} bytes)`,
+    );
 
     return NextResponse.json({
       id: musicId,
@@ -300,7 +334,7 @@ export async function GET(request: NextRequest) {
     console.error("[Music Gen API] Error:", error);
     return NextResponse.json(
       { error: "Failed to generate music. Please try again." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

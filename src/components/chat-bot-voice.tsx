@@ -2,7 +2,10 @@
 
 import { getToolName, isToolUIPart, TextPart } from "ai";
 import { DEFAULT_VOICE_TOOLS, UIMessageWithCompleted } from "lib/ai/speech";
-import { CUSTOM_TTS_VOICES, getVoiceDisplayName } from "lib/ai/speech/custom-tts";
+import {
+  CUSTOM_TTS_VOICES,
+  getVoiceDisplayName,
+} from "lib/ai/speech/custom-tts";
 
 import { useCustomVoiceChat } from "lib/ai/speech/custom-voice-chat";
 import { cn, groupBy, isNull } from "lib/utils";
@@ -385,8 +388,7 @@ export function ChatBotVoice() {
                                 {getVoiceDisplayName(voice)}
 
                                 {voice ===
-                                  voiceChat.options.providerOptions
-                                    ?.voice && (
+                                  voiceChat.options.providerOptions?.voice && (
                                   <CheckIcon className="size-3.5" />
                                 )}
                               </DropdownMenuItem>

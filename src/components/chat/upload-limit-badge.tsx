@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface UploadLimitBadgeProps {
   children: React.ReactNode;
@@ -60,9 +56,7 @@ export function UploadLimitBadge({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div className={className}>
-          {children}
-        </div>
+        <div className={className}>{children}</div>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <div className="space-y-2">

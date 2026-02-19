@@ -76,8 +76,6 @@ export default function EmailSignUp({
     setStep(2); // Go to Name
   };
 
-
-
   const successNameStep = () => {
     const { success } = UserZodSchema.shape.name.safeParse(formData.name);
     if (!success) {
@@ -280,9 +278,7 @@ export default function EmailSignUp({
                 if (step === 3) successPasswordStep();
               }}
             >
-              {step === 3
-                  ? t("Auth.SignUp.createAccount")
-                  : t("Common.next")}
+              {step === 3 ? t("Auth.SignUp.createAccount") : t("Common.next")}
               {isLoading && <Loader className="size-4 ml-2" />}
             </Button>
             <Button

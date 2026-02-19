@@ -205,11 +205,22 @@ export async function POST(request: Request) {
           parts = [];
         }
 
+        // Ensure metadata is an object (it might be a string from JSON)
+        let metadata = m.metadata;
+        if (typeof metadata === "string") {
+          try {
+            metadata = JSON.parse(metadata);
+          } catch (_e) {
+            logger.warn(`Failed to parse metadata for message ${m.id}`);
+            metadata = undefined;
+          }
+        }
+
         return {
           id: m.id,
           role: m.role,
           parts: parts,
-          metadata: m.metadata,
+          metadata: metadata,
         };
       } catch (parseError) {
         logger.error(`Failed to parse message ${m.id}:`, parseError);
@@ -1644,7 +1655,7 @@ BEGIN ROLEPLAY NOW.`
 
               const finalMessages = [...historyMessages, currentMessage];
 
-                  // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
+              // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
               // If the model doesn't support images, we MUST ensure the content is a string
               // Groq specifically throws 400 "content must be a string" for non-vision models
               if (isImageInputUnsupportedModel(model)) {

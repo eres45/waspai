@@ -43,7 +43,7 @@ async function testTTSAPI() {
 
       if (response.ok) {
         const contentType = response.headers.get("content-type");
-        
+
         if (contentType?.includes("audio")) {
           const buffer = await response.arrayBuffer();
           console.log(`✅ Audio received: ${buffer.byteLength} bytes`);
@@ -70,13 +70,60 @@ async function testTTSAPI() {
   console.log("\n✨ TTS API Test Complete!");
   console.log("\nAvailable Voices:");
   const voices = [
-    "adam", "aiko", "alex", "alice", "alloy", "anaya", "antonio", "aoede",
-    "arjun", "bella", "daniel", "dora", "doras", "echo", "emma", "eric",
-    "fable", "fenrir", "george", "gongitsune", "heart", "isabella", "jessica",
-    "kabir", "kore", "kumo", "lewis", "liam", "lily", "michael", "nezumi",
-    "nicola", "nicole", "noel", "nova", "onyx", "puck", "river", "riya",
-    "santa", "santiago", "sara", "sarah", "siwis", "sky", "tebukuro",
-    "xiaobei", "xiaoni", "xiaoxiao", "xiaoyi", "yunjian", "yunxi", "yunxia", "yunyang"
+    "adam",
+    "aiko",
+    "alex",
+    "alice",
+    "alloy",
+    "anaya",
+    "antonio",
+    "aoede",
+    "arjun",
+    "bella",
+    "daniel",
+    "dora",
+    "doras",
+    "echo",
+    "emma",
+    "eric",
+    "fable",
+    "fenrir",
+    "george",
+    "gongitsune",
+    "heart",
+    "isabella",
+    "jessica",
+    "kabir",
+    "kore",
+    "kumo",
+    "lewis",
+    "liam",
+    "lily",
+    "michael",
+    "nezumi",
+    "nicola",
+    "nicole",
+    "noel",
+    "nova",
+    "onyx",
+    "puck",
+    "river",
+    "riya",
+    "santa",
+    "santiago",
+    "sara",
+    "sarah",
+    "siwis",
+    "sky",
+    "tebukuro",
+    "xiaobei",
+    "xiaoni",
+    "xiaoxiao",
+    "xiaoyi",
+    "yunjian",
+    "yunxi",
+    "yunxia",
+    "yunyang",
   ];
   console.log(`Total: ${voices.length} voices`);
   console.log(voices.join(", "));

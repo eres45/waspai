@@ -334,7 +334,11 @@ export function ChatMentionInputSuggestion({
               className="size-3.5 ring-[1px] ring-input rounded-full"
             >
               <AvatarImage
-                src={character.icon?.type === "image" ? character.icon.value : character.icon?.value || EMOJI_DATA[i % EMOJI_DATA.length]}
+                src={
+                  character.icon?.type === "image"
+                    ? character.icon.value
+                    : character.icon?.value || EMOJI_DATA[i % EMOJI_DATA.length]
+                }
               />
               <AvatarFallback>{character.name.slice(0, 1)}</AvatarFallback>
             </Avatar>
@@ -345,7 +349,6 @@ export function ChatMentionInputSuggestion({
         };
       });
   }, [characterList, selectedIds, searchValue]);
-
 
   const workflowMentions = useMemo(() => {
     if (disabledType?.includes("workflow")) return [];
@@ -494,7 +497,13 @@ export function ChatMentionInputSuggestion({
       ...defaultToolMentions,
       ...mcpMentions,
     ];
-  }, [agentMentions, characterMentions, workflowMentions, defaultToolMentions, mcpMentions]);
+  }, [
+    agentMentions,
+    characterMentions,
+    workflowMentions,
+    defaultToolMentions,
+    mcpMentions,
+  ]);
 
   // Reset selected index when mentions change
   useEffect(() => {

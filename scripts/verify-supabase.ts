@@ -23,8 +23,9 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 async function verify() {
   try {
     // List buckets
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
+    const { data: buckets, error: bucketsError } =
+      await supabase.storage.listBuckets();
+
     if (bucketsError) {
       console.error("❌ Failed to list buckets:", bucketsError);
       process.exit(1);
@@ -33,14 +34,18 @@ async function verify() {
     console.log("\n✓ Connected to Supabase Storage");
     console.log("Available buckets:");
     buckets?.forEach((bucket) => {
-      console.log(`  - ${bucket.name} (${bucket.public ? "public" : "private"})`);
+      console.log(
+        `  - ${bucket.name} (${bucket.public ? "public" : "private"})`,
+      );
     });
 
     // Check for uploads bucket
     const uploadsBucket = buckets?.find((b) => b.name === "uploads");
     if (!uploadsBucket) {
       console.error("\n❌ 'uploads' bucket not found!");
-      console.error("Please create it in Supabase Dashboard → Storage → Create Bucket");
+      console.error(
+        "Please create it in Supabase Dashboard → Storage → Create Bucket",
+      );
       process.exit(1);
     }
 

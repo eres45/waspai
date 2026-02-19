@@ -17,7 +17,9 @@ async function testStyleChatAPI() {
   ];
 
   for (const testCase of testCases) {
-    console.log(`\n📝 Test: message="${testCase.message}", style="${testCase.style}"`);
+    console.log(
+      `\n📝 Test: message="${testCase.message}", style="${testCase.style}"`,
+    );
     console.log("─".repeat(60));
 
     try {
@@ -48,7 +50,10 @@ async function testStyleChatAPI() {
 
       const data = await response.json();
       console.log(`✅ Success!`);
-      console.log(`📄 Response:`, JSON.stringify(data, null, 2).substring(0, 300));
+      console.log(
+        `📄 Response:`,
+        JSON.stringify(data, null, 2).substring(0, 300),
+      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.log(`❌ Error: ${errorMsg}`);

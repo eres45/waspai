@@ -17,7 +17,7 @@ export function AppSidebarCharacterMode() {
   const [characters] = appStore(
     useShallow((state) => [state.characterList || []]),
   );
-  
+
   // Fetch characters and load into store
   useCharacters({ type: "private" });
 
@@ -63,7 +63,10 @@ export function AppSidebarCharacterMode() {
           ) : (
             <div className="flex flex-col">
               {characters.map((character) => (
-                <SidebarMenuItem key={character.id} className="px-2 cursor-pointer">
+                <SidebarMenuItem
+                  key={character.id}
+                  className="px-2 cursor-pointer"
+                >
                   <SidebarMenuButton asChild>
                     <Link href={`/character/${character.id}`}>
                       <span>{character.name}</span>

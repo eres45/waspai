@@ -9,7 +9,7 @@ customModelProvider.modelsInfo.forEach((providerInfo) => {
   console.log(`  Models:`);
   providerInfo.models.forEach((model) => {
     console.log(
-      `    - ${model.name} (Tool Support: ${!model.isToolCallUnsupported}, Image Support: ${!model.isImageInputUnsupported})`
+      `    - ${model.name} (Tool Support: ${!model.isToolCallUnsupported}, Image Support: ${!model.isImageInputUnsupported})`,
     );
   });
 });
@@ -41,5 +41,5 @@ const invalidModel = customModelProvider.getModel({
 });
 console.log(
   `✅ Invalid model falls back to default:`,
-  invalidModel ? "YES" : "NO"
+  invalidModel ? "YES" : "NO",
 );

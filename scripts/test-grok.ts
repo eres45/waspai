@@ -17,7 +17,7 @@ async function testGrok() {
       "https://sii3.top/api/grok4.php?text=What%20is%202%2B2%3F",
       {
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {

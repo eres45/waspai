@@ -36,7 +36,7 @@ async function testMemeAPI() {
     console.log(`📋 Content-Type: ${response.headers.get("content-type")}\n`);
 
     const contentType = response.headers.get("content-type");
-    
+
     if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
       console.log("📦 Response Body:");
@@ -59,12 +59,14 @@ async function testMemeAPI() {
     } else if (contentType && contentType.includes("image/")) {
       console.log("✅ SUCCESS!");
       console.log(`🖼️  Response is an image (${contentType})`);
-      console.log(`📊 Image size: ${response.headers.get("content-length")} bytes`);
+      console.log(
+        `📊 Image size: ${response.headers.get("content-length")} bytes`,
+      );
     } else {
       const text = await response.text();
       console.log("📦 Response Body:");
       console.log(text);
-      
+
       if (response.ok) {
         console.log("\n✅ SUCCESS!");
       } else {

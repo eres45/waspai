@@ -5,24 +5,27 @@ async function testGeminiSearch() {
   console.log("Query: What is the current BTC price?\n");
 
   try {
-    const response = await fetch("https://text.pollinations.ai/openai/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${TOKEN}`,
+    const response = await fetch(
+      "https://text.pollinations.ai/openai/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TOKEN}`,
+        },
+        body: JSON.stringify({
+          model: "gemini-search",
+          messages: [
+            {
+              role: "user",
+              content: "What is the current BTC price?",
+            },
+          ],
+          max_tokens: 500,
+          stream: false,
+        }),
       },
-      body: JSON.stringify({
-        model: "gemini-search",
-        messages: [
-          {
-            role: "user",
-            content: "What is the current BTC price?",
-          },
-        ],
-        max_tokens: 500,
-        stream: false,
-      }),
-    });
+    );
 
     console.log(`Status: ${response.status}\n`);
 
@@ -51,7 +54,9 @@ async function testGeminiSearch() {
       data.choices[0]?.message?.content?.toLowerCase().includes("price") ||
       data.choices[0]?.message?.content?.toLowerCase().includes("$")
     ) {
-      console.log("✅ Response contains BTC/price information - SEARCH WORKING!");
+      console.log(
+        "✅ Response contains BTC/price information - SEARCH WORKING!",
+      );
     } else {
       console.log("⚠️  Response might not contain real-time data");
     }
