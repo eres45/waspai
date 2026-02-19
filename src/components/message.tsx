@@ -1,7 +1,7 @@
 "use client";
 
 import { isToolUIPart, type UIMessage } from "ai";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo } from "react";
 import equal from "lib/equal";
 
 import { cn } from "lib/utils";
@@ -53,6 +53,18 @@ const PurePreviewMessage = ({
 }: Props) => {
   const isUserMessage = message.role === "user";
   const modelId = (message.metadata as ChatMetadata)?.chatModel?.model || "";
+
+  // Debug logging for GLM reasoning detection
+  useEffect(() => {
+    if (message.role === 'assistant' && modelId) {
+      console.log('[Reasoning Debug] Message metadata:', {
+        modelId,
+        hasMetadata: !!message.metadata,
+        chatModel: (message.metadata as ChatMetadata)?.chatModel,
+        isLeaky: isLeakyReasoningModel(modelId),
+      });
+    }
+  }, [modelId, message.role, message.metadata]);
 
   // Process message parts to extract reasoning from leaky models
   const partsForDisplay = useMemo(() => {
