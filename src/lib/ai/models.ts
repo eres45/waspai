@@ -1,16 +1,12 @@
 import "server-only";
 import { LanguageModel } from "ai";
 import { createA4FModels } from "./a4f-models";
-import { createDeepInfraModels } from "./deepinfra";
 import { createLLMChatModels } from "./llmchat";
 import { createWorkersModels } from "./workers";
 import { ChatModel } from "app-types/chat";
 
 // A4F Models - Professional tier
 const a4fModels = createA4FModels();
-
-// DeepInfra Models - Pro tier
-const deepInfraModels = createDeepInfraModels();
 
 // LLMChat Models - Free tier
 const llmChatModels = createLLMChatModels();
@@ -32,21 +28,6 @@ const staticModels = {
       llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-instruct"],
     "cf-deepseek-ai-deepseek-math-7b-instruct":
       llmChatModels["cf-deepseek-ai-deepseek-math-7b-instruct"],
-    "deepseek-ai-DeepSeek-R1-0528":
-      deepInfraModels["deepseek-ai-DeepSeek-R1-0528"],
-    "deepseek-ai-DeepSeek-R1-0528-Turbo":
-      deepInfraModels["deepseek-ai-DeepSeek-R1-0528-Turbo"],
-    "deepseek-ai-DeepSeek-R1-Distill-Llama-70B":
-      deepInfraModels["deepseek-ai-DeepSeek-R1-Distill-Llama-70B"],
-    "deepseek-ai-DeepSeek-R1-Turbo":
-      deepInfraModels["deepseek-ai-DeepSeek-R1-0528-Turbo"],
-    "deepseek-ai-DeepSeek-V3": deepInfraModels["deepseek-ai-DeepSeek-V3"],
-    "deepseek-ai-DeepSeek-V3.1": deepInfraModels["deepseek-ai-DeepSeek-V3.1"],
-    "deepseek-ai-DeepSeek-V3.1-Terminus":
-      deepInfraModels["deepseek-ai-DeepSeek-V3.1-Terminus"],
-    "deepseek-ai-DeepSeek-V3.2": deepInfraModels["deepseek-ai-DeepSeek-V3.2"],
-    "deepseek-ai-DeepSeek-V3-0324":
-      deepInfraModels["deepseek-ai-DeepSeek-V3-0324"],
   },
   defog: {
     "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
@@ -54,7 +35,6 @@ const staticModels = {
   google: {
     "cf-google-gemma-2b-it-lora": llmChatModels["cf-google-gemma-2b-it-lora"],
     "cf-google-gemma-7b-it": llmChatModels["cf-google-gemma-7b-it"],
-    "google-gemma-2-9b-it": deepInfraModels["google-gemma-2-9b-it"],
   },
   llm: {
     "cf-llama-2-13b": llmChatModels["cf-meta-llama-2-13b-chat"],
@@ -65,23 +45,13 @@ const staticModels = {
     "cf-llama-guard": llmChatModels["cf-meta-llama-guard-7b"],
     "llama-3.1-8b-instant": a4fModels["llama-3.1-8b-instant"],
     "llama-3.3-70b-versatile": a4fModels["llama-3.3-70b-versatile"],
-    "Llama-3.3-70B-DeepInfra":
-      deepInfraModels["meta-llama-Llama-3.3-70B-Instruct-Turbo"],
   },
   meta: {
-    "llama-3.3-70b-deepinfra-turbo":
-      deepInfraModels["meta-llama-Llama-3.3-70B-Instruct-Turbo"],
-    "llama-4-maverick-17b-128e-instruct-fp8":
-      deepInfraModels["meta-llama-Llama-4-Maverick-17B-128E-Instruct-FP8"],
-    "llama-guard-4-12b": deepInfraModels["meta-llama-Llama-Guard-4-12B"],
     "llama-prompt-guard-2-86m":
       a4fModels["meta-llama-llama-prompt-guard-2-86m"],
   },
   microsoft: {
     "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
-  },
-  minimax: {
-    "MiniMaxAI-MiniMax-M2": deepInfraModels["MiniMaxAI-MiniMax-M2"],
   },
   mistral: {
     "cf-mistralai-mistral-7b-instruct-v0.1":
@@ -92,19 +62,9 @@ const staticModels = {
       llmChatModels["cf-mistralai-mistral-small-3.1-24b-instruct"],
     "cf-mistralai-openhermes-2.5-mistral-7b":
       llmChatModels["cf-mistralai-openhermes-2.5-mistral-7b"],
-    "mistralai-Mistral-7B-Instruct-v0.1":
-      deepInfraModels["mistralai-Mistral-7B-Instruct-v0.1"],
-    "mistralai-Mistral-7B-Instruct-v0.2":
-      deepInfraModels["mistralai-Mistral-7B-Instruct-v0.2"],
-    "mistralai-Mistral-Small-3.2-24B-Instruct-2506":
-      deepInfraModels["mistralai-Mistral-Small-3.2-24B-Instruct-2506"],
   },
   moonshot: {
     "moonshotai-kimi-k2-instruct": a4fModels["moonshotai-kimi-k2-instruct"],
-    "moonshotai-kimi-k2-instruct-0905":
-      deepInfraModels["moonshotai-Kimi-K2-Instruct-0905"],
-    "moonshotai-Kimi-K2-Thinking":
-      deepInfraModels["moonshotai-Kimi-K2-Thinking"],
     wormgpt: workersModels["wormgpt"],
   },
   openai: {
@@ -129,14 +89,7 @@ const staticModels = {
     "cf-qwen-qwen1.5-14b-chat-awq":
       llmChatModels["cf-qwen-qwen1.5-14b-chat-awq"],
     "cf-qwen-qwen1.5-7b-chat-awq": llmChatModels["cf-qwen-qwen1.5-7b-chat-awq"],
-    "Qwen-Qwen2-7B-Instruct": deepInfraModels["Qwen-Qwen2-7B-Instruct"],
-    "Qwen-Qwen3-235B-A22B-Instruct-2507":
-      deepInfraModels["Qwen-Qwen3-235B-A22B-Instruct-2507"],
     "qwen-qwen3-32b": a4fModels["qwen-qwen3-32b"],
-    "Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo":
-      deepInfraModels["Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo"],
-    "qwen-qwen3-next-80b-a3b-instruct":
-      deepInfraModels["Qwen-Qwen3-Next-80B-A3B-Instruct"],
   },
   tiiuae: {
     "cf-tiiuae-falcon-7b-instruct":
@@ -178,11 +131,8 @@ export const customModelProvider = {
       .map(([name, model]) => {
         let tier = "Free"; // Default to Free
         // Determine tier based on logic
-        // 1. "Pro" for A4F, DeepInfra
-        if (
-          Object.values(a4fModels).includes(model) ||
-          Object.values(deepInfraModels).includes(model)
-        ) {
+        // 1. "Pro" for A4F
+        if (Object.values(a4fModels).includes(model)) {
           tier = "Pro";
         }
         // 2. "Free" for Workers, LLMChat
@@ -211,10 +161,10 @@ export const customModelProvider = {
       allModels[model.provider as keyof typeof allModels]?.[model.model];
     if (!selectedModel) {
       console.warn(
-        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: google/google-gemma-2-9b-it`,
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: google/cf-google-gemma-7b-it`,
       );
-      // Fallback to a reliable free model (Gemma 2 9B)
-      const fallbackModel = allModels["google"]?.["google-gemma-2-9b-it"];
+      // Fallback to a reliable free model (Gemma 7B)
+      const fallbackModel = allModels["google"]?.["cf-google-gemma-7b-it"];
       if (!fallbackModel) {
         throw new Error(
           `Model not found: ${model.provider}/${model.model}. Please select a valid model.`,

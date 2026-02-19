@@ -10,7 +10,6 @@ export const PROVIDER_ORDER = [
   "moonshot", // Moonshot (Groq)
   "canopy", // Canopy (Groq)
   "deepseek", // DeepSeek (Groq)
-  "minimax", // MiniMax (Groq)
   "microsoft", // Microsoft
   "tiiuae", // Tiiuae
   "defog", // Defog
@@ -31,7 +30,6 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   moonshot: "Moonshot",
   canopy: "Canopy",
   deepseek: "DeepSeek",
-  minimax: "MiniMax",
   microsoft: "Microsoft",
   tiiuae: "Tiiuae",
   defog: "Defog",
@@ -50,14 +48,10 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "meta-llama-llama-guard-4-12b": "Llama Guard 4 12B",
   "meta-llama-llama-prompt-guard-2-86m": "Llama Prompt Guard 86M",
   "moonshotai-kimi-k2-instruct": "Kimi K2 Instruct",
-  "moonshotai-kimi-k2-instruct-0905": "Kimi K2 Instruct (09/05)",
   "openai-gpt-oss-120b": "GPT-OSS 120B",
   "openai-gpt-oss-20b": "GPT-OSS 20B",
   "openai-gpt-oss-safeguard-20b": "GPT-OSS Safeguard 20B",
   "qwen-qwen3-32b": "Qwen 3 32B",
-  "google-gemma-2-9b-it": "Gemma 2 9B",
-  "google-gemma-2-12b-it": "Gemma 2 12B",
-  "google-gemma-3-27b-it": "Gemma 3 27B",
   "cf-google-gemma-7b-it": "Gemma 7B IT (Legacy)",
   "cf-google-gemma-2b-it-lora": "Gemma 2B LoRA (Legacy)",
   "mistralai-Mistral-7B-Instruct-v0.1": "Mistral 7B v0.1",
@@ -67,20 +61,13 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-mistralai-mistral-7b-instruct-v0.1": "Mistral 7B (Legacy)",
   "cf-mistralai-mistral-7b-instruct-v0.2": "Mistral 7B v0.2 (Legacy)",
   "cf-mistralai-openhermes-2.5-mistral-7b": "OpenHermes 2.5 (Legacy)",
-  "Qwen-Qwen2-7B-Instruct": "Qwen 2 7B",
-  "Qwen-Qwen3-Coder-480B-A35B-Instruct-Turbo": "Qwen 3 Coder",
   "cf-qwen-qwen1.5-7b-chat-awq": "Qwen 1.5 7B",
   "cf-qwen-qwen1.5-14b-chat-awq": "Qwen 1.5 14B",
   "cf-qwen-qwen1.5-0.5b-chat": "Qwen 1.5 0.5B",
   "cf-qwen-qwen1.5-1.8b-chat": "Qwen 1.5 1.8B",
-  "moonshotai-Kimi-K2-Thinking": "Kimi K2 Thinking",
-  "deepseek-ai-DeepSeek-V3.1-Terminus": "DeepSeek V3.1",
-  "deepseek-ai-DeepSeek-R1-Turbo": "DeepSeek R1 Turbo",
-  "deepseek-ai-DeepSeek-R1": "DeepSeek R1",
   "cf-deepseek-ai-deepseek-coder-6.7b-base": "DeepSeek Coder 6.7B (Legacy)",
   "cf-deepseek-ai-deepseek-coder-6.7b-instruct": "DS Coder Instruct (Legacy)",
   "cf-deepseek-ai-deepseek-math-7b-instruct": "DS Math 7B (Legacy)",
-  "MiniMaxAI-MiniMax-M2": "MiniMax M2",
   "cf-microsoft-phi-2": "Phi-2 (Legacy)",
   "cf-tiiuae-falcon-7b-instruct": "Falcon 7B (Legacy)",
   "cf-defog-sqlcoder-7b-2": "SQLCoder 7B (Legacy)",
@@ -90,11 +77,6 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-openchat-openchat-3.5": "OpenChat 3.5 (Legacy)",
   "cf-una-cybertron-una-cybertron-7b-v2-bf16": "Cybertron 7B (Legacy)",
   "cf-tinyllama-tinyllama-1.1b-chat-v1.0": "TinyLlama 1.1B (Legacy)",
-  // DeepInfra Models
-  "Llama-3.1-8B-DeepInfra": "Llama 3.1 8B",
-  "Llama-3.2-3B-DeepInfra": "Llama 3.2 3B",
-  "Llama-3.2-1B-DeepInfra": "Llama 3.2 1B",
-  "Llama-3-8B-DeepInfra": "Llama 3 8B",
   "cf-llama-3-8b": "Llama 3 8B",
   "cf-llama-3.1-8b": "Llama 3.1 8B",
   "cf-llama-2-7b": "Llama 2 7B",
