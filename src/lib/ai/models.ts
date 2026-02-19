@@ -4,7 +4,6 @@ import { createA4FModels } from "./a4f-models";
 import { createDeepInfraModels } from "./deepinfra";
 import { createLLMChatModels } from "./llmchat";
 import { createWorkersModels } from "./workers";
-import { createCodexModels } from "./codex";
 import { ChatModel } from "app-types/chat";
 
 // A4F Models - Professional tier
@@ -19,42 +18,12 @@ const llmChatModels = createLLMChatModels();
 // Workers Models - Free Workers
 const workersModels = createWorkersModels();
 
-// Codex Models - Free Tier
-const codexModels = createCodexModels();
-
 const staticModels = {
   anthropic: {
     "claude-sonnet-4.5-proxy": workersModels["claude-sonnet-4.5-proxy"],
   },
   canopy: {
     "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
-  },
-  codex: {
-    "codex-gpt-5.2": codexModels["gpt-5.2"],
-    "codex-gpt-5.1": codexModels["gpt-5.1"],
-    "codex-gpt-5": codexModels["gpt-5"],
-    "codex-gpt-4.1-mini": codexModels["gpt-4.1-mini"],
-    "codex-claude-sonnet-4": codexModels["anthropic-claude-sonnet-4"],
-    "codex-gemini-2.5-pro": codexModels["google-gemini-2.5-pro-preview-05-06"],
-    "codex-deepseek-v3.2": codexModels["deepseek-ai-deepseek-v3.2"],
-    "codex-deepseek-r1": codexModels["deepseek-ai-deepseek-R1-0528"],
-    "codex-o1-preview": codexModels["o1-preview"],
-    "codex-o3-mini": codexModels["o3-mini"],
-    "codex-llama-4-maverick":
-      codexModels["meta-llama-4-maverick-17b-128e-instruct"],
-    "codex-kimi-k2.5": codexModels["moonshotai-kimi-k2.5"],
-    "codex-grok-4": codexModels["x-ai-grok-4"],
-    "codex-chatgpt-4o": codexModels["chatgpt-4o-latest"],
-    "codex-mercury": codexModels["mercury-coder"],
-    "codex-olmo-3.1": codexModels["Olmo-3.1-32B-Instruct"],
-    "codex-deepseek-v3.1": codexModels["deepseek-ai-deepseek-v3.1-terminus"],
-    "codex-qwen-3-coder": codexModels["qwen-qwen3-coder-480b-a35b-instruct"],
-    "codex-kimi-k2-thinking": codexModels["moonshotai-kimi-k2-thinking"],
-    "codex-gpt-oss-120b": codexModels["openai-gpt-oss-120b"],
-    "codex-llama-405b": codexModels["meta-llama-3.1-405b-instruct"],
-    "codex-llama-4-scout": codexModels["meta-llama-4-scout-17b-16e-instruct"],
-    "codex-gemma-3": codexModels["google-gemma-3-27b-it"],
-    "codex-nemotron": codexModels["nvidia-nemotron-3-nano-30b-a3b"],
   },
   deepseek: {
     "cf-deepseek-ai-deepseek-coder-6.7b-base":
@@ -216,11 +185,10 @@ export const customModelProvider = {
         ) {
           tier = "Pro";
         }
-        // 2. "Free" for Workers, LLMChat, Codex
+        // 2. "Free" for Workers, LLMChat
         else if (
           Object.values(workersModels).includes(model) ||
-          Object.values(llmChatModels).includes(model) ||
-          Object.values(codexModels).includes(model)
+          Object.values(llmChatModels).includes(model)
         ) {
           tier = "Free";
         }
