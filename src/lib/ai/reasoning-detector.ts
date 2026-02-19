@@ -1,6 +1,6 @@
 /**
  * Reasoning Detection and Stripping Utility
- * 
+ *
  * Handles detection and extraction of reasoning text from AI models that
  * output their internal thinking as part of regular responses (reasoning leakage).
  */
@@ -17,17 +17,17 @@ export const REASONING_LEAKY_MODELS = [
   /deepseek.*r1/i,
   /deepseek.*v3/i,
   /deepseek.*coder/i,
-  
+
   // Qwen Thinking Models
   /qwen.*thinking/i,
   /qwen.*next.*thinking/i,
   /kimi.*thinking/i,
-  
+
   // GLM Reasoning Models
   /glm.*reasoning/i,
   /glm-4\.7/i,
   /glm-4\.6/i,
-  
+
   // OpenAI O-series (ALL of them use chain-of-thought that leaks)
   /^o1$/,
   /^o1-/,
@@ -35,7 +35,7 @@ export const REASONING_LEAKY_MODELS = [
   /^o3-/,
   /^o4$/,
   /^o4-/,
-  
+
   // Grok Reasoning
   /grok.*reasoning/i,
   /grok.*deepsearch/i,
@@ -49,7 +49,7 @@ export const REASONING_STRUCTURED_MODELS = [
   // Claude Thinking variants
   /claude.*thinking/i,
   /claude-3-7.*thinking/i,
-  
+
   // Gemini Thinking variants
   /gemini.*thinking/i,
   /gemini.*pro.*thinking/i,
@@ -63,43 +63,50 @@ export const REASONING_STRUCTURED_MODELS = [
  * Common reasoning markers used by different model families
  */
 const REASONING_PATTERNS = [
+  // GLM-style details tags (most common for GLM models)
+  {
+    start: /<details\s+type=["']reasoning["'][^>]*>/gi,
+    end: /<\/details>/gi,
+    name: "glm-details" as const,
+    isAnswer: false,
+  },
   // XML-style tags (DeepSeek, GLM)
   {
     start: /<think>/gi,
     end: /<\/think>/gi,
-    name: 'xml-think' as const,
+    name: "xml-think" as const,
     isAnswer: false,
   },
   {
     start: /<thinking>/gi,
     end: /<\/thinking>/gi,
-    name: 'xml-thinking' as const,
+    name: "xml-thinking" as const,
     isAnswer: false,
   },
   {
     start: /<reasoning>/gi,
     end: /<\/reasoning>/gi,
-    name: 'xml-reasoning' as const,
+    name: "xml-reasoning" as const,
     isAnswer: false,
   },
   {
     start: /<answer>/gi,
     end: /<\/answer>/gi,
-    name: 'xml-answer' as const,
+    name: "xml-answer" as const,
     isAnswer: true, // Keep this content
   },
-  
+
   // Markdown-style delimiters
   {
     start: /```thinking/gi,
     end: /```/gi,
-    name: 'md-thinking' as const,
+    name: "md-thinking" as const,
     isAnswer: false,
   },
   {
     start: /\*\*Thinking:\*\*/gi,
     end: /\*\*Answer:\*\*/gi,
-    name: 'bold-thinking' as const,
+    name: "bold-thinking" as const,
     isAnswer: false,
   },
 ] as const;
@@ -121,7 +128,7 @@ const NL_REASONING_MARKERS = [
   "Wait, let me reconsider",
   "Upon reflection",
   "Actually, thinking about it",
-  
+
   // Step-by-step indicators
   "First,",
   "Second,",
@@ -130,12 +137,11 @@ const NL_REASONING_MARKERS = [
   "Finally,",
   "Step 1:",
   "Step 2:",
-  
+
   // DeepSeek specific
   "Okay, so",
   "Well,",
   "Hmm,",
-  
 ] as const;
 
 /**
@@ -164,7 +170,7 @@ const NL_ANSWER_MARKERS = [
  */
 export function isLeakyReasoningModel(modelId: string): boolean {
   if (!modelId) return false;
-  return REASONING_LEAKY_MODELS.some(pattern => pattern.test(modelId));
+  return REASONING_LEAKY_MODELS.some((pattern) => pattern.test(modelId));
 }
 
 /**
@@ -172,7 +178,7 @@ export function isLeakyReasoningModel(modelId: string): boolean {
  */
 export function isStructuredReasoningModel(modelId: string): boolean {
   if (!modelId) return false;
-  return REASONING_STRUCTURED_MODELS.some(pattern => pattern.test(modelId));
+  return REASONING_STRUCTURED_MODELS.some((pattern) => pattern.test(modelId));
 }
 
 // =============================================================================
@@ -190,7 +196,7 @@ interface ReasoningExtraction {
  */
 function extractDelimitedReasoning(text: string): ReasoningExtraction {
   let cleanText = text;
-  let reasoning = '';
+  let reasoning = "";
   let hasReasoning = false;
 
   for (const pattern of REASONING_PATTERNS) {
@@ -199,25 +205,25 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
 
     const regex = new RegExp(
       `${pattern.start.source}([\\s\\S]*?)${pattern.end.source}`,
-      'gi'
+      "gi",
     );
 
     const matches = text.match(regex);
     if (matches) {
       hasReasoning = true;
-      matches.forEach(match => {
+      matches.forEach((match) => {
         // Extract content between tags
         const content = match
-          .replace(pattern.start, '')
-          .replace(pattern.end, '')
+          .replace(pattern.start, "")
+          .replace(pattern.end, "")
           .trim();
-        
+
         if (content) {
-          reasoning += (reasoning ? '\n\n' : '') + content;
+          reasoning += (reasoning ? "\n\n" : "") + content;
         }
-        
+
         // Remove from clean text
-        cleanText = cleanText.replace(match, '').trim();
+        cleanText = cleanText.replace(match, "").trim();
       });
     }
   }
@@ -235,18 +241,18 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
  */
 function extractNaturalLanguageReasoning(text: string): ReasoningExtraction {
   let cleanText = text;
-  let reasoning = '';
+  let reasoning = "";
   let hasReasoning = false;
 
   // Check if text starts with reasoning markers
-  const startsWithReasoning = NL_REASONING_MARKERS.some(marker =>
-    text.toLowerCase().trim().startsWith(marker.toLowerCase())
+  const startsWithReasoning = NL_REASONING_MARKERS.some((marker) =>
+    text.toLowerCase().trim().startsWith(marker.toLowerCase()),
   );
 
   if (startsWithReasoning) {
     // Find where the answer starts
     let answerStart = -1;
-    
+
     for (const marker of NL_ANSWER_MARKERS) {
       const index = text.toLowerCase().indexOf(marker.toLowerCase());
       if (index !== -1 && (answerStart === -1 || index < answerStart)) {
@@ -262,12 +268,14 @@ function extractNaturalLanguageReasoning(text: string): ReasoningExtraction {
     } else {
       // If no answer marker found, check if text is mostly reasoning
       // (heuristic: if it contains multiple step markers, it's likely all reasoning)
-      const stepCount = (text.match(/\b(first|second|third|next|finally|step \d+)/gi) || []).length;
-      
+      const stepCount = (
+        text.match(/\b(first|second|third|next|finally|step \d+)/gi) || []
+      ).length;
+
       if (stepCount >= 3) {
         // Likely all reasoning, no clear answer
         reasoning = text;
-        cleanText = ''; // Will be handled separately
+        cleanText = ""; // Will be handled separately
         hasReasoning = true;
       }
     }
@@ -282,16 +290,19 @@ function extractNaturalLanguageReasoning(text: string): ReasoningExtraction {
 
 /**
  * Main function: Strip reasoning from text
- * 
+ *
  * @param text - The raw text from the model
  * @param modelId - The model identifier
  * @returns Object with separated reasoning and clean text
  */
-export function stripReasoning(text: string, modelId: string): ReasoningExtraction {
+export function stripReasoning(
+  text: string,
+  modelId: string,
+): ReasoningExtraction {
   // Quick escape if no reasoning expected
   if (!text || !isLeakyReasoningModel(modelId)) {
     return {
-      reasoning: '',
+      reasoning: "",
       cleanText: text,
       hasReasoning: false,
     };
@@ -311,7 +322,7 @@ export function stripReasoning(text: string, modelId: string): ReasoningExtracti
 
   // No reasoning detected
   return {
-    reasoning: '',
+    reasoning: "",
     cleanText: text,
     hasReasoning: false,
   };
