@@ -1,0 +1,39 @@
+name: Model Status Check
+
+on:
+  schedule:
+    # Run every 12 hours (at minute 0 past hour 0 and 12)
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  test-models:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Test all models
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${{ vars.WASPAI_URL || 'https://waspai.in' }}/api/status" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "::error::Model status check failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          
+          echo "::notice::Model status check completed successfully"
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Model Status Check" >> $GITHUB_STEP_SUMMARY
+          echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
