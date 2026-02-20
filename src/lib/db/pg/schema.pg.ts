@@ -469,3 +469,52 @@ export const UserMemoryTable = pgTable(
 );
 
 export type UserMemoryEntity = typeof UserMemoryTable.$inferSelect;
+
+// Model Status Tracking for Uptime Page
+export const ModelStatusTable = pgTable(
+  "model_status",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    modelId: text("model_id").notNull(),
+    provider: text("provider").notNull(),
+    status: varchar("status", {
+      enum: ["operational", "degraded", "down", "unknown"],
+    })
+      .notNull()
+      .default("unknown"),
+    responseTime: bigint("response_time", { mode: "number" }), // in ms
+    errorMessage: text("error_message"),
+    testedAt: timestamp("tested_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("model_status_model_id_idx").on(table.modelId),
+    index("model_status_tested_at_idx").on(table.testedAt),
+  ],
+);
+
+export type ModelStatusEntity = typeof ModelStatusTable.$inferSelect;
+
+// Model Status History for uptime calculations
+export const ModelStatusHistoryTable = pgTable(
+  "model_status_history",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    modelId: text("model_id").notNull(),
+    status: varchar("status", {
+      enum: ["operational", "degraded", "down", "unknown"],
+    }).notNull(),
+    responseTime: bigint("response_time", { mode: "number" }),
+    errorMessage: text("error_message"),
+    testedAt: timestamp("tested_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("model_status_history_model_id_idx").on(table.modelId),
+    index("model_status_history_tested_at_idx").on(table.testedAt),
+  ],
+);
+
+export type ModelStatusHistoryEntity = typeof ModelStatusHistoryTable.$inferSelect;
