@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Test all models
         run: |
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${{ vars.WASPAI_URL || 'https://waspai.in' }}/api/status" \
+          RESPONSE=$(curl -s -L -w "\n%{http_code}" -X POST "${{ vars.WASPAI_URL || 'https://waspai.in' }}/api/status" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json")
           
