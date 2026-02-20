@@ -34,7 +34,8 @@ async function testModel(
     clearTimeout(timeoutId);
     const responseTime = Date.now() - startTime;
 
-    if (response && response.text) {
+    const text = response?.text?.trim() ?? "";
+    if (text) {
       return {
         status: responseTime < 5000 ? "operational" : "degraded",
         responseTime,
@@ -45,7 +46,7 @@ async function testModel(
     return {
       status: "degraded",
       responseTime,
-      error: "Empty response",
+      error: `Empty response (${provider}:${modelId})`,
     };
   } catch (error: any) {
     const responseTime = Date.now() - startTime;

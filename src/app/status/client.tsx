@@ -90,11 +90,27 @@ export default function StatusPageClient() {
   const [testMessage, setTestMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+	const parseJsonResponse = async (res: Response) => {
+		const contentType = res.headers.get("content-type") || "";
+		if (contentType.includes("application/json")) {
+			return res.json();
+		}
+		const text = await res.text();
+		throw new Error(
+			`Invalid JSON response (HTTP ${res.status}). Received: ${text.slice(0, 200)}`,
+		);
+	};
+
   const fetchStatus = async () => {
     try {
       const res = await fetch("/api/status");
-      if (!res.ok) throw new Error("Failed to fetch status");
-      const json = await res.json();
+      if (!res.ok) {
+			const text = await res.text();
+			throw new Error(
+				`Failed to fetch status (HTTP ${res.status}): ${text.slice(0, 200)}`,
+			);
+		}
+		const json = await parseJsonResponse(res);
       setData(json);
       setError(null);
     } catch (err: any) {
@@ -124,7 +140,7 @@ export default function StatusPageClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      const json = await res.json();
+      const json = await parseJsonResponse(res);
       if (res.ok) {
         setTestMessage(`Success! Tested ${json.totalTested} models.`);
         await fetchStatus();
