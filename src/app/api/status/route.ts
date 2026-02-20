@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { customModelProvider } from "@/lib/ai/models";
-import { ModelStatusTable, ModelStatusHistoryTable } from "@/lib/db/pg/schema.pg";
-import { desc, gte } from "drizzle-orm";
-import { pgDb } from "@/lib/db/pg/db.pg";
+import { supabaseRest } from "@/lib/db/supabase-rest";
 import { generateText } from "ai";
 
 // Test a single model with a simple prompt
@@ -73,21 +71,31 @@ async function testModel(
 // GET - Retrieve current status
 export async function GET() {
   try {
-    // Get latest status for each model - handle empty case
-    let latestStatuses: any[] = [];
-    try {
-      latestStatuses = await pgDb
-        .select()
-        .from(ModelStatusTable)
-        .orderBy(desc(ModelStatusTable.testedAt))
-        .limit(100);
-    } catch (dbError) {
-      console.log("Database error (tables may not exist):", dbError);
-      // Return empty state - tables will be created on first POST
+    // Get latest status for each model using Supabase REST
+    const { data: latestStatuses, error: statusError } = await supabaseRest
+      .from("model_status")
+      .select("*")
+      .order("tested_at", { ascending: false })
+      .limit(100);
+
+    if (statusError) {
+      console.log("Database error:", statusError);
+      // Return empty state
+      return NextResponse.json({
+        systemStatus: "unknown",
+        lastChecked: null,
+        summary: {
+          total: 0,
+          operational: 0,
+          degraded: 0,
+          down: 0,
+        },
+        models: [],
+      });
     }
 
     // If no data yet, return empty state
-    if (latestStatuses.length === 0) {
+    if (!latestStatuses || latestStatuses.length === 0) {
       return NextResponse.json({
         systemStatus: "unknown",
         lastChecked: null,
@@ -105,47 +113,38 @@ export async function GET() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    let history: any[] = [];
-    try {
-      history = await pgDb
-        .select()
-        .from(ModelStatusHistoryTable)
-        .where(gte(ModelStatusHistoryTable.testedAt, thirtyDaysAgo))
-        .orderBy(desc(ModelStatusHistoryTable.testedAt));
-    } catch (dbError) {
-      console.log("History table error:", dbError);
-    }
+    const { data: history, error: historyError } = await supabaseRest
+      .from("model_status_history")
+      .select("*")
+      .gte("tested_at", thirtyDaysAgo.toISOString())
+      .order("tested_at", { ascending: false });
 
     // Calculate uptime percentages per model
-    const uptimeStats: Record<string, { total: number; operational: number }> =
-      {};
+    const uptimeStats: Record<string, { total: number; operational: number }> = {};
 
-    for (const record of history) {
-      if (!uptimeStats[record.modelId]) {
-        uptimeStats[record.modelId] = { total: 0, operational: 0 };
-      }
-      uptimeStats[record.modelId].total++;
-      if (record.status === "operational") {
-        uptimeStats[record.modelId].operational++;
+    if (history && !historyError) {
+      for (const record of history) {
+        if (!uptimeStats[record.model_id]) {
+          uptimeStats[record.model_id] = { total: 0, operational: 0 };
+        }
+        uptimeStats[record.model_id].total++;
+        if (record.status === "operational") {
+          uptimeStats[record.model_id].operational++;
+        }
       }
     }
 
-    // Build response with uptime
-    const modelsWithUptime = latestStatuses.map((s) => ({
-      modelId: s.modelId,
+    // Build response with uptime (snake_case to camelCase)
+    const modelsWithUptime = latestStatuses.map((s: any) => ({
+      modelId: s.model_id,
       provider: s.provider,
       status: s.status,
-      responseTime: s.responseTime,
-      errorMessage: s.errorMessage,
-      testedAt: s.testedAt,
-      uptime:
-        uptimeStats[s.modelId]?.total > 0
-          ? Math.round(
-              (uptimeStats[s.modelId].operational /
-                uptimeStats[s.modelId].total) *
-                100,
-            )
-          : 0,
+      responseTime: s.response_time,
+      errorMessage: s.error_message,
+      testedAt: s.tested_at,
+      uptime: uptimeStats[s.model_id]?.total > 0
+        ? Math.round((uptimeStats[s.model_id].operational / uptimeStats[s.model_id].total) * 100)
+        : 0,
     }));
 
     // Calculate overall system status
@@ -217,35 +216,38 @@ export async function POST(request: NextRequest) {
       for (const modelInfo of providerInfo.models) {
         const testResult = await testModel(providerInfo.provider, modelInfo.name);
 
-        // Upsert current status
-        await pgDb
-          .insert(ModelStatusTable)
-          .values({
-            modelId: modelInfo.name,
+        // Upsert current status using Supabase REST
+        const { error: upsertError } = await supabaseRest
+          .from("model_status")
+          .upsert({
+            model_id: modelInfo.name,
             provider: providerInfo.provider,
             status: testResult.status,
-            responseTime: testResult.responseTime,
-            errorMessage: testResult.error,
-            testedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: ModelStatusTable.modelId,
-            set: {
-              status: testResult.status,
-              responseTime: testResult.responseTime,
-              errorMessage: testResult.error,
-              testedAt: new Date(),
-            },
+            response_time: testResult.responseTime,
+            error_message: testResult.error,
+            tested_at: new Date().toISOString(),
+          }, {
+            onConflict: "model_id",
           });
 
-        // Add to history
-        await pgDb.insert(ModelStatusHistoryTable).values({
-          modelId: modelInfo.name,
-          status: testResult.status,
-          responseTime: testResult.responseTime,
-          errorMessage: testResult.error,
-          testedAt: new Date(),
-        });
+        if (upsertError) {
+          console.error("Failed to upsert status:", upsertError);
+        }
+
+        // Add to history using Supabase REST
+        const { error: historyError } = await supabaseRest
+          .from("model_status_history")
+          .insert({
+            model_id: modelInfo.name,
+            status: testResult.status,
+            response_time: testResult.responseTime,
+            error_message: testResult.error,
+            tested_at: new Date().toISOString(),
+          });
+
+        if (historyError) {
+          console.error("Failed to insert history:", historyError);
+        }
 
         results.push({
           modelId: modelInfo.name,
