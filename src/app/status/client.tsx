@@ -373,7 +373,7 @@ export default function StatusPageClient() {
 
         {/* Footer */}
         <footer className="mt-12 text-center text-sm text-muted-foreground">
-          <p>Models tested on demand • Click "Test Now" to run fresh tests • Uptime calculated over 30 days</p>
+          <p>Models tested on demand • Click &quot;Test Now&quot; to run fresh tests • Uptime calculated over 30 days</p>
           <p className="mt-2">
             <a href="https://waspai.in" className="text-violet-500 hover:underline">waspai.in</a>
           </p>
