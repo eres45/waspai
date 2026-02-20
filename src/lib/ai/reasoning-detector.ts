@@ -214,7 +214,7 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
       hasReasoning = true;
       matches.forEach((match) => {
         // Extract content between tags
-        let content = match
+        const content = match
           .replace(pattern.start, "")
           .replace(pattern.end, "")
           .trim();
@@ -224,8 +224,8 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
         if ((pattern as any).extractAnswer) {
           // Find where answer starts - look for common patterns
           const answerPatterns = [
-            /[👋🎯✅💡🤔😊👍!].*/s, // Emoji followed by text
-            /I think.* would work best.*/is,
+            /[👋🎯✅💡🤔😊👍!][\s\S]*/i, // Emoji followed by text
+            /I think[\s\S]*? would work best[\s\S]*/i,
             /The answer is:/i,
             /So, the answer is:/i,
             /Therefore, /i,
