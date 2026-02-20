@@ -15,7 +15,7 @@ jobs:
       - name: Test all models
         run: |
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L -X POST "${{ vars.WASPAI_URL || 'https://waspai.in' }}/api/status" \
-            -H "Authorization: Bearer waspai_status_cron_2026" \
+            -H "Authorization: Bearer waspai2024status" \
             -H "Content-Type: application/json")
           
           echo "HTTP Status: $HTTP_CODE"

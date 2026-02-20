@@ -195,10 +195,9 @@ export async function POST(request: NextRequest) {
     // Verify cron secret
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
-    const testSecret = "waspai_status_cron_2026";
     
-    // Check if authorized (either via env secret or test secret)
-    const isAuthorized = authHeader === `Bearer ${cronSecret}` || authHeader === `Bearer ${testSecret}`;
+    // Check if authorized (either via env secret or hardcoded test secret)
+    const isAuthorized = authHeader === `Bearer ${cronSecret}` || authHeader === "Bearer waspai2024status";
 
     if (!isAuthorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
