@@ -73,22 +73,48 @@ async function testModel(
 // GET - Retrieve current status
 export async function GET() {
   try {
-    // Get latest status for each model
-    const latestStatuses = await pgDb
-      .select()
-      .from(ModelStatusTable)
-      .orderBy(desc(ModelStatusTable.testedAt))
-      .limit(100);
+    // Get latest status for each model - handle empty case
+    let latestStatuses: any[] = [];
+    try {
+      latestStatuses = await pgDb
+        .select()
+        .from(ModelStatusTable)
+        .orderBy(desc(ModelStatusTable.testedAt))
+        .limit(100);
+    } catch (dbError) {
+      console.log("Database error (tables may not exist):", dbError);
+      // Return empty state - tables will be created on first POST
+    }
+
+    // If no data yet, return empty state
+    if (latestStatuses.length === 0) {
+      return NextResponse.json({
+        systemStatus: "unknown",
+        lastChecked: null,
+        summary: {
+          total: 0,
+          operational: 0,
+          degraded: 0,
+          down: 0,
+        },
+        models: [],
+      });
+    }
 
     // Get uptime stats for last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const history = await pgDb
-      .select()
-      .from(ModelStatusHistoryTable)
-      .where(gte(ModelStatusHistoryTable.testedAt, thirtyDaysAgo))
-      .orderBy(desc(ModelStatusHistoryTable.testedAt));
+    let history: any[] = [];
+    try {
+      history = await pgDb
+        .select()
+        .from(ModelStatusHistoryTable)
+        .where(gte(ModelStatusHistoryTable.testedAt, thirtyDaysAgo))
+        .orderBy(desc(ModelStatusHistoryTable.testedAt));
+    } catch (dbError) {
+      console.log("History table error:", dbError);
+    }
 
     // Calculate uptime percentages per model
     const uptimeStats: Record<string, { total: number; operational: number }> =
