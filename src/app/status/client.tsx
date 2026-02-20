@@ -13,6 +13,8 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
+  Play,
+  Loader2,
 } from "lucide-react";
 
 type ModelStatus = {
@@ -84,6 +86,8 @@ export default function StatusPageClient() {
   const [data, setData] = useState<StatusData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = async () => {
@@ -110,6 +114,29 @@ export default function StatusPageClient() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchStatus();
+  };
+
+  const handleRunTests = async () => {
+    setTesting(true);
+    setTestMessage("Testing all models... This may take 1-2 minutes.");
+    try {
+      const res = await fetch("/api/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setTestMessage(`Success! Tested ${json.totalTested} models.`);
+        await fetchStatus();
+      } else {
+        setTestMessage(json.error || "Failed to run tests");
+      }
+    } catch (err: any) {
+      setTestMessage(err.message);
+    } finally {
+      setTesting(false);
+      setTimeout(() => setTestMessage(null), 5000);
+    }
   };
 
   const formatTime = (dateStr: string | null) => {
@@ -191,11 +218,19 @@ export default function StatusPageClient() {
             </div>
             <button
               onClick={handleRefresh}
-              disabled={refreshing}
+              disabled={refreshing || testing}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               <span className="text-sm font-medium">Refresh</span>
+            </button>
+            <button
+              onClick={handleRunTests}
+              disabled={testing}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500 text-white hover:bg-violet-600 transition-colors disabled:opacity-50"
+            >
+              {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+              <span className="text-sm font-medium">{testing ? "Testing..." : "Test Now"}</span>
             </button>
           </div>
         </div>
@@ -203,6 +238,11 @@ export default function StatusPageClient() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Status Banner */}
+        {testMessage && (
+          <div className={`rounded-lg p-4 mb-4 ${testMessage.includes("Success") ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600" : "bg-amber-500/10 border border-amber-500/20 text-amber-600"}`}>
+            <p className="text-sm font-medium">{testMessage}</p>
+          </div>
+        )}
         <div className={`rounded-2xl p-8 mb-8 border ${getColorClass(config.color, "light")} ${getColorClass(config.color, "border")}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-5">
@@ -333,7 +373,7 @@ export default function StatusPageClient() {
 
         {/* Footer */}
         <footer className="mt-12 text-center text-sm text-muted-foreground">
-          <p>Models tested every 12 hours • Uptime calculated over 30 days</p>
+          <p>Models tested on demand • Click "Test Now" to run fresh tests • Uptime calculated over 30 days</p>
           <p className="mt-2">
             <a href="https://waspai.in" className="text-violet-500 hover:underline">waspai.in</a>
           </p>

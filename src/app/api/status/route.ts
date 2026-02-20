@@ -188,27 +188,9 @@ export async function GET() {
   }
 }
 
-// POST - Run tests (called by cron or manually)
+// POST - Run tests (called manually from UI)
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret
-    const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET;
-    
-    // Debug logging
-    console.log("Auth header:", authHeader);
-    console.log("Cron secret exists:", !!cronSecret);
-    console.log("Expected test:", "Bearer waspai2024status");
-    
-    // Check if authorized
-    const isAuthorized = authHeader === `Bearer ${cronSecret}` || authHeader === "Bearer waspai2024status";
-    
-    console.log("Is authorized:", isAuthorized);
-
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const modelsInfo = customModelProvider.modelsInfo;
     const results: Array<{
       modelId: string;
