@@ -4,11 +4,15 @@ import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   AlertCircle,
-  XCircle,
   Clock,
   RefreshCw,
   Activity,
   Zap,
+  Server,
+  TrendingUp,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
 } from "lucide-react";
 
 type ModelStatus = {
@@ -33,38 +37,46 @@ type StatusData = {
   models: ModelStatus[];
 };
 
-const statusColors = {
+const statusConfig = {
   operational: {
+    icon: CheckCircle2,
     bg: "bg-emerald-500/10",
-    text: "text-emerald-500",
     border: "border-emerald-500/20",
+    text: "text-emerald-500",
     dot: "bg-emerald-500",
+    label: "Operational",
   },
   degraded: {
+    icon: AlertTriangle,
     bg: "bg-amber-500/10",
-    text: "text-amber-500",
     border: "border-amber-500/20",
+    text: "text-amber-500",
     dot: "bg-amber-500",
+    label: "Degraded",
   },
   down: {
+    icon: WifiOff,
     bg: "bg-red-500/10",
-    text: "text-red-500",
     border: "border-red-500/20",
+    text: "text-red-500",
     dot: "bg-red-500",
+    label: "Down",
   },
   unknown: {
+    icon: AlertCircle,
     bg: "bg-slate-500/10",
-    text: "text-slate-500",
     border: "border-slate-500/20",
+    text: "text-slate-500",
     dot: "bg-slate-500",
+    label: "Unknown",
   },
 };
 
-const systemStatusMessages: Record<string, { label: string; color: string }> = {
-  operational: { label: "All Systems Operational", color: "emerald" },
-  degraded: { label: "Degraded Performance", color: "amber" },
-  partial_outage: { label: "Partial System Outage", color: "amber" },
-  major_outage: { label: "Major System Outage", color: "red" },
+const systemStatusConfig: Record<string, { label: string; color: string; icon: any }> = {
+  operational: { label: "All Systems Operational", color: "emerald", icon: Wifi },
+  degraded: { label: "Degraded Performance", color: "amber", icon: AlertTriangle },
+  partial_outage: { label: "Partial System Outage", color: "amber", icon: AlertCircle },
+  major_outage: { label: "Major System Outage", color: "red", icon: WifiOff },
 };
 
 export default function StatusPageClient() {
@@ -90,7 +102,6 @@ export default function StatusPageClient() {
 
   useEffect(() => {
     fetchStatus();
-    // Auto-refresh every 5 minutes
     const interval = setInterval(fetchStatus, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
@@ -111,17 +122,29 @@ export default function StatusPageClient() {
     });
   };
 
-  const getSystemStatusColor = () => {
-    if (!data) return "slate";
-    return systemStatusMessages[data.systemStatus]?.color || "slate";
+  const formatUptime = (uptime: number) => {
+    if (uptime >= 99.9) return "99.9%";
+    return `${uptime.toFixed(1)}%`;
+  };
+
+  const getColorClass = (color: string, type: string) => {
+    const colorMap: Record<string, Record<string, string>> = {
+      emerald: { bg: "bg-emerald-500", text: "text-emerald-500", border: "border-emerald-500/30", light: "bg-emerald-500/10" },
+      amber: { bg: "bg-amber-500", text: "text-amber-500", border: "border-amber-500/30", light: "bg-amber-500/10" },
+      red: { bg: "bg-red-500", text: "text-red-500", border: "border-red-500/30", light: "bg-red-500/10" },
+      slate: { bg: "bg-slate-500", text: "text-slate-500", border: "border-slate-500/30", light: "bg-slate-500/10" },
+    };
+    return colorMap[color]?.[type] || colorMap.slate[type];
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
-          <p className="text-slate-400">Loading system status...</p>
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full border-4 border-muted border-t-primary animate-spin" />
+          </div>
+          <p className="text-muted-foreground">Loading system status...</p>
         </div>
       </div>
     );
@@ -129,16 +152,16 @@ export default function StatusPageClient() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-white mb-2">
-            Failed to Load Status
-          </h1>
-          <p className="text-slate-400 mb-4">{error}</p>
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h1 className="text-xl font-semibold mb-2">Failed to Load Status</h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
           <button
             onClick={fetchStatus}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-white transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             Try Again
           </button>
@@ -147,186 +170,171 @@ export default function StatusPageClient() {
     );
   }
 
-  const systemColor = getSystemStatusColor();
+  const systemStatus = data?.systemStatus || "unknown";
+  const config = systemStatusConfig[systemStatus] || systemStatusConfig.unknown;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-slate-800">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+      <header className="border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <Zap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">WaspAI Status</h1>
-                <p className="text-sm text-slate-400">waspai.in</p>
+                <h1 className="text-2xl font-bold tracking-tight">System Status</h1>
+                <p className="text-sm text-muted-foreground">waspai.in</p>
               </div>
             </div>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-accent transition-colors disabled:opacity-50"
             >
-              <RefreshCw
-                className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-              />
-              Refresh
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="text-sm font-medium">Refresh</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* System Status Banner */}
-      <div
-        className={`border-b ${
-          systemColor === "emerald"
-            ? "border-emerald-500/20 bg-emerald-500/5"
-            : systemColor === "amber"
-              ? "border-amber-500/20 bg-amber-500/5"
-              : systemColor === "red"
-                ? "border-red-500/20 bg-red-500/5"
-                : "border-slate-800 bg-slate-900"
-        }`}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Status Banner */}
+        <div className={`rounded-2xl p-8 mb-8 border ${getColorClass(config.color, "light")} ${getColorClass(config.color, "border")}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div
-                className={`w-4 h-4 rounded-full ${
-                  systemColor === "emerald"
-                    ? "bg-emerald-500"
-                    : systemColor === "amber"
-                      ? "bg-amber-500"
-                      : systemColor === "red"
-                        ? "bg-red-500"
-                        : "bg-slate-500"
-                } ${systemColor === "emerald" ? "animate-pulse" : ""}`}
-              />
+            <div className="flex items-center gap-5">
+              <div className={`w-16 h-16 rounded-2xl ${getColorClass(config.color, "light")} flex items-center justify-center`}>
+                <config.icon className={`w-8 h-8 ${getColorClass(config.color, "text")}`} />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">
-                  {systemStatusMessages[data?.systemStatus || ""]?.label ||
-                    "Unknown Status"}
-                </h2>
-                <p className="text-slate-400 mt-1">
-                  Last checked: {formatTime(data?.lastChecked || null)}
+                <h2 className="text-3xl font-bold mb-1">{config.label}</h2>
+                <p className="text-muted-foreground">
+                  Last checked: <span className="font-medium text-foreground">{formatTime(data?.lastChecked || null)}</span>
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <span className="text-slate-400">
-                  {data?.summary.operational || 0} Operational
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-500" />
-                <span className="text-slate-400">
-                  {data?.summary.degraded || 0} Degraded
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-500" />
-                <span className="text-slate-400">
-                  {data?.summary.down || 0} Down
-                </span>
-              </div>
-            </div>
+            <div className={`w-4 h-4 rounded-full ${getColorClass(config.color, "bg")} animate-pulse`} />
           </div>
         </div>
-      </div>
 
-      {/* Models Grid */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">All Models</h3>
-          <span className="text-sm text-slate-400">
-            {data?.models.length || 0} models monitored
-          </span>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="p-6 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Server className="w-5 h-5 text-emerald-500" />
+              </div>
+              <span className="text-sm text-muted-foreground">Total</span>
+            </div>
+            <p className="text-3xl font-bold">{data?.summary.total || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">models monitored</p>
+          </div>
+
+          <div className="p-6 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              </div>
+              <span className="text-sm text-muted-foreground">Operational</span>
+            </div>
+            <p className="text-3xl font-bold text-emerald-500">{data?.summary.operational || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">working perfectly</p>
+          </div>
+
+          <div className="p-6 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              </div>
+              <span className="text-sm text-muted-foreground">Degraded</span>
+            </div>
+            <p className="text-3xl font-bold text-amber-500">{data?.summary.degraded || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">slower response</p>
+          </div>
+
+          <div className="p-6 rounded-xl border border-border bg-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <WifiOff className="w-5 h-5 text-red-500" />
+              </div>
+              <span className="text-sm text-muted-foreground">Down</span>
+            </div>
+            <p className="text-3xl font-bold text-red-500">{data?.summary.down || 0}</p>
+            <p className="text-xs text-muted-foreground mt-1">not responding</p>
+          </div>
         </div>
 
-        <div className="grid gap-3">
-          {data?.models.map((model) => {
-            const colors = statusColors[model.status];
-            return (
-              <div
-                key={model.modelId}
-                className={`${colors.bg} ${colors.border} border rounded-xl p-4 transition-all hover:scale-[1.01]`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-3 h-3 rounded-full ${colors.dot} ${model.status === "operational" ? "animate-pulse" : ""}`}
-                    />
-                    <div>
-                      <h4 className="font-medium">{model.modelId}</h4>
-                      <p className="text-sm text-slate-400">{model.provider}</p>
+        {/* Models Section */}
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-5 h-5 text-muted-foreground" />
+              <h3 className="font-semibold">Model Health</h3>
+            </div>
+            <span className="text-sm text-muted-foreground">{data?.models.length || 0} models</span>
+          </div>
+
+          <div className="divide-y divide-border">
+            {data?.models.map((model) => {
+              const status = statusConfig[model.status];
+              const StatusIcon = status.icon;
+              return (
+                <div
+                  key={model.modelId}
+                  className="px-6 py-4 hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-3 h-3 rounded-full ${status.dot} ${model.status === "operational" ? "animate-pulse" : ""}`} />
+                      <div>
+                        <h4 className="font-medium">{model.modelId}</h4>
+                        <p className="text-sm text-muted-foreground">{model.provider}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-8">
+                      {model.responseTime && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span>{model.responseTime}ms</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 min-w-[70px]">
+                        <Activity className="w-4 h-4 text-muted-foreground" />
+                        <span className={`text-sm font-medium ${
+                          model.uptime >= 99 ? "text-emerald-500" : 
+                          model.uptime >= 95 ? "text-amber-500" : "text-red-500"
+                        }`}>
+                          {formatUptime(model.uptime)}
+                        </span>
+                      </div>
+
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
+                        <StatusIcon className="w-3.5 h-3.5" />
+                        {status.label}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-8">
-                    {/* Response Time */}
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-slate-500" />
-                      <span className="text-sm text-slate-400">
-                        {model.responseTime
-                          ? `${model.responseTime}ms`
-                          : "—"}
-                      </span>
+                  {model.errorMessage && (
+                    <div className="mt-3 ml-7 text-sm text-red-500 bg-red-500/5 px-3 py-2 rounded-lg">
+                      {model.errorMessage}
                     </div>
-
-                    {/* Uptime */}
-                    <div className="flex items-center gap-2 min-w-[80px]">
-                      <Activity className="w-4 h-4 text-slate-500" />
-                      <span
-                        className={`text-sm font-medium ${
-                          model.uptime >= 99
-                            ? "text-emerald-400"
-                            : model.uptime >= 95
-                              ? "text-amber-400"
-                              : "text-red-400"
-                        }`}
-                      >
-                        {model.uptime}%
-                      </span>
-                    </div>
-
-                    {/* Status Badge */}
-                    <div
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}
-                    >
-                      {model.status.charAt(0).toUpperCase() +
-                        model.status.slice(1)}
-                    </div>
-                  </div>
+                  )}
                 </div>
-
-                {/* Error Message */}
-                {model.errorMessage && (
-                  <div className="mt-3 pt-3 border-t border-slate-800">
-                    <p className="text-sm text-red-400">{model.errorMessage}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-          <p>
-            Models are tested every 12 hours. Uptime calculated over 30 days.
-          </p>
+        <footer className="mt-12 text-center text-sm text-muted-foreground">
+          <p>Models tested every 12 hours • Uptime calculated over 30 days</p>
           <p className="mt-2">
-            Status page powered by WaspAI •{" "}
-            <a
-              href="https://waspai.in"
-              className="text-violet-400 hover:underline"
-            >
-              waspai.in
-            </a>
+            <a href="https://waspai.in" className="text-violet-500 hover:underline">waspai.in</a>
           </p>
         </footer>
       </main>
