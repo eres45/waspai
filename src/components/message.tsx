@@ -93,8 +93,15 @@ const PurePreviewMessage = ({
           continue;
         }
 
+        let textToProcess = part.text;
+        
+        // GLM: Remove <details> tags entirely before processing
+        if (modelId?.toLowerCase().includes("glm")) {
+          textToProcess = part.text.replace(/<details[^>]*>[\s\S]*?<\/details>/gi, "").trim();
+        }
+
         const { reasoning, cleanText, hasReasoning } = stripReasoning(
-          part.text,
+          textToProcess,
           modelId,
         );
 

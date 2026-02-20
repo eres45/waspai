@@ -63,12 +63,13 @@ export const REASONING_STRUCTURED_MODELS = [
  * Common reasoning markers used by different model families
  */
 const REASONING_PATTERNS = [
-  // GLM-style details tags (most common for GLM models)
+  // GLM-style details tags - captures reasoning but answer may be inside
   {
     start: /<details\s+type=["']reasoning["'][^>]*>/gi,
     end: /<\/details>/gi,
     name: "glm-details" as const,
     isAnswer: false,
+    extractAnswer: true, // GLM puts answer inside the tag
   },
   // XML-style tags (DeepSeek, GLM)
   {
@@ -213,10 +214,50 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
       hasReasoning = true;
       matches.forEach((match) => {
         // Extract content between tags
-        const content = match
+        let content = match
           .replace(pattern.start, "")
           .replace(pattern.end, "")
           .trim();
+
+        // For GLM details tags, the answer is often at the end
+        // Look for answer indicators
+        if ((pattern as any).extractAnswer) {
+          // Find where answer starts - look for common patterns
+          const answerPatterns = [
+            /[👋🎯✅💡🤔😊👍!].*/s, // Emoji followed by text
+            /I think.* would work best.*/is,
+            /The answer is:/i,
+            /So, the answer is:/i,
+            /Therefore, /i,
+            /In conclusion, /i,
+            /To summarize, /i,
+            /I'll help/i,
+            /I can help/i,
+            /Here's /i,
+            /Here is /i,
+          ];
+
+          let answerStart = -1;
+          for (const ansPattern of answerPatterns) {
+            const match = content.match(ansPattern);
+            if (match && match.index !== undefined) {
+              if (answerStart === -1 || match.index < answerStart) {
+                answerStart = match.index;
+              }
+            }
+          }
+
+          if (answerStart > 0) {
+            // Split into reasoning and answer
+            const answerPart = content.substring(answerStart).trim();
+            const reasoningPart = content.substring(0, answerStart).trim();
+
+            reasoning += (reasoning ? "\n\n" : "") + reasoningPart;
+            // Add answer back to clean text
+            cleanText = cleanText.replace(match, answerPart);
+            return; // Skip normal processing
+          }
+        }
 
         if (content) {
           reasoning += (reasoning ? "\n\n" : "") + content;
