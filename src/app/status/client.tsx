@@ -77,6 +77,7 @@ const systemStatusConfig: Record<string, { label: string; color: string; icon: a
   degraded: { label: "Degraded Performance", color: "amber", icon: AlertTriangle },
   partial_outage: { label: "Partial System Outage", color: "amber", icon: AlertCircle },
   major_outage: { label: "Major System Outage", color: "red", icon: WifiOff },
+  unknown: { label: "No Data Available", color: "slate", icon: AlertCircle },
 };
 
 export default function StatusPageClient() {
