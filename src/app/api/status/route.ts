@@ -170,12 +170,19 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
-    console.log("Auth header:", authHeader);
-    console.log("Cron secret exists:", !!cronSecret);
-    console.log("Expected:", `Bearer ${cronSecret?.slice(0, 5)}...`);
+    // Debug logging
+    console.log("Auth header received:", JSON.stringify(authHeader));
+    console.log("Cron secret from env:", JSON.stringify(cronSecret));
+    console.log("Expected format:", JSON.stringify(`Bearer ${cronSecret}`));
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (cronSecret) {
+      const expected = `Bearer ${cronSecret}`;
+      if (authHeader !== expected) {
+        console.log("MISMATCH!");
+        console.log("Header length:", authHeader?.length);
+        console.log("Expected length:", expected.length);
+        return NextResponse.json({ error: "Unauthorized", debug: "Check logs" }, { status: 401 });
+      }
     }
 
     const modelsInfo = customModelProvider.modelsInfo;
