@@ -95,9 +95,7 @@ export async function GET() {
     // Get latest status for each model using Supabase REST
     const { data: latestStatuses, error: statusError } = await supabaseRest
       .from("model_status")
-      .select("*")
-      .order("tested_at", { ascending: false })
-      .limit(100);
+      .select("*");
 
     if (statusError) {
       console.log("Database error:", statusError);
@@ -168,6 +166,12 @@ export async function GET() {
         : 0,
     }));
 
+    const lastChecked = modelsWithUptime.reduce<string | null>((latest, m) => {
+      if (!m.testedAt) return latest;
+      if (!latest) return m.testedAt;
+      return new Date(m.testedAt) > new Date(latest) ? m.testedAt : latest;
+    }, null);
+
     // Calculate overall system status
     const operationalCount = modelsWithUptime.filter(
       (s) => s.status === "operational",
@@ -191,7 +195,7 @@ export async function GET() {
 
     return NextResponse.json({
       systemStatus,
-      lastChecked: modelsWithUptime[0]?.testedAt || null,
+      lastChecked,
       summary: {
         total,
         operational: operationalCount,
