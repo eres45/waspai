@@ -13,7 +13,7 @@ async function testModel(
   error: string | null;
 }> {
   const startTime = Date.now();
-  const timeout = 15000; // 15 second timeout
+  const timeout = 25000; // 25 second timeout
 
   try {
     const model = customModelProvider.getModel({
@@ -52,7 +52,11 @@ async function testModel(
     const errorMessage = error?.message || String(error);
 
     if (errorMessage.includes("abort") || errorMessage.includes("Timeout")) {
-      return { status: "down", responseTime: null, error: "Timeout (15s)" };
+      return {
+        status: "degraded",
+        responseTime: null,
+        error: `Timeout (${Math.round(timeout / 1000)}s)`,
+      };
     }
     if (errorMessage.includes("403") || errorMessage.includes("Unauthorized")) {
       return { status: "down", responseTime, error: "Auth failed" };
@@ -63,6 +67,23 @@ async function testModel(
     if (errorMessage.includes("503") || errorMessage.includes("unavailable")) {
       return { status: "down", responseTime, error: "Service unavailable" };
     }
+
+		// Transient connectivity / upstream issues: treat as degraded rather than down
+		if (
+			errorMessage.includes("fetch failed") ||
+			errorMessage.includes("ECONNRESET") ||
+			errorMessage.includes("ETIMEDOUT") ||
+			errorMessage.includes("ENOTFOUND") ||
+			errorMessage.includes("EAI_AGAIN") ||
+			errorMessage.includes("502") ||
+			errorMessage.includes("Bad Gateway")
+		) {
+			return {
+				status: "degraded",
+				responseTime,
+				error: errorMessage.slice(0, 100),
+			};
+		}
 
     return { status: "down", responseTime, error: errorMessage.slice(0, 100) };
   }
