@@ -2,11 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "crons": [
-    {
-      "path": "/api/status",
-      "schedule": "0 */12 * * *"
-    }
-  ]
+  "installCommand": "pnpm install"
 }
