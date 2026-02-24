@@ -43,11 +43,36 @@ export function createLLMChatModels() {
         return response;
       }
 
-      // If non-streaming, LLMChat returns a custom JSON structure
+      // If non-streaming, LLMChat may return SSE or custom JSON structure
       if (!body.stream) {
-        const data = await response.json();
-        const content =
-          data?.result?.response || data?.response || data?.result || "";
+        const text = await response.text();
+        let content = "";
+
+        // Try parsing as JSON first
+        try {
+          const data = JSON.parse(text);
+          content =
+            data?.result?.response || data?.response || data?.result || "";
+        } catch {
+          // If not valid JSON, parse as SSE stream
+          const lines = text.split("\n");
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith("{")) {
+              try {
+                const json = JSON.parse(trimmedLine);
+                const chunk =
+                  json.result?.response ||
+                  json.response ||
+                  (typeof json.result === "string" ? json.result : null);
+                if (chunk) content += chunk;
+              } catch {
+                // Skip malformed lines
+              }
+            }
+          }
+        }
+
         const openaiResponse = {
           id: `llmchat-${Date.now()}`,
           object: "chat.completion",
