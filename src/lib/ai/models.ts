@@ -18,17 +18,7 @@ const staticModels = {
   anthropic: {
     "claude-sonnet-4.5-proxy": workersModels["claude-sonnet-4.5-proxy"],
   },
-  canopy: {
-    "canopylabs-orpheus-v1-english": a4fModels["canopylabs-orpheus-v1-english"],
-  },
-  deepseek: {
-    "cf-deepseek-ai-deepseek-coder-6.7b-base":
-      llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-base"],
-    "cf-deepseek-ai-deepseek-coder-6.7b-instruct":
-      llmChatModels["cf-deepseek-ai-deepseek-coder-6.7b-instruct"],
-    "cf-deepseek-ai-deepseek-math-7b-instruct":
-      llmChatModels["cf-deepseek-ai-deepseek-math-7b-instruct"],
-  },
+  // Removed: canopy (terms acceptance required), deepseek (empty/invalid responses)
   defog: {
     "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
   },
@@ -60,45 +50,25 @@ const staticModels = {
       llmChatModels["cf-mistralai-mistral-7b-instruct-v0.2"],
     "cf-mistralai-mistral-small-3.1-24b-instruct":
       llmChatModels["cf-mistralai-mistral-small-3.1-24b-instruct"],
-    "cf-mistralai-openhermes-2.5-mistral-7b":
-      llmChatModels["cf-mistralai-openhermes-2.5-mistral-7b"],
+    // Removed: openhermes (empty response)
   },
   moonshot: {
-    "moonshotai-kimi-k2-instruct": workersModels["kimi-k2-instruct"],
+    // Removed: kimi-k2-instruct (auth error)
     wormgpt: workersModels["wormgpt"],
   },
   openai: {
     "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
   },
-  others: {
-    "cf-huggingfacegi-zephyr-7b-beta":
-      llmChatModels["cf-huggingfacegi-zephyr-7b-beta"],
-    "cf-intel-neural-chat-7b-v3-1":
-      llmChatModels["cf-intel-neural-chat-7b-v3-1"],
-    "cf-nexusflow-starling-lm-7b-beta":
-      llmChatModels["cf-nexusflow-starling-lm-7b-beta"],
-    "cf-openchat-openchat-3.5": llmChatModels["cf-openchat-openchat-3.5"],
-    "cf-tinyllama-tinyllama-1.1b-chat-v1.0":
-      llmChatModels["cf-tinyllama-tinyllama-1.1b-chat-v1.0"],
-    "cf-una-cybertron-una-cybertron-7b-v2-bf16":
-      llmChatModels["cf-una-cybertron-una-cybertron-7b-v2-bf16"],
-  },
+  // Removed: entire 'others' provider (all models returning empty/invalid responses)
   qwen: {
-    "cf-qwen-qwen1.5-0.5b-chat": llmChatModels["cf-qwen-qwen1.5-0.5b-chat"],
-    "cf-qwen-qwen1.5-1.8b-chat": llmChatModels["cf-qwen-qwen1.5-1.8b-chat"],
-    "cf-qwen-qwen1.5-14b-chat-awq":
-      llmChatModels["cf-qwen-qwen1.5-14b-chat-awq"],
-    "cf-qwen-qwen1.5-7b-chat-awq": llmChatModels["cf-qwen-qwen1.5-7b-chat-awq"],
+    // Removed: qwen1.5 models (invalid JSON responses)
     "qwen-qwen3-32b": a4fModels["qwen-qwen3-32b"],
   },
-  tiiuae: {
-    "cf-tiiuae-falcon-7b-instruct":
-      llmChatModels["cf-tiiuae-falcon-7b-instruct"],
-  },
+  // Removed: tiiuae (invalid JSON response)
   zai: {
     "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"],
     "zai-org-GLM-4.7": workersModels["glm-4.7"],
-    "zai-org-GLM-5": workersModels["glm-5"],
+    // Removed: GLM-5 (auth error)
   },
 };
 
