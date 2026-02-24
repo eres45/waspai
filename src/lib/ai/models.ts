@@ -24,15 +24,14 @@ const staticModels = {
   },
   google: {
     "cf-google-gemma-2b-it-lora": llmChatModels["cf-google-gemma-2b-it-lora"],
-    "cf-google-gemma-7b-it": llmChatModels["cf-google-gemma-7b-it"],
+    // Removed: gemma-7b-it (empty response)
   },
   llm: {
-    "cf-llama-2-13b": llmChatModels["cf-meta-llama-2-13b-chat"],
+    // Removed: llama-2-13b, llama-guard (empty responses)
     "cf-llama-2-7b": llmChatModels["cf-meta-llama-2-7b-chat-fp16"],
     "cf-llama-3-8b": llmChatModels["cf-meta-llama-3-8b-instruct"],
     "cf-llama-3-8b-awq": llmChatModels["cf-meta-llama-3-8b-instruct-awq"],
     "cf-llama-3.1-8b": llmChatModels["cf-meta-llama-3.1-8b-instruct"],
-    "cf-llama-guard": llmChatModels["cf-meta-llama-guard-7b"],
     "llama-3.1-8b-instant": a4fModels["llama-3.1-8b-instant"],
     "llama-3.3-70b-versatile": a4fModels["llama-3.3-70b-versatile"],
   },
@@ -44,13 +43,9 @@ const staticModels = {
     "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
   },
   mistral: {
-    "cf-mistralai-mistral-7b-instruct-v0.1":
-      llmChatModels["cf-mistralai-mistral-7b-instruct-v0.1"],
-    "cf-mistralai-mistral-7b-instruct-v0.2":
-      llmChatModels["cf-mistralai-mistral-7b-instruct-v0.2"],
+    // Removed: mistral-7b-instruct-v0.1, v0.2, openhermes (empty responses)
     "cf-mistralai-mistral-small-3.1-24b-instruct":
       llmChatModels["cf-mistralai-mistral-small-3.1-24b-instruct"],
-    // Removed: openhermes (empty response)
   },
   moonshot: {
     // Removed: kimi-k2-instruct (auth error)
@@ -132,10 +127,10 @@ export const customModelProvider = {
       allModels[model.provider as keyof typeof allModels]?.[model.model];
     if (!selectedModel) {
       console.warn(
-        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: google/cf-google-gemma-7b-it`,
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: qwen/qwen3-32b`,
       );
-      // Fallback to a reliable free model (Gemma 7B)
-      const fallbackModel = allModels["google"]?.["cf-google-gemma-7b-it"];
+      // Fallback to a reliable Pro model (Qwen3 32B)
+      const fallbackModel = allModels["qwen"]?.["qwen-qwen3-32b"];
       if (!fallbackModel) {
         throw new Error(
           `Model not found: ${model.provider}/${model.model}. Please select a valid model.`,
