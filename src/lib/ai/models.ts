@@ -14,8 +14,7 @@ const staticModels = {
 
   // DeepSeek models
   deepseek: {
-    "deepseek-coder-6.7b-instruct":
-      nvidiaModels["deepseek-ai-deepseek-coder-6.7b-instruct"],
+    // Removed: deepseek-coder (Not Found)
     "deepseek-r1-distill-llama-8b":
       nvidiaModels["deepseek-ai-deepseek-r1-distill-llama-8b"],
     "deepseek-r1-distill-qwen-7b":
@@ -28,12 +27,8 @@ const staticModels = {
 
   // IBM Granite models
   granite: {
-    "granite-3.0-3b-instruct":
-      nvidiaModels["ibm-granite-3.0-3b-a800m-instruct"],
-    "granite-3.0-8b-instruct": nvidiaModels["ibm-granite-3.0-8b-instruct"],
+    // Removed: granite-3.0-3b, granite-3.0-8b, granite-34b, granite-8b-code (Not Found)
     "granite-3.3-8b-instruct": nvidiaModels["ibm-granite-3.3-8b-instruct"],
-    "granite-34b-code-instruct": nvidiaModels["ibm-granite-34b-code-instruct"],
-    "granite-8b-code-instruct": nvidiaModels["ibm-granite-8b-code-instruct"],
   },
 
   // Llama models (Meta)
@@ -50,10 +45,8 @@ const staticModels = {
     "llama-3.3-70b-instruct": nvidiaModels["meta-llama-3.3-70b-instruct"],
     "llama-4-maverick-17b-128e-instruct":
       nvidiaModels["meta-llama-4-maverick-17b-128e-instruct"],
-    "llama-4-scout-17b-16e-instruct":
-      nvidiaModels["meta-llama-4-scout-17b-16e-instruct"],
+    // Removed: llama-4-scout, codellama-70b (Not Found)
     "llama-guard-4-12b": nvidiaModels["meta-llama-guard-4-12b"],
-    "codellama-70b": nvidiaModels["meta-codellama-70b"],
   },
 
   // Microsoft Phi models
@@ -69,10 +62,9 @@ const staticModels = {
       nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
     "phi-3-medium-128k-instruct":
       nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
-    "phi-3-vision-128k-instruct":
-      nvidiaModels["microsoft-phi-3-vision-128k-instruct"],
+    // Removed: phi-3-vision (Not Found)
     "phi-3.5-mini-instruct": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
-    "phi-3.5-moe-instruct": nvidiaModels["microsoft-phi-3.5-moe-instruct"],
+    // Removed: phi-3.5-moe (Not Found)
     "phi-3.5-vision-instruct":
       nvidiaModels["microsoft-phi-3.5-vision-instruct"],
     "phi-4-mini-instruct": nvidiaModels["microsoft-phi-4-mini-instruct"],
@@ -92,8 +84,7 @@ const staticModels = {
       nvidiaModels["mistralai-mistral-small-24b-instruct"],
     "mistral-small-3.1-24b-instruct":
       nvidiaModels["mistralai-mistral-small-3.1-24b-instruct-2503"],
-    "mistral-large-2-instruct":
-      nvidiaModels["mistralai-mistral-large-2-instruct"],
+    // Removed: mistral-large-2, codestral, mistral-nemo (Not Found)
     "mistral-large-3-675b-instruct":
       nvidiaModels["mistralai-mistral-large-3-675b-instruct-2512"],
     "mistral-medium-3-instruct":
@@ -102,13 +93,9 @@ const staticModels = {
       nvidiaModels["mistralai-mixtral-8x7b-instruct-v0.1"],
     "mixtral-8x22b-instruct-v0.1":
       nvidiaModels["mistralai-mixtral-8x22b-instruct-v0.1"],
-    "codestral-22b-instruct-v0.1":
-      nvidiaModels["mistralai-codestral-22b-instruct-v0.1"],
     "mathstral-7b-v0.1": nvidiaModels["mistralai-mathstral-7b-v0.1"],
     "ministral-14b-instruct-2512":
       nvidiaModels["mistralai-ministral-14b-instruct-2512"],
-    "mistral-nemo-12b-instruct":
-      nvidiaModels["nv-mistralai-mistral-nemo-12b-instruct"],
   },
 
   // Moonshot models
@@ -119,13 +106,9 @@ const staticModels = {
 
   // NVIDIA Nemotron models
   nemotron: {
-    "nemotron-4-340b-instruct": nvidiaModels["nvidia-nemotron-4-340b-instruct"],
+    // Removed: nemotron-4-340b, nemotron-51b, nemotron-70b (Not Found)
     "nemotron-mini-4b-instruct":
       nvidiaModels["nvidia-nemotron-mini-4b-instruct"],
-    "llama-3.1-nemotron-51b-instruct":
-      nvidiaModels["nvidia-llama-3.1-nemotron-51b-instruct"],
-    "llama-3.1-nemotron-70b-instruct":
-      nvidiaModels["nvidia-llama-3.1-nemotron-70b-instruct"],
     "llama-3.1-nemotron-nano-4b-v1.1":
       nvidiaModels["nvidia-llama-3.1-nemotron-nano-4b-v1.1"],
     "llama-3.1-nemotron-nano-8b-v1":
@@ -190,8 +173,7 @@ const staticSupportImageInputModels: Record<string, LanguageModel> = {
     staticModels.llama["llama-3.2-11b-vision-instruct"],
   "llama-3.2-90b-vision-instruct":
     staticModels.llama["llama-3.2-90b-vision-instruct"],
-  "phi-3-vision-128k-instruct":
-    staticModels.microsoft["phi-3-vision-128k-instruct"],
+  // Removed: phi-3-vision (Not Found)
   "phi-3.5-vision-instruct": staticModels.microsoft["phi-3.5-vision-instruct"],
   "phi-4-multimodal-instruct":
     staticModels.microsoft["phi-4-multimodal-instruct"],

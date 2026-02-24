@@ -27,7 +27,7 @@ export function createNvidiaModels() {
     "meta/llama-3.2-90b-vision-instruct",
     "meta/llama-3.3-70b-instruct",
     "meta/llama-4-maverick-17b-128e-instruct",
-    "meta/llama-4-scout-17b-16e-instruct",
+    // Removed: llama-4-scout (Not Found)
     "meta/llama-guard-4-12b",
     "meta/llama3-70b-instruct",
     "meta/llama3-8b-instruct",
@@ -45,7 +45,7 @@ export function createNvidiaModels() {
     "qwen/qwq-32b",
 
     // Mistral models
-    "mistralai/codestral-22b-instruct-v0.1",
+    // Removed: codestral, mistral-nemo (Not Found)
     "mistralai/devstral-2-123b-instruct-2512",
     "mistralai/magistral-small-2506",
     "mistralai/mamba-codestral-7b-v0.1",
@@ -53,14 +53,13 @@ export function createNvidiaModels() {
     "mistralai/ministral-14b-instruct-2512",
     "mistralai/mistral-7b-instruct-v0.2",
     "mistralai/mistral-7b-instruct-v0.3",
-    "mistralai/mistral-large-2-instruct",
+    // Removed: mistral-large-2 (Not Found)
     "mistralai/mistral-large-3-675b-instruct-2512",
     "mistralai/mistral-medium-3-instruct",
     "mistralai/mistral-small-24b-instruct",
     "mistralai/mistral-small-3.1-24b-instruct-2503",
     "mistralai/mixtral-8x22b-instruct-v0.1",
     "mistralai/mixtral-8x7b-instruct-v0.1",
-    "nv-mistralai/mistral-nemo-12b-instruct",
 
     // Microsoft Phi models
     "microsoft/phi-3-medium-128k-instruct",
@@ -69,9 +68,9 @@ export function createNvidiaModels() {
     "microsoft/phi-3-mini-4k-instruct",
     "microsoft/phi-3-small-128k-instruct",
     "microsoft/phi-3-small-8k-instruct",
-    "microsoft/phi-3-vision-128k-instruct",
+    // Removed: phi-3-vision (Not Found)
     "microsoft/phi-3.5-mini-instruct",
-    "microsoft/phi-3.5-moe-instruct",
+    // Removed: phi-3.5-moe (Not Found)
     "microsoft/phi-3.5-vision-instruct",
     "microsoft/phi-4-mini-flash-reasoning",
     "microsoft/phi-4-mini-instruct",
@@ -80,8 +79,7 @@ export function createNvidiaModels() {
     // NVIDIA Nemotron models
     "nvidia/llama-3.1-nemoguard-8b-content-safety",
     "nvidia/llama-3.1-nemoguard-8b-topic-control",
-    "nvidia/llama-3.1-nemotron-51b-instruct",
-    "nvidia/llama-3.1-nemotron-70b-instruct",
+    // Removed: nemotron-51b, nemotron-70b (Not Found)
     "nvidia/llama-3.1-nemotron-nano-4b-v1.1",
     "nvidia/llama-3.1-nemotron-nano-8b-v1",
     "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
@@ -92,11 +90,11 @@ export function createNvidiaModels() {
     "nvidia/llama3-chatqa-1.5-70b",
     "nvidia/llama3-chatqa-1.5-8b",
     "nvidia/mistral-nemo-minitron-8b-8k-instruct",
-    "nvidia/nemotron-4-340b-instruct",
+    // Removed: nemotron-4-340b (Not Found)
     "nvidia/nemotron-mini-4b-instruct",
 
     // DeepSeek models
-    "deepseek-ai/deepseek-coder-6.7b-instruct",
+    // Removed: deepseek-coder (Not Found)
     "deepseek-ai/deepseek-r1-distill-llama-8b",
     "deepseek-ai/deepseek-r1-distill-qwen-14b",
     "deepseek-ai/deepseek-r1-distill-qwen-32b",
@@ -122,12 +120,9 @@ export function createNvidiaModels() {
     "bigcode/starcoder2-15b",
     "bigcode/starcoder2-7b",
     "databricks/dbrx-instruct",
-    "ibm/granite-3.0-3b-a800m-instruct",
-    "ibm/granite-3.0-8b-instruct",
+    // Removed: granite-3.0-3b, granite-3.0-8b, granite-34b, granite-8b-code (Not Found)
     "ibm/granite-3.3-8b-instruct",
-    "ibm/granite-34b-code-instruct",
-    "ibm/granite-8b-code-instruct",
-    "meta/codellama-70b",
+    // Removed: codellama-70b (Not Found)
     "tiiuae/falcon3-7b-instruct",
     "upstage/solar-10.7b-instruct",
     "zyphra/zamba2-7b-instruct",
