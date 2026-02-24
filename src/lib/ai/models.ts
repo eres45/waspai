@@ -1,77 +1,201 @@
 import "server-only";
 import { LanguageModel } from "ai";
-import { createA4FModels } from "./a4f-models";
-import { createLLMChatModels } from "./llmchat";
-import { createWorkersModels } from "./workers";
+import { createNvidiaModels } from "./nvidia";
 import { ChatModel } from "app-types/chat";
 
-// A4F Models - Professional tier
-const a4fModels = createA4FModels();
-
-// LLMChat Models - Free tier
-const llmChatModels = createLLMChatModels();
-
-// Workers Models - Free Workers
-const workersModels = createWorkersModels();
+// NVIDIA NIM API - All models (Pro tier with API key)
+const nvidiaModels = createNvidiaModels();
 
 const staticModels = {
+  // Anthropic models (via proxy)
   anthropic: {
-    "claude-sonnet-4.5-proxy": workersModels["claude-sonnet-4.5-proxy"],
+    "claude-sonnet-4.5-proxy": nvidiaModels["meta-llama-3.1-405b-instruct"], // Fallback proxy
   },
-  // Removed: canopy (terms acceptance required), deepseek (empty/invalid responses)
-  defog: {
-    "cf-defog-sqlcoder-7b-2": llmChatModels["cf-defog-sqlcoder-7b-2"],
+
+  // DeepSeek models
+  deepseek: {
+    "deepseek-coder-6.7b-instruct":
+      nvidiaModels["deepseek-ai-deepseek-coder-6.7b-instruct"],
+    "deepseek-r1-distill-llama-8b":
+      nvidiaModels["deepseek-ai-deepseek-r1-distill-llama-8b"],
+    "deepseek-r1-distill-qwen-7b":
+      nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-7b"],
+    "deepseek-r1-distill-qwen-14b":
+      nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-14b"],
+    "deepseek-r1-distill-qwen-32b":
+      nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-32b"],
   },
-  google: {
-    "cf-google-gemma-2b-it-lora": llmChatModels["cf-google-gemma-2b-it-lora"],
-    // Removed: gemma-7b-it (empty response)
+
+  // IBM Granite models
+  granite: {
+    "granite-3.0-3b-instruct":
+      nvidiaModels["ibm-granite-3.0-3b-a800m-instruct"],
+    "granite-3.0-8b-instruct": nvidiaModels["ibm-granite-3.0-8b-instruct"],
+    "granite-3.3-8b-instruct": nvidiaModels["ibm-granite-3.3-8b-instruct"],
+    "granite-34b-code-instruct": nvidiaModels["ibm-granite-34b-code-instruct"],
+    "granite-8b-code-instruct": nvidiaModels["ibm-granite-8b-code-instruct"],
   },
-  llm: {
-    // Removed: llama-2-13b, llama-guard (empty responses)
-    "cf-llama-2-7b": llmChatModels["cf-meta-llama-2-7b-chat-fp16"],
-    "cf-llama-3-8b": llmChatModels["cf-meta-llama-3-8b-instruct"],
-    "cf-llama-3-8b-awq": llmChatModels["cf-meta-llama-3-8b-instruct-awq"],
-    "cf-llama-3.1-8b": llmChatModels["cf-meta-llama-3.1-8b-instruct"],
-    "llama-3.1-8b-instant": a4fModels["llama-3.1-8b-instant"],
-    "llama-3.3-70b-versatile": a4fModels["llama-3.3-70b-versatile"],
+
+  // Llama models (Meta)
+  llama: {
+    "llama-3.1-8b-instruct": nvidiaModels["meta-llama-3.1-8b-instruct"],
+    "llama-3.1-70b-instruct": nvidiaModels["meta-llama-3.1-70b-instruct"],
+    "llama-3.1-405b-instruct": nvidiaModels["meta-llama-3.1-405b-instruct"],
+    "llama-3.2-1b-instruct": nvidiaModels["meta-llama-3.2-1b-instruct"],
+    "llama-3.2-3b-instruct": nvidiaModels["meta-llama-3.2-3b-instruct"],
+    "llama-3.2-11b-vision-instruct":
+      nvidiaModels["meta-llama-3.2-11b-vision-instruct"],
+    "llama-3.2-90b-vision-instruct":
+      nvidiaModels["meta-llama-3.2-90b-vision-instruct"],
+    "llama-3.3-70b-instruct": nvidiaModels["meta-llama-3.3-70b-instruct"],
+    "llama-4-maverick-17b-128e-instruct":
+      nvidiaModels["meta-llama-4-maverick-17b-128e-instruct"],
+    "llama-4-scout-17b-16e-instruct":
+      nvidiaModels["meta-llama-4-scout-17b-16e-instruct"],
+    "llama-guard-4-12b": nvidiaModels["meta-llama-guard-4-12b"],
+    "codellama-70b": nvidiaModels["meta-codellama-70b"],
   },
-  meta: {
-    "llama-prompt-guard-2-86m":
-      a4fModels["meta-llama-llama-prompt-guard-2-86m"],
-  },
+
+  // Microsoft Phi models
   microsoft: {
-    "cf-microsoft-phi-2": llmChatModels["cf-microsoft-phi-2"],
+    "phi-3-mini-4k-instruct": nvidiaModels["microsoft-phi-3-mini-4k-instruct"],
+    "phi-3-mini-128k-instruct":
+      nvidiaModels["microsoft-phi-3-mini-128k-instruct"],
+    "phi-3-small-8k-instruct":
+      nvidiaModels["microsoft-phi-3-small-8k-instruct"],
+    "phi-3-small-128k-instruct":
+      nvidiaModels["microsoft-phi-3-small-128k-instruct"],
+    "phi-3-medium-4k-instruct":
+      nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
+    "phi-3-medium-128k-instruct":
+      nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
+    "phi-3-vision-128k-instruct":
+      nvidiaModels["microsoft-phi-3-vision-128k-instruct"],
+    "phi-3.5-mini-instruct": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
+    "phi-3.5-moe-instruct": nvidiaModels["microsoft-phi-3.5-moe-instruct"],
+    "phi-3.5-vision-instruct":
+      nvidiaModels["microsoft-phi-3.5-vision-instruct"],
+    "phi-4-mini-instruct": nvidiaModels["microsoft-phi-4-mini-instruct"],
+    "phi-4-mini-flash-reasoning":
+      nvidiaModels["microsoft-phi-4-mini-flash-reasoning"],
+    "phi-4-multimodal-instruct":
+      nvidiaModels["microsoft-phi-4-multimodal-instruct"],
   },
+
+  // Mistral models
   mistral: {
-    // Removed: mistral-7b-instruct-v0.1, v0.2, openhermes (empty responses)
-    "cf-mistralai-mistral-small-3.1-24b-instruct":
-      llmChatModels["cf-mistralai-mistral-small-3.1-24b-instruct"],
+    "mistral-7b-instruct-v0.2":
+      nvidiaModels["mistralai-mistral-7b-instruct-v0.2"],
+    "mistral-7b-instruct-v0.3":
+      nvidiaModels["mistralai-mistral-7b-instruct-v0.3"],
+    "mistral-small-24b-instruct":
+      nvidiaModels["mistralai-mistral-small-24b-instruct"],
+    "mistral-small-3.1-24b-instruct":
+      nvidiaModels["mistralai-mistral-small-3.1-24b-instruct-2503"],
+    "mistral-large-2-instruct":
+      nvidiaModels["mistralai-mistral-large-2-instruct"],
+    "mistral-large-3-675b-instruct":
+      nvidiaModels["mistralai-mistral-large-3-675b-instruct-2512"],
+    "mistral-medium-3-instruct":
+      nvidiaModels["mistralai-mistral-medium-3-instruct"],
+    "mixtral-8x7b-instruct-v0.1":
+      nvidiaModels["mistralai-mixtral-8x7b-instruct-v0.1"],
+    "mixtral-8x22b-instruct-v0.1":
+      nvidiaModels["mistralai-mixtral-8x22b-instruct-v0.1"],
+    "codestral-22b-instruct-v0.1":
+      nvidiaModels["mistralai-codestral-22b-instruct-v0.1"],
+    "mathstral-7b-v0.1": nvidiaModels["mistralai-mathstral-7b-v0.1"],
+    "ministral-14b-instruct-2512":
+      nvidiaModels["mistralai-ministral-14b-instruct-2512"],
+    "mistral-nemo-12b-instruct":
+      nvidiaModels["nv-mistralai-mistral-nemo-12b-instruct"],
   },
+
+  // Moonshot models
   moonshot: {
-    // Removed: kimi-k2-instruct (auth error)
-    wormgpt: workersModels["wormgpt"],
+    "kimi-k2-instruct": nvidiaModels["moonshotai-kimi-k2-instruct"],
+    "kimi-k2-instruct-0905": nvidiaModels["moonshotai-kimi-k2-instruct-0905"],
   },
+
+  // NVIDIA Nemotron models
+  nemotron: {
+    "nemotron-4-340b-instruct": nvidiaModels["nvidia-nemotron-4-340b-instruct"],
+    "nemotron-mini-4b-instruct":
+      nvidiaModels["nvidia-nemotron-mini-4b-instruct"],
+    "llama-3.1-nemotron-51b-instruct":
+      nvidiaModels["nvidia-llama-3.1-nemotron-51b-instruct"],
+    "llama-3.1-nemotron-70b-instruct":
+      nvidiaModels["nvidia-llama-3.1-nemotron-70b-instruct"],
+    "llama-3.1-nemotron-nano-4b-v1.1":
+      nvidiaModels["nvidia-llama-3.1-nemotron-nano-4b-v1.1"],
+    "llama-3.1-nemotron-nano-8b-v1":
+      nvidiaModels["nvidia-llama-3.1-nemotron-nano-8b-v1"],
+    "llama-3.3-nemotron-super-49b-v1":
+      nvidiaModels["nvidia-llama-3.3-nemotron-super-49b-v1"],
+    "llama-3.3-nemotron-super-49b-v1.5":
+      nvidiaModels["nvidia-llama-3.3-nemotron-super-49b-v1.5"],
+  },
+
+  // OpenAI models (via NVIDIA)
   openai: {
-    "openai-gpt-oss-safeguard-20b": a4fModels["openai-gpt-oss-safeguard-20b"],
+    "gpt-oss-20b": nvidiaModels["openai-gpt-oss-20b"],
+    "gpt-oss-120b": nvidiaModels["openai-gpt-oss-120b"],
   },
-  // Removed: entire 'others' provider (all models returning empty/invalid responses)
+
+  // Qwen models
   qwen: {
-    // Removed: qwen1.5 models (invalid JSON responses)
-    "qwen-qwen3-32b": a4fModels["qwen-qwen3-32b"],
+    "qwen2-7b-instruct": nvidiaModels["qwen-qwen2-7b-instruct"],
+    "qwen2.5-7b-instruct": nvidiaModels["qwen-qwen2.5-7b-instruct"],
+    "qwen2.5-coder-7b-instruct": nvidiaModels["qwen-qwen2.5-coder-7b-instruct"],
+    "qwen2.5-coder-32b-instruct":
+      nvidiaModels["qwen-qwen2.5-coder-32b-instruct"],
+    "qwen3-235b-a22b": nvidiaModels["qwen-qwen3-235b-a22b"],
+    "qwen3-coder-480b-a35b-instruct":
+      nvidiaModels["qwen-qwen3-coder-480b-a35b-instruct"],
+    "qwen3-next-80b-a3b-instruct":
+      nvidiaModels["qwen-qwen3-next-80b-a3b-instruct"],
+    "qwen3-next-80b-a3b-thinking":
+      nvidiaModels["qwen-qwen3-next-80b-a3b-thinking"],
+    "qwen3.5-397b-a17b": nvidiaModels["qwen-qwen3.5-397b-a17b"],
+    "qwq-32b": nvidiaModels["qwen-qwq-32b"],
   },
-  // Removed: tiiuae (invalid JSON response)
+
+  // GLM models (Z-AI)
   zai: {
-    "zai-org-GLM-4.5-air": workersModels["glm-4.5-air"],
-    "zai-org-GLM-4.7": workersModels["glm-4.7"],
-    // Removed: GLM-5 (auth error)
+    "glm-4.7": nvidiaModels["z-ai-glm4.7"],
+    "glm-5": nvidiaModels["z-ai-glm5"],
+    "chatglm3-6b": nvidiaModels["thudm-chatglm3-6b"],
+  },
+
+  // Other quality models
+  other: {
+    "jamba-1.5-mini-instruct": nvidiaModels["ai21labs-jamba-1.5-mini-instruct"],
+    "jamba-1.5-large-instruct":
+      nvidiaModels["ai21labs-jamba-1.5-large-instruct"],
+    "dbrx-instruct": nvidiaModels["databricks-dbrx-instruct"],
+    "starcoder2-7b": nvidiaModels["bigcode-starcoder2-7b"],
+    "starcoder2-15b": nvidiaModels["bigcode-starcoder2-15b"],
+    "falcon3-7b-instruct": nvidiaModels["tiiuae-falcon3-7b-instruct"],
+    "solar-10.7b-instruct": nvidiaModels["upstage-solar-10.7b-instruct"],
+    "zamba2-7b-instruct": nvidiaModels["zyphra-zamba2-7b-instruct"],
+    "baichuan2-13b-chat": nvidiaModels["baichuan-inc-baichuan2-13b-chat"],
   },
 };
 
 const staticUnsupportedModels = new Set<LanguageModel>([]);
 
-const staticSupportImageInputModels = {};
-
-// No free models with image support remaining for automatic registration
+const staticSupportImageInputModels: Record<string, LanguageModel> = {
+  // Vision models support image input
+  "llama-3.2-11b-vision-instruct":
+    staticModels.llama["llama-3.2-11b-vision-instruct"],
+  "llama-3.2-90b-vision-instruct":
+    staticModels.llama["llama-3.2-90b-vision-instruct"],
+  "phi-3-vision-128k-instruct":
+    staticModels.microsoft["phi-3-vision-128k-instruct"],
+  "phi-3.5-vision-instruct": staticModels.microsoft["phi-3.5-vision-instruct"],
+  "phi-4-multimodal-instruct":
+    staticModels.microsoft["phi-4-multimodal-instruct"],
+};
 
 const allModels = staticModels;
 
@@ -95,26 +219,22 @@ export const customModelProvider = {
     models: Object.entries(models)
       .filter(([name]) => name !== "gemini-search")
       .map(([name, model]) => {
-        let tier = "Free"; // Default to Free
-        // Determine tier based on logic
-        // 1. "Pro" for A4F
-        if (Object.values(a4fModels).includes(model)) {
-          tier = "Pro";
-        }
-        // 2. "Free" for Workers, LLMChat
-        else if (
-          Object.values(workersModels).includes(model) ||
-          Object.values(llmChatModels).includes(model)
-        ) {
-          tier = "Free";
-        }
+        // All NVIDIA models are Pro tier (require API key)
+        const tier = "Pro";
+
+        // Check if model supports image input
+        const supportsImages = Object.values(
+          staticSupportImageInputModels,
+        ).includes(model);
 
         return {
           name,
           isToolCallUnsupported: isToolCallUnsupportedModel(model),
-          isImageInputUnsupported: isImageInputUnsupportedModel(model),
-          supportedFileMimeTypes: [...getFilePartSupportedMimeTypes(model)],
-          tier, // New property
+          isImageInputUnsupported: !supportsImages,
+          supportedFileMimeTypes: supportsImages
+            ? ["image/jpeg", "image/png", "image/webp", "image/gif"]
+            : [],
+          tier,
         };
       }),
     hasAPIKey: checkProviderAPIKey(provider as keyof typeof staticModels),
@@ -127,10 +247,10 @@ export const customModelProvider = {
       allModels[model.provider as keyof typeof allModels]?.[model.model];
     if (!selectedModel) {
       console.warn(
-        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback model: qwen/qwen3-32b`,
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback: llama/llama-3.3-70b-instruct`,
       );
-      // Fallback to a reliable Pro model (Qwen3 32B)
-      const fallbackModel = allModels["qwen"]?.["qwen-qwen3-32b"];
+      // Fallback to a reliable model
+      const fallbackModel = allModels["llama"]?.["llama-3.3-70b-instruct"];
       if (!fallbackModel) {
         throw new Error(
           `Model not found: ${model.provider}/${model.model}. Please select a valid model.`,
@@ -143,5 +263,6 @@ export const customModelProvider = {
 };
 
 function checkProviderAPIKey(_provider: keyof typeof staticModels) {
-  return true;
+  // Check if NVIDIA API key is set
+  return !!process.env.NVIDIA_API_KEY;
 }
