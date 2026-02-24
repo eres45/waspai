@@ -475,7 +475,7 @@ export const ModelStatusTable = pgTable(
   "model_status",
   {
     id: uuid("id").primaryKey().notNull().defaultRandom(),
-    modelId: text("model_id").notNull(),
+    modelId: text("model_id").notNull().unique(), // Unique for upsert
     provider: text("provider").notNull(),
     status: varchar("status", {
       enum: ["operational", "degraded", "down", "unknown"],
@@ -484,9 +484,7 @@ export const ModelStatusTable = pgTable(
       .default("unknown"),
     responseTime: bigint("response_time", { mode: "number" }), // in ms
     errorMessage: text("error_message"),
-    testedAt: timestamp("tested_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    testedAt: timestamp("tested_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("model_status_model_id_idx").on(table.modelId),
@@ -507,9 +505,7 @@ export const ModelStatusHistoryTable = pgTable(
     }).notNull(),
     responseTime: bigint("response_time", { mode: "number" }),
     errorMessage: text("error_message"),
-    testedAt: timestamp("tested_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    testedAt: timestamp("tested_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("model_status_history_model_id_idx").on(table.modelId),
@@ -517,4 +513,5 @@ export const ModelStatusHistoryTable = pgTable(
   ],
 );
 
-export type ModelStatusHistoryEntity = typeof ModelStatusHistoryTable.$inferSelect;
+export type ModelStatusHistoryEntity =
+  typeof ModelStatusHistoryTable.$inferSelect;

@@ -82,7 +82,7 @@ async function testModels() {
         console.log("✅ OK");
         results.push({ model, status: "OK" });
       } else {
-        const text = await response.text();
+        const _text = await response.text();
         console.log(`❌ Failed (${response.status})`);
         results.push({
           model,

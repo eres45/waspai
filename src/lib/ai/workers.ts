@@ -29,13 +29,56 @@ export function createWorkersModels() {
           const response = await fetch(workerUrl);
           if (!response.ok) return response;
 
-          // Transform GLM SSE to OpenAI SSE
+          // For non-streaming requests, collect all content and return JSON
+          if (!body.stream) {
+            const text = await response.text();
+            let fullContent = "";
+
+            // Parse SSE lines to extract content
+            const lines = text.split("\n");
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith("data: ")) {
+                try {
+                  const json = JSON.parse(trimmedLine.slice(6));
+                  if (
+                    json.type === "chat:completion" &&
+                    json.data?.delta_content
+                  ) {
+                    fullContent += json.data.delta_content;
+                  }
+                } catch (_e) {}
+              }
+            }
+
+            const openaiResponse = {
+              id: `glm-${Date.now()}`,
+              object: "chat.completion",
+              created: Math.floor(Date.now() / 1000),
+              model: modelId,
+              choices: [
+                {
+                  index: 0,
+                  message: {
+                    role: "assistant",
+                    content: fullContent,
+                  },
+                  finish_reason: "stop",
+                },
+              ],
+            };
+            return new Response(JSON.stringify(openaiResponse), {
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          // For streaming, transform GLM SSE to OpenAI SSE
           let buffer = "";
           const transformer = new TransformStream({
             transform(chunk, controller) {
               buffer += new TextDecoder().decode(chunk, { stream: true });
               const lines = buffer.split("\n");
-              buffer = lines.pop() || ""; // Keep partial line in buffer
+              buffer = lines.pop() || "";
               for (const line of lines) {
                 const trimmedLine = line.trim();
                 if (trimmedLine.startsWith("data: ")) {
@@ -65,7 +108,6 @@ export function createWorkersModels() {
               }
             },
             flush(controller) {
-              // Handle last bits if any
               if (buffer.trim().startsWith("data: ")) {
                 try {
                   const json = JSON.parse(buffer.trim().slice(6));

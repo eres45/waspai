@@ -69,22 +69,22 @@ async function testModel(
       return { status: "down", responseTime, error: "Service unavailable" };
     }
 
-		// Transient connectivity / upstream issues: treat as degraded rather than down
-		if (
-			errorMessage.includes("fetch failed") ||
-			errorMessage.includes("ECONNRESET") ||
-			errorMessage.includes("ETIMEDOUT") ||
-			errorMessage.includes("ENOTFOUND") ||
-			errorMessage.includes("EAI_AGAIN") ||
-			errorMessage.includes("502") ||
-			errorMessage.includes("Bad Gateway")
-		) {
-			return {
-				status: "degraded",
-				responseTime,
-				error: errorMessage.slice(0, 100),
-			};
-		}
+    // Transient connectivity / upstream issues: treat as degraded rather than down
+    if (
+      errorMessage.includes("fetch failed") ||
+      errorMessage.includes("ECONNRESET") ||
+      errorMessage.includes("ETIMEDOUT") ||
+      errorMessage.includes("ENOTFOUND") ||
+      errorMessage.includes("EAI_AGAIN") ||
+      errorMessage.includes("502") ||
+      errorMessage.includes("Bad Gateway")
+    ) {
+      return {
+        status: "degraded",
+        responseTime,
+        error: errorMessage.slice(0, 100),
+      };
+    }
 
     return { status: "down", responseTime, error: errorMessage.slice(0, 100) };
   }
@@ -140,7 +140,8 @@ export async function GET() {
       .order("tested_at", { ascending: false });
 
     // Calculate uptime percentages per model
-    const uptimeStats: Record<string, { total: number; operational: number }> = {};
+    const uptimeStats: Record<string, { total: number; operational: number }> =
+      {};
 
     if (history && !historyError) {
       for (const record of history) {
@@ -162,9 +163,14 @@ export async function GET() {
       responseTime: s.response_time,
       errorMessage: s.error_message,
       testedAt: s.tested_at,
-      uptime: uptimeStats[s.model_id]?.total > 0
-        ? Math.round((uptimeStats[s.model_id].operational / uptimeStats[s.model_id].total) * 100)
-        : 0,
+      uptime:
+        uptimeStats[s.model_id]?.total > 0
+          ? Math.round(
+              (uptimeStats[s.model_id].operational /
+                uptimeStats[s.model_id].total) *
+                100,
+            )
+          : 0,
     }));
 
     const lastChecked = modelsWithUptime.reduce<string | null>((latest, m) => {
@@ -215,7 +221,7 @@ export async function GET() {
 }
 
 // POST - Run tests (called manually from UI)
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const modelsInfo = customModelProvider.modelsInfo;
     const results: Array<{
@@ -229,21 +235,27 @@ export async function POST(request: NextRequest) {
     // Test each model
     for (const providerInfo of modelsInfo) {
       for (const modelInfo of providerInfo.models) {
-        const testResult = await testModel(providerInfo.provider, modelInfo.name);
+        const testResult = await testModel(
+          providerInfo.provider,
+          modelInfo.name,
+        );
 
         // Upsert current status using Supabase REST
         const { error: upsertError } = await supabaseRest
           .from("model_status")
-          .upsert({
-            model_id: modelInfo.name,
-            provider: providerInfo.provider,
-            status: testResult.status,
-            response_time: testResult.responseTime,
-            error_message: testResult.error,
-            tested_at: new Date().toISOString(),
-          }, {
-            onConflict: "model_id",
-          });
+          .upsert(
+            {
+              model_id: modelInfo.name,
+              provider: providerInfo.provider,
+              status: testResult.status,
+              response_time: testResult.responseTime,
+              error_message: testResult.error,
+              tested_at: new Date().toISOString(),
+            },
+            {
+              onConflict: "model_id",
+            },
+          );
 
         if (upsertError) {
           console.error("Failed to upsert status:", upsertError);
