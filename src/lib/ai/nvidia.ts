@@ -40,7 +40,7 @@ export function createNvidiaModels() {
     "qwen/qwen3-235b-a22b",
     "qwen/qwen3-coder-480b-a35b-instruct",
     "qwen/qwen3-next-80b-a3b-instruct",
-    "qwen/qwen3-next-80b-a3b-thinking",
+    // Removed: qwen3-next-80b-a3b-thinking (Bad Request)
     "qwen/qwen3.5-397b-a17b",
     "qwen/qwq-32b",
 

@@ -13,7 +13,7 @@ async function testModel(
   error: string | null;
 }> {
   const startTime = Date.now();
-  const timeout = 25000; // 25 second timeout
+  const timeout = 60000; // 60 second timeout for rate limits
 
   try {
     const model = customModelProvider.getModel({

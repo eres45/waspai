@@ -137,8 +137,7 @@ const staticModels = {
       nvidiaModels["qwen-qwen3-coder-480b-a35b-instruct"],
     "qwen3-next-80b-a3b-instruct":
       nvidiaModels["qwen-qwen3-next-80b-a3b-instruct"],
-    "qwen3-next-80b-a3b-thinking":
-      nvidiaModels["qwen-qwen3-next-80b-a3b-thinking"],
+    // Removed: qwen3-next-80b-a3b-thinking (Bad Request)
     "qwen3.5-397b-a17b": nvidiaModels["qwen-qwen3.5-397b-a17b"],
     "qwq-32b": nvidiaModels["qwen-qwq-32b"],
   },
