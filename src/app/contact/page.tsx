@@ -5,6 +5,7 @@ import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { Footer } from "@/components/landing/footer";
 import { getSession } from "@/lib/auth/server";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal";
+import { ContactChat } from "@/components/contact/contact-chat";
 import {
   Mail,
   MessageSquare,
@@ -96,42 +97,37 @@ export default async function ContactPage() {
               />
             </div>
 
-            {/* Main CTA Section */}
-            <div className="relative rounded-none border border-white/10 bg-white/[0.02] p-8 md:p-16 text-center overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20 bg-white/[0.02] border border-white/10 p-8 md:p-16 relative overflow-hidden">
               <CardDecorator />
-              <div className="relative z-10">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                  Ready to start your AI journey?
+              <div className="relative z-10 text-left">
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-[13px] font-medium text-indigo-400 mb-6">
+                  <Sparkles className="size-3.5" />
+                  <span>Instant Assistance</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
+                  Have a specific question?
                 </h2>
-                <p className="text-white/40 text-lg mb-10 max-w-xl mx-auto">
-                  Experience the power of 20+ frontier models in one platform.
-                  No credit card required to start.
+                <p className="text-white/40 text-lg mb-10 max-w-xl leading-relaxed">
+                  Chat with our AI assistant for instant answers. If you still
+                  need help, you can contact us directly through the bot or via
+                  email.
                 </p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Link href={session ? "/chat" : "/sign-up"}>
-                    <LiquidMetalButton
-                      size="lg"
-                      borderWidth={3}
-                      icon={<ArrowRight className="w-5 h-5" />}
-                      metalConfig={{
-                        colorBack: "#555555",
-                        colorTint: "#ffffff",
-                        distortion: 0.15,
-                        speed: 0.4,
-                      }}
-                    >
-                      {session ? "Open Dashboard" : "Get Started Now"}
-                    </LiquidMetalButton>
-                  </Link>
-                  <Link
-                    href="https://cal.com/aliimam/designali"
-                    target="_blank"
-                  >
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <Link href="mailto:support@waspai.in">
                     <button className="px-8 py-4 rounded-full border border-white/10 text-white font-bold hover:bg-white/5 transition-all text-lg">
-                      Book a demo
+                      Email Support
+                    </button>
+                  </Link>
+                  <Link href="https://discord.gg/gCRu69Upnp" target="_blank">
+                    <button className="px-8 py-4 rounded-full bg-white/5 text-white font-bold hover:bg-white/10 transition-all text-lg border border-white/5">
+                      Join Discord
                     </button>
                   </Link>
                 </div>
+              </div>
+
+              <div className="relative z-10 w-full flex justify-center lg:justify-end">
+                <ContactChat />
               </div>
             </div>
 
