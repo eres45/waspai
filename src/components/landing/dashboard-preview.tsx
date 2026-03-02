@@ -59,6 +59,7 @@ export function DashboardPreview() {
           <img
             src="/dashboard-preview.gif"
             alt="Wasp AI dashboard preview"
+            loading="lazy"
             className="w-full h-full object-cover relative z-10"
           />
           {/* Bottom fade */}

@@ -25,26 +25,47 @@ export const LiquidMetal = memo(function LiquidMetal({
   className,
   style,
 }: LiquidMetalProps) {
+  const [isVisible, setIsVisible] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       className={cn("absolute inset-0 z-0 overflow-hidden", className)}
       style={style}
     >
-      <LiquidMetalShader
-        colorBack={colorBack}
-        colorTint={colorTint}
-        speed={speed}
-        repetition={repetition}
-        distortion={distortion}
-        softness={0}
-        shiftRed={0.3}
-        shiftBlue={-0.3}
-        angle={45}
-        shape="none"
-        scale={scale}
-        fit="cover"
-        style={{ width: "100%", height: "100%" }}
-      />
+      {isVisible && (
+        <LiquidMetalShader
+          colorBack={colorBack}
+          colorTint={colorTint}
+          speed={speed}
+          repetition={repetition}
+          distortion={distortion}
+          softness={0}
+          shiftRed={0.3}
+          shiftBlue={-0.3}
+          angle={45}
+          shape="none"
+          scale={scale}
+          fit="cover"
+          style={{ width: "100%", height: "100%" }}
+        />
+      )}
     </div>
   );
 });

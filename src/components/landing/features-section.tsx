@@ -31,7 +31,7 @@ const features: Feature[] = [
         <img
           src="/landing/features/agents.gif"
           alt="Custom Agents Demo"
-          loading="eager"
+          loading="lazy"
           className="w-full h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl scale-110 transform translate-x-12 translate-y-12"
         />
       </div>
@@ -49,7 +49,7 @@ const features: Feature[] = [
         <img
           src="/landing/features/mentions.gif"
           alt="Tool Mentions Demo"
-          loading="eager"
+          loading="lazy"
           className="w-full h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl scale-110 transform translate-x-12 translate-y-12"
         />
       </div>
@@ -67,7 +67,7 @@ const features: Feature[] = [
         <img
           src="/landing/features/image-gen.gif"
           alt="Image Generation Demo"
-          loading="eager"
+          loading="lazy"
           className="w-full h-full object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl scale-110 transform translate-x-12 translate-y-12"
         />
       </div>
@@ -85,7 +85,7 @@ const features: Feature[] = [
         <img
           src="/landing/features/workflows.png"
           alt="Workflow Creation Demo"
-          loading="eager"
+          loading="lazy"
           className="w-full h-full object-cover p-2 opacity-90 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl"
         />
       </div>
@@ -103,7 +103,7 @@ const features: Feature[] = [
         <img
           src="/landing/features/executor.gif"
           alt="JS/Python Executor Demo"
-          loading="eager"
+          loading="lazy"
           className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl scale-110"
         />
       </div>

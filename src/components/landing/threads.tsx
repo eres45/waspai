@@ -97,6 +97,7 @@ export function Threads({
 }: ThreadsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
+  const isVisibleRef = useRef<boolean>(true);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -188,14 +189,24 @@ export function Threads({
       container.addEventListener("mouseleave", onMouseLeave);
     }
 
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(container);
+
     function frame(t: number) {
-      const s = 0.05;
-      currentMouse[0] += s * (targetMouse[0] - currentMouse[0]);
-      currentMouse[1] += s * (targetMouse[1] - currentMouse[1]);
-      gl!.uniform2f(uMouseU, currentMouse[0], currentMouse[1]);
-      gl!.uniform1f(uTime, t * 0.001);
-      gl!.clear(gl!.COLOR_BUFFER_BIT);
-      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      if (isVisibleRef.current) {
+        const s = 0.05;
+        currentMouse[0] += s * (targetMouse[0] - currentMouse[0]);
+        currentMouse[1] += s * (targetMouse[1] - currentMouse[1]);
+        gl!.uniform2f(uMouseU, currentMouse[0], currentMouse[1]);
+        gl!.uniform1f(uTime, t * 0.001);
+        gl!.clear(gl!.COLOR_BUFFER_BIT);
+        gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      }
       rafRef.current = requestAnimationFrame(frame);
     }
     rafRef.current = requestAnimationFrame(frame);
@@ -208,6 +219,7 @@ export function Threads({
         container.removeEventListener("mouseleave", onMouseLeave);
       }
       if (container.contains(canvas)) container.removeChild(canvas);
+      observer.disconnect();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
   }, [color, amplitude, distance, enableMouseInteraction]);
