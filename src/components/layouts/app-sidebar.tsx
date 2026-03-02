@@ -26,7 +26,7 @@ export function AppSidebar({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
-        router.push("/");
+        router.push("/chat");
         router.refresh();
       }
     };
@@ -41,10 +41,10 @@ export function AppSidebar({
     >
       <SidebarHeaderShared
         title="Wasp AI"
-        href="/"
+        href="/chat"
         enableShortcuts={true}
         onLinkClick={() => {
-          router.push("/");
+          router.push("/chat");
           router.refresh();
         }}
       />

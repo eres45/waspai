@@ -82,7 +82,7 @@ export default async function ArchivePage({
   const archive = await getArchiveWithThreads(id);
 
   if (!archive) {
-    redirect("/");
+    redirect("/chat");
   }
 
   return (

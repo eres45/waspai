@@ -114,9 +114,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Redirect to home
-    logger.info("Auth callback successful, redirecting to home");
-    return NextResponse.redirect(new URL("/", request.url));
+    // Redirect to chat
+    logger.info("Auth callback successful, redirecting to chat");
+    return NextResponse.redirect(new URL("/chat", request.url));
   } catch (error) {
     logger.error("Auth callback error:", error);
     return NextResponse.redirect(

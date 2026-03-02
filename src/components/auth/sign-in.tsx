@@ -80,9 +80,9 @@ export default function SignIn({
       // Use window.location to do a full page reload so server can read the new cookie
       // Add a small delay to ensure cookie is set before redirect
       setTimeout(() => {
-        console.log("[DEBUG] Redirecting to / now");
+        console.log("[DEBUG] Redirecting to /chat now");
         console.log("[DEBUG] Final cookies before redirect:", document.cookie);
-        window.location.href = "/";
+        window.location.href = "/chat";
       }, 500);
     } catch (error) {
       console.error("[DEBUG] Sign-in exception:", error);

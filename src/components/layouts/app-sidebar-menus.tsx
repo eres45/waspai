@@ -51,11 +51,11 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
           <Tooltip>
             <SidebarMenuItem className="mb-1">
               <Link
-                href="/"
+                href="/chat"
                 onClick={(e) => {
                   e.preventDefault();
                   setOpenMobile(false);
-                  router.push(`/`);
+                  router.push(`/chat`);
                   router.refresh();
                 }}
               >

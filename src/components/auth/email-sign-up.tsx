@@ -108,7 +108,7 @@ export default function EmailSignUp({
       // Redirect to main chat page after successful sign-up
       // Use window.location for full page reload so server can read the new cookie
       setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = "/chat";
       }, 500);
     } else {
       toast.error(message);

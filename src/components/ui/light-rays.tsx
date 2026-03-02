@@ -1,21 +1,18 @@
 "use client";
 
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Renderer, Program, Triangle, Mesh } from "ogl";
-import { useTheme } from "next-themes";
-
-export type RaysOrigin =
-  | "top-center"
-  | "top-left"
-  | "top-right"
-  | "right"
-  | "left"
-  | "bottom-center"
-  | "bottom-right"
-  | "bottom-left";
 
 interface LightRaysProps {
-  raysOrigin?: RaysOrigin;
+  raysOrigin?:
+    | "top-left"
+    | "top-right"
+    | "left"
+    | "right"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right"
+    | "top-center";
   raysColor?: string;
   raysSpeed?: number;
   lightSpread?: number;
@@ -30,6 +27,8 @@ interface LightRaysProps {
   className?: string;
 }
 
+const DEFAULT_COLOR = "#ffffff";
+
 const hexToRgb = (hex: string): [number, number, number] => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return m
@@ -41,11 +40,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
     : [1, 1, 1];
 };
 
-const getAnchorAndDir = (
-  origin: RaysOrigin,
-  w: number,
-  h: number,
-): { anchor: [number, number]; dir: [number, number] } => {
+const getAnchorAndDir = (origin: string, w: number, h: number) => {
   const outside = 0.2;
   switch (origin) {
     case "top-left":
@@ -69,52 +64,26 @@ const getAnchorAndDir = (
 
 const LightRays: React.FC<LightRaysProps> = ({
   raysOrigin = "top-center",
-  raysColor: defaultColor,
+  raysColor = DEFAULT_COLOR,
   raysSpeed = 1,
   lightSpread = 1,
   rayLength = 2,
   pulsating = false,
   fadeDistance = 1.0,
   saturation = 1.0,
-  followMouse = false,
+  followMouse = true,
   mouseInfluence = 0.1,
   noiseAmount = 0.0,
   distortion = 0.0,
   className = "",
 }) => {
-  const { theme } = useTheme();
-
-  const raysColor = useMemo(() => {
-    if (defaultColor) return defaultColor;
-    if (theme === "dark") {
-      return "#ffffff80";
-    } else {
-      return "#00000040";
-    }
-  }, [defaultColor, theme]);
-
-  const themeFadeDistance = useMemo(() => {
-    if (theme === "dark") {
-      return fadeDistance * 1.2;
-    } else {
-      return fadeDistance * 0.8;
-    }
-  }, [theme, fadeDistance]);
-
-  const themeSaturation = useMemo(() => {
-    if (theme === "dark") {
-      return saturation * 0.9;
-    } else {
-      return saturation * 0.7;
-    }
-  }, [theme, saturation]);
   const containerRef = useRef<HTMLDivElement>(null);
   const uniformsRef = useRef<any>(null);
   const rendererRef = useRef<Renderer | null>(null);
   const mouseRef = useRef({ x: 0.5, y: 0.5 });
   const smoothMouseRef = useRef({ x: 0.5, y: 0.5 });
   const animationIdRef = useRef<number | null>(null);
-  const meshRef = useRef<any>(null);
+  const meshRef = useRef<Mesh | null>(null);
   const cleanupFunctionRef = useRef<(() => void) | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -151,7 +120,7 @@ const LightRays: React.FC<LightRaysProps> = ({
     const initializeWebGL = async () => {
       if (!containerRef.current) return;
 
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       if (!containerRef.current) return;
 
@@ -184,6 +153,7 @@ uniform float iTime;
 uniform vec2  iResolution;
 
 uniform vec2  rayPos;
+uniform vec2  rayPosCoord;
 uniform vec2  rayDir;
 uniform vec3  raysColor;
 uniform float raysSpeed;
@@ -284,8 +254,8 @@ void main() {
         lightSpread: { value: lightSpread },
         rayLength: { value: rayLength },
         pulsating: { value: pulsating ? 1.0 : 0.0 },
-        fadeDistance: { value: themeFadeDistance },
-        saturation: { value: themeSaturation },
+        fadeDistance: { value: fadeDistance },
+        saturation: { value: saturation },
         mousePos: { value: [0.5, 0.5] },
         mouseInfluence: { value: mouseInfluence },
         noiseAmount: { value: noiseAmount },
@@ -345,7 +315,7 @@ void main() {
         }
 
         try {
-          renderer.render({ scene: mesh });
+          renderer.render({ scene: meshRef.current });
           animationIdRef.current = requestAnimationFrame(loop);
         } catch (error) {
           console.warn("WebGL rendering error:", error);
@@ -353,15 +323,7 @@ void main() {
         }
       };
 
-      const handleBeforeUnload = () => {
-        if (renderer?.gl?.canvas) {
-          renderer.gl.canvas.style.opacity = "0";
-          renderer.gl.canvas.style.visibility = "hidden";
-        }
-      };
-
       window.addEventListener("resize", updatePlacement);
-      window.addEventListener("beforeunload", handleBeforeUnload);
       updatePlacement();
       animationIdRef.current = requestAnimationFrame(loop);
 
@@ -372,19 +334,13 @@ void main() {
         }
 
         window.removeEventListener("resize", updatePlacement);
-        window.removeEventListener("beforeunload", handleBeforeUnload);
 
         if (renderer) {
           try {
-            const canvas = renderer.gl.canvas;
-
-            if (canvas) {
-              canvas.style.opacity = "0";
-              canvas.style.visibility = "hidden";
-            }
-
-            const loseContextExt =
-              renderer.gl.getExtension("WEBGL_lose_context");
+            const canvas = (renderer as any).gl.canvas;
+            const loseContextExt = (renderer as any).gl.getExtension(
+              "WEBGL_lose_context",
+            );
             if (loseContextExt) {
               loseContextExt.loseContext();
             }
@@ -419,8 +375,8 @@ void main() {
     lightSpread,
     rayLength,
     pulsating,
-    themeFadeDistance,
-    themeSaturation,
+    fadeDistance,
+    saturation,
     followMouse,
     mouseInfluence,
     noiseAmount,
@@ -439,14 +395,14 @@ void main() {
     u.lightSpread.value = lightSpread;
     u.rayLength.value = rayLength;
     u.pulsating.value = pulsating ? 1.0 : 0.0;
-    u.fadeDistance.value = themeFadeDistance;
-    u.saturation.value = themeSaturation;
+    u.fadeDistance.value = fadeDistance;
+    u.saturation.value = saturation;
     u.mouseInfluence.value = mouseInfluence;
     u.noiseAmount.value = noiseAmount;
     u.distortion.value = distortion;
 
     const { clientWidth: wCSS, clientHeight: hCSS } = containerRef.current;
-    const dpr = renderer.dpr;
+    const dpr = (renderer as any).dpr;
     const { anchor, dir } = getAnchorAndDir(raysOrigin, wCSS * dpr, hCSS * dpr);
     u.rayPos.value = anchor;
     u.rayDir.value = dir;
@@ -457,8 +413,8 @@ void main() {
     raysOrigin,
     rayLength,
     pulsating,
-    themeFadeDistance,
-    themeSaturation,
+    fadeDistance,
+    saturation,
     mouseInfluence,
     noiseAmount,
     distortion,
@@ -482,7 +438,7 @@ void main() {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full bg-background pointer-events-none z-[3] overflow-hidden relative ${className}`.trim()}
+      className={`absolute inset-0 pointer-events-none z-0 overflow-hidden ${className}`.trim()}
     />
   );
 };
