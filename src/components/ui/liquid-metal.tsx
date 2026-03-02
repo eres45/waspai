@@ -25,47 +25,26 @@ export const LiquidMetal = memo(function LiquidMetal({
   className,
   style,
 }: LiquidMetalProps) {
-  const [isVisible, setIsVisible] = React.useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0 },
-    );
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div
-      ref={containerRef}
       className={cn("absolute inset-0 z-0 overflow-hidden", className)}
       style={style}
     >
-      {isVisible && (
-        <LiquidMetalShader
-          colorBack={colorBack}
-          colorTint={colorTint}
-          speed={speed}
-          repetition={repetition}
-          distortion={distortion}
-          softness={0}
-          shiftRed={0.3}
-          shiftBlue={-0.3}
-          angle={45}
-          shape="none"
-          scale={scale}
-          fit="cover"
-          style={{ width: "100%", height: "100%" }}
-        />
-      )}
+      <LiquidMetalShader
+        colorBack={colorBack}
+        colorTint={colorTint}
+        speed={speed}
+        repetition={repetition}
+        distortion={distortion}
+        softness={0}
+        shiftRed={0.3}
+        shiftBlue={-0.3}
+        angle={45}
+        shape="none"
+        scale={scale}
+        fit="cover"
+        style={{ width: "100%", height: "100%" }}
+      />
     </div>
   );
 });
@@ -131,23 +110,23 @@ export const LiquidMetalButton = forwardRef<
           />
           <div
             className={cn(
-              "relative z-10 rounded-full flex items-center bg-white dark:bg-neutral-900 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800",
+              "relative z-10 rounded-full flex items-center bg-neutral-900 transition-colors group-hover:bg-neutral-800",
               sizeStyles[size],
             )}
           >
             {icon && (
               <div
                 className={cn(
-                  "rounded-full flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]",
+                  "rounded-full flex items-center justify-center bg-neutral-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]",
                   iconSizes[size],
                 )}
               >
-                <span className="text-neutral-700 dark:text-neutral-300">
+                <span className="text-neutral-300">
                   {icon}
                 </span>
               </div>
             )}
-            <span className="font-medium tracking-tight text-neutral-900 dark:text-white">
+            <span className="font-medium tracking-tight text-white">
               {children}
             </span>
           </div>
