@@ -1,5 +1,9 @@
-import { groq } from "@ai-sdk/groq";
+import { createGroq } from "@ai-sdk/groq";
 import { streamText } from "ai";
+
+const groq = createGroq({
+  apiKey: process.env.CONTACT_GROQ_API_KEY,
+});
 
 export const maxDuration = 30;
 
@@ -26,7 +30,7 @@ Response Guidelines:
 If the user query is clearly regarding something Wasp AI doesn't do or if they are frustrated, politely direct them to the human support options above.`;
 
   const result = streamText({
-    model: groq("llama-3.3-70b-versatile"),
+    model: groq("openai/gpt-oss-120b"),
     messages,
     system: systemPrompt,
   });
