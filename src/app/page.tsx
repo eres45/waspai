@@ -26,7 +26,8 @@ import { Footer } from "@/components/landing/footer";
 import LightRays from "@/components/ui/light-rays";
 import { getSession } from "@/lib/auth/server";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { LiquidMetalButton } from "@/components/ui/liquid-metal";
+import { ArrowRight } from "lucide-react";
 import { redirect } from "next/navigation";
 
 export default async function RootLandingPage() {
@@ -126,27 +127,23 @@ export default async function RootLandingPage() {
                 generate and edit images — all in one place.
               </p>
 
-              {/* CTA Buttons */}
-              <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+              {/* CTA Button */}
+              <div className="mt-10 flex flex-col items-center">
                 <Link href={session ? "/chat" : "/sign-up"}>
-                  <Button
+                  <LiquidMetalButton
                     size="lg"
-                    className="h-14 px-10 rounded-none bg-white text-black hover:bg-white/90 font-bold text-base shadow-xl shadow-white/5 transition-all active:scale-95"
+                    borderWidth={3}
+                    icon={<ArrowRight className="w-5 h-5" />}
+                    metalConfig={{
+                      colorBack: "#555555",
+                      colorTint: "#ffffff",
+                      distortion: 0.15,
+                      speed: 0.4,
+                    }}
                   >
                     {session ? "Open Dashboard" : "Get Started Now"}
-                  </Button>
+                  </LiquidMetalButton>
                 </Link>
-                {!session && (
-                  <Link href="/sign-in">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-14 px-10 rounded-none border-white/10 bg-white/5 text-white hover:bg-white/10 font-bold text-base transition-all active:scale-95"
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                )}
               </div>
 
               {/* Social proof */}

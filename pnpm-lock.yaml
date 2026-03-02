@@ -50,6 +50,9 @@ importers:
       '@openrouter/ai-sdk-provider':
         specifier: ^1.2.0
         version: 1.2.0(ai@5.0.82(zod@4.1.12))(zod@4.1.12)
+      '@paper-design/shaders-react':
+        specifier: ^0.0.71
+        version: 0.0.71(@types/react@19.2.2)(react@19.2.0)
       '@playzone/youtube-transcript':
         specifier: ^1.0.0
         version: 1.0.0
@@ -1786,6 +1789,18 @@ packages:
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
+
+  '@paper-design/shaders-react@0.0.71':
+    resolution: {integrity: sha512-kTqjIlyZcpkwqJie+3ldEDscTtx1oOi8eRBD5QgWKI21GaNn/SSg26092M5zzqr3e8dVANv0ktS2ICSjbMFKbw==}
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  '@paper-design/shaders@0.0.71':
+    resolution: {integrity: sha512-brCt05YxxyjBrhnE3l1wJJHcFXsM8aE4lmpd9TMQp+p0dMU3F+OWkJZL9m/RC1Tt7om5xr0Wg7d0HYm+b9NYZA==}
 
   '@peculiar/asn1-android@2.5.0':
     resolution: {integrity: sha512-t8A83hgghWQkcneRsgGs2ebAlRe54ns88p7ouv8PW2tzF1nAW4yHcL4uZKrFpIU+uszIRzTkcCuie37gpkId0A==}
@@ -8815,6 +8830,15 @@ snapshots:
       zod: 4.1.12
 
   '@opentelemetry/api@1.9.0': {}
+
+  '@paper-design/shaders-react@0.0.71(@types/react@19.2.2)(react@19.2.0)':
+    dependencies:
+      '@paper-design/shaders': 0.0.71
+      react: 19.2.0
+    optionalDependencies:
+      '@types/react': 19.2.2
+
+  '@paper-design/shaders@0.0.71': {}
 
   '@peculiar/asn1-android@2.5.0':
     dependencies:
