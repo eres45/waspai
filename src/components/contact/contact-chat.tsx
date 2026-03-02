@@ -5,10 +5,10 @@ import { useChat } from "@ai-sdk/react";
 import {
   Send,
   Bot,
-  Paperclip,
   Smile,
   ChevronDown,
   MoreVertical,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,13 +28,12 @@ export function ContactChat() {
       {
         id: "welcome",
         role: "assistant",
-        parts: [{ type: "text", text: "Hi 👋 How can I help you?" }],
+        parts: [{ type: "text", text: "Hi 👋 How can I help you today?" }],
       },
     ] as UIMessage[],
   });
 
   const isLoading = status === "streaming" || status === "submitted";
-
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,74 +77,84 @@ export function ContactChat() {
   ];
 
   return (
-    <Card className="w-full max-w-lg mx-auto h-[600px] flex flex-col overflow-hidden border-white/10 bg-[#1A1A1C] shadow-2xl relative">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-500 p-4 flex items-center justify-between text-white">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Avatar className="size-12 border-2 border-white/20">
-              <AvatarImage src="/images/avatars/wasp-logo.jpg" />
-              <AvatarFallback>WA</AvatarFallback>
-            </Avatar>
-            <div className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-[#1A1A1C] rounded-full"></div>
+    <Card className="w-full max-w-lg mx-auto h-[600px] flex flex-col overflow-hidden border-white/[0.08] bg-[#161618] shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative backdrop-blur-3xl">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden border-b border-white/[0.05] bg-white/[0.02] p-4 backdrop-blur-md shadow-[0_1px_20px_rgba(0,0,0,0.2)]">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600/50 via-indigo-500/50 to-purple-600/50" />
+        <div className="flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
+              <Avatar className="size-11 border border-white/10 ring-2 ring-black/50 relative bg-[#161618]">
+                <AvatarImage
+                  src="/images/avatars/wasp-logo.jpg"
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-bold">
+                  WA
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-[#161618] rounded-full shadow-lg"></div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-white/40 tracking-wider uppercase">
+                  Support
+                </span>
+                <Sparkles className="size-3 text-blue-400 fill-blue-400/20" />
+              </div>
+              <div className="text-lg font-bold text-white tracking-tight leading-none mt-0.5">
+                Wasp AI
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="text-xs opacity-80 font-medium">Chat with</div>
-            <div className="text-lg font-bold leading-tight">Wasp Support</div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white/40 hover:text-white hover:bg-white/5 rounded-full transition-all"
+            >
+              <MoreVertical className="grow-0 size-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white/40 hover:text-white hover:bg-white/5 rounded-full transition-all"
+            >
+              <ChevronDown className="grow-0 size-5" />
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/10"
-          >
-            <MoreVertical className="grow-0 size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-white/10"
-          >
-            <ChevronDown className="grow-0 size-5" />
-          </Button>
         </div>
       </div>
 
-      {/* Online Status Bar */}
-      <div className="bg-blue-500/10 border-b border-white/5 px-4 py-2 flex items-center gap-2">
-        <div className="size-2 bg-green-500 rounded-full animate-pulse"></div>
-        <span className="text-xs font-semibold text-blue-400">
-          We are online!
-        </span>
-      </div>
-
-      {/* Messages */}
+      {/* Messages Area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10"
+        className="flex-1 overflow-y-auto p-5 space-y-5 scrollbar-thin scrollbar-thumb-white/5 scroll-smooth"
       >
         <AnimatePresence initial={false}>
           {messages.map((m) => (
             <motion.div
               key={m.id}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
               className={cn(
-                "flex w-full",
-                m.role === "user" ? "justify-end" : "justify-start",
+                "flex w-full items-end gap-2",
+                m.role === "user" ? "flex-row-reverse" : "flex-row text-left",
               )}
             >
               <div
                 className={cn(
-                  "max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed",
+                  "max-w-[82%] px-4 py-3 rounded-2xl text-[14.5px] leading-[1.6] shadow-xl",
                   m.role === "user"
-                    ? "bg-blue-600 text-white rounded-tr-none shadow-lg shadow-blue-900/20"
-                    : "bg-white/5 border border-white/10 text-white/90 rounded-tl-none",
+                    ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-br-none shadow-blue-500/10"
+                    : "bg-white/[0.04] border border-white/[0.08] text-white/90 rounded-bl-none backdrop-blur-md",
                 )}
               >
                 {m.parts.map((part, i) => (
-                  <span key={i}>{part.type === "text" ? part.text : ""}</span>
+                  <span key={i} className="whitespace-pre-wrap">
+                    {part.type === "text" ? part.text : ""}
+                  </span>
                 ))}
               </div>
             </motion.div>
@@ -155,29 +164,33 @@ export function ContactChat() {
         {/* Loading Indicator */}
         {isLoading && messages[messages.length - 1].role === "user" && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-start"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-start items-center gap-3"
           >
-            <div className="bg-white/5 border border-white/10 px-4 py-3 rounded-2xl rounded-tl-none">
-              <div className="flex gap-1">
-                <span className="size-1.5 bg-white/40 rounded-full animate-bounce"></span>
-                <span className="size-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span className="size-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+            <Avatar className="size-6 border border-white/5">
+              <AvatarImage src="/images/avatars/wasp-logo.jpg" />
+              <AvatarFallback className="text-[8px]">WA</AvatarFallback>
+            </Avatar>
+            <div className="bg-white/[0.04] border border-white/[0.08] px-4 py-2.5 rounded-2xl rounded-bl-none backdrop-blur-md shadow-lg">
+              <div className="flex gap-1.5 items-center">
+                <span className="size-1.5 bg-blue-500/60 rounded-full animate-bounce"></span>
+                <span className="size-1.5 bg-blue-500/60 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span className="size-1.5 bg-blue-500/60 rounded-full animate-bounce [animation-delay:0.4s]"></span>
               </div>
             </div>
           </motion.div>
         )}
       </div>
 
-      {/* Suggestions */}
+      {/* Suggestions Wrapper */}
       {messages.length === 1 && (
-        <div className="px-4 py-2 flex flex-wrap gap-2">
+        <div className="px-5 py-2 flex flex-wrap gap-2.5 bg-gradient-to-t from-white/[0.02] to-transparent">
           {suggestions.map((s) => (
             <button
               key={s}
               onClick={() => handleSuggestionClick(s)}
-              className="px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/5 text-blue-400 text-xs font-medium hover:bg-blue-500/10 transition-colors"
+              className="px-4 py-2 rounded-xl border border-white/5 bg-white/[0.03] text-white/50 text-[13px] font-medium hover:bg-white/[0.08] hover:border-white/10 hover:text-white transition-all duration-300 shadow-sm active:scale-95"
             >
               {s}
             </button>
@@ -185,63 +198,59 @@ export function ContactChat() {
         </div>
       )}
 
-      {/* Input */}
-      <div className="p-4 bg-[#1A1A1C] border-t border-white/5">
-        <form
-          onSubmit={handleSubmit}
-          className="relative flex items-center gap-2 group"
-        >
-          <div className="flex-1 relative">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Enter your message..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-white/20"
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 text-white/40 hover:text-white"
-              >
-                <Bot className="grow-0 size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 text-white/40 hover:text-white"
-              >
-                <Paperclip className="grow-0 size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 text-white/40 hover:text-white"
-              >
-                <Smile className="grow-0 size-4" />
-              </Button>
+      {/* Premium Input Section */}
+      <div className="p-5 border-t border-white/[0.05] bg-white/[0.01] backdrop-blur-md">
+        <form onSubmit={handleSubmit} className="relative flex flex-col gap-3">
+          <div className="flex items-center gap-3 relative">
+            <div className="flex-1 relative group">
+              <div className="absolute -inset-[1px] bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl blur-sm opacity-0 group-focus-within:opacity-100 transition duration-500"></div>
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask Wasp AI..."
+                className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3.5 pr-14 text-sm text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/20 relative z-10"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-white/30 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <Smile className="grow-0 size-4" />
+                </Button>
+              </div>
+            </div>
+            <Button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="size-[46px] rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-[0_4px_15px_-3px_rgba(37,99,235,0.4)] hover:shadow-[0_8px_20px_-3px_rgba(37,99,235,0.5)] transition-all duration-300 active:scale-95 shrink-0"
+            >
+              <Send className="grow-0 size-5 text-white" />
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-4 text-[11px] font-semibold text-white/20 tracking-widest uppercase">
+              <span className="flex items-center gap-1.5 group cursor-help">
+                <Bot className="size-3 transition-colors group-hover:text-blue-400" />
+                WASP OS
+              </span>
+              <span className="size-1 bg-white/10 rounded-full"></span>
+              <span className="group cursor-help transition-colors hover:text-white/40">
+                SECURE END-TO-END
+              </span>
+            </div>
+            <div className="flex gap-1">
+              {[0, 1].map((i) => (
+                <span
+                  key={i}
+                  className="size-1.5 rounded-full bg-white/5 border border-white/10"
+                ></span>
+              ))}
             </div>
           </div>
-          <Button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="size-11 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20 shrink-0"
-          >
-            <Send className="grow-0 size-5" />
-          </Button>
         </form>
-        <div className="mt-3 flex items-center justify-between opacity-30">
-          <div className="text-[10px] font-medium tracking-wider uppercase">
-            Powered by <span className="text-white">Wasp AI</span>
-          </div>
-          <div className="flex gap-2">
-            <span className="size-2 bg-white rounded-full"></span>
-            <span className="size-2 bg-white rounded-full"></span>
-          </div>
-        </div>
       </div>
     </Card>
   );

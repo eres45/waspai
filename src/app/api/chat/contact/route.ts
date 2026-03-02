@@ -1,5 +1,5 @@
 import { createGroq } from "@ai-sdk/groq";
-import { streamText } from "ai";
+import { convertToModelMessages, streamText } from "ai";
 
 const groq = createGroq({
   apiKey: process.env.CONTACT_GROQ_API_KEY,
@@ -8,9 +8,10 @@ const groq = createGroq({
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  try {
+    const { messages } = await req.json();
 
-  const systemPrompt = `You are "Wasp AI Support", the official Wasp AI Support Assistant. 
+    const systemPrompt = `You are "Wasp AI Support", the official Wasp AI Support Assistant. 
 Your goal is to help users understand Wasp AI and solve their technical or general queries.
 
 Wasp AI Key Features:
@@ -29,11 +30,15 @@ Response Guidelines:
 
 If the user query is clearly regarding something Wasp AI doesn't do or if they are frustrated, politely direct them to the human support options above.`;
 
-  const result = streamText({
-    model: groq("openai/gpt-oss-120b"),
-    messages,
-    system: systemPrompt,
-  });
+    const result = streamText({
+      model: groq("openai/gpt-oss-120b"),
+      messages: convertToModelMessages(messages),
+      system: systemPrompt,
+    });
 
-  return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse();
+  } catch (error: any) {
+    console.error("Contact Chat Error:", error);
+    return new Response(error.message || "An error occurred", { status: 500 });
+  }
 }
