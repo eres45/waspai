@@ -62,6 +62,12 @@ const options = {
       generateId: false,
     },
   },
+  trustedOrigins: [
+    "https://waspai.in",
+    "https://www.waspai.in",
+    "http://localhost:3000",
+    "http://localhost:3007",
+  ],
   account: {
     accountLinking: {
       trustedProviders: (

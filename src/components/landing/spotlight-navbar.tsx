@@ -115,14 +115,27 @@ export function SpotlightNavbar({
   };
 
   const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/");
-          router.refresh();
+    try {
+      // Manual cookie clearing as a fail-safe
+      document.cookie =
+        "auth-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie =
+        "better-auth.session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/");
+            router.refresh();
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Even if API fails, we already cleared cookies, just redirect
+      router.push("/");
+      router.refresh();
+    }
   };
 
   return (
