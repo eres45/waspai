@@ -21,6 +21,18 @@ import { useTranslations } from "next-intl";
 import { TextShimmer } from "ui/text-shimmer";
 import { buildReturnUrl } from "lib/admin/navigation-utils";
 import { BackButton } from "@/components/layouts/back-button";
+import { authClient } from "@/lib/auth/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function AppHeader() {
   const t = useTranslations();
@@ -168,9 +180,83 @@ export function AppHeader() {
               </div>
             </TooltipContent>
           </Tooltip>
+
+          <UserProfileDropdown />
         </div>
       )}
     </header>
+  );
+}
+
+function UserProfileDropdown() {
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
+
+  if (!session?.user) return null;
+
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/");
+          router.refresh();
+        },
+      },
+    });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="outline-none">
+        <Button
+          variant="ghost"
+          className="size-8 rounded-full p-0 border border-border/40 hover:border-border/80 transition-all overflow-hidden group"
+        >
+          <Avatar className="size-full">
+            <AvatarImage src={session.user.image || undefined} />
+            <AvatarFallback className="bg-muted text-[10px] text-muted-foreground uppercase">
+              {session.user.name?.slice(0, 2) || "AI"}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        className="w-56 bg-popover/95 border-border backdrop-blur-xl rounded-xl p-2 shadow-2xl"
+        align="end"
+        sideOffset={8}
+      >
+        <DropdownMenuLabel className="px-3 py-2">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-bold truncate">{session.user.name}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {session.user.email}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+          onClick={() => router.push("/chat")}
+        >
+          <LayoutDashboard className="size-4 text-indigo-500" />
+          <span className="text-sm font-medium">Chat Dashboard</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors opacity-50">
+          <Settings className="size-4" />
+          <span className="text-sm font-medium text-muted-foreground">
+            User Settings
+          </span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 cursor-pointer transition-colors text-destructive hover:text-destructive"
+          onClick={handleSignOut}
+        >
+          <LogOut className="size-4" />
+          <span className="text-sm font-medium">Sign Out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

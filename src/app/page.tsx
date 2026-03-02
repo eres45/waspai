@@ -28,14 +28,9 @@ import { getSession } from "@/lib/auth/server";
 import Link from "next/link";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal";
 import { ArrowRight } from "lucide-react";
-import { redirect } from "next/navigation";
 
 export default async function RootLandingPage() {
   const session = await getSession();
-
-  if (session) {
-    redirect("/chat");
-  }
 
   return (
     <SmoothScroll>
@@ -43,6 +38,7 @@ export default async function RootLandingPage() {
         {/* Page content */}
         <div className="relative z-10 flex flex-col">
           <SpotlightNavbar
+            user={session?.user}
             items={[
               { label: "Home", href: "/" },
               { label: "Features", href: "#features" },

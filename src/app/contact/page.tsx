@@ -5,13 +5,27 @@ import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { Footer } from "@/components/landing/footer";
 import { getSession } from "@/lib/auth/server";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal";
-import { Mail, MessageSquare, MapPin, Sparkles, ArrowRight, Clock } from "lucide-react";
+import {
+  Mail,
+  MessageSquare,
+  MapPin,
+  Sparkles,
+  ArrowRight,
+  Clock,
+} from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "Contact Us | Wasp AI",
-  description: "Get in touch with the Wasp AI team for support, business inquiries, or feedback.",
+  description:
+    "Get in touch with the Wasp AI team for support, business inquiries, or feedback.",
 };
 
 export default async function ContactPage() {
@@ -32,12 +46,12 @@ export default async function ContactPage() {
       <div className="relative w-full min-h-screen bg-[#161618] text-white overflow-hidden">
         {/* Navbar */}
         <div className="relative z-50">
-          <SpotlightNavbar items={navItems} />
+          <SpotlightNavbar items={navItems} user={session?.user} />
         </div>
 
         {/* Hero Background */}
         <div className="absolute top-0 left-0 w-full h-[600px] pointer-events-none z-0">
-           <Threads amplitude={1} distance={0} enableMouseInteraction />
+          <Threads amplitude={1} distance={0} enableMouseInteraction />
         </div>
 
         <main className="relative z-10 pt-24 pb-32 px-6">
@@ -52,7 +66,9 @@ export default async function ContactPage() {
                 Get in touch
               </h1>
               <p className="text-white/40 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                Have questions about Wasp AI? Whether you need technical support, have business inquiries, or just want to say hi, we&apos;re all ears.
+                Have questions about Wasp AI? Whether you need technical
+                support, have business inquiries, or just want to say hi,
+                we&apos;re all ears.
               </p>
             </div>
 
@@ -84,9 +100,12 @@ export default async function ContactPage() {
             <div className="relative rounded-none border border-white/10 bg-white/[0.02] p-8 md:p-16 text-center overflow-hidden">
               <CardDecorator />
               <div className="relative z-10">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to start your AI journey?</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Ready to start your AI journey?
+                </h2>
                 <p className="text-white/40 text-lg mb-10 max-w-xl mx-auto">
-                  Experience the power of 20+ frontier models in one platform. No credit card required to start.
+                  Experience the power of 20+ frontier models in one platform.
+                  No credit card required to start.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link href={session ? "/chat" : "/sign-up"}>
@@ -104,10 +123,13 @@ export default async function ContactPage() {
                       {session ? "Open Dashboard" : "Get Started Now"}
                     </LiquidMetalButton>
                   </Link>
-                  <Link href="https://cal.com/aliimam/designali" target="_blank">
-                     <button className="px-8 py-4 rounded-full border border-white/10 text-white font-bold hover:bg-white/5 transition-all text-lg">
-                        Book a demo
-                     </button>
+                  <Link
+                    href="https://cal.com/aliimam/designali"
+                    target="_blank"
+                  >
+                    <button className="px-8 py-4 rounded-full border border-white/10 text-white font-bold hover:bg-white/5 transition-all text-lg">
+                      Book a demo
+                    </button>
                   </Link>
                 </div>
               </div>
@@ -122,7 +144,8 @@ export default async function ContactPage() {
                 <div>
                   <dt className="font-bold text-lg mb-1">Response Time</dt>
                   <dd className="text-white/40 leading-relaxed">
-                    We aim to respond to all inquiries within 24-48 hours. Our team is available Monday through Friday.
+                    We aim to respond to all inquiries within 24-48 hours. Our
+                    team is available Monday through Friday.
                   </dd>
                 </div>
               </div>
@@ -133,7 +156,8 @@ export default async function ContactPage() {
                 <div>
                   <dt className="font-bold text-lg mb-1">Feedback</dt>
                   <dd className="text-white/40 leading-relaxed">
-                    Your feedback drives our roadmap. Don&apos;t hesitate to share feature requests or improvement ideas.
+                    Your feedback drives our roadmap. Don&apos;t hesitate to
+                    share feature requests or improvement ideas.
                   </dd>
                 </div>
               </div>
@@ -152,7 +176,7 @@ const ContactCard = ({
   title,
   description,
   value,
-  href
+  href,
 }: {
   icon: any;
   title: string;
@@ -166,7 +190,9 @@ const ContactCard = ({
       <div className="size-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 text-white/70 group-hover:text-white group-hover:bg-white/10 transition-all duration-300">
         <Icon className="size-6" />
       </div>
-      <CardTitle className="text-2xl font-bold mb-2 text-white">{title}</CardTitle>
+      <CardTitle className="text-2xl font-bold mb-2 text-white">
+        {title}
+      </CardTitle>
       <CardDescription className="text-white/40 text-[15px] leading-relaxed">
         {description}
       </CardDescription>
