@@ -96,36 +96,38 @@ export default async function ContactPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20 bg-white/[0.02] border border-white/10 p-8 md:p-16 relative overflow-hidden">
-              <CardDecorator />
-              <div className="relative z-10 text-left">
-                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-[13px] font-medium text-indigo-400 mb-6">
-                  <Sparkles className="size-3.5" />
-                  <span>Instant Assistance</span>
-                </div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-                  Have a specific question?
-                </h2>
-                <p className="text-white/40 text-lg mb-10 max-w-xl leading-relaxed">
-                  Chat with our AI assistant for instant answers. If you still
-                  need help, you can contact us directly through the bot or via
-                  email.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center gap-4">
-                  <Link href="mailto:support@waspai.in">
-                    <button className="px-8 py-4 rounded-full border border-white/10 text-white font-bold hover:bg-white/5 transition-all text-lg">
-                      Email Support
-                    </button>
-                  </Link>
-                  <Link href="https://discord.gg/gCRu69Upnp" target="_blank">
-                    <button className="px-8 py-4 rounded-full bg-white/5 text-white font-bold hover:bg-white/10 transition-all text-lg border border-white/5">
-                      Join Discord
-                    </button>
-                  </Link>
-                </div>
+            {/* Chat Section Header */}
+            <div className="text-center mb-12 relative z-10">
+              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-[13px] font-medium text-indigo-400 mb-6">
+                <Sparkles className="size-3.5" />
+                <span>Instant Assistance</span>
               </div>
+              <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+                Have a specific question?
+              </h2>
+              <p className="text-white/40 text-lg md:text-xl mb-10 max-w-3xl mx-auto leading-relaxed">
+                Chat with our AI assistant for instant answers. If you still
+                need help, you can contact us directly through the bot or via
+                email.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href="mailto:support@waspai.in">
+                  <button className="px-8 py-4 rounded-full border border-white/10 text-white font-bold hover:bg-white/5 transition-all text-lg">
+                    Email Support
+                  </button>
+                </Link>
+                <Link href="https://discord.gg/gCRu69Upnp" target="_blank">
+                  <button className="px-8 py-4 rounded-full bg-white/5 text-white font-bold hover:bg-white/10 transition-all text-lg border border-white/5">
+                    Join Discord
+                  </button>
+                </Link>
+              </div>
+            </div>
 
-              <div className="relative z-10 w-full flex justify-center lg:justify-end">
+            {/* Expanded Chat Container */}
+            <div className="mb-32 bg-white/[0.02] border border-white/10 p-4 md:p-8 relative overflow-hidden backdrop-blur-sm">
+              <CardDecorator />
+              <div className="relative z-10 w-full">
                 <ContactChat />
               </div>
             </div>
