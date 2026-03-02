@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function AppHeader() {
@@ -233,20 +233,6 @@ function UserProfileDropdown() {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
-          onClick={() => router.push("/chat")}
-        >
-          <LayoutDashboard className="size-4 text-indigo-500" />
-          <span className="text-sm font-medium">Chat Dashboard</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors opacity-50">
-          <Settings className="size-4" />
-          <span className="text-sm font-medium text-muted-foreground">
-            User Settings
-          </span>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 cursor-pointer transition-colors text-destructive hover:text-destructive"

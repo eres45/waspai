@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth/client";
-import { LogOut, LayoutDashboard, Settings } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export interface NavItem {
@@ -139,7 +139,7 @@ export function SpotlightNavbar({
           {items.map((item, idx) => {
             const isLast = idx === items.length - 1;
             const isAuthItem =
-              item.label === "Sign In" || item.label === "Dashboard";
+              item.label === "Sign In" || item.label === "Chat";
 
             if (user && isLast && isAuthItem) {
               return (
@@ -176,20 +176,6 @@ export function SpotlightNavbar({
                           </p>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-white/5" />
-                      <DropdownMenuItem
-                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition-colors"
-                        onClick={() => router.push("/chat")}
-                      >
-                        <LayoutDashboard className="size-4 text-indigo-400" />
-                        <span className="text-sm font-medium">Dashboard</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition-colors opacity-50">
-                        <Settings className="size-4" />
-                        <span className="text-sm font-medium text-white/40">
-                          Settings
-                        </span>
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-white/5" />
                       <DropdownMenuItem
                         className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer transition-colors text-red-400 hover:text-red-300"

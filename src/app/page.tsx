@@ -45,7 +45,7 @@ export default async function RootLandingPage() {
               { label: "Pricing", href: "#pricing" },
               { label: "Contact", href: "/contact" },
               ...(session
-                ? [{ label: "Dashboard", href: "/chat" }]
+                ? [{ label: "Chat", href: "/chat" }]
                 : [{ label: "Sign In", href: "/sign-in" }]),
             ]}
           />
