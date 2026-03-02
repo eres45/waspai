@@ -134,7 +134,7 @@ export default async function RootLandingPage() {
                       speed: 0.4,
                     }}
                   >
-                    {session ? "Open Dashboard" : "Get Started Now"}
+                    {session ? "Open Chat" : "Get Started Now"}
                   </LiquidMetalButton>
                 </Link>
               </div>
