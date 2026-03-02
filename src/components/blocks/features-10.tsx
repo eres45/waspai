@@ -5,11 +5,11 @@ import { ReactNode } from "react";
 
 export function AdvancedFeatures() {
   return (
-    <section className="py-16 md:py-32 bg-transparent">
+    <section className="py-12 md:py-24 lg:py-32 bg-transparent">
       <div className="mx-auto max-w-2xl px-6 lg:max-w-5xl text-white">
         <div className="mx-auto grid gap-4 lg:grid-cols-2">
           <FeatureCard>
-            <CardHeader className="pb-3 px-6">
+            <CardHeader className="pb-3 px-4 md:px-6">
               <CardHeading
                 icon={Sparkles}
                 title="Multi-Model Ecosystem"
@@ -20,7 +20,7 @@ export function AdvancedFeatures() {
             <div className="relative mb-6 border-t border-dashed border-white/5 sm:mb-0 overflow-hidden">
               {/* Spotlight Mask */}
               <div className="absolute inset-0 z-10 [background:radial-gradient(circle_at_50%_40%,transparent_20%,#161618_75%)]"></div>
-              <div className="aspect-[76/59] p-1 px-6 opacity-80 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="aspect-[76/59] p-1 px-4 md:px-6 opacity-80 group-hover:opacity-100 transition-opacity duration-500">
                 <DualModeImage
                   darkSrc="https://tailark.com/_next/image?url=%2Fpayments.png&w=3840&q=75"
                   lightSrc="https://tailark.com/_next/image?url=%2Fpayments-light.png&w=3840&q=75"
@@ -34,7 +34,7 @@ export function AdvancedFeatures() {
           </FeatureCard>
 
           <FeatureCard>
-            <CardHeader className="pb-3 px-6">
+            <CardHeader className="pb-3 px-4 md:px-6">
               <CardHeading
                 icon={Calendar}
                 title="Autonomous Skill Agents"
@@ -43,7 +43,7 @@ export function AdvancedFeatures() {
             </CardHeader>
 
             <CardContent>
-              <div className="relative mb-6 sm:mb-0 pb-10 px-6">
+              <div className="relative mb-6 sm:mb-0 pb-10 px-4 md:px-6">
                 {/* Spotlight Mask */}
                 <div className="absolute inset-0 z-10 [background:radial-gradient(circle_at_75%_50%,transparent_10%,#161618_70%)]"></div>
                 <div className="aspect-[76/59] border border-white/5 overflow-hidden rounded-md opacity-80 group-hover:opacity-100 transition-opacity duration-500">
@@ -60,13 +60,13 @@ export function AdvancedFeatures() {
             </CardContent>
           </FeatureCard>
 
-          <FeatureCard className="p-12 lg:col-span-2 bg-white/[0.01]">
-            <p className="mx-auto my-6 max-w-xl text-balance text-center text-2xl font-semibold">
+          <FeatureCard className="p-8 lg:p-12 lg:col-span-2 bg-white/[0.01]">
+            <p className="mx-auto my-4 lg:my-6 max-w-xl text-balance text-center text-xl md:text-2xl font-semibold">
               The most powerful environment for building, testing, and scaling
               AI-first applications.
             </p>
 
-            <div className="flex justify-center gap-6 overflow-hidden mt-6">
+            <div className="flex justify-center gap-4 md:gap-6 overflow-hidden mt-6">
               <CircularUI
                 label="Orchestration"
                 circles={[{ pattern: "border" }, { pattern: "border" }]}

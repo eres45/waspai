@@ -19,13 +19,13 @@ export function DashboardPreview() {
     restDelta: 0.001,
   });
 
-  const scale = useTransform(smoothProgress, [0, 1], [0.6, 1]);
-  const opacity = useTransform(smoothProgress, [0, 0.5], [0.5, 1]);
+  const scale = useTransform(smoothProgress, [0, 1], [0.8, 1]);
+  const opacity = useTransform(smoothProgress, [0, 0.5], [0.8, 1]);
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full flex flex-col items-center px-6 pb-32 mt-8"
+      className="relative w-full flex flex-col items-center px-6 pb-16 md:pb-32 mt-4 md:mt-8"
     >
       {/* Top gradient */}
       <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#161618] to-transparent z-10 pointer-events-none" />

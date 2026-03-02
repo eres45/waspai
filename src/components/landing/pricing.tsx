@@ -214,7 +214,7 @@ const FeatureCard = ({
   <Card
     className={cn(
       "group relative rounded-none shadow-none border-white/5 bg-[#161618] flex flex-col transition-all duration-500",
-      highlighted && "ring-1 ring-white/20 scale-[1.02] z-10",
+      highlighted && "ring-1 ring-white/20 md:scale-[1.02] z-10",
       className,
     )}
   >

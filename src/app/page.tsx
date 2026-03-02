@@ -47,13 +47,10 @@ export default async function RootLandingPage() {
               { label: "Home", href: "/" },
               { label: "Features", href: "#features" },
               { label: "Pricing", href: "#pricing" },
+              { label: "Contact", href: "/contact" },
               ...(session
                 ? [{ label: "Dashboard", href: "/chat" }]
                 : [{ label: "Sign In", href: "/sign-in" }]),
-              {
-                label: "GitHub",
-                href: "https://github.com/cgoinglove/better-chatbot",
-              },
             ]}
           />
 
@@ -76,14 +73,14 @@ export default async function RootLandingPage() {
           </div>
 
           {/* Hero */}
-          <section className="relative flex flex-col items-center text-center px-6 pt-24 pb-20 overflow-hidden">
+          <section className="relative flex flex-col items-center text-center px-6 pt-16 md:pt-24 pb-20 overflow-hidden">
             {/* Threads — scoped to hero only */}
             <div className="absolute inset-0 z-0 pointer-events-none">
               <Threads amplitude={1} distance={0} enableMouseInteraction />
             </div>
             <div className="relative z-10 flex flex-col items-center w-full">
               {/* Badge */}
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 text-[13px] font-medium text-white/60 backdrop-blur-md shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]">
+              <div className="mb-6 md:mb-8 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 text-[13px] font-medium text-white/60 backdrop-blur-md shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]">
                 <span className="size-1.5 rounded-full bg-white/40 shadow-[0_0_6px_2px_rgba(255,255,255,0.2)] animate-pulse" />
                 20+ AI Models · Workflows · Image Generation
               </div>
@@ -91,7 +88,7 @@ export default async function RootLandingPage() {
               {/* Headline */}
               <h1
                 className="max-w-4xl font-extrabold leading-[1.04] tracking-[-0.04em]"
-                style={{ fontSize: "clamp(56px, 9vw, 104px)" }}
+                style={{ fontSize: "clamp(42px, 8vw, 104px)" }}
               >
                 <span
                   style={{
@@ -121,17 +118,17 @@ export default async function RootLandingPage() {
               </h1>
 
               {/* Sub-headline */}
-              <p className="mt-7 max-w-lg mx-auto text-[17px] leading-[1.7] text-white/40 font-normal">
+              <p className="mt-6 md:mt-7 max-w-lg mx-auto text-[15px] md:text-[17px] leading-[1.7] text-white/40 font-normal px-4">
                 Chat with GPT, Claude, Gemini, Grok and 20+ models. Build
                 workflow automations, create custom characters & skills,
                 generate and edit images — all in one place.
               </p>
 
               {/* CTA Button */}
-              <div className="mt-10 flex flex-col items-center">
+              <div className="mt-8 md:mt-10 flex flex-col items-center">
                 <Link href={session ? "/chat" : "/sign-up"}>
                   <LiquidMetalButton
-                    size="lg"
+                    size="md"
                     borderWidth={3}
                     icon={<ArrowRight className="w-5 h-5" />}
                     metalConfig={{
@@ -147,7 +144,7 @@ export default async function RootLandingPage() {
               </div>
 
               {/* Social proof */}
-              <div className="mt-16 flex flex-col items-center gap-3">
+              <div className="mt-12 md:mt-16 flex flex-col items-center gap-3">
                 <MaskedAvatars
                   avatars={[
                     {
@@ -183,7 +180,7 @@ export default async function RootLandingPage() {
               </div>
 
               {/* Tech stack */}
-              <div className="mt-5 flex items-center justify-center gap-6 text-[13px] text-white/30 font-medium">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[13px] text-white/30 font-medium px-6">
                 {[
                   "Workflows",
                   "Characters",

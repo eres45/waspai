@@ -131,7 +131,7 @@ export const LiquidMetalButton = forwardRef<
           />
           <div
             className={cn(
-              "relative z-10 rounded-full flex items-center bg-white dark:bg-black transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900",
+              "relative z-10 rounded-full flex items-center bg-white dark:bg-neutral-900 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800",
               sizeStyles[size],
             )}
           >

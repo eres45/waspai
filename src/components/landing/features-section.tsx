@@ -141,19 +141,19 @@ export const FeaturesSection = () => {
   });
 
   return (
-    <div ref={containerRef} className="relative w-full h-[500vh] bg-[#161618]">
-      <section className="sticky top-0 h-screen w-full flex items-center py-32 px-6 overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-[400vh] lg:h-[500vh] bg-[#161618]">
+      <section className="sticky top-0 min-h-screen w-full flex items-center py-16 lg:py-32 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
             {/* Left Column: Title and Feature List */}
             <div className="lg:col-span-5 flex flex-col pt-4">
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                className="mb-20"
+                className="mb-8 lg:mb-20"
               >
-                <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tight leading-[1.05]">
+                <h2 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-4 lg:mb-8 tracking-tight leading-[1.05]">
                   Create,
                   <br />
                   collaborate,
@@ -182,22 +182,22 @@ export const FeaturesSection = () => {
                         });
                       }
                     }}
-                    className="group relative w-full text-left py-8 border-b border-white/10 transition-all duration-300 outline-none"
+                    className="group relative w-full text-left py-4 lg:py-8 border-b border-white/10 transition-all duration-300 outline-none"
                   >
                     <div className="flex flex-col">
                       <div
-                        className={`text-xl font-bold tracking-tight transition-all duration-500 mb-2 ${
+                        className={`transition-all duration-500 mb-1 ${
                           activeIdx === idx
                             ? "text-white"
                             : "text-white/40 group-hover:text-white/60"
                         }`}
                       >
                         {activeIdx === idx && (
-                          <div className="text-[12px] font-bold uppercase tracking-[0.2em] text-white/40 mb-3">
+                          <div className="text-[10px] lg:text-[12px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1 lg:mb-3">
                             {feature.subtitle}
                           </div>
                         )}
-                        <h3 className="text-3xl font-bold">{feature.title}</h3>
+                        <h3 className="text-xl lg:text-3xl font-bold">{feature.title}</h3>
                       </div>
 
                       <AnimatePresence mode="wait">
@@ -212,7 +212,7 @@ export const FeaturesSection = () => {
                             }}
                             className="overflow-hidden"
                           >
-                            <p className="text-white/50 text-[17px] leading-relaxed mb-6 mt-2 max-w-[90%] font-medium">
+                            <p className="text-white/50 text-[15px] lg:text-[17px] leading-relaxed mb-4 lg:mb-6 mt-1 lg:mt-2 max-w-[95%] lg:max-w-[90%] font-medium">
                               {feature.description}
                             </p>
                             <div className="flex items-center gap-2 text-sm font-bold text-white/80 hover:text-white group/link cursor-pointer transition-colors">
@@ -229,8 +229,8 @@ export const FeaturesSection = () => {
             </div>
 
             {/* Right Column: Preview Area */}
-            <div className="lg:col-span-7 flex items-center justify-center lg:sticky lg:top-32">
-              <div className="relative w-full aspect-[4/3] rounded-3xl bg-white/[0.03] border border-white/[0.08] shadow-[2xl] backdrop-blur-3xl group transform translate-x-12 translate-y-12 overflow-hidden">
+            <div className="hidden lg:flex lg:col-span-7 items-center justify-center lg:sticky lg:top-32">
+              <div className="relative w-full aspect-[4/3] rounded-3xl bg-white/[0.03] border border-white/[0.08] shadow-[2xl] backdrop-blur-3xl group transform translate-x-6 xl:translate-x-12 translate-y-6 xl:translate-y-12 overflow-hidden">
                 {features.map((feature, idx) => (
                   <motion.div
                     key={feature.id}
@@ -253,6 +253,24 @@ export const FeaturesSection = () => {
                 ))}
               </div>
             </div>
+
+            {/* Mobile/Tablet Preview: Shown below the active feature */}
+            {isMobile && (
+              <div className="mt-8 block lg:hidden w-full aspect-[4/3] rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+                 <AnimatePresence mode="wait">
+                  <motion.div
+                    key={features[activeIdx].id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    {features[activeIdx].preview}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
       </section>
