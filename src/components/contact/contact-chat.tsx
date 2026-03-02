@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import { useChat } from "ai/react";
+import { useRef, useEffect, useState, useCallback } from "react";
+import { useChat } from "@ai-sdk/react";
 import {
   Send,
   Bot,
@@ -15,25 +15,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { DefaultChatTransport, UIMessage } from "ai";
 
 export function ContactChat() {
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    setInput,
-    isLoading,
-  } = useChat({
-    api: "/api/chat/contact",
-    initialMessages: [
+  const [input, setInput] = useState("");
+  const { messages, status, sendMessage } = useChat({
+    id: "contact-support",
+    transport: new DefaultChatTransport({
+      api: "/api/chat/contact",
+    }),
+    messages: [
       {
         id: "welcome",
         role: "assistant",
-        content: "Hi 👋 How can I help you?",
+        parts: [{ type: "text", text: "Hi 👋 How can I help you?" }],
       },
-    ],
+    ] as UIMessage[],
   });
+
+  const isLoading = status === "streaming" || status === "submitted";
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +42,33 @@ export function ContactChat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const handleSubmit = useCallback(
+    (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!input.trim() || isLoading) return;
+
+      const userMessage = input.trim();
+      setInput("");
+
+      sendMessage({
+        role: "user",
+        parts: [{ type: "text", text: userMessage }],
+      });
+    },
+    [input, isLoading, sendMessage],
+  );
+
+  const handleSuggestionClick = useCallback(
+    (suggestion: string) => {
+      setInput("");
+      sendMessage({
+        role: "user",
+        parts: [{ type: "text", text: suggestion }],
+      });
+    },
+    [sendMessage],
+  );
 
   const suggestions = [
     "What models are included?",
@@ -117,7 +144,9 @@ export function ContactChat() {
                     : "bg-white/5 border border-white/10 text-white/90 rounded-tl-none",
                 )}
               >
-                {m.content}
+                {m.parts.map((part, i) => (
+                  <span key={i}>{part.type === "text" ? part.text : ""}</span>
+                ))}
               </div>
             </motion.div>
           ))}
@@ -147,7 +176,7 @@ export function ContactChat() {
           {suggestions.map((s) => (
             <button
               key={s}
-              onClick={() => setInput(s)}
+              onClick={() => handleSuggestionClick(s)}
               className="px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/5 text-blue-400 text-xs font-medium hover:bg-blue-500/10 transition-colors"
             >
               {s}
@@ -165,7 +194,7 @@ export function ContactChat() {
           <div className="flex-1 relative">
             <input
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Enter your message..."
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-white/20"
             />
