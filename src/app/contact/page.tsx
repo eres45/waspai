@@ -4,7 +4,6 @@ import { SpotlightNavbar } from "@/components/landing/spotlight-navbar";
 import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { Footer } from "@/components/landing/footer";
 import { getSession } from "@/lib/auth/server";
-import { LiquidMetalButton } from "@/components/ui/liquid-metal";
 import { ContactChat } from "@/components/contact/contact-chat";
 import {
   Mail,
