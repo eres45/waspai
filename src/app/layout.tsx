@@ -10,6 +10,8 @@ import { Toaster } from "ui/sonner";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { ApiPreloader } from "./components/api-preloader";
+import { AuthCallbackHandler } from "./auth/callback-handler";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -146,6 +148,7 @@ export default async function RootLayout({
             <NextIntlClientProvider>
               <div id="root">
                 <ApiPreloader />
+                <AuthCallbackHandler />
                 {children}
                 <Toaster richColors />
               </div>

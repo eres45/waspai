@@ -67,8 +67,8 @@ export function AuthCallbackHandler() {
           document.title,
           window.location.pathname,
         );
-        // Redirect to home
-        router.push("/");
+        // Redirect to chat dashboard
+        router.push("/chat");
       } catch (error) {
         logger.error("Auth callback handler error:", error);
         router.push("/auth/error?error=callback_error");

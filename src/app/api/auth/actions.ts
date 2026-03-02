@@ -9,7 +9,7 @@ import {
 } from "@/lib/auth/supabase-auth";
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import logger from "@/lib/logger";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 export async function existsByEmailAction(email: string) {
   try {
@@ -98,11 +98,18 @@ export async function signUpAction(data: {
 
 export async function signInWithGitHubAction() {
   try {
-    // Get the base URL - use NEXT_PUBLIC_BASE_URL if available, otherwise use BETTER_AUTH_URL
-    const baseUrl =
-      process.env.NODE_ENV === "production"
+    const headersList = await headers();
+    const host = headersList.get("host");
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+
+    // Dynamically build base URL from current host to handle www vs root domain
+    const baseUrl = host
+      ? `${protocol}://${host}`
+      : process.env.NODE_ENV === "production"
         ? "https://waspai.in"
-        : process.env.BETTER_AUTH_URL || "http://localhost:3007";
+        : "http://localhost:3007";
+
+    logger.info(`Initiating GitHub OAuth with baseUrl: ${baseUrl}`);
 
     const { data, error } = await supabaseAuth.auth.signInWithOAuth({
       provider: "github",
