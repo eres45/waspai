@@ -140,8 +140,6 @@ export const FeaturesSection = () => {
     }
   });
 
-  const _activeTab = features[activeIdx];
-
   return (
     <div ref={containerRef} className="relative w-full h-[500vh] bg-[#161618]">
       <section className="sticky top-0 h-screen w-full flex items-center py-32 px-6 overflow-hidden">
