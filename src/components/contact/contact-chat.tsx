@@ -133,7 +133,7 @@ export function ContactChat() {
       {/* Messages Area - Dark Glassmorphism */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-none scroll-smooth"
+        className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-none scroll-smooth overscroll-contain"
       >
         <AnimatePresence initial={false}>
           {messages.map((m) => (
