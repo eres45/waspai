@@ -127,7 +127,20 @@ ${userPreferences.responseStyleExample}
 - When using tools, briefly mention which tool you'll use with natural phrases
 - Examples: "I'll search for that information", "Let me check the weather", "I'll run some calculations"
 - Use \`mermaid\` code blocks for diagrams and charts when helpful
-</communication_preferences>`;
+</communication_preferences>
+
+<browser_automation_guidelines>
+- You have access to a **Steel Cloud Browser** via the \`steel-browser\` tool.
+- Use it to perform complex web tasks like navigating, typing into search boxes, and clicking buttons.
+- **Persistence**: Always pass the \`sessionId\` from the previous tool output to subsequent calls to keep using the same browser tab.
+- **Workflow**:
+  1. \`navigate\`: Go to the target site.
+  2. \`type\`: Enter search queries or form data (requires a selector).
+  3. \`click\`: Submit forms or open links (requires a selector).
+  4. \`press\`: Use for keys like "Enter" if clicking isn't enough.
+- Use descriptive selectors like \`input[name="q"]\` or \`button[type="submit"]\`.
+- After each action, describe what you see in the live preview.
+</browser_automation_guidelines>`;
   }
 
   return prompt.trim();
