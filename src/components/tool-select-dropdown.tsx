@@ -18,6 +18,7 @@ import {
   InfoIcon,
   Loader,
   MessageCircle,
+  Monitor,
   MousePointer2,
   Package,
   Plus,
@@ -924,6 +925,9 @@ function AppDefaultToolKitSelector() {
           break;
         case AppDefaultToolkit.Code:
           icon = CodeIcon;
+          break;
+        case AppDefaultToolkit.Browser:
+          icon = Monitor;
           break;
       }
       return {

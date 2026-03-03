@@ -16,6 +16,7 @@ import {
   sendEmailTool,
 } from "./web/social-down";
 import { videoPlayerTool } from "./web/video-player";
+import { steelBrowserTool } from "./browser/steel-browser";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -50,5 +51,8 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   },
   [AppDefaultToolkit.Media]: {
     [DefaultToolName.VideoPlayer]: videoPlayerTool,
+  },
+  [AppDefaultToolkit.Browser]: {
+    [DefaultToolName.SteelBrowser]: steelBrowserTool,
   },
 };

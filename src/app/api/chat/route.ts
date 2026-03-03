@@ -1425,6 +1425,16 @@ BEGIN ROLEPLAY NOW.`
            2. DO NOT output XML tag <invoke> or <tool_code> or <minimax:tool_call> in your text response.
            3. If you want to call a tool, generate the tool call object, do not write code to call it.`,
 
+          // Browser tool prompt
+          `[CLOUD BROWSER ENABLED]
+          - You have a "steel-browser" tool that provides a REAL cloud-based Chrome browser.
+          - Use this tool for any task requiring:
+              1. Browsing websites with Javascript (which "web-search" cannot do)
+              2. Interacting with pages (clicking, typing, taking control)
+              3. Real-time visual verification of websites
+          - When used, the user will see a LIVE deep-linked preview of the browser.
+          - Prefer "steel-browser" over "web-search" for complex web tasks.`,
+
           // Character prompt
           characterContext ? characterPrompt : undefined,
           buildUserSystemPrompt(

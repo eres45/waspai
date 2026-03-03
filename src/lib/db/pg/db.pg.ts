@@ -39,7 +39,7 @@ export const pgDb = new Proxy({} as ReturnType<typeof drizzlePg>, {
         const pool = new Pool({
           connectionString: process.env.POSTGRES_URL,
           // Force SSL if it's supposed to be required (Supabase usually needs it)
-          // ssl: { rejectUnauthorized: false }
+          ssl: { rejectUnauthorized: false },
         });
 
         pgDbInstance = drizzlePg(pool, {

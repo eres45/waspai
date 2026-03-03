@@ -61,6 +61,7 @@ import {
 } from "lib/keyboard-shortcuts";
 
 import { WorkflowInvocation } from "./tool-invocation/workflow-invocation";
+import { SteelBrowserPreview } from "./tool-invocation/steel-browser";
 import dynamic from "next/dynamic";
 import { notify } from "lib/notify";
 import { ModelProviderIcon } from "ui/model-provider-icon";
@@ -219,13 +220,17 @@ export const UserMessagePart = memo(
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  data-testid="message-edit-button"
+                  data-testid="message-copy-button"
                   variant="ghost"
                   size="icon"
-                  className={cn("size-3! p-4!")}
+                  className="hover:bg-accent"
                   onClick={() => copy(part.text)}
                 >
-                  {copied ? <Check /> : <Copy />}
+                  {copied ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Copy</TooltipContent>
@@ -238,10 +243,10 @@ export const UserMessagePart = memo(
                       data-testid="message-edit-button"
                       variant="ghost"
                       size="icon"
-                      className="size-3! p-4!"
+                      className="hover:bg-accent"
                       onClick={() => setMode("edit")}
                     >
-                      <Pencil />
+                      <Pencil className="size-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Edit</TooltipContent>
@@ -254,12 +259,12 @@ export const UserMessagePart = memo(
                       onClick={deleteMessage}
                       variant="ghost"
                       size="icon"
-                      className="size-3! p-4! hover:text-destructive"
+                      className="hover:text-destructive hover:bg-accent"
                     >
                       {isDeleting ? (
-                        <Loader className="animate-spin" />
+                        <Loader className="animate-spin size-4" />
                       ) : (
-                        <Trash2 />
+                        <Trash2 className="size-4" />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -1049,6 +1054,10 @@ export const ToolMessagePart = memo(
 
       if (toolName === DefaultToolName.VideoPlayer) {
         return <VideoPlayer part={part} />;
+      }
+
+      if (toolName === DefaultToolName.SteelBrowser) {
+        return <SteelBrowserPreview part={part} />;
       }
 
       if (state === "output-available") {
