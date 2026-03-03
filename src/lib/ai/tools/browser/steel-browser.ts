@@ -28,7 +28,7 @@ export const steelBrowserTool: Tool = {
 
       return {
         sessionId: session.id,
-        sessionUrl: session.sessionViewerUrl,
+        sessionUrl: `${session.sessionViewerUrl}?interactive=true&showControls=true`,
         message: `Cloud browser session started for ${url}. You can view it live below.`,
       };
     } catch (error) {
