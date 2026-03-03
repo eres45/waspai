@@ -206,8 +206,13 @@ export class MCPClient {
         }
 
         const config = MCPStdioConfigZodSchema.parse(this.serverConfig);
+        const command =
+          process.platform === "win32" && config.command === "npx"
+            ? "npx.cmd"
+            : config.command;
+
         this.transport = new StdioClientTransport({
-          command: config.command,
+          command,
           args: config.args,
           // Merge process.env with config.env, ensuring PATH is preserved and filtering out undefined values
           env: Object.entries({ ...process.env, ...config.env }).reduce(

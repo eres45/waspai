@@ -15,8 +15,21 @@ import { Button } from "ui/button";
 import { AtlassianIcon } from "ui/atlassian-icon";
 import { AsanaIcon } from "ui/asana-icon";
 import { GithubIcon } from "ui/github-icon";
+import { SteelIcon } from "ui/steel-icon";
 
 export const RECOMMENDED_MCPS = [
+  {
+    name: "steel",
+    label: "Steel",
+    config: {
+      command: "npx",
+      args: ["@steel-dev/mcp-server"],
+      env: {
+        STEEL_API_KEY: "${env:STEEL_API_KEY}",
+      },
+    },
+    icon: SteelIcon,
+  },
   {
     name: "github",
     label: "GitHub",

@@ -14,12 +14,29 @@ export function useMcpList(options?: SWRConfiguration) {
     onError: handleErrorWithToast,
     onSuccess: (data) => {
       const ids = data.map((v) => v.id);
-      appStore.setState((prev) => ({
-        mcpList: data,
-        allowedMcpServers: objectFlow(prev.allowedMcpServers || {}).filter(
-          (_, key) => ids.includes(key),
-        ),
-      }));
+      appStore.setState((prev) => {
+        const nextAllowedMcpServers = { ...(prev.allowedMcpServers || {}) };
+
+        for (const server of data) {
+          if (
+            server.visibility === "public" &&
+            !nextAllowedMcpServers[server.id]
+          ) {
+            nextAllowedMcpServers[server.id] = {
+              tools: server.toolInfo.map((t) => t.name),
+            };
+          }
+        }
+
+        const filteredAllowedMcpServers = objectFlow(
+          nextAllowedMcpServers,
+        ).filter((_, key) => ids.includes(String(key)));
+
+        return {
+          mcpList: data,
+          allowedMcpServers: filteredAllowedMcpServers,
+        };
+      });
     },
     ...options,
   });
