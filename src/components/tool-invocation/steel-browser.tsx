@@ -1,7 +1,8 @@
 import { ToolUIPart } from "ai";
-import { ExternalLinkIcon, MonitorIcon } from "lucide-react";
+import { ExternalLinkIcon, MonitorIcon, MousePointer2Icon } from "lucide-react";
 import { memo, useMemo } from "react";
 import { TextShimmer } from "ui/text-shimmer";
+import { Button } from "ui/button";
 
 export const SteelBrowserPreview = memo(function SteelBrowserPreview({
   part,
@@ -39,23 +40,21 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
   }
 
   return (
-    <div className="flex flex-col gap-2 my-2">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <MonitorIcon className="size-3 text-blue-500" />
+    <div className="flex flex-col gap-3 my-4">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 text-xs font-semibold text-foreground/80">
+          <MonitorIcon className="size-3.5 text-blue-500" />
           <span>Steel Cloud Browser (Live)</span>
         </div>
-        <a
-          href={sessionUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-[10px] text-blue-500 hover:underline"
-        >
-          <ExternalLinkIcon className="size-2.5" />
-          Open in New Tab
-        </a>
       </div>
-      <div className="border rounded-xl overflow-hidden shadow-sm bg-black aspect-video mr-12">
+
+      <div className="relative group border rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video ring-1 ring-border/50">
+        <div className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="px-2 py-1 bg-black/60 backdrop-blur-md rounded-md border border-white/10 text-[10px] text-white/90 font-medium">
+            Live preview (non-interactive)
+          </div>
+        </div>
+
         <iframe
           src={sessionUrl}
           className="w-full h-full border-0"
@@ -63,8 +62,30 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
           allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
         />
       </div>
+
+      <div className="flex items-center gap-2 px-1">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 bg-background/50 hover:bg-accent backdrop-blur-sm border-border/50 rounded-lg text-xs gap-2 px-3 transition-all active:scale-95"
+          onClick={() => window.open(sessionUrl, "_blank")}
+        >
+          <MousePointer2Icon className="size-3.5" />
+          Take control
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-8 bg-muted/50 hover:bg-muted font-medium rounded-lg text-xs gap-2 px-3 transition-all active:scale-95"
+          onClick={() => window.open(sessionUrl, "_blank")}
+        >
+          <ExternalLinkIcon className="size-3.5" />
+          Open view
+        </Button>
+      </div>
+
       {output?.message && (
-        <p className="text-[10px] text-muted-foreground px-2 italic">
+        <p className="text-[10px] text-muted-foreground/60 px-1 italic">
           {output.message}
         </p>
       )}
