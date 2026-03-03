@@ -15,7 +15,7 @@ export const steelBrowserTool: Tool = {
     }
 
     const client = new Steel({
-      apiKey: apiKey,
+      steelAPIKey: apiKey,
     });
 
     try {
