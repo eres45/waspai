@@ -22,13 +22,23 @@ export const steelBrowserTool: Tool = {
       // Create a session
       const session = await client.sessions.create();
 
-      // Navigate to the requested URL
-      // Note: The Steel SDK might vary slightly in its methods,
-      // but creating a session and getting the viewer URL is the core.
+      // Get live details which contains the proper player URL
+      const liveDetails = await client.sessions.liveDetails(session.id);
+
+      // The sessionViewerUrl from liveDetails is usually the api.steel.dev one
+      const viewerUrl =
+        liveDetails.sessionViewerUrl || `${session.sessionViewerUrl}/player`;
+
+      // Ensure interactive flags are present
+      const finalUrl = new URL(viewerUrl);
+      finalUrl.searchParams.set("interactive", "true");
+      finalUrl.searchParams.set("showControls", "true");
+      // If the URL doesn't already have an auth token/key, we might need to append it
+      // but let's try without first as api.steel.dev/player might be public for the session
 
       return {
         sessionId: session.id,
-        sessionUrl: `${session.sessionViewerUrl}?interactive=true&showControls=true`,
+        sessionUrl: finalUrl.toString(),
         message: `Cloud browser session started for ${url}. You can view it live below.`,
       };
     } catch (error) {
