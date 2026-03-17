@@ -1,24 +1,48 @@
 # Complete Model Collection Summary
 
-## Total Models Available: 198+
+## Total Models Available: 219+
 
-Your chatbot now has access to over 198 AI models across 6 major providers!
+Your chatbot now has access to over 219 AI models across 9 major providers!
 
 ## Provider Breakdown
 
-### 1. Deepseek Custom Proxy (10 models)
+### 1. Anthropic Claude (19 models)
+**Endpoint:** https://claude-talkai.ronitshrimankar1.workers.dev/v1
+
+**Models:**
+- Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3.5 Sonnet (Reasoning)
+- Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+- Claude 2, Claude Instant
+- GPT-4o, GPT-4o Mini, ChatGPT-4o (Latest)
+- GPT-4 Turbo, GPT-4, o1, o1-mini, o1-preview, o3-mini
+- Deepseek R1 (Anthropic Node), Deepseek Reasoner (Anthropic Node)
+
+**Features:**
+- ✅ Variety of premium models (Claude, GPT, O1, Deepseek)
+- ✅ Tool calling support
+- ✅ Fast response times
+
+### 2. MiniMax M1 & M2.1 (2 models)
+**Endpoints:** 
+- https://minimax-proxy.llamai.workers.dev/v1 (M1)
+- https://freeai-minimax.qwen4346.workers.dev/v1 (M2.1)
+
+**Models:**
+- MiniMax-01 (M1)
+- MiniMax-01 (M2.1)
+
+**Features:**
+- ✅ Free MiniMax models routing
+- ✅ Tool calling support
+- ✅ High performance
+
+### 3. DeepSeek (10 models)
 **Endpoint:** https://deepseek-proxy.llamai.workers.dev/v1
 
 **Models:**
-- deepseek-reasoner
-- deepseek-r1
-- deepseek-chat
-- deepseek-coder
-- deepseek-math
-- deepseek-v2
-- deepseek-v3
-- deepseek-v3.2
-- deepseek-v3.2-exp
+- DeepSeek V3.2, DeepSeek V3.2 (Base), DeepSeek V3
+- DeepSeek VL, DeepSeek V2, DeepSeek Math
+- DeepSeek Coder, DeepSeek R1, DeepSeek Reasoner, DeepSeek Chatv3.2-exp
 - deepseek-vl
 
 **Features:**
@@ -26,13 +50,13 @@ Your chatbot now has access to over 198 AI models across 6 major providers!
 - ✅ Tool calling support
 - ✅ High performance
 
-### 2. Qwen Custom Proxy (3 models)
+### 4. QWEN (3 models)
 **Endpoint:** https://qwen-worker-proxy.ronitshrimankar1.workers.dev/v1
 
 **Models:**
-- qwen3-coder-plus
-- qwen3-coder-flash
-- vision-model
+- Qwen 2.5 Coder (Plus)
+- Qwen 2.5 Coder (Flash)
+- Qwen Vision (VL)
 
 **Features:**
 - ✅ New Qwen endpoints wrapper
@@ -184,17 +208,15 @@ Your chatbot now has access to over 198 AI models across 6 major providers!
 
 ## Provider Comparison
 
-| Feature | Pollinations | GPT-OSS | Grok | QWEN | Deepseek Custom | Qwen Custom |
-|---------|-------------|---------|------|------|-----------------|-------------|
-| Models | 7 | 2 | 1 | 174 | 10 | 3 |
-| Cost | Free | Free | Free | Free | Custom | Custom |
-| Tool Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Vision Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Speed | Medium | Fast | Fast | Fast | Fast | Fast |
-| Quality | Excellent | Good | Good | Good-Excellent | Excellent | Excellent |
-| Specializations | No | No | No | Yes | Yes (coder/math) | Yes (vision/coder) |
-| Rate Limits | 10+/min | None | None | None | Proxy limit | Proxy limit |
-| Model Sizes | 1 | 2 | 1 | 7 (72b to 0.5b) | Varies | Varies |
+| Feature | Pollinations | GPT-OSS | Grok | QWEN (Native) | DeepSeek | QWEN | Anthropic Claude | MiniMax |
+|---------|-------------|---------|------|------|-----------------|-------------|---------------|---------|
+| Models | 7 | 2 | 1 | 174 | 10 | 3 | 19 | 2 |
+| Cost | Free | Free | Free | Free | Custom | Custom | Custom | Custom |
+| Tool Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Vision Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Speed | Medium | Fast | Fast | Fast | Fast | Fast | Fast | Fast |
+| Quality | Excellent | Good | Good | Good-Excellent | Excellent | Excellent | Excellent | Excellent |
+| Rates | 10+/min | None | None | None | Proxy limit | Proxy limit | Proxy limit | Proxy limit |
 
 ## How to Use
 
@@ -207,12 +229,14 @@ Your chatbot now has access to over 198 AI models across 6 major providers!
 
 ### Model Selector Organization
 Models are organized by provider:
-- **Deepseek Custom** - 10 models
-- **Qwen Custom** - 3 models
+- **Anthropic Claude** - 19 models
+- **MiniMax M1 & M2.1** - 2 models
+- **DeepSeek** - 10 models
+- **QWEN** - 3 models
 - **Pollinations** - 7 models
 - **GPT-OSS** - 2 models
 - **Grok** - 1 model
-- **QWEN** - 174 models
+- **QWEN (Native)** - 174 models
 
 ### Search Query Handling
 - If you ask a search query (e.g., "What is the current BTC price?")

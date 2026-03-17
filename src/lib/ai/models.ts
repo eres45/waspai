@@ -2,18 +2,101 @@ import "server-only";
 import { LanguageModel } from "ai";
 import { createNvidiaModels } from "./nvidia";
 import { ChatModel } from "app-types/chat";
-import {
-  createOpenAICompatibleModels,
-  openaiCompatibleModelsSafeParse,
-} from "./create-openai-compatiable";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 // NVIDIA NIM API - All models (Pro tier with API key)
 const nvidiaModels = createNvidiaModels();
+
+// Custom Proxies Initialized
+const deepseekProvider = createOpenAICompatible({
+  name: "DeepSeek", // changed from Deepseek Custom
+  apiKey: "dummy",
+  baseURL: "https://deepseek-proxy.llamai.workers.dev/v1",
+});
+
+const qwenProvider = createOpenAICompatible({
+  name: "QWEN", // changed from Qwen Custom
+  apiKey: "dummy",
+  baseURL: "https://qwen-worker-proxy.ronitshrimankar1.workers.dev/v1",
+});
+
+const claudeTalkAIProvider = createOpenAICompatible({
+  name: "Anthropic Claude", // changed from Claude TalkAI Custom
+  apiKey: "dummy",
+  baseURL: "https://claude-talkai.ronitshrimankar1.workers.dev/v1",
+});
+
+const miniMaxM1Provider = createOpenAICompatible({
+  name: "MiniMax M1", // changed from MiniMax M1 Custom
+  apiKey: "dummy",
+  baseURL: "https://minimax-proxy.llamai.workers.dev/v1",
+});
+
+const miniMaxM2Provider = createOpenAICompatible({
+  name: "MiniMax M2.1", // changed from MiniMax M2.1 Custom
+  apiKey: "dummy",
+  baseURL: "https://freeai-minimax.qwen4346.workers.dev/v1",
+});
 
 const staticModels = {
   // Anthropic models (via proxy)
   anthropic: {
     "claude-sonnet-4.5-proxy": nvidiaModels["meta-llama-3.1-405b-instruct"], // Fallback proxy
+  },
+
+  // Deepseek API Models
+  DeepSeek: {
+    "DeepSeek V3.2": deepseekProvider("deepseek-v3.2-exp"),
+    "DeepSeek V3.2 (Base)": deepseekProvider("deepseek-v3.2"),
+    "DeepSeek V3": deepseekProvider("deepseek-v3"),
+    "DeepSeek VL": deepseekProvider("deepseek-vl"),
+    "DeepSeek V2": deepseekProvider("deepseek-v2"),
+    "DeepSeek Math": deepseekProvider("deepseek-math"),
+    "DeepSeek Coder": deepseekProvider("deepseek-coder"),
+    "DeepSeek R1": deepseekProvider("deepseek-r1"),
+    "DeepSeek Reasoner": deepseekProvider("deepseek-reasoner"),
+    "DeepSeek Chat": deepseekProvider("deepseek-chat"),
+  },
+
+  // Qwen API Models
+  QWEN: {
+    "Qwen 2.5 Coder (Plus)": qwenProvider("qwen3-coder-plus"),
+    "Qwen 2.5 Coder (Flash)": qwenProvider("qwen3-coder-flash"),
+    "Qwen Vision (VL)": qwenProvider("vision-model"),
+  },
+
+  // Claude API Models
+  "Anthropic Claude": {
+    "Claude 3.5 Sonnet": claudeTalkAIProvider("claude-3-5-sonnet-20241022"),
+    "Claude 3.5 Haiku": claudeTalkAIProvider("claude-3-5-haiku-20241022"),
+    "Claude 3.5 Sonnet (Reasoning)": claudeTalkAIProvider(
+      "claude-3-5-sonnet-reasoning",
+    ),
+    "Claude 3 Opus": claudeTalkAIProvider("claude-3-opus-20240229"),
+    "Claude 3 Sonnet": claudeTalkAIProvider("claude-3-sonnet-20240229"),
+    "Claude 3 Haiku": claudeTalkAIProvider("claude-3-haiku-20240307"),
+    "GPT-4o": claudeTalkAIProvider("gpt-4o"),
+    "GPT-4o Mini": claudeTalkAIProvider("gpt-4o-mini"),
+    "ChatGPT-4o (Latest)": claudeTalkAIProvider("chatgpt-4o-latest"),
+    "GPT-4 Turbo": claudeTalkAIProvider("gpt-4-turbo"),
+    "GPT-4": claudeTalkAIProvider("gpt-4"),
+    o1: claudeTalkAIProvider("o1"),
+    "o1-mini": claudeTalkAIProvider("o1-mini"),
+    "o1-preview": claudeTalkAIProvider("o1-preview"),
+    "o3-mini": claudeTalkAIProvider("o3-mini"),
+    "Deepseek R1 (Anthropic Node)": claudeTalkAIProvider("deepseek-r1"),
+    "Deepseek Reasoner (Anthropic Node)":
+      claudeTalkAIProvider("deepseek-reasoner"),
+    "Claude 2": claudeTalkAIProvider("claude-2"),
+    "Claude Instant": claudeTalkAIProvider("claude-instant"),
+  },
+
+  // MiniMax Models
+  "MiniMax M1": {
+    "MiniMax-01 (M1)": miniMaxM1Provider("minimax-01"),
+  },
+  "MiniMax M2.1": {
+    "MiniMax-01 (M2.1)": miniMaxM2Provider("minimax-01"),
   },
 
   // DeepSeek models
@@ -157,23 +240,11 @@ const staticSupportImageInputModels: Record<string, LanguageModel> = {
     staticModels.microsoft["phi-4-multimodal-instruct"],
 };
 
-const openaiCompatibleData = process.env.OPENAI_COMPATIBLE_DATA;
-const {
-  providers: openaiCompatibleProviders,
-  unsupportedModels: openaiCompatibleUnsupportedModels,
-} = createOpenAICompatibleModels(
-  openaiCompatibleModelsSafeParse(openaiCompatibleData),
-);
-
 const allModels: Record<string, Record<string, LanguageModel>> = {
   ...staticModels,
-  ...openaiCompatibleProviders,
 };
 
-const allUnsupportedModels = new Set([
-  ...staticUnsupportedModels,
-  ...openaiCompatibleUnsupportedModels,
-]);
+const allUnsupportedModels = new Set([...staticUnsupportedModels]);
 
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return allUnsupportedModels.has(model);
