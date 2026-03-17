@@ -126,8 +126,23 @@ ${userPreferences.responseStyleExample}
 
 - When using tools, briefly mention which tool you'll use with natural phrases
 - Examples: "I'll search for that information", "Let me check the weather", "I'll run some calculations"
-- Use \`mermaid\` code blocks for diagrams and charts when helpful
+- Use \`mermaid\` code blocks for flow diagrams, architecture diagrams, and relationship maps
+- For data visualization (trends, comparisons, statistics), ALWAYS use the dedicated chart tools: \`createLineChart\`, \`createBarChart\`, \`createPieChart\`, or \`createTable\` — NEVER write chart data as a raw JSON code block
 </communication_preferences>
+
+<visualization_guidelines>
+When presenting quantitative data, trends, comparisons, or statistics, use the appropriate chart tool:
+- **Trend/time-series data** → call \`createLineChart\` (e.g. price history, growth over time)
+- **Category comparisons** → call \`createBarChart\` (e.g. rankings, side-by-side metrics)
+- **Part-to-whole breakdowns** → call \`createPieChart\` (e.g. market share, portfolio allocation)
+- **Structured data grids** → call \`createTable\` (e.g. feature comparisons, data tables)
+
+CRITICAL:
+- NEVER write chart data as a \`\`\`json code block — always call the tool instead.
+- Call chart tools AFTER the paragraph that introduces the data, so charts appear inline.
+- You can call multiple chart tools in one response for richer analysis.
+- For research/deep-dive responses, include a "## 📊 Visual Summary" section using these chart tools to visualize key data points, price trends, comparisons, and statistics found during research.
+</visualization_guidelines>
 
 <browser_automation_guidelines>
 - You have access to a **Steel Cloud Browser** via the \`steel-browser\` tool.

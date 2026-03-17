@@ -464,6 +464,34 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 description:
                   "List of relevant images extracted from search results",
               },
+              visualization_charts: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    chart_type: {
+                      type: "string",
+                      description:
+                        "Type of chart: 'line', 'bar', 'pie', or 'table'",
+                    },
+                    title: {
+                      type: "string",
+                      description: "Chart title",
+                    },
+                    description: {
+                      type: "string",
+                      description: "Brief description of what the chart shows",
+                    },
+                    data: {
+                      type: "array",
+                      description:
+                        "Chart data points extracted from research findings",
+                    },
+                  },
+                },
+                description:
+                  "List of charts to render using tool calls in the final report. Extract all numeric data, trends, and comparisons from the research into chart-ready format.",
+              },
             },
           },
           totalTokens: { type: "number" },
@@ -1122,6 +1150,74 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                   },
                 ],
               },
+              {
+                type: "paragraph",
+                content: [
+                  { type: "hardBreak" },
+                  { type: "text", text: "9. " },
+                  {
+                    type: "text",
+                    marks: [{ type: "bold" }],
+                    text: "visualization_charts",
+                  },
+                  { type: "text", text: " (array of objects — MANDATORY):" },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    marks: [{ type: "bold" }],
+                    text: "   - Extract ALL numeric data, statistics, trends, and comparisons from research into chart objects",
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: '   - Each chart: {"chart_type": "line"|"bar"|"pie"|"table", "title": "...", "description": "...", "data": [...]}',
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: '   - Line data format: [{"xAxisLabel": "2022", "series": [{"seriesName": "Price", "value": 1800}]}]',
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: '   - Bar data format: [{"label": "Category A", "Value": 42, "Value B": 35}]',
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: '   - Pie data format: [{"label": "Category", "value": 30}]',
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: "   - Include at minimum 2 charts: one trend/line chart and one comparison/bar chart",
+                  },
+                ],
+              },
             ],
           },
         },
@@ -1407,6 +1503,13 @@ export const babyResearchNodes: Partial<DBNode>[] = [
           source: {
             nodeId: SUMMARY,
             path: ["answer", "images"],
+          },
+        },
+        {
+          key: "visualization_charts",
+          source: {
+            nodeId: SUMMARY,
+            path: ["answer", "visualization_charts"],
           },
         },
       ],
@@ -1982,10 +2085,75 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 {
                   type: "text",
                   marks: [{ type: "bold" }],
-                  text: "CONTENT STRUCTURE:",
+                  text: "CHARTS & DATA VISUALIZATION (MANDATORY):",
                 },
               ],
             },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "- MUST call the chart tools for any numeric data, trends, or comparisons found in research",
+                },
+              ],
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "- Use createLineChart for time-series or trend data (e.g. price history, growth over years)",
+                },
+              ],
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "- Use createBarChart for comparing items side by side (e.g. countries, products, categories)",
+                },
+              ],
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "- Use createPieChart for part-to-whole data (e.g. market share, portfolio breakdown)",
+                },
+              ],
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "- Use createTable for structured comparison grids (e.g. feature comparisons, data tables)",
+                },
+              ],
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  marks: [{ type: "bold" }],
+                  text: "CRITICAL: NEVER write chart data as a ```json code block. Always call the tool instead.",
+                },
+              ],
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "- Include a '## 📊 Visual Summary' section with at least 2 chart tool calls showing key data",
+                },
+              ],
+            },
+            { type: "paragraph", content: [{ type: "hardBreak" }] },
             {
               type: "paragraph",
               content: [{ type: "text", text: "# [research_findings.title]" }],

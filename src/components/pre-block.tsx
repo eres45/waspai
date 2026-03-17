@@ -17,6 +17,28 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import JsonView from "ui/json-view";
 import { useCopy } from "@/hooks/use-copy";
 import dynamic from "next/dynamic";
+import { safeJSONParse } from "lib/utils";
+
+// Dynamically import chart components for use in fallback rendering
+const PieChart = dynamic(
+  () => import("./tool-invocation/pie-chart").then((mod) => mod.PieChart),
+  { ssr: false },
+);
+const BarChart = dynamic(
+  () => import("./tool-invocation/bar-chart").then((mod) => mod.BarChart),
+  { ssr: false },
+);
+const LineChart = dynamic(
+  () => import("./tool-invocation/line-chart").then((mod) => mod.LineChart),
+  { ssr: false },
+);
+const InteractiveTable = dynamic(
+  () =>
+    import("./tool-invocation/interactive-table").then(
+      (mod) => mod.InteractiveTable,
+    ),
+  { ssr: false },
+);
 
 // Dynamically import MermaidDiagram component
 const MermaidDiagram = dynamic(
@@ -86,6 +108,38 @@ export async function Highlight(
   ) as BundledLanguage;
 
   if (lang === "json") {
+    const json = safeJSONParse<any>(code);
+
+    if (json.success && json.value?.chartType) {
+      const { chartType, ...props } = json.value;
+      switch (chartType) {
+        case "pie":
+          return (
+            <PurePre code={code} lang={lang}>
+              <PieChart {...props} />
+            </PurePre>
+          );
+        case "bar":
+          return (
+            <PurePre code={code} lang={lang}>
+              <BarChart {...props} />
+            </PurePre>
+          );
+        case "line":
+          return (
+            <PurePre code={code} lang={lang}>
+              <LineChart {...props} />
+            </PurePre>
+          );
+        case "table":
+          return (
+            <PurePre code={code} lang={lang}>
+              <InteractiveTable {...props} />
+            </PurePre>
+          );
+      }
+    }
+
     return (
       <PurePre code={code} lang={lang}>
         <JsonView data={code} initialExpandDepth={3} />

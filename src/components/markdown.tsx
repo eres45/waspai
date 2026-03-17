@@ -6,8 +6,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { PreBlock } from "./pre-block";
-import { isJson, isString, toAny } from "lib/utils";
-import JsonView from "ui/json-view";
+import { isString, toAny } from "lib/utils";
 import { LinkIcon } from "lucide-react";
 import {
   Table,
@@ -189,17 +188,13 @@ const components: Partial<Components> = {
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   return (
     <article className="w-full h-full relative">
-      {isJson(children) ? (
-        <JsonView data={children} />
-      ) : (
-        <ReactMarkdown
-          components={components}
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-        >
-          {children}
-        </ReactMarkdown>
-      )}
+      <ReactMarkdown
+        components={components}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+      >
+        {children}
+      </ReactMarkdown>
     </article>
   );
 };
