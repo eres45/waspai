@@ -109,14 +109,53 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
   });
 
   if (isTextResponse) {
-    const response = await generateText({
-      model,
-      messages: convertToModelMessages(messages),
-    });
+    let fullAnswer = "";
+    const currentMessages = [...messages];
+    let continuations = 0;
+    const maxContinuations = 5;
+
+    while (continuations < maxContinuations) {
+      const response = await generateText({
+        model,
+        messages: convertToModelMessages(currentMessages),
+      });
+
+      fullAnswer += response.text;
+
+      if (response.finishReason === "length") {
+        currentMessages.push({
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: response.text,
+            },
+          ],
+        });
+        currentMessages.push({
+          role: "user",
+          parts: [
+            {
+              type: "text",
+              text: "continue",
+            },
+          ],
+        });
+        continuations++;
+      } else {
+        return {
+          output: {
+            totalTokens: response.usage.totalTokens,
+            answer: fullAnswer,
+          },
+        };
+      }
+    }
+
     return {
       output: {
-        totalTokens: response.usage.totalTokens,
-        answer: response.text,
+        totalTokens: 0, // Inaccurate but we don't track sum here easily
+        answer: fullAnswer,
       },
     };
   }

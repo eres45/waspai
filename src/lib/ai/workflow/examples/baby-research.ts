@@ -307,9 +307,9 @@ export const babyResearchNodes: Partial<DBNode>[] = [
             {
               source: {
                 nodeId: ANALYSIS,
-                path: ["answer", "important_url"],
+                path: ["answer", "important_urls"],
                 nodeName: "ANALYSIS",
-                type: "object",
+                type: "array",
               },
               operator: "is_not_empty",
             },
@@ -329,7 +329,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
 
     kind: "tool",
     name: "CONTENT_EXTRACTION",
-    description: "Extract detailed content from important URL",
+    description: "Extract detailed content from important URLs",
     uiConfig: {
       position: { x: 1426.344044454295, y: -203.77120780533727 },
       type: "default",
@@ -352,7 +352,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 type: "mention",
                 attrs: {
                   id: "9bd55c87-9eac-4af2-968f-c83b93577639",
-                  label: `{"nodeId":"${ANALYSIS}","path":["answer","important_url"]}`,
+                  label: `{"nodeId":"${ANALYSIS}","path":["answer","important_urls"]}`,
                 },
               },
             ],
@@ -480,7 +480,25 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 content: [
                   {
                     type: "text",
-                    text: "Create a comprehensive research report based on all collected information.",
+                    text: "Create a world-class, comprehensive research report based on all collected information. Your goal is to provide deep, analytical insights, not just a surface-level summary.",
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: "## CROSS-SOURCE ANALYTICAL SYNTHESIS (MANDATORY)",
+                  },
+                ],
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: "In your analysis, you MUST contrast the information from different sources. Identify where they agree, where they conflict, and where one source provides detail that others miss. This is the hallmark of professional research.",
                   },
                 ],
               },
@@ -1425,7 +1443,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 content: [
                   {
                     type: "text",
-                    text: "You are a research information organizer. Your task is to systematically organize and summarize all collected research information into a comprehensive, well-structured format that will be used for report generation.",
+                    text: "You are a senior research information organizer. Your task is to systematically organize and synthesize all collected research information—from search results, detailed webpage extractions, and supplementary queries—into a highly structured, professional format.",
                   },
                 ],
               },
@@ -2061,10 +2079,11 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 description:
                   "List of key reference sources from search results",
               },
-              important_url: {
-                type: "string",
+              important_urls: {
+                type: "array",
+                items: { type: "string" },
                 description:
-                  "Single most important URL for detailed content extraction",
+                  "A list of up to 5 most important URLs for detailed content extraction",
               },
               additional_search_instruction: {
                 type: "string",
@@ -2160,9 +2179,9 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                   {
                     type: "text",
                     marks: [{ type: "bold" }],
-                    text: "important_url",
+                    text: "important_urls",
                   },
-                  { type: "text", text: " (string):" },
+                  { type: "text", text: " (array of strings):" },
                 ],
               },
               {
@@ -2172,11 +2191,11 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                   {
                     type: "text",
                     marks: [{ type: "bold" }],
-                    text: "YOU MUST SELECT AT LEAST ONE URL",
+                    text: "YOU MUST SELECT AT LEAST 2-3 COMPREHENSIVE URLs",
                   },
                   {
                     type: "text",
-                    text: " unless search results are completely irrelevant",
+                    text: " (up to 5 maximum) unless search results are completely irrelevant",
                   },
                 ],
               },
@@ -2203,7 +2222,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 content: [
                   {
                     type: "text",
-                    text: "   - Even if quality is moderate, select the BEST available option for detailed extraction",
+                    text: "   - Even if quality is moderate, select the BEST available options for detailed extraction",
                   },
                 ],
               },
@@ -2212,7 +2231,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                 content: [
                   {
                     type: "text",
-                    text: '   - Only return empty string "" if absolutely no URLs provide any additional value',
+                    text: "   - Only return empty array [] if absolutely no URLs provide any additional value",
                   },
                 ],
               },
@@ -2223,7 +2242,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
                   {
                     type: "text",
                     marks: [{ type: "bold" }],
-                    text: "Default behavior: ALWAYS select the most valuable URL from available results",
+                    text: "Default behavior: ALWAYS select the most valuable URLs from available results",
                   },
                   { type: "hardBreak" },
                 ],
