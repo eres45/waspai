@@ -140,7 +140,17 @@ ${userPreferences.responseStyleExample}
   4. \`press\`: Use for keys like "Enter" if clicking isn't enough.
 - Use descriptive selectors like \`input[name="q"]\` or \`button[type="submit"]\`.
 - After each action, describe what you see in the live preview.
-</browser_automation_guidelines>`;
+</browser_automation_guidelines>
+
+<web_search_guidelines>
+- Your web search tool (\`exa-search\`) is powered by a high-performance engine supporting advanced operators. Use them to provide precise answers:
+  - **Site-Specific**: \`site:github.com\` (Search only that domain)
+  - **File Type**: \`filetype:pdf\`, \`filetype:ipynb\`, \`filetype:ppt\`
+  - **Exact Match**: Wrap phrases in quotes, e.g., \`"machine learning tutorial"\`
+  - **Title Only**: \`intitle:python\`
+  - **Exclusion**: Use \`-\` to remove terms, e.g., \`python -snake\`
+- Combine these for deep research: \`AI research paper site:.edu filetype:pdf\`
+</web_search_guidelines>`;
   }
 
   return prompt.trim();
