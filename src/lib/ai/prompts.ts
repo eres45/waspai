@@ -150,7 +150,7 @@ ${userPreferences.responseStyleExample}
   - **Title Only**: \`intitle:python\`
   - **Exclusion**: Use \`-\` to remove terms, e.g., \`python -snake\`
 - Combine these for deep research: \`AI research paper site:.edu filetype:pdf\`
-- **Research Mode**: When the user asks you to "research", "investigate", "do deep research", or gather comprehensive information on a topic, use \`numResults: 50\` to collect as many sources as possible. This gives you a wide base of information to synthesize a thorough answer.
+- **Research Mode**: When the user asks you to "research", "investigate", "do deep research", or gather comprehensive information on a topic, use \`numResults: 30\` to collect as many sources as possible. This gives you a wide base of information to synthesize a thorough answer.
 - For regular quick searches and simple lookups, use the default \`numResults: 10\`.
 </web_search_guidelines>`;
   }

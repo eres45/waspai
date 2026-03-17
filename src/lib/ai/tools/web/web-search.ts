@@ -17,7 +17,7 @@ export const freeSearchSchema: JSONSchema7 = {
     numResults: {
       type: "number",
       description: "Number of search results to return (max 100)",
-      default: 10,
+      default: 30,
       minimum: 1,
       maximum: 100,
     },
@@ -80,45 +80,28 @@ const getFaviconUrl = (url: string): string | undefined => {
 
 async function fetchFreeSearch(
   query: string,
-  numResults: number = 10,
+  numResults: number = 30,
 ): Promise<ExaSearchResponse> {
   const url = new URL("https://freewebsearch.onrender.com/api/search");
   url.searchParams.append("q", query);
   url.searchParams.append("n", numResults.toString());
 
   try {
-    // Parallel fetch for images if it's a "standard" search
-    const [searchResponse, imagesResponse] = await Promise.all([
-      fetch(url.toString()),
-      fetch(
-        `https://freewebsearch.onrender.com/api/search?q=${encodeURIComponent(
-          query,
-        )}&type=image&n=6`,
-      ).catch(() => null),
-    ]);
+    const searchResponse = await fetch(url.toString());
 
     if (!searchResponse.ok) {
       throw new Error(`Search API error: ${searchResponse.status}`);
     }
 
     const data = await searchResponse.json();
-    const imageData = imagesResponse?.ok ? await imagesResponse.json() : null;
-
-    // Extract images from image search results
-    const foundImages =
-      imageData?.results?.map((r: any) => ({
-        url: r.url || r.href,
-        title: r.title,
-      })) || [];
 
     const results: ExaSearchResult[] = (data.results || []).map(
       (result: any, index: number) => {
         const resultUrl = result.url || result.href || "";
         const favicon = getFaviconUrl(resultUrl);
 
-        // Inject images into the first few results for the UI grid
-        const image =
-          foundImages[index]?.url || result.image || result.thumbnail;
+        // Fallback to any provided thumbnail, otherwise undefined so UI hides broken icons
+        const image = result.image || result.thumbnail;
 
         return {
           id: `result-${index}`,

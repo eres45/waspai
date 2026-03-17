@@ -201,7 +201,7 @@ export const babyResearchNodes: Partial<DBNode>[] = [
             content: [
               {
                 type: "text",
-                text: "  Return maximum 50 diverse, high-quality results.",
+                text: "  Return maximum 30 diverse, high-quality results.",
               },
             ],
           },
@@ -222,9 +222,9 @@ export const babyResearchNodes: Partial<DBNode>[] = [
             numResults: {
               type: "number",
               description: "Number of search results to return",
-              default: 50,
+              default: 30,
               minimum: 1,
-              maximum: 50,
+              maximum: 30,
             },
             type: {
               type: "string",
@@ -1304,9 +1304,9 @@ export const babyResearchNodes: Partial<DBNode>[] = [
             numResults: {
               type: "number",
               description: "Number of search results to return",
-              default: 50,
+              default: 30,
               minimum: 1,
-              maximum: 50,
+              maximum: 30,
             },
             type: {
               type: "string",

@@ -137,7 +137,7 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
           parts: [
             {
               type: "text",
-              text: "continue",
+              text: "You reached the maximum length limit. Please continue your previous response exactly where you left off. Do not repeat what you already wrote, just continue the text.",
             },
           ],
         });
