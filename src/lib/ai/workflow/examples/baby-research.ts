@@ -1661,7 +1661,10 @@ export const babyResearchNodes: Partial<DBNode>[] = [
               {
                 type: "paragraph",
                 content: [
-                  { type: "text", text: "Initial Search Results: " },
+                  {
+                    type: "text",
+                    text: "Initial Search Results (Focus on top 20): ",
+                  },
                   {
                     type: "mention",
                     attrs: {
@@ -2132,8 +2135,10 @@ export const babyResearchNodes: Partial<DBNode>[] = [
               {
                 type: "paragraph",
                 content: [
-                  { type: "hardBreak" },
-                  { type: "text", text: "---" },
+                  {
+                    type: "text",
+                    text: "--- (Note: Analyzing Top 20 Most Relevant Results to ensure speed and accuracy) ---",
+                  },
                   { type: "hardBreak" },
                   { type: "text", text: "Search Results: " },
                   {

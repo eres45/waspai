@@ -69,8 +69,6 @@ export interface ExaContentsRequest {
 export const exaSearchSchema = freeSearchSchema;
 export const exaContentsSchema = freeContentsSchema;
 
-const SEARCH_API_URL = "https://freewebsearch.onrender.com/api/search";
-
 const getFaviconUrl = (url: string): string | undefined => {
   try {
     const domain = new URL(url).hostname;
@@ -80,42 +78,69 @@ const getFaviconUrl = (url: string): string | undefined => {
   }
 };
 
-const fetchFreeSearch = async (
+async function fetchFreeSearch(
   query: string,
   numResults: number = 10,
-): Promise<ExaSearchResponse> => {
-  const url = new URL(SEARCH_API_URL);
+): Promise<ExaSearchResponse> {
+  const url = new URL("https://freewebsearch.onrender.com/api/search");
   url.searchParams.append("q", query);
   url.searchParams.append("n", numResults.toString());
 
-  const response = await fetch(url.toString());
+  try {
+    // Parallel fetch for images if it's a "standard" search
+    const [searchResponse, imagesResponse] = await Promise.all([
+      fetch(url.toString()),
+      fetch(
+        `https://freewebsearch.onrender.com/api/search?q=${encodeURIComponent(
+          query,
+        )}&type=image&n=6`,
+      ).catch(() => null),
+    ]);
 
-  if (!response.ok) {
-    throw new Error(
-      `Search API error: ${response.status} ${response.statusText}`,
+    if (!searchResponse.ok) {
+      throw new Error(`Search API error: ${searchResponse.status}`);
+    }
+
+    const data = await searchResponse.json();
+    const imageData = imagesResponse?.ok ? await imagesResponse.json() : null;
+
+    // Extract images from image search results
+    const foundImages =
+      imageData?.results?.map((r: any) => ({
+        url: r.url || r.href,
+        title: r.title,
+      })) || [];
+
+    const results: ExaSearchResult[] = (data.results || []).map(
+      (result: any, index: number) => {
+        const resultUrl = result.url || result.href || "";
+        const favicon = getFaviconUrl(resultUrl);
+
+        // Inject images into the first few results for the UI grid
+        const image =
+          foundImages[index]?.url || result.image || result.thumbnail;
+
+        return {
+          id: `result-${index}`,
+          title: result.title || "No Title",
+          url: resultUrl,
+          text: result.body || result.snippet || "",
+          favicon,
+          image,
+          score: 1,
+        };
+      },
     );
+
+    return {
+      requestId: data.query || query,
+      results,
+    };
+  } catch (error) {
+    console.error("Free Search Error:", error);
+    throw error;
   }
-
-  const data = await response.json();
-
-  // Map FreeWebSearch results to Exa-compatible format
-  const results: ExaSearchResult[] = (data.results || []).map(
-    (r: any, i: number) => ({
-      id: `result-${i}`,
-      title: r.title || "No Title",
-      url: r.href || r.link || "",
-      text: r.body || r.snippet || "",
-      image: r.image || undefined,
-      favicon: getFaviconUrl(r.href || r.link || ""),
-      score: 1,
-    }),
-  );
-
-  return {
-    requestId: data.query || query,
-    results,
-  };
-};
+}
 
 const scrapeWebpage = async (url: string) => {
   try {
