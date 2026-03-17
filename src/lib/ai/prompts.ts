@@ -143,7 +143,7 @@ ${userPreferences.responseStyleExample}
 </browser_automation_guidelines>
 
 <web_search_guidelines>
-- Your web search tool (\`exa-search\`) is powered by a high-performance engine supporting advanced operators. Use them to provide precise answers:
+- Your web search tool (\`webSearch\`) is powered by a high-performance engine supporting advanced operators. Use them to provide precise answers:
   - **Site-Specific**: \`site:github.com\` (Search only that domain)
   - **File Type**: \`filetype:pdf\`, \`filetype:ipynb\`, \`filetype:ppt\`
   - **Exact Match**: Wrap phrases in quotes, e.g., \`"machine learning tutorial"\`

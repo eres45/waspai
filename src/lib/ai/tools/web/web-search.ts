@@ -38,9 +38,43 @@ export const freeContentsSchema: JSONSchema7 = {
   required: ["urls"],
 };
 
+// --- Generic Search Interfaces (Exa Compatible) ---
+
+export interface ExaSearchResult {
+  id: string;
+  title: string;
+  url: string;
+  publishedDate?: string;
+  author?: string;
+  text: string;
+  image?: string;
+  favicon?: string;
+  score?: number;
+}
+
+export interface ExaSearchResponse {
+  requestId: string;
+  results: ExaSearchResult[];
+}
+
+export interface ExaSearchRequest {
+  query: string;
+  numResults?: number;
+}
+
+export interface ExaContentsRequest {
+  urls: string[];
+}
+
+export const exaSearchSchema = freeSearchSchema;
+export const exaContentsSchema = freeContentsSchema;
+
 const SEARCH_API_URL = "https://freewebsearch.onrender.com/api/search";
 
-const fetchFreeSearch = async (query: string, numResults: number = 10) => {
+const fetchFreeSearch = async (
+  query: string,
+  numResults: number = 10,
+): Promise<ExaSearchResponse> => {
   const url = new URL(SEARCH_API_URL);
   url.searchParams.append("q", query);
   url.searchParams.append("n", numResults.toString());
@@ -53,7 +87,23 @@ const fetchFreeSearch = async (query: string, numResults: number = 10) => {
     );
   }
 
-  return await response.json();
+  const data = await response.json();
+
+  // Map FreeWebSearch results to Exa-compatible format
+  const results: ExaSearchResult[] = (data.results || []).map(
+    (r: any, i: number) => ({
+      id: `result-${i}`,
+      title: r.title || "No Title",
+      url: r.href || r.link || "",
+      text: r.body || r.snippet || "",
+      score: 1,
+    }),
+  );
+
+  return {
+    requestId: data.query || query,
+    results,
+  };
 };
 
 const scrapeWebpage = async (url: string) => {
