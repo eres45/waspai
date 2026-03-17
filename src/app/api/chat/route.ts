@@ -77,7 +77,7 @@ import {
 } from "lib/ai/tools/qr-code-generator";
 import { htmlPreviewTool } from "lib/ai/tools/html-preview";
 import { chatExportTool } from "lib/ai/tools/chat-export";
-import { webSearchTool } from "lib/ai/tools/web-search";
+import { exaSearchTool as webSearchTool } from "lib/ai/tools/web/web-search";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import { saveMemoryTool, searchMemoriesTool } from "lib/ai/tools/memory-tools";

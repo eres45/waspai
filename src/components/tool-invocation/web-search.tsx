@@ -4,7 +4,7 @@ import { ToolUIPart } from "ai";
 import { ExaSearchResponse } from "lib/ai/tools/web/web-search";
 import equal from "lib/equal";
 import { notify } from "lib/notify";
-import { cn, toAny } from "lib/utils";
+import { toAny } from "lib/utils";
 import { AlertTriangleIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useMemo, useState } from "react";
@@ -12,7 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { GlobalIcon } from "ui/global-icon";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "ui/hover-card";
 import JsonView from "ui/json-view";
-import { Separator } from "ui/separator";
 import { TextShimmer } from "ui/text-shimmer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
@@ -83,147 +82,139 @@ function PureWebSearchToolInvocation({ part }: WebSearchToolInvocationProps) {
         </span>
         {options}
       </div>
-      <div className="flex gap-2">
-        <div className="px-2.5">
-          <Separator
-            orientation="vertical"
-            className="bg-gradient-to-b from-border to-transparent from-80%"
-          />
-        </div>
-        <div className="flex flex-col gap-2 pb-2">
-          {Boolean(images?.length) && (
-            <div className="grid grid-cols-3 gap-3 max-w-2xl">
-              {images.map((image, i) => {
-                if (!image.url) return null;
-                return (
-                  <Tooltip key={i}>
-                    <TooltipTrigger asChild>
-                      <div
-                        key={image.url}
-                        onClick={() => {
-                          notify.component({
-                            className: "max-w-[90vw]! max-h-[90vh]! p-6!",
-                            children: (
-                              <div className="flex flex-col h-full gap-4">
-                                <div className="flex-1 flex items-center justify-center min-h-0 py-6">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={image.url}
-                                    className="max-w-[80vw] max-h-[80vh] object-contain rounded-lg"
-                                    alt={image.description}
-                                    onError={onError}
-                                  />
-                                </div>
+      <div className="flex flex-col gap-3 pb-2 mt-2">
+        {Boolean(images?.length) && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-w-2xl">
+            {images.map((image, i) => {
+              if (!image.url) return null;
+              return (
+                <Tooltip key={i} delayDuration={500}>
+                  <TooltipTrigger asChild>
+                    <div
+                      key={image.url}
+                      onClick={() => {
+                        notify.component({
+                          className: "max-w-[90vw]! max-h-[90vh]! p-6!",
+                          children: (
+                            <div className="flex flex-col h-full gap-4">
+                              <div className="flex-1 flex items-center justify-center min-h-0 py-6">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={image.url}
+                                  className="max-w-[80vw] max-h-[80vh] object-contain rounded-lg shadow-xl"
+                                  alt={image.description}
+                                  onError={onError}
+                                />
                               </div>
-                            ),
-                          });
-                        }}
-                        className="block shadow rounded-lg overflow-hidden ring ring-input cursor-pointer"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          loading="lazy"
-                          src={image.url}
-                          alt={image.description}
-                          className="w-full h-36 object-cover hover:scale-120 transition-transform duration-300"
-                          onError={onError}
-                        />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="p-4 max-w-xs whitespace-pre-wrap break-words">
-                      <p className="text-xs text-muted-foreground">
-                        {image.description || image.url}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          )}
-          <div className="flex flex-wrap gap-1">
-            {result?.isError ? (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertTriangleIcon className="size-3.5" />
-                {result.error || "Error"}
-              </p>
-            ) : (
-              (result as ExaSearchResponse)?.results?.map((result, i) => {
-                return (
-                  <HoverCard key={i} openDelay={200} closeDelay={0}>
-                    <HoverCardTrigger asChild>
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group rounded-full bg-secondary pl-1.5 pr-2 py-1.5 text-xs flex items-center gap-1 hover:bg-input hover:ring hover:ring-blue-500 transition-all cursor-pointer"
-                      >
-                        <div className="rounded-full bg-input ring ring-input">
-                          <Avatar className="size-3 rounded-full">
-                            <AvatarImage src={result.favicon} />
-                            <AvatarFallback>
-                              {result.title?.slice(0, 1).toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <span className="truncate max-w-44">{result.url}</span>
-                      </a>
-                    </HoverCardTrigger>
-
-                    <HoverCardContent className="flex flex-col gap-1 p-6">
-                      <div className="flex items-center gap-2">
-                        <div className="rounded-full ring ring-input">
-                          <Avatar className="size-6 rounded-full">
-                            <AvatarImage src={result.favicon} />
-                            <AvatarFallback>
-                              {result.title?.slice(0, 1).toUpperCase() || "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <span
-                          className={cn(
-                            "font-medium",
-                            !result.title && "truncate",
-                          )}
-                        >
-                          {result.title || result.url}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2 mt-4">
-                        <div className="relative">
-                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-card from-80% " />
-                          <p className="text-xs text-muted-foreground max-h-60 overflow-y-auto">
-                            {result.text}
-                          </p>
-                        </div>
-                        {result.author && (
-                          <div className="text-xs text-muted-foreground mt-2">
-                            <span className="font-medium">Author:</span>{" "}
-                            {result.author}
-                          </div>
-                        )}
-                        {result.publishedDate && (
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-medium">Published:</span>{" "}
-                            {new Date(
-                              result.publishedDate,
-                            ).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                );
-              })
-            )}
+                            </div>
+                          ),
+                        });
+                      }}
+                      className="group relative aspect-video overflow-hidden rounded-xl border bg-muted shadow-sm hover:shadow-md transition-all cursor-zoom-in"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        loading="lazy"
+                        src={image.url}
+                        alt={image.description}
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={onError}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="p-3 max-w-xs" side="bottom">
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      {image.description || image.url}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
           </div>
-          {result?.results?.length && (
-            <p className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
-              {t("Common.resultsFound", {
-                count: result?.results?.length,
-              })}
+        )}
+        <div className="flex flex-wrap gap-2">
+          {result?.isError ? (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertTriangleIcon className="size-3.5" />
+              {result.error || "Error"}
             </p>
+          ) : (
+            (result as ExaSearchResponse)?.results?.map((result, i) => {
+              const domain = result.url ? new URL(result.url).hostname : "";
+              return (
+                <HoverCard key={i} openDelay={100} closeDelay={0}>
+                  <HoverCardTrigger asChild>
+                    <a
+                      href={result.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-2 rounded-full border bg-secondary/50 px-2.5 py-1.5 text-[11px] font-medium transition-all hover:bg-secondary hover:ring-2 hover:ring-blue-500/50 active:scale-95"
+                    >
+                      <Avatar className="size-3.5 border shadow-sm">
+                        <AvatarImage src={result.favicon} />
+                        <AvatarFallback className="text-[8px] bg-muted uppercase">
+                          {result.title?.slice(0, 1) || domain.slice(0, 1)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="max-w-[120px] truncate text-muted-foreground group-hover:text-foreground">
+                        {domain}
+                      </span>
+                    </a>
+                  </HoverCardTrigger>
+
+                  <HoverCardContent
+                    side="top"
+                    className="flex w-80 flex-col gap-2 p-4 shadow-2xl animate-in zoom-in-95 duration-200"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="size-5 border shadow-sm">
+                        <AvatarImage src={result.favicon} />
+                        <AvatarFallback className="text-[10px] bg-muted uppercase">
+                          {result.title?.slice(0, 1) || domain.slice(0, 1)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="line-clamp-1 flex-1 font-semibold text-sm">
+                        {result.title || domain}
+                      </span>
+                    </div>
+                    <div className="mt-1 space-y-2">
+                      <div className="relative overflow-hidden">
+                        <p className="text-xs leading-relaxed text-muted-foreground line-clamp-3">
+                          {result.text}
+                        </p>
+                        <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-popover to-transparent" />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 border-t pt-2">
+                        <span className="truncate max-w-[180px]">
+                          {result.url}
+                        </span>
+                        {result.publishedDate && (
+                          <span>
+                            {new Date(result.publishedDate).toLocaleDateString(
+                              undefined,
+                              {
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
+              );
+            })
           )}
         </div>
+        {result?.results?.length && (
+          <p className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
+            {t("Common.resultsFound", {
+              count: result?.results?.length,
+            })}
+          </p>
+        )}
       </div>
     </div>
   );

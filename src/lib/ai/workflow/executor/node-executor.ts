@@ -26,7 +26,7 @@ import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
 import { DefaultToolName } from "lib/ai/tools";
-import { webSearchTool } from "lib/ai/tools/web-search";
+import { exaSearchTool as webSearchTool } from "lib/ai/tools/web/web-search";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 /**

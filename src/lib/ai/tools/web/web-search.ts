@@ -71,6 +71,15 @@ export const exaContentsSchema = freeContentsSchema;
 
 const SEARCH_API_URL = "https://freewebsearch.onrender.com/api/search";
 
+const getFaviconUrl = (url: string): string | undefined => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  } catch {
+    return undefined;
+  }
+};
+
 const fetchFreeSearch = async (
   query: string,
   numResults: number = 10,
@@ -96,6 +105,8 @@ const fetchFreeSearch = async (
       title: r.title || "No Title",
       url: r.href || r.link || "",
       text: r.body || r.snippet || "",
+      image: r.image || undefined,
+      favicon: getFaviconUrl(r.href || r.link || ""),
       score: 1,
     }),
   );
