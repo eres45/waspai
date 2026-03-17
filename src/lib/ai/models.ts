@@ -14,13 +14,9 @@ const staticModels = {
 
   // DeepSeek models
   deepseek: {
-    // Removed: deepseek-coder (Not Found)
+    // Removed: deepseek-coder, deepseek-r1-distill-qwen-7b, deepseek-r1-distill-qwen-14b, deepseek-r1-distill-qwen-32b (Not Found / Down)
     "deepseek-r1-distill-llama-8b":
       nvidiaModels["deepseek-ai-deepseek-r1-distill-llama-8b"],
-    "deepseek-r1-distill-qwen-7b":
-      nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-7b"],
-    "deepseek-r1-distill-qwen-14b":
-      nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-14b"],
   },
 
   // IBM Granite models
@@ -59,10 +55,8 @@ const staticModels = {
       nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
     "phi-3-medium-128k-instruct":
       nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
-    // Removed: phi-3-vision, phi-4-mini-instruct (Not Found/Degraded)
+    // Removed: phi-3-vision, phi-4-mini-instruct, phi-4-mini-flash-reasoning (Not Found/Degraded/Down)
     "phi-3.5-mini-instruct": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
-    "phi-4-mini-flash-reasoning":
-      nvidiaModels["microsoft-phi-4-mini-flash-reasoning"],
     "phi-4-multimodal-instruct":
       nvidiaModels["microsoft-phi-4-multimodal-instruct"],
   },
@@ -123,18 +117,15 @@ const staticModels = {
     "qwen2.5-coder-7b-instruct": nvidiaModels["qwen-qwen2.5-coder-7b-instruct"],
     "qwen2.5-coder-32b-instruct":
       nvidiaModels["qwen-qwen2.5-coder-32b-instruct"],
-    "qwen3-coder-480b-a35b-instruct":
-      nvidiaModels["qwen-qwen3-coder-480b-a35b-instruct"],
+    // Removed: qwen3-235b-a22b, qwen3-coder-480b-a35b-instruct, qwen3.5-397b-a17b (Down/Not Found)
     "qwen3-next-80b-a3b-instruct":
       nvidiaModels["qwen-qwen3-next-80b-a3b-instruct"],
-    // Removed: qwen3-next-80b-a3b-thinking (Bad Request)
-    "qwen3.5-397b-a17b": nvidiaModels["qwen-qwen3.5-397b-a17b"],
     "qwq-32b": nvidiaModels["qwen-qwq-32b"],
   },
 
   // GLM models (Z-AI)
   zai: {
-    "glm-4.7": nvidiaModels["z-ai-glm4.7"],
+    // Removed: glm-4.7 (Down)
     "glm-5": nvidiaModels["z-ai-glm5"],
     "chatglm3-6b": nvidiaModels["thudm-chatglm3-6b"],
   },
