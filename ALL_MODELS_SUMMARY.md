@@ -1,8 +1,8 @@
 # Complete Model Collection Summary
 
-## Total Models Available: 219+
+## Total Models Available: 231+
 
-Your chatbot now has access to over 219 AI models across 9 major providers!
+Your chatbot now has access to over 231 AI models across 11 major providers!
 
 ## Provider Breakdown
 
@@ -42,8 +42,7 @@ Your chatbot now has access to over 219 AI models across 9 major providers!
 **Models:**
 - DeepSeek V3.2, DeepSeek V3.2 (Base), DeepSeek V3
 - DeepSeek VL, DeepSeek V2, DeepSeek Math
-- DeepSeek Coder, DeepSeek R1, DeepSeek Reasoner, DeepSeek Chatv3.2-exp
-- deepseek-vl
+- DeepSeek Coder, DeepSeek R1, DeepSeek Reasoner, DeepSeek Chat
 
 **Features:**
 - ✅ Deepseek official endpoints wrapper
@@ -62,6 +61,31 @@ Your chatbot now has access to over 219 AI models across 9 major providers!
 - ✅ New Qwen endpoints wrapper
 - ✅ Tool calling support
 - ✅ High performance
+
+### 5. Moonshot AI (Kimi) (3 models)
+**Endpoint:** https://kimi-k2.qwen4346.workers.dev/v1
+
+**Models:**
+- Kimi K2.5
+- Kimi K2-0905
+- Kimi K2-Thinking
+
+**Features:**
+- ✅ Native Kimi (Moonshot) models
+- ✅ High performance reasoning
+
+### 6. N33 AI (9 models)
+**Endpoint:** https://n33-ai.qwen4346.workers.dev/v1
+
+**Models:**
+- Sonar (Perplexity), Sonar Pro (Perplexity)
+- Grok 4.1 Fast (xAI)
+- Claude 4.5 Haiku, Claude 4.5 Sonnet, Claude 4.5 Opus
+- GPT-5.2, Gemini 3 Flash, Gemini 3 Pro
+
+**Features:**
+- ✅ Multi-vendor experimental models
+- ✅ Fast streaming support (Native SSE)
 
 ### 1. Pollinations AI (7 models)
 **Endpoint:** https://text.pollinations.ai/openai
@@ -208,10 +232,10 @@ Your chatbot now has access to over 219 AI models across 9 major providers!
 
 ## Provider Comparison
 
-| Feature | Pollinations | GPT-OSS | Grok | QWEN (Native) | DeepSeek | QWEN | Anthropic Claude | MiniMax |
-|---------|-------------|---------|------|------|-----------------|-------------|---------------|---------|
-| Models | 7 | 2 | 1 | 174 | 10 | 3 | 19 | 2 |
-| Cost | Free | Free | Free | Free | Custom | Custom | Custom | Custom |
+| Feature | Pollinations | GPT-OSS | Grok | QWEN (Native) | DeepSeek | QWEN | Anthropic Claude | MiniMax | Kimi | N33 AI |
+|---------|-------------|---------|------|------|-----------------|-------------|---------------|---------|-------|--------|
+| Models | 7 | 2 | 1 | 174 | 10 | 3 | 19 | 2 | 3 | 9 |
+| Cost | Free | Free | Free | Free | Custom | Custom | Custom | Custom | Custom | Custom |
 | Tool Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Vision Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Speed | Medium | Fast | Fast | Fast | Fast | Fast | Fast | Fast |
@@ -230,9 +254,11 @@ Your chatbot now has access to over 219 AI models across 9 major providers!
 ### Model Selector Organization
 Models are organized by provider:
 - **Anthropic Claude** - 19 models
-- **MiniMax M1 & M2.1** - 2 models
+- **N33 AI** - 9 models
 - **DeepSeek** - 10 models
+- **Moonshot AI (Kimi)** - 3 models
 - **QWEN** - 3 models
+- **MiniMax M1 & M2.1** - 2 models
 - **Pollinations** - 7 models
 - **GPT-OSS** - 2 models
 - **Grok** - 1 model

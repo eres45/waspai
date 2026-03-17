@@ -132,10 +132,43 @@ const miniMaxM2Provider = createOpenAICompatible({
   fetch: streamingFetch,
 });
 
+const kimiProvider = createOpenAICompatible({
+  name: "Moonshot AI (Kimi)",
+  apiKey: "dummy",
+  baseURL: "https://kimi-k2.qwen4346.workers.dev/v1",
+  fetch: streamingFetch,
+});
+
+const n33AIProvider = createOpenAICompatible({
+  name: "N33 AI",
+  apiKey: "dummy",
+  baseURL: "https://n33-ai.qwen4346.workers.dev/v1",
+});
+
 const staticModels = {
   // Anthropic models (via proxy)
   anthropic: {
     "claude-sonnet-4.5-proxy": nvidiaModels["meta-llama-3.1-405b-instruct"], // Fallback proxy
+  },
+
+  // Moonshot AI (Kimi) Models
+  "Moonshot AI (Kimi)": {
+    "Kimi K2.5": kimiProvider("kimi-k2.5"),
+    "Kimi K2-0905": kimiProvider("kimi-k2-0905"),
+    "Kimi K2-Thinking": kimiProvider("kimi-k2-thinking"),
+  },
+
+  // N33 AI Models
+  "N33 AI": {
+    "Sonar (Perplexity)": n33AIProvider("sonar"),
+    "Sonar Pro (Perplexity)": n33AIProvider("sonar-pro"),
+    "Grok 4.1 Fast (xAI)": n33AIProvider("grok-4.1-fast"),
+    "Claude 4.5 Haiku": n33AIProvider("claude-haiku-4.5"),
+    "Claude 4.5 Sonnet": n33AIProvider("claude-sonnet-4.5"),
+    "Claude 4.5 Opus": n33AIProvider("claude-opus-4.5"),
+    "GPT-5.2": n33AIProvider("gpt-5.2"),
+    "Gemini 3 Flash": n33AIProvider("gemini-3-flash"),
+    "Gemini 3 Pro": n33AIProvider("gemini-3-pro"),
   },
 
   // Deepseek API Models
