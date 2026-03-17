@@ -21,14 +21,11 @@ const staticModels = {
       nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-7b"],
     "deepseek-r1-distill-qwen-14b":
       nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-14b"],
-    "deepseek-r1-distill-qwen-32b":
-      nvidiaModels["deepseek-ai-deepseek-r1-distill-qwen-32b"],
   },
 
   // IBM Granite models
   granite: {
-    // Removed: granite-3.0-3b, granite-3.0-8b, granite-34b, granite-8b-code (Not Found)
-    "granite-3.3-8b-instruct": nvidiaModels["ibm-granite-3.3-8b-instruct"],
+    // Removed: granite-3.0-3b, granite-3.0-8b, granite-34b, granite-8b-code, granite-3.3-8b-instruct (Not Found/Degraded)
   },
 
   // Llama models (Meta)
@@ -62,12 +59,8 @@ const staticModels = {
       nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
     "phi-3-medium-128k-instruct":
       nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
-    // Removed: phi-3-vision (Not Found)
+    // Removed: phi-3-vision, phi-4-mini-instruct (Not Found/Degraded)
     "phi-3.5-mini-instruct": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
-    // Removed: phi-3.5-moe (Not Found)
-    "phi-3.5-vision-instruct":
-      nvidiaModels["microsoft-phi-3.5-vision-instruct"],
-    "phi-4-mini-instruct": nvidiaModels["microsoft-phi-4-mini-instruct"],
     "phi-4-mini-flash-reasoning":
       nvidiaModels["microsoft-phi-4-mini-flash-reasoning"],
     "phi-4-multimodal-instruct":
@@ -109,8 +102,6 @@ const staticModels = {
     // Removed: nemotron-4-340b, nemotron-51b, nemotron-70b (Not Found)
     "nemotron-mini-4b-instruct":
       nvidiaModels["nvidia-nemotron-mini-4b-instruct"],
-    "llama-3.1-nemotron-nano-4b-v1.1":
-      nvidiaModels["nvidia-llama-3.1-nemotron-nano-4b-v1.1"],
     "llama-3.1-nemotron-nano-8b-v1":
       nvidiaModels["nvidia-llama-3.1-nemotron-nano-8b-v1"],
     "llama-3.3-nemotron-super-49b-v1":
@@ -132,7 +123,6 @@ const staticModels = {
     "qwen2.5-coder-7b-instruct": nvidiaModels["qwen-qwen2.5-coder-7b-instruct"],
     "qwen2.5-coder-32b-instruct":
       nvidiaModels["qwen-qwen2.5-coder-32b-instruct"],
-    "qwen3-235b-a22b": nvidiaModels["qwen-qwen3-235b-a22b"],
     "qwen3-coder-480b-a35b-instruct":
       nvidiaModels["qwen-qwen3-coder-480b-a35b-instruct"],
     "qwen3-next-80b-a3b-instruct":
@@ -152,14 +142,8 @@ const staticModels = {
   // Other quality models
   other: {
     "jamba-1.5-mini-instruct": nvidiaModels["ai21labs-jamba-1.5-mini-instruct"],
-    "jamba-1.5-large-instruct":
-      nvidiaModels["ai21labs-jamba-1.5-large-instruct"],
-    "dbrx-instruct": nvidiaModels["databricks-dbrx-instruct"],
-    "starcoder2-7b": nvidiaModels["bigcode-starcoder2-7b"],
-    "starcoder2-15b": nvidiaModels["bigcode-starcoder2-15b"],
     "falcon3-7b-instruct": nvidiaModels["tiiuae-falcon3-7b-instruct"],
     "solar-10.7b-instruct": nvidiaModels["upstage-solar-10.7b-instruct"],
-    "zamba2-7b-instruct": nvidiaModels["zyphra-zamba2-7b-instruct"],
     "baichuan2-13b-chat": nvidiaModels["baichuan-inc-baichuan2-13b-chat"],
   },
 };
