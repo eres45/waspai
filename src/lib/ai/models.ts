@@ -7,11 +7,102 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 // NVIDIA NIM API - All models (Pro tier with API key)
 const nvidiaModels = createNvidiaModels();
 
+/**
+ * Creates a custom fetch wrapper that handles non-streaming proxies.
+ * If a stream is requested but the proxy returns JSON, it wraps the JSON into an SSE stream.
+ */
+function createStreamingProxyFetch() {
+  return async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const res = await fetch(input, init);
+
+    // Only intercept if its a successful JSON response where we might have wanted a stream
+    const contentType = res.headers.get("content-type");
+    const isJson = contentType?.includes("application/json");
+
+    // Check if stream was requested in the body
+    let isStreamRequested = false;
+    try {
+      if (init?.body && typeof init.body === "string") {
+        const body = JSON.parse(init.body);
+        isStreamRequested = body.stream === true;
+      }
+    } catch (_e) {
+      // Ignore parse errors
+    }
+
+    if (res.ok && isJson && isStreamRequested) {
+      const data = await res.json();
+
+      // If it's already a full completion but we wanted a stream, polyfill it
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            // Send the content as a single delta chunk
+            const chunk = {
+              id: data.id || `poly-${Date.now()}`,
+              object: "chat.completion.chunk",
+              created: data.created || Math.floor(Date.now() / 1000),
+              model: data.model,
+              choices: [
+                {
+                  index: 0,
+                  delta: { content: data.choices[0].message.content },
+                  finish_reason: null,
+                },
+              ],
+            };
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
+            );
+
+            // Send a final chunk with finish_reason
+            const finishChunk = {
+              id: data.id || `poly-${Date.now()}`,
+              object: "chat.completion.chunk",
+              created: data.created || Math.floor(Date.now() / 1000),
+              model: data.model,
+              choices: [
+                {
+                  index: 0,
+                  delta: {},
+                  finish_reason: data.choices[0].finish_reason || "stop",
+                },
+              ],
+            };
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
+            );
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        });
+      }
+    }
+
+    return res;
+  };
+}
+
+const streamingFetch = createStreamingProxyFetch();
+
 // Custom Proxies Initialized
 const deepseekProvider = createOpenAICompatible({
   name: "DeepSeek", // changed from Deepseek Custom
   apiKey: "dummy",
   baseURL: "https://deepseek-proxy.llamai.workers.dev/v1",
+  fetch: streamingFetch,
 });
 
 const qwenProvider = createOpenAICompatible({
@@ -24,18 +115,21 @@ const claudeTalkAIProvider = createOpenAICompatible({
   name: "Anthropic Claude", // changed from Claude TalkAI Custom
   apiKey: "dummy",
   baseURL: "https://claude-talkai.ronitshrimankar1.workers.dev/v1",
+  fetch: streamingFetch,
 });
 
 const miniMaxM1Provider = createOpenAICompatible({
   name: "MiniMax M1", // changed from MiniMax M1 Custom
   apiKey: "dummy",
   baseURL: "https://minimax-proxy.llamai.workers.dev/v1",
+  fetch: streamingFetch,
 });
 
 const miniMaxM2Provider = createOpenAICompatible({
   name: "MiniMax M2.1", // changed from MiniMax M2.1 Custom
   apiKey: "dummy",
   baseURL: "https://freeai-minimax.qwen4346.workers.dev/v1",
+  fetch: streamingFetch,
 });
 
 const staticModels = {
