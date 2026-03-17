@@ -30,6 +30,8 @@
   - Mistral
   - Groq
   - Ollama
+  - DeepSeek Custom Proxy
+  - Qwen Custom Proxy
   - Custom providers
   - Model selection in chat API: `/api/chat`
   - File: `src/app/api/chat/route.ts`

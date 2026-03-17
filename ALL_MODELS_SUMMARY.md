@@ -1,10 +1,43 @@
 # Complete Model Collection Summary
 
-## Total Models Available: 185+
+## Total Models Available: 198+
 
-Your chatbot now has access to over 185 AI models across 4 major providers!
+Your chatbot now has access to over 198 AI models across 6 major providers!
 
 ## Provider Breakdown
+
+### 1. Deepseek Custom Proxy (10 models)
+**Endpoint:** https://deepseek-proxy.llamai.workers.dev/v1
+
+**Models:**
+- deepseek-reasoner
+- deepseek-r1
+- deepseek-chat
+- deepseek-coder
+- deepseek-math
+- deepseek-v2
+- deepseek-v3
+- deepseek-v3.2
+- deepseek-v3.2-exp
+- deepseek-vl
+
+**Features:**
+- ✅ Deepseek official endpoints wrapper
+- ✅ Tool calling support
+- ✅ High performance
+
+### 2. Qwen Custom Proxy (3 models)
+**Endpoint:** https://qwen-worker-proxy.ronitshrimankar1.workers.dev/v1
+
+**Models:**
+- qwen3-coder-plus
+- qwen3-coder-flash
+- vision-model
+
+**Features:**
+- ✅ New Qwen endpoints wrapper
+- ✅ Tool calling support
+- ✅ High performance
 
 ### 1. Pollinations AI (7 models)
 **Endpoint:** https://text.pollinations.ai/openai
@@ -151,17 +184,17 @@ Your chatbot now has access to over 185 AI models across 4 major providers!
 
 ## Provider Comparison
 
-| Feature | Pollinations | GPT-OSS | Grok | QWEN |
-|---------|-------------|---------|------|------|
-| Models | 7 | 2 | 1 | 174 |
-| Cost | Free | Free | Free | Free |
-| Tool Support | ✅ | ❌ | ❌ | ❌ |
-| Vision Support | ✅ | ❌ | ❌ | ❌ |
-| Speed | Medium | Fast | Fast | Fast |
-| Quality | Excellent | Good | Good | Good-Excellent |
-| Specializations | No | No | No | Yes (coder, math, etc.) |
-| Rate Limits | 10+/min | None | None | None |
-| Model Sizes | 1 | 2 | 1 | 7 (72b to 0.5b) |
+| Feature | Pollinations | GPT-OSS | Grok | QWEN | Deepseek Custom | Qwen Custom |
+|---------|-------------|---------|------|------|-----------------|-------------|
+| Models | 7 | 2 | 1 | 174 | 10 | 3 |
+| Cost | Free | Free | Free | Free | Custom | Custom |
+| Tool Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Vision Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Speed | Medium | Fast | Fast | Fast | Fast | Fast |
+| Quality | Excellent | Good | Good | Good-Excellent | Excellent | Excellent |
+| Specializations | No | No | No | Yes | Yes (coder/math) | Yes (vision/coder) |
+| Rate Limits | 10+/min | None | None | None | Proxy limit | Proxy limit |
+| Model Sizes | 1 | 2 | 1 | 7 (72b to 0.5b) | Varies | Varies |
 
 ## How to Use
 
@@ -174,6 +207,8 @@ Your chatbot now has access to over 185 AI models across 4 major providers!
 
 ### Model Selector Organization
 Models are organized by provider:
+- **Deepseek Custom** - 10 models
+- **Qwen Custom** - 3 models
 - **Pollinations** - 7 models
 - **GPT-OSS** - 2 models
 - **Grok** - 1 model

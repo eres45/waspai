@@ -2,6 +2,10 @@ import "server-only";
 import { LanguageModel } from "ai";
 import { createNvidiaModels } from "./nvidia";
 import { ChatModel } from "app-types/chat";
+import {
+  createOpenAICompatibleModels,
+  openaiCompatibleModelsSafeParse,
+} from "./create-openai-compatiable";
 
 // NVIDIA NIM API - All models (Pro tier with API key)
 const nvidiaModels = createNvidiaModels();
@@ -153,9 +157,23 @@ const staticSupportImageInputModels: Record<string, LanguageModel> = {
     staticModels.microsoft["phi-4-multimodal-instruct"],
 };
 
-const allModels = staticModels;
+const openaiCompatibleData = process.env.OPENAI_COMPATIBLE_DATA;
+const {
+  providers: openaiCompatibleProviders,
+  unsupportedModels: openaiCompatibleUnsupportedModels,
+} = createOpenAICompatibleModels(
+  openaiCompatibleModelsSafeParse(openaiCompatibleData),
+);
 
-const allUnsupportedModels = new Set([...staticUnsupportedModels]);
+const allModels: Record<string, Record<string, LanguageModel>> = {
+  ...staticModels,
+  ...openaiCompatibleProviders,
+};
+
+const allUnsupportedModels = new Set([
+  ...staticUnsupportedModels,
+  ...openaiCompatibleUnsupportedModels,
+]);
 
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return allUnsupportedModels.has(model);
@@ -218,7 +236,7 @@ export const customModelProvider = {
   },
 };
 
-function checkProviderAPIKey(_provider: keyof typeof staticModels) {
+function checkProviderAPIKey(_provider: string) {
   // Check if NVIDIA API key is set
   return !!process.env.NVIDIA_API_KEY;
 }
