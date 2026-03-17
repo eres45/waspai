@@ -44,15 +44,11 @@ export const steelBrowserTool: Tool = {
         session = await client.sessions.retrieve(sessionId);
         if (session.status !== "live") {
           // If session expired, create a new one
-          session = await client.sessions.create({
-            timeout: 1200000, // 20 minutes
-          });
+          session = await client.sessions.create();
         }
       } else {
         // Create a new session
-        session = await client.sessions.create({
-          timeout: 1200000, // 20 minutes
-        });
+        session = await client.sessions.create();
       }
 
       // Connect to the session via Playwright
