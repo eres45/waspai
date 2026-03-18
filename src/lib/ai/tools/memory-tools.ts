@@ -6,11 +6,13 @@ import { getSession } from "auth/server";
 export const saveMemoryTool = tool({
   name: "save-memory",
   description:
-    "Save a fact, preference, or important detail about the user to long-term memory. Use this when the user explicitly provides information about themselves or when you infer established preferences that should persist across conversations.",
+    "Save a SIGNIFICANT fact, preference, or important detail about the user to long-term memory. ONLY use this for information the user explicitly provides about themselves (e.g., name, job, hobbies) or clear, stable preferences. DO NOT save temporary context, conversational filler, or trivial details. Memory is limited; be highly selective.",
   inputSchema: z.object({
     content: z
       .string()
-      .describe("The fact or information to save. Be concise but descriptive."),
+      .describe(
+        "The fact or information to save. Be concise and capture only the essential, persistent detail.",
+      ),
     tags: z
       .array(z.string())
       .optional()
