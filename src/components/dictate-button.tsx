@@ -22,14 +22,21 @@ export function DictateButton({
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
 
-  // Keep a ref to the latest input so the recognition handler always reads
-  // the current value without triggering re-initialization of the recognition.
-  const inputRef = useRef(input);
-  useEffect(() => {
-    inputRef.current = input;
-  }, [input]);
+  // Snapshot of the text that was already in the box BEFORE dictation started.
+  // This never changes mid-session.
+  const baseTextRef = useRef("");
 
-  // Initialize Speech Recognition ONCE (no deps that recreate it)
+  // Running accumulation of FINAL (committed) transcription during this session.
+  const finalTranscriptRef = useRef("");
+
+  // Stable ref so the recognition handler can call setInputAction without
+  // being re-created every render.
+  const setInputRef = useRef(setInputAction);
+  useEffect(() => {
+    setInputRef.current = setInputAction;
+  }, [setInputAction]);
+
+  // Initialize Speech Recognition ONCE on mount.
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -41,29 +48,35 @@ export function DictateButton({
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.continuous = true; // keep listening until stopped
+    recognition.interimResults = true; // get partial words in real-time
+    recognition.maxAlternatives = 1;
     recognition.lang = navigator.language || "en-US";
 
     recognition.onresult = (event: any) => {
       let interimText = "";
-      let finalText = "";
 
+      // Walk only the NEW results in this event (from resultIndex onward)
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalText += transcript;
+          // Add a space between words, not at start
+          finalTranscriptRef.current +=
+            (finalTranscriptRef.current ? " " : "") + transcript.trim();
         } else {
           interimText += transcript;
         }
       }
 
-      const currentInput = inputRef.current;
-      // Show interim results immediately for real-time effect
-      if (interimText || finalText) {
-        const suffix = finalText || interimText;
-        setInputAction(currentInput + (currentInput ? " " : "") + suffix);
-      }
+      // Reconstruct the full input:
+      //   [original text before we started] + [committed words] + [partial word]
+      const base = baseTextRef.current;
+      const dictated =
+        finalTranscriptRef.current +
+        (interimText
+          ? (finalTranscriptRef.current ? " " : "") + interimText
+          : "");
+      setInputRef.current(base + (base && dictated ? " " : "") + dictated);
     };
 
     recognition.onend = () => {
@@ -72,17 +85,17 @@ export function DictateButton({
 
     recognition.onerror = (event: any) => {
       if (event.error !== "no-speech") {
-        console.error("Speech recognition error", event.error);
+        console.error("Dictate error:", event.error);
+        setIsListening(false);
       }
-      setIsListening(false);
     };
 
     recognitionRef.current = recognition;
 
     return () => {
-      recognition.stop();
+      recognition.abort();
     };
-  }, []); // Run once on mount
+  }, []); // Run once
 
   const toggleListening = useCallback(() => {
     const recognition = recognitionRef.current;
@@ -92,14 +105,18 @@ export function DictateButton({
       recognition.stop();
       setIsListening(false);
     } else {
+      // Snapshot what's already in the input box as the base
+      baseTextRef.current = input.trim();
+      finalTranscriptRef.current = "";
+
       try {
         recognition.start();
         setIsListening(true);
       } catch (_e) {
-        // Already started in some edge cases — ignore
+        // May throw if already started in certain browsers, safe to ignore
       }
     }
-  }, [isListening]);
+  }, [isListening, input]);
 
   if (!isSupported) return null;
 
@@ -134,10 +151,7 @@ export function DictateButton({
             {isListening && (
               <motion.span
                 className="absolute inset-0 rounded-full bg-red-500/20 -z-10"
-                animate={{
-                  scale: [1, 1.5, 1],
-                  opacity: [0.5, 0, 0.5],
-                }}
+                animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
                 transition={{
                   duration: 1.5,
                   repeat: Infinity,
