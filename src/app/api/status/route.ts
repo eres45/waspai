@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { customModelProvider } from "@/lib/ai/models";
+import { customModelProvider, allModels } from "@/lib/ai/models";
 import { supabaseRest } from "@/lib/db/supabase-rest";
-import { generateText } from "ai";
+import { streamText } from "ai";
 
 // Test a single model with a simple prompt
 async function testModel(
@@ -21,23 +21,39 @@ async function testModel(
       model: modelId,
     });
 
-    // Use generateText from AI SDK
+    // Use streamText to match chat behavior
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const response = await generateText({
+    const result = await streamText({
       model,
-      prompt: "Say 'OK'",
+      messages: [
+        {
+          role: "user",
+          content: "Hello, just say 'ready' if you are up and running.",
+        },
+      ],
       abortSignal: controller.signal,
     });
+
+    // Read first chunk to verify it works
+    const reader = result.textStream.getReader();
+    const { value, done } = await reader.read();
+    reader.releaseLock();
 
     clearTimeout(timeoutId);
     const responseTime = Date.now() - startTime;
 
-    const text = response?.text?.trim() ?? "";
-    if (text) {
+    // Be more lenient with vision/large models
+    const isVision =
+      modelId.toLowerCase().includes("vision") ||
+      modelId.toLowerCase().includes("multimodal");
+    const operationalThreshold = isVision ? 15000 : 10000;
+
+    if (value || done) {
       return {
-        status: responseTime < 5000 ? "operational" : "degraded",
+        status:
+          responseTime < operationalThreshold ? "operational" : "degraded",
         responseTime,
         error: null,
       };
@@ -52,11 +68,42 @@ async function testModel(
     const responseTime = Date.now() - startTime;
     const errorMessage = error?.message || String(error);
 
-    // If it's a JSON parse error, try to get the raw body
+    // If it's a JSON parse error, perform a diagnostic manual fetch to see the raw body
     if (errorMessage.includes("JSON") || errorMessage.includes("parse")) {
       console.error(
         `[Status Check Fail] ${provider}:${modelId}: ${errorMessage}`,
       );
+
+      try {
+        // Attempt a manual fetch to see what the worker is actually sending
+        // This helps us debug "Invalid JSON response" errors
+        const selectedModel: any = allModels[provider]?.[modelId];
+
+        if (selectedModel && selectedModel.clientOptions) {
+          const { baseURL } = selectedModel.clientOptions;
+          if (baseURL) {
+            const diagRes = await fetch(`${baseURL}/chat/completions`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: selectedModel.modelId || modelId,
+                messages: [{ role: "user", content: "Say OK" }],
+                stream: false,
+              }),
+            });
+            const diagBody = await diagRes.text();
+            console.error(
+              `[Diagnostics] ${provider}:${modelId} Raw Body (${diagRes.status}):`,
+              diagBody.slice(0, 500),
+            );
+          }
+        }
+      } catch (diagErr) {
+        console.error(
+          `[Diagnostics] Failed to collect body for ${modelId}:`,
+          diagErr,
+        );
+      }
     }
 
     if (errorMessage.includes("abort") || errorMessage.includes("Timeout")) {

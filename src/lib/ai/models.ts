@@ -34,7 +34,7 @@ function createStreamingProxyFetch() {
       // Ignore parse errors
     }
 
-    if (res.ok && (isJson || isEventStream) && isStreamRequested) {
+    if (res.ok && (isEventStream || (isJson && isStreamRequested))) {
       // Clone the response so we can check if it's already a valid stream
       const resClone = res.clone();
       const reader = resClone.body?.getReader();
@@ -379,7 +379,7 @@ const staticSupportImageInputModels: Record<string, LanguageModel> = {
   "Qwen Vision (VL)": staticModels.Qwen["Qwen Vision (VL)"],
 };
 
-const allModels: Record<string, Record<string, LanguageModel>> = {
+export const allModels: Record<string, Record<string, LanguageModel>> = {
   ...staticModels,
 };
 
