@@ -193,8 +193,10 @@ export function useInlineVoice({
           playNextInQueue();
         } else {
           setIsAssistantSpeaking(false);
-          // Auto-restart listening for continuous chat (Optional)
-          // startListening();
+          // Auto-restart listening for continuous chat
+          if (isActive) {
+            startListening();
+          }
         }
       };
 
