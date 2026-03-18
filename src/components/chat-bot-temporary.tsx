@@ -206,10 +206,10 @@ export function ChatBotTemporary() {
           messages={messages}
           error={error}
           input={input}
-          setInput={setInput}
-          sendMessage={sendMessage}
+          setInputAction={setInput}
+          sendMessageAction={sendMessage}
           setMessages={setMessages}
-          stop={stop}
+          onStopAction={stop}
           status={status}
         />
       </DrawerContent>
@@ -220,23 +220,23 @@ export function ChatBotTemporary() {
 function DrawerTemporaryContent({
   messages,
   input,
-  setInput,
-  sendMessage,
+  setInputAction,
+  sendMessageAction,
   status,
   error,
   isLoading,
   setMessages,
-  stop,
+  onStopAction,
 }: {
   messages: UIMessage[];
   input: string;
-  setInput: (input: string) => void;
-  sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
+  setInputAction: (input: string) => void;
+  sendMessageAction: UseChatHelpers<UIMessage>["sendMessage"];
   status: "submitted" | "streaming" | "ready" | "error";
   isLoading: boolean;
   error: Error | undefined;
   setMessages: UseChatHelpers<UIMessage>["setMessages"];
-  stop: UseChatHelpers<UIMessage>["stop"];
+  onStopAction: UseChatHelpers<UIMessage>["stop"];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("Chat");
@@ -333,7 +333,7 @@ function DrawerTemporaryContent({
               isLastMessage={isLastMessage}
               setMessages={setMessages}
               prevMessage={messages[index - 1]}
-              sendMessage={sendMessage}
+              sendMessage={sendMessageAction}
             />
           );
         })}
@@ -348,16 +348,16 @@ function DrawerTemporaryContent({
       <div className={"w-full my-6 mt-auto"}>
         <PromptInput
           input={input}
-          sendMessage={sendMessage}
+          sendMessageAction={sendMessageAction}
           disabledMention={true}
           model={temporaryChat.chatModel}
           setModel={setModel}
           toolDisabled
           placeholder={t("TemporaryChat.feelFreeToAskAnythingTemporarily")}
-          setInput={setInput}
+          setInputAction={setInputAction}
           voiceDisabled
           isLoading={isLoading}
-          onStop={stop}
+          onStopAction={onStopAction}
         />
       </div>
     </div>

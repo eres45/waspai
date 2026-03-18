@@ -49,6 +49,7 @@ import { getStorageManager } from "lib/browser-stroage";
 import { AnimatePresence, motion } from "framer-motion";
 import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
 import { useFileDragOverlay } from "@/hooks/use-file-drag-overlay";
+import { useInlineVoice } from "lib/ai/speech/use-inline-voice";
 
 type Props = {
   threadId: string;
@@ -340,6 +341,18 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     return true;
   }, [status, messages]);
 
+  const {
+    isActive: isVoiceActive,
+    isListening: isVoiceListening,
+    startListening: startVoiceListening,
+    stopListening: stopVoiceListening,
+  } = useInlineVoice({
+    messages,
+    sendMessageAction: sendMessage,
+    setMessagesAction: setMessages,
+    isLoading: isLoading || isPendingToolCall,
+  });
+
   const space = useMemo(() => {
     if (!isLoading || error) return false;
     const lastMessage = messages.at(-1);
@@ -558,11 +571,15 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           <PromptInput
             input={input}
             threadId={threadId}
-            sendMessage={sendMessage}
-            setInput={setInput}
+            sendMessageAction={sendMessage}
+            setInputAction={setInput}
             isLoading={isLoading || isPendingToolCall}
-            onStop={stop}
+            onStopAction={stop}
             onFocus={isFirstTime ? undefined : handleFocus}
+            isVoiceActive={isVoiceActive}
+            isVoiceListening={isVoiceListening}
+            onStartVoice={startVoiceListening}
+            onStopVoice={stopVoiceListening}
           />
         </div>
         <DeleteThreadPopup

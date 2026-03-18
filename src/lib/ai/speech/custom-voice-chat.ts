@@ -81,7 +81,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       };
 
       recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = "";
+        let _interimTranscript = "";
         let finalTranscript = "";
 
         console.log(
@@ -97,22 +97,57 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           if (isFinal) {
             finalTranscript += transcript + " ";
           } else {
-            interimTranscript += transcript;
+            _interimTranscript += transcript;
           }
         }
 
-        console.log(
-          `Interim: "${interimTranscript}", Final: "${finalTranscript}"`,
-        );
-
         if (finalTranscript) {
           const trimmedText = finalTranscript.trim();
-          console.log(`Sending to chat: "${trimmedText}"`);
           handleUserMessage(trimmedText);
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        // Echo prevention: If assistant is speaking, don't restart yet.
+        // The speaker end handler will restart it.
+        if (isListeningRef.current && !isAssistantSpeakingRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            console.error("Failed to restart recognition:", e);
+          }
         }
       };
     }
   }, []);
+
+  // Ref to track assistant speaking state inside callbacks without re-creating them
+  const isAssistantSpeakingRef = useRef(false);
+  useEffect(() => {
+    isAssistantSpeakingRef.current = isAssistantSpeaking;
+
+    // If assistant starts speaking, stop the mic to prevent echo
+    if (isAssistantSpeaking && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_e) {
+        // Ignore if already stopped
+      }
+    }
+    // If assistant stops speaking and chat is still active, resume mic
+    else if (
+      !isAssistantSpeaking &&
+      isActive &&
+      recognitionRef.current &&
+      isListeningRef.current
+    ) {
+      try {
+        recognitionRef.current.start();
+      } catch (_e) {
+        // Ignore if already started
+      }
+    }
+  }, [isAssistantSpeaking, isActive]);
 
   const handleUserMessage = useCallback(
     async (text: string) => {
@@ -292,13 +327,10 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
         // Generate speech from complete response
         try {
-          console.log("Generating TTS for complete text:", assistantText);
           const audioUrl = await generateSpeech(
             assistantText,
             voice as CustomTTSVoice,
           );
-
-          console.log("Audio URL received:", audioUrl);
 
           // Play audio directly — audioUrl is a blob: URL (local to browser),
           // so no CORS proxy needed.

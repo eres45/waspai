@@ -10,12 +10,14 @@ import { motion, AnimatePresence } from "framer-motion";
 interface DictateButtonProps {
   input: string;
   setInputAction: (value: string) => void;
+  onListeningChange?: (isListening: boolean) => void;
   className?: string;
 }
 
 export function DictateButton({
   input,
   setInputAction,
+  onListeningChange,
   className,
 }: DictateButtonProps) {
   const [isListening, setIsListening] = useState(false);
@@ -81,12 +83,14 @@ export function DictateButton({
 
     recognition.onend = () => {
       setIsListening(false);
+      onListeningChange?.(false);
     };
 
     recognition.onerror = (event: any) => {
       if (event.error !== "no-speech") {
         console.error("Dictate error:", event.error);
         setIsListening(false);
+        onListeningChange?.(false);
       }
     };
 
@@ -104,6 +108,7 @@ export function DictateButton({
     if (isListening) {
       recognition.stop();
       setIsListening(false);
+      onListeningChange?.(false);
     } else {
       // Snapshot what's already in the input box as the base
       baseTextRef.current = input.trim();
@@ -112,6 +117,7 @@ export function DictateButton({
       try {
         recognition.start();
         setIsListening(true);
+        onListeningChange?.(true);
       } catch (_e) {
         // May throw if already started in certain browsers, safe to ignore
       }

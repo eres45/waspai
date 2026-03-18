@@ -10,6 +10,7 @@ import {
   Loader2,
   PaperclipIcon,
   PlusIcon,
+  MicIcon,
   Square,
   XIcon,
   Edit2,
@@ -63,10 +64,10 @@ import { DictateButton } from "./dictate-button";
 
 interface PromptInputProps {
   placeholder?: string;
-  setInput: (value: string) => void;
+  setInputAction: (value: string) => void;
   input: string;
-  onStop: () => void;
-  sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
+  onStopAction: () => void;
+  sendMessageAction: UseChatHelpers<UIMessage>["sendMessage"];
   toolDisabled?: boolean;
   isLoading?: boolean;
   model?: ChatModel;
@@ -75,6 +76,10 @@ interface PromptInputProps {
   threadId?: string;
   disabledMention?: boolean;
   onFocus?: () => void;
+  isVoiceActive?: boolean;
+  isVoiceListening?: boolean;
+  onStartVoice?: () => void;
+  onStopVoice?: () => void;
 }
 
 const ChatMentionInput = dynamic(() => import("./chat-mention-input"), {
@@ -86,19 +91,24 @@ const ChatMentionInput = dynamic(() => import("./chat-mention-input"), {
 
 export default function PromptInput({
   placeholder,
-  sendMessage,
+  sendMessageAction,
   model,
   setModel,
   input,
   onFocus,
-  setInput,
-  onStop,
+  setInputAction,
+  onStopAction,
   isLoading,
   toolDisabled,
   voiceDisabled,
   threadId,
   disabledMention,
+  isVoiceActive,
+  isVoiceListening,
+  onStartVoice,
+  onStopVoice,
 }: PromptInputProps) {
+  const [isDictating, setIsDictating] = useState(false);
   const t = useTranslations("Chat");
   const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -460,7 +470,7 @@ export default function PromptInput({
         }
       }
 
-      setInput("");
+      setInputAction("");
       const attachmentParts = uploadedFiles.reduce<
         Array<FileUIPart | TextUIPart | any>
       >((acc, file) => {
@@ -504,7 +514,7 @@ export default function PromptInput({
         });
       }
 
-      sendMessage({
+      sendMessageAction({
         role: "user",
         parts: [...attachmentParts, { type: "text", text: userMessage }],
         metadata: {
@@ -582,7 +592,13 @@ export default function PromptInput({
     <div className="max-w-3xl mx-auto fade-in animate-in">
       <div className="z-10 mx-auto w-full max-w-3xl relative">
         <fieldset className="flex w-full min-w-0 max-w-full flex-col px-4">
-          <div className="shadow-lg overflow-hidden rounded-4xl backdrop-blur-sm transition-all duration-200 bg-muted/60 relative flex w-full flex-col cursor-text z-10 items-stretch focus-within:bg-muted hover:bg-muted focus-within:ring-muted hover:ring-muted">
+          <div
+            className={cn(
+              "shadow-lg overflow-hidden rounded-4xl backdrop-blur-sm transition-all duration-300 bg-muted/60 relative flex w-full flex-col cursor-text z-10 items-stretch focus-within:bg-muted hover:bg-muted focus-within:ring-muted hover:ring-muted",
+              isDictating &&
+                "ring-2 ring-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)] bg-red-500/5",
+            )}
+          >
             {mentions.length > 0 && (
               <div className="bg-input rounded-b-sm rounded-t-3xl p-3 flex flex-col gap-4 mx-2 my-2">
                 {mentions.map((mention, i) => {
@@ -661,16 +677,24 @@ export default function PromptInput({
             )}
             <div className="flex flex-col gap-3.5 px-5 pt-2 pb-4">
               <div className="relative min-h-[2rem]">
-                <ChatMentionInput
-                  input={input}
-                  onChange={setInput}
-                  onChangeMention={onChangeMention}
-                  onEnter={submit}
-                  placeholder={placeholder ?? t("placeholder")}
-                  ref={editorRef}
-                  disabledMention={disabledMention}
-                  onFocus={onFocus}
-                />
+                <div
+                  className={cn(isDictating && "text-red-500 animate-pulse")}
+                >
+                  <ChatMentionInput
+                    input={input}
+                    onChange={setInputAction}
+                    onChangeMention={onChangeMention}
+                    onEnter={submit}
+                    placeholder={
+                      isDictating
+                        ? "Listening..."
+                        : (placeholder ?? t("placeholder"))
+                    }
+                    ref={editorRef}
+                    disabledMention={disabledMention}
+                    onFocus={onFocus}
+                  />
+                </div>
               </div>
               <div className="flex w-full items-center z-30">
                 <input
@@ -1036,31 +1060,40 @@ export default function PromptInput({
                 {!isLoading && !voiceDisabled && (
                   <DictateButton
                     input={input}
-                    setInputAction={setInput}
+                    setInputAction={setInputAction}
+                    onListeningChange={setIsDictating}
                     className="mx-1"
                   />
                 )}
 
-                {!isLoading && !input.length && !voiceDisabled ? (
+                {!isLoading &&
+                !input.length &&
+                !voiceDisabled &&
+                onStartVoice ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         size={"sm"}
-                        onClick={() => {
-                          appStoreMutate((state) => ({
-                            voiceChat: {
-                              ...state.voiceChat,
-                              isOpen: true,
-                              agentId: undefined,
-                            },
-                          }));
-                        }}
-                        className="rounded-full p-2!"
+                        onClick={isVoiceActive ? onStopVoice : onStartVoice}
+                        className={cn(
+                          "rounded-full p-2! transition-colors duration-300",
+                          isVoiceListening &&
+                            "bg-destructive text-destructive-foreground animate-pulse hover:bg-destructive/90 hover:text-destructive-foreground",
+                          isVoiceActive &&
+                            !isVoiceListening &&
+                            "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+                        )}
                       >
-                        <AudioWaveformIcon size={16} />
+                        {isVoiceListening ? (
+                          <MicIcon size={16} />
+                        ) : (
+                          <AudioWaveformIcon size={16} />
+                        )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{t("VoiceChat.title")}</TooltipContent>
+                    <TooltipContent>
+                      {isVoiceActive ? "Stop Voice Chat" : t("VoiceChat.title")}
+                    </TooltipContent>
                   </Tooltip>
                 ) : null}
 
@@ -1068,7 +1101,7 @@ export default function PromptInput({
                   <div
                     onClick={() => {
                       if (isLoading) {
-                        onStop();
+                        onStopAction();
                       } else {
                         submit();
                       }
@@ -1184,7 +1217,7 @@ export default function PromptInput({
                                         }
                                         const data = await res.json();
                                         // Append preview text to input for the user to send
-                                        setInput(
+                                        setInputAction(
                                           `${input ? input + "\n\n" : ""}${data.text}`,
                                         );
                                       } catch (_err) {

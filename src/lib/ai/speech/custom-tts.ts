@@ -43,7 +43,7 @@ export function getVoiceDisplayName(voice: CustomTTSVoice): string {
  */
 export async function generateSpeech(
   text: string,
-  voice: CustomTTSVoice = "nova",
+  voice: CustomTTSVoice = "alloy",
 ): Promise<string> {
   try {
     const response = await fetch("/api/tts", {
@@ -72,7 +72,7 @@ export async function generateSpeech(
  */
 function generateSpeechFallback(
   text: string,
-  voice: CustomTTSVoice = "nova",
+  voice: CustomTTSVoice = "alloy",
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     try {

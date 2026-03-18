@@ -18,6 +18,7 @@ import {
   FileIcon,
   Download,
   Volume2,
+  MicIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -128,6 +129,7 @@ export const UserMessagePart = memo(
     const [expanded, setExpanded] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const scrolledRef = useRef(false);
+    const metadata = message.metadata as ChatMetadata | undefined;
 
     const isLongText = part.text.length > MAX_TEXT_LENGTH;
     const displayText =
@@ -194,9 +196,20 @@ export const UserMessagePart = memo(
           {isLongText && !expanded && (
             <div className="absolute pointer-events-none bg-gradient-to-t from-accent to-transparent w-full h-40 bottom-0 left-0" />
           )}
-          <p className={cn("whitespace-pre-wrap text-sm break-words")}>
+          <p
+            className={cn(
+              "whitespace-pre-wrap text-sm break-words",
+              metadata?.isVoice && "italic",
+            )}
+          >
             {displayText}
           </p>
+          {metadata?.isVoice && metadata?.userVoiceDuration && (
+            <div className="flex items-center gap-1 text-xs opacity-70 mt-1 bg-background/10 w-fit px-2 py-0.5 rounded-full">
+              <MicIcon className="size-3" />
+              <span>{metadata.userVoiceDuration}s</span>
+            </div>
+          )}
           {isLongText && (
             <Button
               variant="ghost"
@@ -379,9 +392,16 @@ export const AssistMessagePart = memo(function AssistMessagePart({
         data-testid="message-content"
         className={cn("flex flex-col gap-4 px-2", {
           "opacity-50 border border-destructive bg-card rounded-lg": isError,
+          italic: metadata?.isVoice === true,
         })}
       >
         <Markdown>{part.text}</Markdown>
+        {metadata?.isVoice === true && metadata?.assistantVoiceDuration && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 bg-accent/50 px-2 py-1 rounded-full w-fit">
+            <Volume2 className="size-3 text-primary" />
+            <span>{metadata.assistantVoiceDuration}s</span>
+          </div>
+        )}
       </div>
       {showActions && (
         <div className="flex w-full">
