@@ -595,8 +595,6 @@ export default function PromptInput({
           <div
             className={cn(
               "shadow-lg overflow-hidden rounded-4xl backdrop-blur-sm transition-all duration-300 bg-muted/60 relative flex w-full flex-col cursor-text z-10 items-stretch focus-within:bg-muted hover:bg-muted focus-within:ring-muted hover:ring-muted",
-              isDictating &&
-                "ring-2 ring-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)] bg-red-500/5",
             )}
           >
             {mentions.length > 0 && (
@@ -677,9 +675,7 @@ export default function PromptInput({
             )}
             <div className="flex flex-col gap-3.5 px-5 pt-2 pb-4">
               <div className="relative min-h-[2rem]">
-                <div
-                  className={cn(isDictating && "text-red-500 animate-pulse")}
-                >
+                <div className={cn(isDictating && "animate-pulse")}>
                   <ChatMentionInput
                     input={input}
                     onChange={setInputAction}

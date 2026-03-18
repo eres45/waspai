@@ -44,6 +44,7 @@ export function useInlineVoice({
 
   // Buffer to accumulate incoming stream chunks before identifying a complete sentence
   const sentenceBuffer = useRef<string>("");
+  const isFirstSentenceEmitted = useRef<boolean>(false);
 
   const startListening = useCallback(async () => {
     try {
@@ -125,6 +126,7 @@ export function useInlineVoice({
           lastProcessedCharIndex.current = 0;
           lastProcessedMessageId.current = null;
           sentenceBuffer.current = "";
+          isFirstSentenceEmitted.current = false;
           ttsQueue.current = [];
           assistantSpeechStartTime.current = Date.now();
         } else {
@@ -227,6 +229,7 @@ export function useInlineVoice({
         currentAssistantMessageId.current = lastMessage.id;
         lastProcessedCharIndex.current = 0;
         sentenceBuffer.current = "";
+        isFirstSentenceEmitted.current = false;
       }
 
       // Check if there's new text
@@ -236,25 +239,28 @@ export function useInlineVoice({
 
         sentenceBuffer.current += newText;
 
-        // Roughly match sentences. Look for . ! ? followed by space or end of string
-        const sentenceMatch =
-          sentenceBuffer.current.match(/(.*?[.!?])(?:\s|$)/);
+        // Hybrid approach: Only split the very FIRST sentence for fast TTFB.
+        // The rest of the message batches and waits to be sent as one giant chunk to avoid audio gaps.
+        if (!isFirstSentenceEmitted.current) {
+          const sentenceMatch =
+            sentenceBuffer.current.match(/(.*?[.!?])(?:\s|$)/);
 
-        if (sentenceMatch) {
-          const completeSentence = sentenceMatch[1];
-          // Remove the matched sentence from the buffer
-          sentenceBuffer.current = sentenceBuffer.current
-            .replace(sentenceMatch[0], "")
-            .trimStart();
+          if (sentenceMatch) {
+            const completeSentence = sentenceMatch[1];
+            sentenceBuffer.current = sentenceBuffer.current
+              .replace(sentenceMatch[0], "")
+              .trimStart();
 
-          if (completeSentence.trim()) {
-            ttsQueue.current.push(completeSentence.trim());
-            playNextInQueue();
+            if (completeSentence.trim()) {
+              ttsQueue.current.push(completeSentence.trim());
+              playNextInQueue();
+              isFirstSentenceEmitted.current = true;
+            }
           }
         }
       }
 
-      // If message is complete (not streaming) and there's leftover buffer text without punctuation, queue it
+      // If message is complete (not streaming), queue the entire text once
       if (!isLoading) {
         if (sentenceBuffer.current.trim()) {
           ttsQueue.current.push(sentenceBuffer.current.trim());

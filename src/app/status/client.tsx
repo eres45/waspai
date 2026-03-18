@@ -363,7 +363,7 @@ export default function StatusPageClient() {
         </div>
       </header>
 
-      <main className="max-w-7xl auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Intro Message */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-2">
