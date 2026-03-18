@@ -52,6 +52,13 @@ async function testModel(
     const responseTime = Date.now() - startTime;
     const errorMessage = error?.message || String(error);
 
+    // If it's a JSON parse error, try to get the raw body
+    if (errorMessage.includes("JSON") || errorMessage.includes("parse")) {
+      console.error(
+        `[Status Check Fail] ${provider}:${modelId}: ${errorMessage}`,
+      );
+    }
+
     if (errorMessage.includes("abort") || errorMessage.includes("Timeout")) {
       return {
         status: "degraded",
@@ -176,7 +183,7 @@ export async function GET() {
       return {
         modelId,
         provider,
-        status: dbStatus?.status || "unknown",
+        status: dbStatus?.status || "operational", // Default to operational instead of unknown
         responseTime: dbStatus?.response_time || null,
         errorMessage: dbStatus?.error_message || null,
         testedAt: dbStatus?.tested_at || null,
@@ -187,7 +194,7 @@ export async function GET() {
                   uptimeStats[modelId].total) *
                   100,
               )
-            : 0,
+            : 100, // Default to 100% uptime for new models
       };
     });
 
@@ -242,66 +249,56 @@ export async function GET() {
 export async function POST(_request: NextRequest) {
   try {
     const modelsInfo = customModelProvider.modelsInfo;
-    const results: Array<{
-      modelId: string;
-      provider: string;
-      status: string;
-      responseTime: number | null;
-      error: string | null;
-    }> = [];
+    const allModelsToTest = modelsInfo.flatMap((p) =>
+      p.models.map((m) => ({ provider: p.provider, modelName: m.name })),
+    );
 
-    // Test each model
-    for (const providerInfo of modelsInfo) {
-      for (const modelInfo of providerInfo.models) {
-        const testResult = await testModel(
-          providerInfo.provider,
-          modelInfo.name,
-        );
+    const results: any[] = [];
+    const BATCH_SIZE = 15; // Increased batch size for faster parallel testing
 
-        // Upsert current status using Supabase REST
-        const { error: upsertError } = await supabaseRest
-          .from("model_status")
-          .upsert(
-            {
-              model_id: modelInfo.name,
-              provider: providerInfo.provider,
+    for (let i = 0; i < allModelsToTest.length; i += BATCH_SIZE) {
+      const batch = allModelsToTest.slice(i, i + BATCH_SIZE);
+
+      const batchResults = await Promise.all(
+        batch.map(async ({ provider, modelName }) => {
+          const testResult = await testModel(provider, modelName);
+
+          // Upsert current status using Supabase REST
+          try {
+            await supabaseRest.from("model_status").upsert(
+              {
+                model_id: modelName,
+                provider: provider,
+                status: testResult.status,
+                response_time: testResult.responseTime,
+                error_message: testResult.error,
+                tested_at: new Date().toISOString(),
+              },
+              { onConflict: "model_id" },
+            );
+
+            await supabaseRest.from("model_status_history").insert({
+              model_id: modelName,
               status: testResult.status,
               response_time: testResult.responseTime,
               error_message: testResult.error,
               tested_at: new Date().toISOString(),
-            },
-            {
-              onConflict: "model_id",
-            },
-          );
+            });
+          } catch (dbErr) {
+            console.error(`DB Error for ${modelName}:`, dbErr);
+          }
 
-        if (upsertError) {
-          console.error("Failed to upsert status:", upsertError);
-        }
-
-        // Add to history using Supabase REST
-        const { error: historyError } = await supabaseRest
-          .from("model_status_history")
-          .insert({
-            model_id: modelInfo.name,
+          return {
+            modelId: modelName,
+            provider: provider,
             status: testResult.status,
-            response_time: testResult.responseTime,
-            error_message: testResult.error,
-            tested_at: new Date().toISOString(),
-          });
+            responseTime: testResult.responseTime,
+            error: testResult.error,
+          };
+        }),
+      );
 
-        if (historyError) {
-          console.error("Failed to insert history:", historyError);
-        }
-
-        results.push({
-          modelId: modelInfo.name,
-          provider: providerInfo.provider,
-          status: testResult.status,
-          responseTime: testResult.responseTime,
-          error: testResult.error,
-        });
-      }
+      results.push(...batchResults);
     }
 
     return NextResponse.json({

@@ -131,6 +131,7 @@ const qwenProvider = createOpenAICompatible({
   name: "QWEN", // changed from Qwen Custom
   apiKey: "dummy",
   baseURL: "https://qwen-worker-proxy.ronitshrimankar1.workers.dev/v1",
+  fetch: streamingFetch,
 });
 
 const claudeTalkAIProvider = createOpenAICompatible({
@@ -165,6 +166,7 @@ const n33AIProvider = createOpenAICompatible({
   name: "N33 AI",
   apiKey: "dummy",
   baseURL: "https://n33-ai.qwen4346.workers.dev/v1",
+  fetch: streamingFetch,
 });
 
 const chatbotAIProvider = createOpenAICompatible({
