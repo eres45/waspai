@@ -232,32 +232,10 @@ export function useInlineVoice({
         isFirstSentenceEmitted.current = false;
       }
 
-      // Check if there's new text
+      // Accumulate the entire text stream without splitting
       if (fullText.length > lastProcessedCharIndex.current) {
-        const newText = fullText.slice(lastProcessedCharIndex.current);
         lastProcessedCharIndex.current = fullText.length;
-
-        sentenceBuffer.current += newText;
-
-        // Hybrid approach: Only split the very FIRST sentence for fast TTFB.
-        // The rest of the message batches and waits to be sent as one giant chunk to avoid audio gaps.
-        if (!isFirstSentenceEmitted.current) {
-          const sentenceMatch =
-            sentenceBuffer.current.match(/(.*?[.!?])(?:\s|$)/);
-
-          if (sentenceMatch) {
-            const completeSentence = sentenceMatch[1];
-            sentenceBuffer.current = sentenceBuffer.current
-              .replace(sentenceMatch[0], "")
-              .trimStart();
-
-            if (completeSentence.trim()) {
-              ttsQueue.current.push(completeSentence.trim());
-              playNextInQueue();
-              isFirstSentenceEmitted.current = true;
-            }
-          }
-        }
+        sentenceBuffer.current = fullText;
       }
 
       // If message is complete (not streaming), queue the entire text once
