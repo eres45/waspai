@@ -74,6 +74,11 @@ export function useInlineVoice({
       let finalTranscript = "";
       userSpeechStartTime.current = Date.now();
 
+      // Mark the current last message as "processed" so we don't read history
+      if (messages.length > 0) {
+        lastProcessedMessageId.current = messages[messages.length - 1].id;
+      }
+
       recognitionRef.current.onstart = () => {
         setIsListening(true);
         setIsActive(true);
@@ -143,7 +148,7 @@ export function useInlineVoice({
       setIsListening(false);
       setIsActive(false);
     }
-  }, [isActive, sendMessageAction]);
+  }, [isActive, sendMessageAction, messages]);
 
   const stopListening = useCallback(() => {
     setIsActive(false);
