@@ -182,229 +182,188 @@ const grokFreeProvider = createOpenAICompatible({
 });
 
 const staticModels = {
-  // Anthropic models (via proxy)
-  anthropic: {
-    "claude-sonnet-4.5-proxy": nvidiaModels["meta-llama-3.1-405b-instruct"], // Fallback proxy
+  // --- Anthropic Claude Models ---
+  Anthropic: {
+    "Claude 3.5 Sonnet (P1)": claudeTalkAIProvider(
+      "claude-3-5-sonnet-20241022",
+    ),
+    "Claude 4.5 Sonnet (P2)": n33AIProvider("claude-sonnet-4.5"),
+    "Claude 3.5 Haiku (P1)": claudeTalkAIProvider("claude-3-5-haiku-20241022"),
+    "Claude 4.5 Haiku (P2)": n33AIProvider("claude-haiku-4.5"),
+    "Claude 3.5 Sonnet (Reason)": claudeTalkAIProvider(
+      "claude-3-5-sonnet-reasoning",
+    ),
+    "Claude 3 Opus (P1)": claudeTalkAIProvider("claude-3-opus-20240229"),
+    "Claude 4.5 Opus (P2)": n33AIProvider("claude-opus-4.5"),
+    "Claude 3 Sonnet": claudeTalkAIProvider("claude-3-sonnet-20240229"),
+    "Claude 3 Haiku": claudeTalkAIProvider("claude-3-haiku-20240307"),
+    "Claude 2": claudeTalkAIProvider("claude-2"),
+    "Claude Instant": claudeTalkAIProvider("claude-instant"),
+    "Claude 3.5 Sonnet (Proxy)": nvidiaModels["meta-llama-3.1-405b-instruct"],
   },
 
-  // xAI (Grok Free) Models
-  "xAI (Grok Free)": {
-    "Grok 4": grokFreeProvider("grok-4"),
-    "Grok 3": grokFreeProvider("grok-3"),
-    "Grok 3 Mini": grokFreeProvider("grok-3-mini"),
-    "GPT-4o": grokFreeProvider("gpt-4o"),
-    "GPT-4o Mini": grokFreeProvider("gpt-4o-mini"),
-  },
-
-  // Chatbot AI (GPT) Models
-  "Chatbot AI (GPT)": {
-    "GPT-4": chatbotAIProvider("gpt-4"),
-    "GPT-4 Turbo": chatbotAIProvider("gpt-4-turbo-preview"),
+  // --- OpenAI Models ---
+  OpenAI: {
+    "GPT-4o (P1)": claudeTalkAIProvider("gpt-4o"),
+    "GPT-4o (P2)": grokFreeProvider("gpt-4o"),
+    "GPT-4o Mini (P1)": claudeTalkAIProvider("gpt-4o-mini"),
+    "GPT-4o Mini (P2)": grokFreeProvider("gpt-4o-mini"),
+    "ChatGPT-4o (Latest)": claudeTalkAIProvider("chatgpt-4o-latest"),
+    "GPT-5.2": n33AIProvider("gpt-5.2"),
+    "GPT-4 Turbo (P1)": claudeTalkAIProvider("gpt-4-turbo"),
+    "GPT-4 Turbo (P2)": chatbotAIProvider("gpt-4-turbo-preview"),
+    "GPT-4 (P1)": claudeTalkAIProvider("gpt-4"),
+    "GPT-4 (P2)": chatbotAIProvider("gpt-4"),
     "GPT-4 (1106)": chatbotAIProvider("gpt-4-1106-preview"),
     "GPT-4 (0125)": chatbotAIProvider("gpt-4-0125-preview"),
-    "GPT-3.5 Turbo": chatbotAIProvider("gpt-3.5-turbo"),
+    "GPT-3.5 Turbo (P1)": chatbotAIProvider("gpt-3.5-turbo"),
     "GPT-3.5 Turbo (16K)": chatbotAIProvider("gpt-3.5-turbo-16k"),
+    o1: claudeTalkAIProvider("o1"),
+    "o1-mini": claudeTalkAIProvider("o1-mini"),
+    "o1-preview": claudeTalkAIProvider("o1-preview"),
+    "o3-mini": claudeTalkAIProvider("o3-mini"),
+    "GPT-OSS 20B": nvidiaModels["openai-gpt-oss-20b"],
+    "GPT-OSS 120B": nvidiaModels["openai-gpt-oss-120b"],
   },
 
-  // Moonshot AI (Kimi) Models
-  "Moonshot AI (Kimi)": {
-    "Kimi K2.5": kimiProvider("kimi-k2.5"),
-    "Kimi K2-0905": kimiProvider("kimi-k2-0905"),
-    "Kimi K2-Thinking": kimiProvider("kimi-k2-thinking"),
-  },
-
-  // N33 AI Models
-  "N33 AI": {
-    "Sonar (Perplexity)": n33AIProvider("sonar"),
-    "Sonar Pro (Perplexity)": n33AIProvider("sonar-pro"),
-    "Grok 4.1 Fast (xAI)": n33AIProvider("grok-4.1-fast"),
-    "Claude 4.5 Haiku": n33AIProvider("claude-haiku-4.5"),
-    "Claude 4.5 Sonnet": n33AIProvider("claude-sonnet-4.5"),
-    "Claude 4.5 Opus": n33AIProvider("claude-opus-4.5"),
-    "GPT-5.2": n33AIProvider("gpt-5.2"),
-    "Gemini 3 Flash": n33AIProvider("gemini-3-flash"),
-    "Gemini 3 Pro": n33AIProvider("gemini-3-pro"),
-  },
-
-  // Deepseek API Models
+  // --- DeepSeek Models ---
   DeepSeek: {
-    "DeepSeek V3.2": deepseekProvider("deepseek-v3.2-exp"),
+    "DeepSeek V3.2 (P1)": deepseekProvider("deepseek-v3.2-exp"),
     "DeepSeek V3.2 (Base)": deepseekProvider("deepseek-v3.2"),
     "DeepSeek V3": deepseekProvider("deepseek-v3"),
     "DeepSeek VL": deepseekProvider("deepseek-vl"),
     "DeepSeek V2": deepseekProvider("deepseek-v2"),
     "DeepSeek Math": deepseekProvider("deepseek-math"),
     "DeepSeek Coder": deepseekProvider("deepseek-coder"),
-    "DeepSeek R1": deepseekProvider("deepseek-r1"),
-    "DeepSeek Reasoner": deepseekProvider("deepseek-reasoner"),
+    "DeepSeek R1 (P1)": deepseekProvider("deepseek-r1"),
+    "DeepSeek R1 (P2)": claudeTalkAIProvider("deepseek-r1"),
+    "DeepSeek Reasoner (P1)": deepseekProvider("deepseek-reasoner"),
+    "DeepSeek Reasoner (P2)": claudeTalkAIProvider("deepseek-reasoner"),
     "DeepSeek Chat": deepseekProvider("deepseek-chat"),
-  },
-
-  // Qwen API Models
-  QWEN: {
-    "Qwen 2.5 Coder (Plus)": qwenProvider("qwen3-coder-plus"),
-    "Qwen 2.5 Coder (Flash)": qwenProvider("qwen3-coder-flash"),
-    "Qwen Vision (VL)": qwenProvider("vision-model"),
-  },
-
-  // Claude API Models
-  "Anthropic Claude": {
-    "Claude 3.5 Sonnet": claudeTalkAIProvider("claude-3-5-sonnet-20241022"),
-    "Claude 3.5 Haiku": claudeTalkAIProvider("claude-3-5-haiku-20241022"),
-    "Claude 3.5 Sonnet (Reasoning)": claudeTalkAIProvider(
-      "claude-3-5-sonnet-reasoning",
-    ),
-    "Claude 3 Opus": claudeTalkAIProvider("claude-3-opus-20240229"),
-    "Claude 3 Sonnet": claudeTalkAIProvider("claude-3-sonnet-20240229"),
-    "Claude 3 Haiku": claudeTalkAIProvider("claude-3-haiku-20240307"),
-    "GPT-4o": claudeTalkAIProvider("gpt-4o"),
-    "GPT-4o Mini": claudeTalkAIProvider("gpt-4o-mini"),
-    "ChatGPT-4o (Latest)": claudeTalkAIProvider("chatgpt-4o-latest"),
-    "GPT-4 Turbo": claudeTalkAIProvider("gpt-4-turbo"),
-    "GPT-4": claudeTalkAIProvider("gpt-4"),
-    o1: claudeTalkAIProvider("o1"),
-    "o1-mini": claudeTalkAIProvider("o1-mini"),
-    "o1-preview": claudeTalkAIProvider("o1-preview"),
-    "o3-mini": claudeTalkAIProvider("o3-mini"),
-    "Deepseek R1 (Anthropic Node)": claudeTalkAIProvider("deepseek-r1"),
-    "Deepseek Reasoner (Anthropic Node)":
-      claudeTalkAIProvider("deepseek-reasoner"),
-    "Claude 2": claudeTalkAIProvider("claude-2"),
-    "Claude Instant": claudeTalkAIProvider("claude-instant"),
-  },
-
-  // MiniMax Models
-  "MiniMax M1": {
-    "MiniMax-01 (M1)": miniMaxM1Provider("minimax-01"),
-  },
-  "MiniMax M2.1": {
-    "MiniMax-01 (M2.1)": miniMaxM2Provider("minimax-01"),
-  },
-
-  // DeepSeek models
-  deepseek: {
-    // Removed: deepseek-coder, deepseek-r1-distill-qwen-7b, deepseek-r1-distill-qwen-14b, deepseek-r1-distill-qwen-32b (Not Found / Down)
-    "deepseek-r1-distill-llama-8b":
+    "DeepSeek R1 Distill Llama 8B":
       nvidiaModels["deepseek-ai-deepseek-r1-distill-llama-8b"],
   },
 
-  // IBM Granite models
-  granite: {
-    // Removed: granite-3.0-3b, granite-3.0-8b, granite-34b, granite-8b-code, granite-3.3-8b-instruct (Not Found/Degraded)
+  // --- Google Gemini Models ---
+  Google: {
+    "Gemini 3 Flash": n33AIProvider("gemini-3-flash"),
+    "Gemini 3 Pro": n33AIProvider("gemini-3-pro"),
   },
 
-  // Llama models (Meta)
-  llama: {
-    "llama-3.1-8b-instruct": nvidiaModels["meta-llama-3.1-8b-instruct"],
-    "llama-3.1-70b-instruct": nvidiaModels["meta-llama-3.1-70b-instruct"],
-    "llama-3.1-405b-instruct": nvidiaModels["meta-llama-3.1-405b-instruct"],
-    "llama-3.2-1b-instruct": nvidiaModels["meta-llama-3.2-1b-instruct"],
-    "llama-3.2-3b-instruct": nvidiaModels["meta-llama-3.2-3b-instruct"],
-    "llama-3.2-11b-vision-instruct":
-      nvidiaModels["meta-llama-3.2-11b-vision-instruct"],
-    "llama-3.2-90b-vision-instruct":
-      nvidiaModels["meta-llama-3.2-90b-vision-instruct"],
-    "llama-3.3-70b-instruct": nvidiaModels["meta-llama-3.3-70b-instruct"],
-    "llama-4-maverick-17b-128e-instruct":
+  // --- xAI (Grok) Models ---
+  xAI: {
+    "Grok 4.1 Fast": n33AIProvider("grok-4.1-fast"),
+    "Grok 4": grokFreeProvider("grok-4"),
+    "Grok 3": grokFreeProvider("grok-3"),
+    "Grok 3 Mini": grokFreeProvider("grok-3-mini"),
+  },
+
+  // --- Qwen Models ---
+  Qwen: {
+    "Qwen 2.5 Coder (Plus)": qwenProvider("qwen3-coder-plus"),
+    "Qwen 2.5 Coder (Flash)": qwenProvider("qwen3-coder-flash"),
+    "Qwen Vision (VL)": qwenProvider("vision-model"),
+    "Qwen 2 7B": nvidiaModels["qwen-qwen2-7b-instruct"],
+    "Qwen 2.5 7B": nvidiaModels["qwen-qwen2.5-7b-instruct"],
+    "Qwen 2.5 Coder 7B": nvidiaModels["qwen-qwen2.5-coder-7b-instruct"],
+    "Qwen 2.5 Coder 32B": nvidiaModels["qwen-qwen2.5-coder-32b-instruct"],
+    "Qwen 3 Next 80B": nvidiaModels["qwen-qwen3-next-80b-a3b-instruct"],
+    "QwQ 32B": nvidiaModels["qwen-qwq-32b"],
+  },
+
+  // --- Meta (Llama) Models ---
+  Meta: {
+    "Llama 3.1 8B": nvidiaModels["meta-llama-3.1-8b-instruct"],
+    "Llama 3.1 70B": nvidiaModels["meta-llama-3.1-70b-instruct"],
+    "Llama 3.1 405B": nvidiaModels["meta-llama-3.1-405b-instruct"],
+    "Llama 3.2 1B": nvidiaModels["meta-llama-3.2-1b-instruct"],
+    "Llama 3.2 3B": nvidiaModels["meta-llama-3.2-3b-instruct"],
+    "Llama 3.2 11B Vision": nvidiaModels["meta-llama-3.2-11b-vision-instruct"],
+    "Llama 3.2 90B Vision": nvidiaModels["meta-llama-3.2-90b-vision-instruct"],
+    "Llama 3.3 70B": nvidiaModels["meta-llama-3.3-70b-instruct"],
+    "Llama 4 Maverick 17B":
       nvidiaModels["meta-llama-4-maverick-17b-128e-instruct"],
-    // Removed: llama-4-scout, codellama-70b (Not Found)
-    "llama-guard-4-12b": nvidiaModels["meta-llama-guard-4-12b"],
+    "Llama Guard 4 12B": nvidiaModels["meta-llama-guard-4-12b"],
   },
 
-  // Microsoft Phi models
-  microsoft: {
-    "phi-3-mini-4k-instruct": nvidiaModels["microsoft-phi-3-mini-4k-instruct"],
-    "phi-3-mini-128k-instruct":
-      nvidiaModels["microsoft-phi-3-mini-128k-instruct"],
-    "phi-3-small-8k-instruct":
-      nvidiaModels["microsoft-phi-3-small-8k-instruct"],
-    "phi-3-small-128k-instruct":
-      nvidiaModels["microsoft-phi-3-small-128k-instruct"],
-    "phi-3-medium-4k-instruct":
-      nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
-    "phi-3-medium-128k-instruct":
-      nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
-    // Removed: phi-3-vision, phi-4-mini-instruct, phi-4-mini-flash-reasoning (Not Found/Degraded/Down)
-    "phi-3.5-mini-instruct": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
-    "phi-4-multimodal-instruct":
-      nvidiaModels["microsoft-phi-4-multimodal-instruct"],
+  // --- Microsoft (Phi) Models ---
+  Microsoft: {
+    "Phi-3 Mini 4K": nvidiaModels["microsoft-phi-3-mini-4k-instruct"],
+    "Phi-3 Mini 128K": nvidiaModels["microsoft-phi-3-mini-128k-instruct"],
+    "Phi-3 Small 8K": nvidiaModels["microsoft-phi-3-small-8k-instruct"],
+    "Phi-3 Small 128K": nvidiaModels["microsoft-phi-3-small-128k-instruct"],
+    "Phi-3 Medium 4K": nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
+    "Phi-3 Medium 128K": nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
+    "Phi-3.5 Mini": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
+    "Phi-4 Multimodal": nvidiaModels["microsoft-phi-4-multimodal-instruct"],
   },
 
-  // Mistral models
-  mistral: {
-    "mistral-7b-instruct-v0.2":
-      nvidiaModels["mistralai-mistral-7b-instruct-v0.2"],
-    "mistral-7b-instruct-v0.3":
-      nvidiaModels["mistralai-mistral-7b-instruct-v0.3"],
-    "mistral-small-24b-instruct":
-      nvidiaModels["mistralai-mistral-small-24b-instruct"],
-    "mistral-small-3.1-24b-instruct":
+  // --- Mistral AI Models ---
+  Mistral: {
+    "Mistral 7B v0.2": nvidiaModels["mistralai-mistral-7b-instruct-v0.2"],
+    "Mistral 7B v0.3": nvidiaModels["mistralai-mistral-7b-instruct-v0.3"],
+    "Mistral Small 24B": nvidiaModels["mistralai-mistral-small-24b-instruct"],
+    "Mistral Small 3.1 24B":
       nvidiaModels["mistralai-mistral-small-3.1-24b-instruct-2503"],
-    // Removed: mistral-large-2, codestral, mistral-nemo (Not Found)
-    "mistral-large-3-675b-instruct":
+    "Mistral Large 3 675B":
       nvidiaModels["mistralai-mistral-large-3-675b-instruct-2512"],
-    "mistral-medium-3-instruct":
-      nvidiaModels["mistralai-mistral-medium-3-instruct"],
-    "mixtral-8x7b-instruct-v0.1":
-      nvidiaModels["mistralai-mixtral-8x7b-instruct-v0.1"],
-    "mixtral-8x22b-instruct-v0.1":
-      nvidiaModels["mistralai-mixtral-8x22b-instruct-v0.1"],
-    "mathstral-7b-v0.1": nvidiaModels["mistralai-mathstral-7b-v0.1"],
-    "ministral-14b-instruct-2512":
-      nvidiaModels["mistralai-ministral-14b-instruct-2512"],
+    "Mistral Medium 3": nvidiaModels["mistralai-mistral-medium-3-instruct"],
+    "Mixtral 8x7B v0.1": nvidiaModels["mistralai-mixtral-8x7b-instruct-v0.1"],
+    "Mixtral 8x22B v0.1": nvidiaModels["mistralai-mixtral-8x22b-instruct-v0.1"],
+    "Mathstral 7B": nvidiaModels["mistralai-mathstral-7b-v0.1"],
+    "Ministral 14B": nvidiaModels["mistralai-ministral-14b-instruct-2512"],
   },
 
-  // Moonshot models
-  moonshot: {
-    "kimi-k2-instruct": nvidiaModels["moonshotai-kimi-k2-instruct"],
-    "kimi-k2-instruct-0905": nvidiaModels["moonshotai-kimi-k2-instruct-0905"],
+  // --- Moonshot (Kimi) Models ---
+  Moonshot: {
+    "Kimi K2.5": kimiProvider("kimi-k2.5"),
+    "Kimi K2-0905 (P1)": kimiProvider("kimi-k2-0905"),
+    "Kimi K2-Thinking": kimiProvider("kimi-k2-thinking"),
+    "Kimi K2-0905 (P2)": nvidiaModels["moonshotai-kimi-k2-instruct-0905"],
+    "Kimi K2": nvidiaModels["moonshotai-kimi-k2-instruct"],
   },
 
-  // NVIDIA Nemotron models
-  nemotron: {
-    // Removed: nemotron-4-340b, nemotron-51b, nemotron-70b (Not Found)
-    "nemotron-mini-4b-instruct":
-      nvidiaModels["nvidia-nemotron-mini-4b-instruct"],
-    "llama-3.1-nemotron-nano-8b-v1":
+  // --- MiniMax Models ---
+  MiniMax: {
+    "MiniMax-01 (P1)": miniMaxM1Provider("minimax-01"),
+    "MiniMax-01 (P2)": miniMaxM2Provider("minimax-01"),
+  },
+
+  // --- Perplexity Models ---
+  Perplexity: {
+    "Sonar (P1)": n33AIProvider("sonar"),
+    "Sonar Pro (P2)": n33AIProvider("sonar-pro"),
+  },
+
+  // --- NVIDIA Models ---
+  NVIDIA: {
+    "Nemotron Mini 4B": nvidiaModels["nvidia-nemotron-mini-4b-instruct"],
+    "Llama 3.1 Nemotron Nano 8B":
+      nvidiaModels["nvidia-llama-3.1-bonafide-nano-8b-v1"] ||
       nvidiaModels["nvidia-llama-3.1-nemotron-nano-8b-v1"],
-    "llama-3.3-nemotron-super-49b-v1":
+    "Llama 3.3 Nemotron Super 49B":
       nvidiaModels["nvidia-llama-3.3-nemotron-super-49b-v1"],
-    "llama-3.3-nemotron-super-49b-v1.5":
+    "Llama 3.3 Nemotron Super 49B v1.5":
       nvidiaModels["nvidia-llama-3.3-nemotron-super-49b-v1.5"],
   },
 
-  // OpenAI models (via NVIDIA)
-  openai: {
-    "gpt-oss-20b": nvidiaModels["openai-gpt-oss-20b"],
-    "gpt-oss-120b": nvidiaModels["openai-gpt-oss-120b"],
+  // --- IBM (Granite) Models ---
+  IBM: {
+    "Granite (Native Placeholder)": nvidiaModels["meta-llama-3.1-8b-instruct"],
   },
 
-  // Qwen models
-  qwen: {
-    "qwen2-7b-instruct": nvidiaModels["qwen-qwen2-7b-instruct"],
-    "qwen2.5-7b-instruct": nvidiaModels["qwen-qwen2.5-7b-instruct"],
-    "qwen2.5-coder-7b-instruct": nvidiaModels["qwen-qwen2.5-coder-7b-instruct"],
-    "qwen2.5-coder-32b-instruct":
-      nvidiaModels["qwen-qwen2.5-coder-32b-instruct"],
-    // Removed: qwen3-235b-a22b, qwen3-coder-480b-a35b-instruct, qwen3.5-397b-a17b (Down/Not Found)
-    "qwen3-next-80b-a3b-instruct":
-      nvidiaModels["qwen-qwen3-next-80b-a3b-instruct"],
-    "qwq-32b": nvidiaModels["qwen-qwq-32b"],
+  // --- Z-AI (GLM) Models ---
+  "Z-AI": {
+    "GLM 5": nvidiaModels["z-ai-glm5"],
+    "ChatGLM3 6B": nvidiaModels["thudm-chatglm3-6b"],
   },
 
-  // GLM models (Z-AI)
-  zai: {
-    // Removed: glm-4.7 (Down)
-    "glm-5": nvidiaModels["z-ai-glm5"],
-    "chatglm3-6b": nvidiaModels["thudm-chatglm3-6b"],
-  },
-
-  // Other quality models
-  other: {
-    "jamba-1.5-mini-instruct": nvidiaModels["ai21labs-jamba-1.5-mini-instruct"],
-    "falcon3-7b-instruct": nvidiaModels["tiiuae-falcon3-7b-instruct"],
-    "solar-10.7b-instruct": nvidiaModels["upstage-solar-10.7b-instruct"],
-    "baichuan2-13b-chat": nvidiaModels["baichuan-inc-baichuan2-13b-chat"],
+  // --- Other Quality Models ---
+  Other: {
+    "Jamba 1.5 Mini": nvidiaModels["ai21labs-jamba-1.5-mini-instruct"],
+    "Falcon 3 7B": nvidiaModels["tiiuae-falcon3-7b-instruct"],
+    "Solar 10.7B": nvidiaModels["upstage-solar-10.7b-instruct"],
+    "Baichuan 2 13B": nvidiaModels["baichuan-inc-baichuan2-13b-chat"],
   },
 };
 
@@ -412,14 +371,10 @@ const staticUnsupportedModels = new Set<LanguageModel>([]);
 
 const staticSupportImageInputModels: Record<string, LanguageModel> = {
   // Vision models support image input
-  "llama-3.2-11b-vision-instruct":
-    staticModels.llama["llama-3.2-11b-vision-instruct"],
-  "llama-3.2-90b-vision-instruct":
-    staticModels.llama["llama-3.2-90b-vision-instruct"],
-  // Removed: phi-3-vision (Not Found)
-  "phi-3.5-vision-instruct": staticModels.microsoft["phi-3.5-vision-instruct"],
-  "phi-4-multimodal-instruct":
-    staticModels.microsoft["phi-4-multimodal-instruct"],
+  "Llama 3.2 11B Vision": staticModels.Meta["Llama 3.2 11B Vision"],
+  "Llama 3.2 90B Vision": staticModels.Meta["Llama 3.2 90B Vision"],
+  "Phi-4 Multimodal": staticModels.Microsoft["Phi-4 Multimodal"],
+  "Qwen Vision (VL)": staticModels.Qwen["Qwen Vision (VL)"],
 };
 
 const allModels: Record<string, Record<string, LanguageModel>> = {
@@ -474,10 +429,10 @@ export const customModelProvider = {
       allModels[model.provider as keyof typeof allModels]?.[model.model];
     if (!selectedModel) {
       console.warn(
-        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback: llama/llama-3.3-70b-instruct`,
+        `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback: Meta/Llama 3.3 70B`,
       );
       // Fallback to a reliable model
-      const fallbackModel = allModels["llama"]?.["llama-3.3-70b-instruct"];
+      const fallbackModel = staticModels.Meta["Llama 3.3 70B"];
       if (!fallbackModel) {
         throw new Error(
           `Model not found: ${model.provider}/${model.model}. Please select a valid model.`,

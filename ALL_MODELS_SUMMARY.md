@@ -1,185 +1,59 @@
 # Complete Model Collection Summary
 
-## Total Models Available: 242+
+## Total Models Available: 108+
 
-Your chatbot now has access to over 242 AI models across 13 major providers!
+Your chatbot now has access to over 108 AI models organized by company branding!
 
-## Provider Breakdown
+## Brand-Based Model Organization
+Models are now grouped by their respective creators for a more professional experience. Duplicate models across different providers are labeled with (P1), (P2), etc.
 
-### 7. Chatbot AI (GPT) (6 models)
-**Endpoint:** https://chatbot-ai.qwen4346.workers.dev/v1
+### 1. Anthropic (12 models)
+**Models:** Claude 3.5 Sonnet (P1/P2/Proxy), Claude 4.5 (Sonnet/Haiku/Opus), Claude 3 (Opus/Sonnet/Haiku), Claude 2, Claude Instant.
 
-**Models:**
-- GPT-4, GPT-4 Turbo
-- GPT-4 (1106), GPT-4 (0125)
-- GPT-3.5 Turbo, GPT-3.5 Turbo (16K)
+### 2. OpenAI (20 models)
+**Models:** GPT-4o (P1/P2), GPT-4o Mini (P1/P2), ChatGPT-4o, GPT-5.2, GPT-4 (P1/P2), GPT-4 Turbo (P1/P2), GPT-4 (1106/0125), GPT-3.5 Turbo (P1/16K), o1, o1-mini, o1-preview, o3-mini, GPT-OSS (20B/120B).
 
-### 8. xAI (Grok Free) (5 models)
-**Endpoint:** https://grok-proxy.qwen4346.workers.dev/v1
+### 3. DeepSeek (13 models)
+**Models:** DeepSeek V3.2 (P1/Base), DeepSeek V3, DeepSeek VL, DeepSeek V2, DeepSeek Math, DeepSeek Coder, DeepSeek R1 (P1/P2), DeepSeek Reasoner (P1/P2), DeepSeek Chat, DeepSeek R1 Distill Llama 8B.
 
-**Models:**
-- Grok 4, Grok 3, Grok 3 Mini
-- GPT-4o, GPT-4o Mini
+### 4. Google (2 models)
+**Models:** Gemini 3 Flash, Gemini 3 Pro.
 
-### 1. Anthropic Claude (19 models)
-**Endpoint:** https://claude-talkai.ronitshrimankar1.workers.dev/v1
+### 5. xAI (4 models)
+**Models:** Grok 4.1 Fast, Grok 4, Grok 3, Grok 3 Mini.
 
-**Models:**
-- Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3.5 Sonnet (Reasoning)
-- Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
-- Claude 2, Claude Instant
-- GPT-4o, GPT-4o Mini, ChatGPT-4o (Latest)
-- GPT-4 Turbo, GPT-4, o1, o1-mini, o1-preview, o3-mini
-- Deepseek R1 (Anthropic Node), Deepseek Reasoner (Anthropic Node)
+### 6. Meta (Llama) (10 models)
+**Models:** Llama 3.1 (8B/70B/405B), Llama 3.2 (1B/3B/11B Vision/90B Vision), Llama 3.3 70B, Llama 4 Maverick, Llama Guard.
 
-**Features:**
-- ✅ Variety of premium models (Claude, GPT, O1, Deepseek)
-- ✅ Tool calling support
-- ✅ Fast response times
+### 7. Microsoft (Phi) (8 models)
+**Models:** Phi-3 (Mini/Small/Medium), Phi-3.5 Mini, Phi-4 Multimodal.
 
-### 2. MiniMax M1 & M2.1 (2 models)
-**Endpoints:** 
-- https://minimax-proxy.llamai.workers.dev/v1 (M1)
-- https://freeai-minimax.qwen4346.workers.dev/v1 (M2.1)
+### 8. Mistral AI (10 models)
+**Models:** Mistral 7B (v0.2/v0.3), Mistral Small (24B/3.1), Mistral Large 3, Mixtral (8x7B/8x22B), Mathstral, Ministral.
 
-**Models:**
-- MiniMax-01 (M1)
-- MiniMax-01 (M2.1)
+### 9. Qwen (9 models)
+**Models:** Qwen 2.5 Coder (Plus/Flash), Qwen Vision, Qwen 2 (7B), Qwen 2.5 (7B), Qwen 2.5 Coder (7B/32B), Qwen 3 Next.
 
-**Features:**
-- ✅ Free MiniMax models routing
-- ✅ Tool calling support
-- ✅ High performance
+### 10. Moonshot (Kimi) (5 models)
+**Models:** Kimi K2.5, Kimi K2-0905 (P1/P2), Kimi K2-Thinking, Kimi K2.
 
-### 3. DeepSeek (10 models)
-**Endpoint:** https://deepseek-proxy.llamai.workers.dev/v1
+### 11. MiniMax (2 models)
+**Models:** MiniMax-01 (P1), MiniMax-01 (P2).
 
-**Models:**
-- DeepSeek V3.2, DeepSeek V3.2 (Base), DeepSeek V3
-- DeepSeek VL, DeepSeek V2, DeepSeek Math
-- DeepSeek Coder, DeepSeek R1, DeepSeek Reasoner, DeepSeek Chat
+### 12. Perplexity (2 models)
+**Models:** Sonar (P1), Sonar Pro (P2).
 
-**Features:**
-- ✅ Deepseek official endpoints wrapper
-- ✅ Tool calling support
-- ✅ High performance
+### 13. NVIDIA (4 models)
+**Models:** Nemotron Mini, Llama 3.1 Nemotron Nano, Llama 3.3 Nemotron Super (v1/v1.5).
 
-### 4. QWEN (3 models)
-**Endpoint:** https://qwen-worker-proxy.ronitshrimankar1.workers.dev/v1
+### 14. IBM (1 model)
+**Models:** Granite (Native Placeholder).
 
-**Models:**
-- Qwen 2.5 Coder (Plus)
-- Qwen 2.5 Coder (Flash)
-- Qwen Vision (VL)
+### 15. Z-AI (2 models)
+**Models:** GLM 5, ChatGLM3 6B.
 
-**Features:**
-- ✅ New Qwen endpoints wrapper
-- ✅ Tool calling support
-- ✅ High performance
-
-### 5. Moonshot AI (Kimi) (3 models)
-**Endpoint:** https://kimi-k2.qwen4346.workers.dev/v1
-
-**Models:**
-- Kimi K2.5
-- Kimi K2-0905
-- Kimi K2-Thinking
-
-**Features:**
-- ✅ Native Kimi (Moonshot) models
-- ✅ High performance reasoning
-
-### 6. N33 AI (9 models)
-**Endpoint:** https://n33-ai.qwen4346.workers.dev/v1
-
-**Models:**
-- Sonar (Perplexity), Sonar Pro (Perplexity)
-- Grok 4.1 Fast (xAI)
-- Claude 4.5 Haiku, Claude 4.5 Sonnet, Claude 4.5 Opus
-- GPT-5.2, Gemini 3 Flash, Gemini 3 Pro
-
-**Features:**
-- ✅ Multi-vendor experimental models
-- ✅ Fast streaming support (Native SSE)
-
-### 1. Pollinations AI (7 models)
-**Endpoint:** https://text.pollinations.ai/openai
-
-**Models:**
-- gemini - Gemini 2.5 Flash Lite (vision support)
-- mistral - Mistral Small 3.2 24B
-- openai - OpenAI GPT-5 Nano (vision support)
-- openai-fast - OpenAI GPT-4.1 Nano (vision support)
-- openai-large - OpenAI GPT-4.1 (vision support)
-- openai-reasoning - OpenAI o4 Mini (reasoning + vision)
-- roblox-rp - Llama 3.1 8B
-
-**Hidden Model (Auto-activated for search queries):**
-- gemini-search - Automatically used for search queries
-
-**Features:**
-- ✅ Tool calling support
-- ✅ Vision/image support
-- ✅ Rate limit: 10+ requests per minute
-- ✅ Excellent quality
-
-### 2. GPT-OSS (2 models)
-**Endpoint:** https://sii3.top/api/gpt-oss.php
-
-**Models:**
-- gpt-oss-120b - GPT-OSS 120B model
-- gpt-4-117b - GPT-4 117B model
-
-**Features:**
-- ✅ Free to use
-- ✅ No rate limits
-- ✅ Fast responses (~1-2 seconds)
-- ❌ No tool calling support
-- ❌ No vision support
-
-### 3. Grok (1 model)
-**Endpoint:** https://sii3.top/api/grok4.php
-
-**Models:**
-- grok-4 - Grok-4 model
-
-**Features:**
-- ✅ Free to use
-- ✅ No rate limits
-- ✅ Fast responses (~1-2 seconds)
-- ❌ No tool calling support
-- ❌ No vision support
-
-### 4. QWEN (174 models)
-**Endpoint:** https://sii3.top/api/qwen.php
-
-**QWEN3 Series (49 models):**
-- Coder models (6 variants)
-- Base models (7 sizes)
-- Chat models (7 sizes)
-- QA models (7 sizes)
-- Vision models (7 sizes)
-- Math models (7 sizes)
-- Machine Translation models (7 sizes)
-
-**QWEN2.5 Series (125 models):**
-- Instruct models (7 sizes)
-- Chat models (7 sizes)
-- QA models (7 sizes)
-- Vision models (7 sizes)
-- Math models (7 sizes)
-- Coder models (7 sizes)
-- Machine Translation models (7 sizes)
-- Vision Instruct models (7 sizes)
-- Math Instruct models (7 sizes)
-- Coder Instruct models (7 sizes)
-- MT Instruct models (7 sizes)
-- Vision Chat models (7 sizes)
-- Math Chat models (7 sizes)
-- Coder Chat models (7 sizes)
-- MT Chat models (7 sizes)
-- Vision QA models (7 sizes)
-- Math QA models (7 sizes)
+### 16. Other (4 models)
+**Models:** Jamba 1.5 Mini, Falcon 3 7B, Solar 10.7B, Baichuan 2 13B.
 
 **Features:**
 - ✅ Free to use
@@ -247,9 +121,11 @@ Your chatbot now has access to over 242 AI models across 13 major providers!
 
 ## Provider Comparison
 
-| Feature | Pollinations | GPT-OSS | Grok | QWEN (Native) | DeepSeek | QWEN | Anthropic Claude | MiniMax | Kimi | N33 AI | Chatbot AI | Grok Free |
-|---------|-------------|---------|------|------|-----------------|-------------|---------------|---------|-------|--------|------------|-----------|
-| Models | 7 | 2 | 1 | 174 | 10 | 3 | 19 | 2 | 3 | 9 | 6 | 5 |
+| Feature | Anthropic | OpenAI | DeepSeek | Google | xAI | Meta | Microsoft | Mistral | Qwen | MiniMax | Kimi | Perplexity | NVIDIA |
+|---------|-----------|--------|----------|--------|-----|------|-----------|---------|------|---------|------|------------|--------|
+| Models | 12 | 20 | 13 | 2 | 4 | 10 | 8 | 10 | 9 | 2 | 5 | 2 | 4 |
+| Tool Call | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Speed | Fast | Fast | Fast | Fast | Fast | Fast | Fast | Fast | Fast | Fast | Fast | Fast | Fast |
 | Cost | Free | Free | Free | Free | Custom | Custom | Custom | Custom | Custom | Custom | Custom | Custom |
 | Tool Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Vision Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
@@ -267,19 +143,20 @@ Your chatbot now has access to over 242 AI models across 13 major providers!
 5. Get response from selected model
 
 ### Model Selector Organization
-Models are organized by provider:
-- **Anthropic Claude** - 19 models
-- **N33 AI** - 9 models
-- **DeepSeek** - 10 models
-- **Chatbot AI (GPT)** - 6 models
-- **xAI (Grok Free)** - 5 models
-- **Moonshot AI (Kimi)** - 3 models
-- **QWEN** - 3 models
-- **MiniMax M1 & M2.1** - 2 models
-- **Pollinations** - 7 models
-- **GPT-OSS** - 2 models
-- **Grok** - 1 model
-- **QWEN (Native)** - 174 models
+Models are organized by brand:
+- **Anthropic** - 12 models
+- **OpenAI** - 20 models
+- **DeepSeek** - 13 models
+- **Google** - 2 models
+- **xAI** - 4 models
+- **Meta** - 10 models
+- **Microsoft** - 8 models
+- **Mistral AI** - 10 models
+- **Qwen** - 9 models
+- **Moonshot (Kimi)** - 5 models
+- **MiniMax** - 2 models
+- **Perplexity** - 2 models
+- **Other Providers** - 11 models
 
 ### Search Query Handling
 - If you ask a search query (e.g., "What is the current BTC price?")
