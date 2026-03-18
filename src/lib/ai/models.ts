@@ -18,9 +18,10 @@ function createStreamingProxyFetch() {
   ): Promise<Response> => {
     const res = await fetch(input, init);
 
-    // Only intercept if its a successful JSON response where we might have wanted a stream
+    // Only intercept if its a successful response where we might have wanted a stream
     const contentType = res.headers.get("content-type");
     const isJson = contentType?.includes("application/json");
+    const isEventStream = contentType?.includes("text/event-stream");
 
     // Check if stream was requested in the body
     let isStreamRequested = false;
@@ -33,8 +34,29 @@ function createStreamingProxyFetch() {
       // Ignore parse errors
     }
 
-    if (res.ok && isJson && isStreamRequested) {
-      const data = await res.json();
+    if (res.ok && (isJson || isEventStream) && isStreamRequested) {
+      // Clone the response so we can check if it's already a valid stream
+      const resClone = res.clone();
+      const reader = resClone.body?.getReader();
+      const decoder = new TextDecoder();
+      const { value } = (await reader?.read()) || {};
+      const chunk = decoder.decode(value);
+
+      // If it's already a valid SSE stream with data: prefixes, just return the original response
+      if (chunk && chunk.includes("data:")) {
+        return res;
+      }
+
+      // Otherwise, it's likely raw JSON (even if Content-Type is text/event-stream)
+      // We'll read the full body and polyfill it
+      const dataStr = chunk + (await res.text());
+      let data;
+      try {
+        data = JSON.parse(dataStr);
+      } catch (_e) {
+        // If it's not JSON, return original response
+        return res;
+      }
 
       // If it's already a full completion but we wanted a stream, polyfill it
       if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -145,10 +167,43 @@ const n33AIProvider = createOpenAICompatible({
   baseURL: "https://n33-ai.qwen4346.workers.dev/v1",
 });
 
+const chatbotAIProvider = createOpenAICompatible({
+  name: "Chatbot AI (GPT)",
+  apiKey: "dummy",
+  baseURL: "https://chatbot-ai.qwen4346.workers.dev/v1",
+  fetch: streamingFetch,
+});
+
+const grokFreeProvider = createOpenAICompatible({
+  name: "xAI (Grok Free)",
+  apiKey: "dummy",
+  baseURL: "https://grok-proxy.qwen4346.workers.dev/v1",
+  fetch: streamingFetch,
+});
+
 const staticModels = {
   // Anthropic models (via proxy)
   anthropic: {
     "claude-sonnet-4.5-proxy": nvidiaModels["meta-llama-3.1-405b-instruct"], // Fallback proxy
+  },
+
+  // xAI (Grok Free) Models
+  "xAI (Grok Free)": {
+    "Grok 4": grokFreeProvider("grok-4"),
+    "Grok 3": grokFreeProvider("grok-3"),
+    "Grok 3 Mini": grokFreeProvider("grok-3-mini"),
+    "GPT-4o": grokFreeProvider("gpt-4o"),
+    "GPT-4o Mini": grokFreeProvider("gpt-4o-mini"),
+  },
+
+  // Chatbot AI (GPT) Models
+  "Chatbot AI (GPT)": {
+    "GPT-4": chatbotAIProvider("gpt-4"),
+    "GPT-4 Turbo": chatbotAIProvider("gpt-4-turbo-preview"),
+    "GPT-4 (1106)": chatbotAIProvider("gpt-4-1106-preview"),
+    "GPT-4 (0125)": chatbotAIProvider("gpt-4-0125-preview"),
+    "GPT-3.5 Turbo": chatbotAIProvider("gpt-3.5-turbo"),
+    "GPT-3.5 Turbo (16K)": chatbotAIProvider("gpt-3.5-turbo-16k"),
   },
 
   // Moonshot AI (Kimi) Models

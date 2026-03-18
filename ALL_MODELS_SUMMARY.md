@@ -1,10 +1,25 @@
 # Complete Model Collection Summary
 
-## Total Models Available: 231+
+## Total Models Available: 242+
 
-Your chatbot now has access to over 231 AI models across 11 major providers!
+Your chatbot now has access to over 242 AI models across 13 major providers!
 
 ## Provider Breakdown
+
+### 7. Chatbot AI (GPT) (6 models)
+**Endpoint:** https://chatbot-ai.qwen4346.workers.dev/v1
+
+**Models:**
+- GPT-4, GPT-4 Turbo
+- GPT-4 (1106), GPT-4 (0125)
+- GPT-3.5 Turbo, GPT-3.5 Turbo (16K)
+
+### 8. xAI (Grok Free) (5 models)
+**Endpoint:** https://grok-proxy.qwen4346.workers.dev/v1
+
+**Models:**
+- Grok 4, Grok 3, Grok 3 Mini
+- GPT-4o, GPT-4o Mini
 
 ### 1. Anthropic Claude (19 models)
 **Endpoint:** https://claude-talkai.ronitshrimankar1.workers.dev/v1
@@ -232,10 +247,10 @@ Your chatbot now has access to over 231 AI models across 11 major providers!
 
 ## Provider Comparison
 
-| Feature | Pollinations | GPT-OSS | Grok | QWEN (Native) | DeepSeek | QWEN | Anthropic Claude | MiniMax | Kimi | N33 AI |
-|---------|-------------|---------|------|------|-----------------|-------------|---------------|---------|-------|--------|
-| Models | 7 | 2 | 1 | 174 | 10 | 3 | 19 | 2 | 3 | 9 |
-| Cost | Free | Free | Free | Free | Custom | Custom | Custom | Custom | Custom | Custom |
+| Feature | Pollinations | GPT-OSS | Grok | QWEN (Native) | DeepSeek | QWEN | Anthropic Claude | MiniMax | Kimi | N33 AI | Chatbot AI | Grok Free |
+|---------|-------------|---------|------|------|-----------------|-------------|---------------|---------|-------|--------|------------|-----------|
+| Models | 7 | 2 | 1 | 174 | 10 | 3 | 19 | 2 | 3 | 9 | 6 | 5 |
+| Cost | Free | Free | Free | Free | Custom | Custom | Custom | Custom | Custom | Custom | Custom | Custom |
 | Tool Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Vision Support | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Speed | Medium | Fast | Fast | Fast | Fast | Fast | Fast | Fast |
@@ -256,6 +271,8 @@ Models are organized by provider:
 - **Anthropic Claude** - 19 models
 - **N33 AI** - 9 models
 - **DeepSeek** - 10 models
+- **Chatbot AI (GPT)** - 6 models
+- **xAI (Grok Free)** - 5 models
 - **Moonshot AI (Kimi)** - 3 models
 - **QWEN** - 3 models
 - **MiniMax M1 & M2.1** - 2 models
