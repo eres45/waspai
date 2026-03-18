@@ -300,29 +300,24 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
           console.log("Audio URL received:", audioUrl);
 
-          // Proxy the audio through our backend to avoid CORS issues
-          const proxyUrl = `/api/audio?url=${encodeURIComponent(audioUrl)}`;
-          console.log("Using proxy URL:", proxyUrl);
-
-          // Play audio with retry logic
+          // Play audio directly — audioUrl is a blob: URL (local to browser),
+          // so no CORS proxy needed.
           if (!audioElement.current) {
             audioElement.current = new Audio();
           }
 
-          audioElement.current.src = proxyUrl;
-          audioElement.current.crossOrigin = "anonymous";
+          audioElement.current.src = audioUrl;
 
           audioElement.current.onended = () => {
             setIsAssistantSpeaking(false);
+            // Free the blob URL memory
+            URL.revokeObjectURL(audioUrl);
           };
 
           audioElement.current.onerror = (error) => {
             console.error("Audio playback error:", error);
             setIsAssistantSpeaking(false);
           };
-
-          // Wait a bit for the audio file to be ready
-          await new Promise((resolve) => setTimeout(resolve, 500));
 
           try {
             await audioElement.current.play();

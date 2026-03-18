@@ -1,135 +1,31 @@
 /**
- * Custom TTS Provider
- * API: https://vetrex.x10.mx/api/tts.php
+ * Custom TTS Provider — LOVO TTS Worker
+ * API: https://lovo-tts.llamai.workers.dev
  *
- * Supports 54 different voices
+ * Voice mapping:
+ *   alloy, nova, shimmer → Chloe (Female US)
+ *   echo, onyx, fable    → Thomas (Male US)
  */
 
 export const CUSTOM_TTS_VOICES = [
-  "adam",
-  "aiko",
-  "alex",
-  "alice",
   "alloy",
-  "anaya",
-  "antonio",
-  "aoede",
-  "arjun",
-  "bella",
-  "daniel",
-  "dora",
-  "doras",
-  "echo",
-  "emma",
-  "eric",
-  "fable",
-  "fenrir",
-  "george",
-  "gongitsune",
-  "heart",
-  "isabella",
-  "jessica",
-  "kabir",
-  "kore",
-  "kumo",
-  "lewis",
-  "liam",
-  "lily",
-  "michael",
-  "nezumi",
-  "nicola",
-  "nicole",
-  "noel",
   "nova",
+  "shimmer",
+  "echo",
   "onyx",
-  "puck",
-  "river",
-  "riya",
-  "santa",
-  "santiago",
-  "sara",
-  "sarah",
-  "siwis",
-  "sky",
-  "tebukuro",
-  "xiaobei",
-  "xiaoni",
-  "xiaoxiao",
-  "xiaoyi",
-  "yunjian",
-  "yunxi",
-  "yunxia",
-  "yunyang",
+  "fable",
 ] as const;
 
 export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number];
 
-// Voice language mapping
+// Voice display metadata for LOVO voices
 export const VOICE_LANGUAGE_MAP: Record<string, string> = {
-  // English voices
-  adam: "English",
-  alex: "Spanish",
-  alice: "English",
-  alloy: "English",
-  bella: "English",
-  daniel: "English",
-  echo: "English",
-  emma: "English",
-  eric: "English",
-  fable: "English",
-  george: "English",
-  isabella: "English",
-  jessica: "English",
-  lewis: "English",
-  liam: "English",
-  lily: "English",
-  michael: "English",
-  nicola: "English",
-  nicole: "English",
-  nova: "English",
-  onyx: "English",
-  puck: "English",
-  river: "English",
-  sara: "English",
-  sarah: "English",
-  sky: "English",
-
-  // Chinese voices
-  xiaobei: "Chinese",
-  xiaoni: "Chinese",
-  xiaoxiao: "Chinese",
-  xiaoyi: "Chinese",
-  yunjian: "Chinese",
-  yunxi: "Chinese",
-  yunxia: "Chinese",
-  yunyang: "Chinese",
-
-  // Japanese voices
-  tebukuro: "Japanese",
-  gongitsune: "Japanese",
-  aoede: "Japanese",
-  kore: "Japanese",
-  kumo: "Japanese",
-  nezumi: "Japanese",
-
-  // Spanish/Portuguese voices
-  antonio: "Spanish",
-  santiago: "Spanish",
-
-  // Indian voices
-  arjun: "Hindi",
-  kabir: "Hindi",
-  riya: "Hindi",
-
-  // Other languages
-  anaya: "English",
-  dora: "Portuguese",
-  doras: "Portuguese",
-  fenrir: "Icelandic",
-  heart: "English",
-  noel: "French",
-  santa: "English",
-  siwis: "French",
+  alloy: "Female US (Chloe)",
+  nova: "Female US (Chloe)",
+  shimmer: "Female US (Chloe)",
+  echo: "Male US (Thomas)",
+  onyx: "Male US (Thomas)",
+  fable: "Male US (Thomas)",
 };
 
 /**
