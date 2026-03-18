@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   ArrowDownUp,
   Download,
@@ -99,50 +99,14 @@ export function InteractiveTable(props: InteractiveTableProps) {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    new Set(columns.map((col) => col.key)),
+    new Set((columns || []).map((col) => col?.key).filter(Boolean) as string[]),
   );
 
-  // Helper function to format cell values based on column type
-  const formatCellValue = (value: any, columnType: string = "string") => {
-    if (value === null || value === undefined) return "";
-
-    switch (columnType) {
-      case "number":
-        return typeof value === "number" ? value.toLocaleString() : value;
-      case "boolean":
-        return value ? "Yes" : "No";
-      case "date":
-        try {
-          return new Date(value).toLocaleDateString();
-        } catch {
-          return value;
-        }
-      default:
-        return String(value);
-    }
-  };
-
-  // Highlight search terms in text
-  const highlightText = (text: string, searchTerm: string) => {
-    if (!searchTerm || !text) return text;
-
-    const regex = new RegExp(`(${searchTerm})`, "gi");
-    const parts = String(text).split(regex);
-
-    return parts.map((part, index) =>
-      regex.test(part) ? (
-        <mark key={index} className="bg-yellow-200 dark:bg-yellow-800">
-          {part}
-        </mark>
-      ) : (
-        part
-      ),
-    );
-  };
+  const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   // Filter and sort data
   const processedData = useMemo(() => {
-    let filtered = [...data];
+    let filtered = [...safeData];
 
     // Apply global search
     if (searchTerm && searchable) {
@@ -158,7 +122,7 @@ export function InteractiveTable(props: InteractiveTableProps) {
       filtered.sort((a, b) => {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
-        const column = columns.find((col) => col.key === sortColumn);
+        const column = (columns || []).find((col) => col.key === sortColumn);
         const columnType = column?.type || "string";
 
         let comparison = 0;
@@ -185,7 +149,7 @@ export function InteractiveTable(props: InteractiveTableProps) {
     }
 
     return filtered;
-  }, [data, searchTerm, sortColumn, sortDirection]);
+  }, [safeData, searchTerm, sortColumn, sortDirection, columns, searchable]);
 
   // Pagination
   const totalPages =
@@ -198,28 +162,71 @@ export function InteractiveTable(props: InteractiveTableProps) {
         )
       : processedData;
 
-  // Handle sorting (all columns are sortable by default)
-  const handleSort = (columnKey: string) => {
-    if (sortColumn === columnKey) {
-      setSortDirection(
-        sortDirection === "asc"
-          ? "desc"
-          : sortDirection === "desc"
-            ? null
-            : "asc",
-      );
-      if (sortDirection === "desc") {
-        setSortColumn(null);
+  // Helper function to format cell values based on column type
+  const formatCellValue = useCallback(
+    (value: any, columnType: string = "string") => {
+      if (value === null || value === undefined) return "";
+
+      switch (columnType) {
+        case "number":
+          return typeof value === "number" ? value.toLocaleString() : value;
+        case "boolean":
+          return value ? "Yes" : "No";
+        case "date":
+          try {
+            return new Date(value).toLocaleDateString();
+          } catch {
+            return value;
+          }
+        default:
+          return String(value);
       }
-    } else {
-      setSortColumn(columnKey);
-      setSortDirection("asc");
-    }
-  };
+    },
+    [],
+  );
+
+  // Highlight search terms in text
+  const highlightText = useCallback((text: string, term: string) => {
+    if (!term || !text) return text;
+
+    const regex = new RegExp(`(${term})`, "gi");
+    const parts = String(text).split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <mark key={index} className="bg-yellow-200 dark:bg-yellow-800">
+          {part}
+        </mark>
+      ) : (
+        part
+      ),
+    );
+  }, []);
+
+  // Handle sorting (all columns are sortable by default)
+  const handleSort = useCallback(
+    (columnKey: string) => {
+      setSortColumn((prevCol) => {
+        if (prevCol === columnKey) {
+          setSortDirection((prevDir) => {
+            if (prevDir === "asc") return "desc";
+            if (prevDir === "desc") return null;
+            return "asc";
+          });
+          return sortDirection === "desc" ? null : columnKey;
+        }
+        setSortDirection("asc");
+        return columnKey;
+      });
+    },
+    [sortDirection],
+  );
 
   // Export to CSV
-  const exportToCSV = () => {
-    const visibleCols = columns.filter((col) => visibleColumns.has(col.key));
+  const exportToCSV = useCallback(() => {
+    const visibleCols = (columns || []).filter((col) =>
+      visibleColumns.has(col.key),
+    );
     const csvContent = [
       // Header
       visibleCols
@@ -240,15 +247,17 @@ export function InteractiveTable(props: InteractiveTableProps) {
     link.download = `${title.replace(/\s+/g, "_")}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-  };
+  }, [columns, visibleColumns, processedData, formatCellValue, title]);
 
   // Export to Excel (lazy load XLSX library)
-  const exportToExcel = async () => {
+  const exportToExcel = useCallback(async () => {
     try {
       // Dynamically load XLSX from CDN
       const XLSX = await loadXLSX();
 
-      const visibleCols = columns.filter((col) => visibleColumns.has(col.key));
+      const visibleCols = (columns || []).filter((col) =>
+        visibleColumns.has(col.key),
+      );
 
       // Prepare data for Excel
       const excelData = [
@@ -302,7 +311,25 @@ export function InteractiveTable(props: InteractiveTableProps) {
       // Fallback to CSV if Excel export fails
       exportToCSV();
     }
-  };
+  }, [
+    columns,
+    visibleColumns,
+    processedData,
+    formatCellValue,
+    title,
+    exportToCSV,
+  ]);
+
+  // Safety check for empty data or columns (AFTER hooks)
+  if (!columns || !Array.isArray(columns) || columns.length === 0) {
+    return (
+      <Card className="w-full px-6 py-4">
+        <p className="text-muted-foreground text-sm">
+          No column configuration provided.
+        </p>
+      </Card>
+    );
+  }
 
   const visibleColumnsArray = columns.filter((col) =>
     visibleColumns.has(col.key),
@@ -349,11 +376,8 @@ export function InteractiveTable(props: InteractiveTableProps) {
                   <DropdownMenuCheckboxItem
                     key={column.key}
                     checked={visibleColumns.has(column.key)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
+                    onCheckedChange={(checked) => {
                       const newVisible = new Set(visibleColumns);
-                      const checked = !newVisible.has(column.key);
                       if (checked) {
                         newVisible.add(column.key);
                       } else {
@@ -451,10 +475,10 @@ export function InteractiveTable(props: InteractiveTableProps) {
                 paginatedData.map((row, index) => {
                   return (
                     <TableRow key={index} className={`border-b!`}>
-                      {visibleColumnsArray.map((column, index) => (
+                      {visibleColumnsArray.map((column, idx) => (
                         <TableCell
                           key={column.key}
-                          className={`py-3 ${index === 0 ? "pl-6" : index === visibleColumnsArray.length - 1 ? "pr-6" : ""} ${
+                          className={`py-3 ${idx === 0 ? "pl-6" : idx === visibleColumnsArray.length - 1 ? "pr-6" : ""} ${
                             column.type === "number" || column.type === "date"
                               ? "text-center"
                               : column.type == "boolean"
@@ -464,7 +488,7 @@ export function InteractiveTable(props: InteractiveTableProps) {
                         >
                           {column.type == "boolean" ? (
                             <>
-                              <Checkbox checked={row[column.key]} />
+                              <Checkbox checked={!!row[column.key]} />
                             </>
                           ) : searchTerm && searchable ? (
                             highlightText(
@@ -486,7 +510,7 @@ export function InteractiveTable(props: InteractiveTableProps) {
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4 px-6">
             <div className="text-xs text-muted-foreground">
-              Total rows: {data.length}
+              Total rows: {safeData.length}
             </div>
             {pageSize > 0 && totalPages > 1 && (
               <div className="flex items-center gap-2">

@@ -1433,7 +1433,7 @@ BEGIN ROLEPLAY NOW.`
               2. Interacting with pages (clicking, typing, taking control)
               3. Real-time visual verification of websites
           - When used, the user will see a LIVE deep-linked preview of the browser.
-          - Prefer "steel-browser" over "web-search" for complex web tasks.`,
+          - Prefer "web-search" for information retrieval and "steel-browser" for interactive web tasks.`,
 
           // Character prompt
           characterContext ? characterPrompt : undefined,
@@ -1527,9 +1527,9 @@ BEGIN ROLEPLAY NOW.`
           modelToUse?.model === "gemini-search"
             ? { "web-search": webSearchTool }
             : {}),
-          // ALWAYS include memory tools for "strong memory"
-          save_memory: saveMemoryTool,
-          search_memories: searchMemoriesTool,
+          // ALWAYS include memory tools
+          "save-memory": saveMemoryTool,
+          "search-memories": searchMemoriesTool,
           // Note: YouTube transcript now handled client-side (bypasses IP blocking)
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;

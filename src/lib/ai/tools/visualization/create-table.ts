@@ -12,27 +12,24 @@ export const createTableTool = createTool({
         z.object({
           key: z
             .string()
-            .describe("Column key that matches the data object keys"),
+            .describe(
+              "Unique key for the column. This MUST match the property keys in the data objects.",
+            ),
           label: z.string().describe("Display label for the column header"),
           type: z
             .enum(["string", "number", "date", "boolean"])
             .nullable()
             .default("string")
-            .describe("Data type for proper sorting and formatting"),
+            .describe(
+              "Data type: 'number' for stats, 'date' for timestamps, 'boolean' for status, 'string' for text",
+            ),
         }),
       )
-      .describe("Column configuration array"),
+      .describe("Column configuration defining keys and labels"),
     data: z
-      .array(
-        z
-          .object({})
-          .catchall(z.any())
-          .describe(
-            "Array of row objects. Each object should have keys matching the column names.",
-          ),
-      )
+      .array(z.record(z.string(), z.any()))
       .describe(
-        "Array of row objects. Each object should have keys matching the column names.",
+        "Array of row objects. IMPORTANT: Each object property name (key) MUST exactly match one of the 'key' values defined in the columns array.",
       ),
   }),
   execute: async () => {

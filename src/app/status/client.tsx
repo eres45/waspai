@@ -363,7 +363,20 @@ export default function StatusPageClient() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl auto px-6 py-8">
+        {/* Intro Message */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-2">
+            Real-time Model Monitoring
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-2xl">
+            We monitor <strong>108+ specialized AI models</strong> across
+            multiple providers to ensure you always have access to the best
+            intelligence. Status is updated every 30 minutes. Use the search and
+            filters below to check specific model health.
+          </p>
+        </div>
+
         {/* Status Banner */}
         {testMessage && (
           <div

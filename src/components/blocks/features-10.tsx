@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Calendar, LucideIcon, Sparkles } from "lucide-react";
 import { ReactNode } from "react";
+import Image from "next/image";
 
 export function AdvancedFeatures() {
   return (
@@ -159,7 +160,7 @@ const DualModeImage = ({
   forceDark,
 }: DualModeImageProps) => (
   <>
-    <img
+    <Image
       src={forceDark ? darkSrc : darkSrc}
       className={cn(
         forceDark ? "block" : "hidden dark:block",
@@ -169,9 +170,10 @@ const DualModeImage = ({
       alt={`${alt} dark`}
       width={width}
       height={height}
+      unoptimized
     />
     {!forceDark && (
-      <img
+      <Image
         src={lightSrc}
         className={cn(
           "shadow dark:hidden object-cover w-full h-full",
@@ -180,6 +182,7 @@ const DualModeImage = ({
         alt={`${alt} light`}
         width={width}
         height={height}
+        unoptimized
       />
     )}
   </>

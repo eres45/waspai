@@ -18,6 +18,7 @@ import { generateUUID } from "lib/utils";
 import { createThreadAction } from "@/app/api/chat/actions";
 import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
+import Image from "next/image";
 
 interface Character {
   id: string;
@@ -137,10 +138,13 @@ export function CharactersList({
           }}
         >
           {character.icon?.type === "image" ? (
-            <img
+            <Image
               src={character.icon.value}
               alt={character.name}
               className="w-full h-full object-cover rounded-lg"
+              width={100}
+              height={100}
+              unoptimized
             />
           ) : (
             character.icon?.value || "🎭"
