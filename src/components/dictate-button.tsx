@@ -19,10 +19,17 @@ export function DictateButton({
   className,
 }: DictateButtonProps) {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const [isSupported, setIsSupported] = useState(true);
+  const recognitionRef = useRef<any>(null);
 
-  // Initialize Speech Recognition
+  // Keep a ref to the latest input so the recognition handler always reads
+  // the current value without triggering re-initialization of the recognition.
+  const inputRef = useRef(input);
+  useEffect(() => {
+    inputRef.current = input;
+  }, [input]);
+
+  // Initialize Speech Recognition ONCE (no deps that recreate it)
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -36,22 +43,26 @@ export function DictateButton({
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-
-    // Auto-detect: Use browser language by default, which is the most reliable "auto"
-    // However, if we want to prioritize Hindi/English, we let the browser handle its preferred input
     recognition.lang = navigator.language || "en-US";
 
     recognition.onresult = (event: any) => {
-      let finalTranscript = "";
+      let interimText = "";
+      let finalText = "";
 
       for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+          finalText += transcript;
+        } else {
+          interimText += transcript;
         }
       }
 
-      if (finalTranscript) {
-        setInputAction(input + (input ? " " : "") + finalTranscript);
+      const currentInput = inputRef.current;
+      // Show interim results immediately for real-time effect
+      if (interimText || finalText) {
+        const suffix = finalText || interimText;
+        setInputAction(currentInput + (currentInput ? " " : "") + suffix);
       }
     };
 
@@ -60,22 +71,32 @@ export function DictateButton({
     };
 
     recognition.onerror = (event: any) => {
-      console.error("Speech recognition error", event.error);
+      if (event.error !== "no-speech") {
+        console.error("Speech recognition error", event.error);
+      }
       setIsListening(false);
     };
 
     recognitionRef.current = recognition;
-  }, [input, setInputAction]);
+
+    return () => {
+      recognition.stop();
+    };
+  }, []); // Run once on mount
 
   const toggleListening = useCallback(() => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
     if (isListening) {
-      recognitionRef.current?.stop();
+      recognition.stop();
+      setIsListening(false);
     } else {
       try {
-        recognitionRef.current?.start();
+        recognition.start();
         setIsListening(true);
       } catch (_e) {
-        console.error("Failed to start speech recognition", _e);
+        // Already started in some edge cases — ignore
       }
     }
   }, [isListening]);
@@ -114,7 +135,7 @@ export function DictateButton({
               <motion.span
                 className="absolute inset-0 rounded-full bg-red-500/20 -z-10"
                 animate={{
-                  scale: [1, 1.4, 1],
+                  scale: [1, 1.5, 1],
                   opacity: [0.5, 0, 0.5],
                 }}
                 transition={{
@@ -127,7 +148,7 @@ export function DictateButton({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          {isListening ? "Stop Dictating" : "Start Dictating"}
+          {isListening ? "Stop Dictating" : "Dictate Message"}
         </TooltipContent>
       </Tooltip>
     </div>
