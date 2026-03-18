@@ -59,6 +59,7 @@ import { FileUIPart, TextUIPart } from "ai";
 import { toast } from "sonner";
 import { isFilePartSupported, isIngestSupported } from "@/lib/ai/file-support";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
+import { DictateButton } from "./dictate-button";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -1031,6 +1032,15 @@ export default function PromptInput({
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
+
+                {!isLoading && !voiceDisabled && (
+                  <DictateButton
+                    input={input}
+                    setInputAction={setInput}
+                    className="mx-1"
+                  />
+                )}
+
                 {!isLoading && !input.length && !voiceDisabled ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1052,7 +1062,9 @@ export default function PromptInput({
                     </TooltipTrigger>
                     <TooltipContent>{t("VoiceChat.title")}</TooltipContent>
                   </Tooltip>
-                ) : (
+                ) : null}
+
+                {(isLoading || input.length > 0) && (
                   <div
                     onClick={() => {
                       if (isLoading) {
