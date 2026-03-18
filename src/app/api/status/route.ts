@@ -162,25 +162,34 @@ export async function GET() {
       }
     }
 
-    // Filter out removed models and build response with uptime (snake_case to camelCase)
-    const modelsWithUptime = latestStatuses
-      .filter((s: any) => currentModelIds.has(s.model_id))
-      .map((s: any) => ({
-        modelId: s.model_id,
-        provider: s.provider,
-        status: s.status,
-        responseTime: s.response_time,
-        errorMessage: s.error_message,
-        testedAt: s.tested_at,
+    // Build final list: combine DB data with current configuration
+    const modelsWithUptime = Array.from(currentModelIds).map((modelId) => {
+      // Find latest status in DB
+      const dbStatus = latestStatuses?.find((s: any) => s.model_id === modelId);
+
+      // Find provider from config
+      const provider =
+        customModelProvider.modelsInfo.find((p) =>
+          p.models.some((m) => m.name === modelId),
+        )?.provider || "Unknown";
+
+      return {
+        modelId,
+        provider,
+        status: dbStatus?.status || "unknown",
+        responseTime: dbStatus?.response_time || null,
+        errorMessage: dbStatus?.error_message || null,
+        testedAt: dbStatus?.tested_at || null,
         uptime:
-          uptimeStats[s.model_id]?.total > 0
+          uptimeStats[modelId]?.total > 0
             ? Math.round(
-                (uptimeStats[s.model_id].operational /
-                  uptimeStats[s.model_id].total) *
+                (uptimeStats[modelId].operational /
+                  uptimeStats[modelId].total) *
                   100,
               )
             : 0,
-      }));
+      };
+    });
 
     const lastChecked = modelsWithUptime.reduce<string | null>((latest, m) => {
       if (!m.testedAt) return latest;
