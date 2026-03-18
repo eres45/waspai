@@ -140,49 +140,32 @@ export function getVoiceDisplayName(voice: CustomTTSVoice): string {
   return `${voice} [${language}]`;
 }
 
-interface TTSResponse {
-  success: boolean;
-  audio_url?: string;
-  error?: string;
-}
-
 /**
- * Generate speech from text using custom TTS API (via backend proxy)
- * Falls back to Web Speech API if external API fails
+ * Generate speech from text using LOVO TTS Worker (via backend proxy).
+ * The proxy returns raw MP3 bytes; we convert them to an object URL for playback.
+ * Falls back to Web Speech API if the request fails.
  */
 export async function generateSpeech(
   text: string,
   voice: CustomTTSVoice = "nova",
 ): Promise<string> {
   try {
-    // Use backend proxy to avoid CORS issues
     const response = await fetch("/api/tts", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text,
-        voice,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice }),
     });
 
     if (!response.ok) {
-      console.warn(`TTS API error: ${response.status}, trying fallback...`);
+      console.warn(`LOVO TTS error: ${response.status}, falling back...`);
       return generateSpeechFallback(text, voice);
     }
 
-    const data: TTSResponse = await response.json();
-
-    if (!data.success || !data.audio_url) {
-      console.warn(`TTS API failed: ${data.error}, trying fallback...`);
-      return generateSpeechFallback(text, voice);
-    }
-
-    return data.audio_url;
+    // The proxy returns raw audio bytes (audio/mpeg)
+    const audioBlob = await response.blob();
+    return URL.createObjectURL(audioBlob);
   } catch (error) {
     console.error("TTS generation error:", error);
-    console.warn("Falling back to Web Speech API...");
     return generateSpeechFallback(text, voice);
   }
 }
