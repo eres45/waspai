@@ -1,10 +1,10 @@
 /**
- * Custom TTS Provider — Free Edge TTS
- * API: https://edge-tts.llamai.workers.dev
+ * Custom TTS Provider — LOVO TTS Worker
+ * API: https://lovo-tts.llamai.workers.dev
  *
- * Voice mapping (Microsoft Edge Neural):
- *   alloy, nova, shimmer → Ava/Sonia (Female)
- *   echo, onyx, fable    → Andrew/Brian (Male)
+ * Voice mapping:
+ *   alloy, nova, shimmer → Chloe (Female US)
+ *   echo, onyx, fable    → Thomas (Male US)
  */
 
 export const CUSTOM_TTS_VOICES = [
@@ -18,14 +18,14 @@ export const CUSTOM_TTS_VOICES = [
 
 export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number];
 
-// Voice display metadata for Microsoft Edge Neural voices
+// Voice display metadata for LOVO voices
 export const VOICE_LANGUAGE_MAP: Record<string, string> = {
-  alloy: "Female Neural (Ava)",
-  nova: "Female Neural (Sonia)",
-  shimmer: "Female Neural (Emma)",
-  echo: "Male Neural (Andrew)",
-  onyx: "Male Neural (Brian)",
-  fable: "Male Neural (Steffan)",
+  alloy: "Female US (Chloe)",
+  nova: "Female US (Chloe)",
+  shimmer: "Female US (Chloe)",
+  echo: "Male US (Thomas)",
+  onyx: "Male US (Thomas)",
+  fable: "Male US (Thomas)",
 };
 
 /**
@@ -37,7 +37,7 @@ export function getVoiceDisplayName(voice: CustomTTSVoice): string {
 }
 
 /**
- * Generate speech from text using Edge TTS (via backend proxy).
+ * Generate speech from text using LOVO TTS Worker (via backend proxy).
  * The proxy returns raw MP3 bytes; we convert them to an object URL for playback.
  * Falls back to Web Speech API if the request fails.
  */
@@ -53,7 +53,7 @@ export async function generateSpeech(
     });
 
     if (!response.ok) {
-      console.warn(`Edge TTS error: ${response.status}, falling back...`);
+      console.warn(`LOVO TTS error: ${response.status}, falling back...`);
       return generateSpeechFallback(text, voice);
     }
 

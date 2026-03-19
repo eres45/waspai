@@ -1,15 +1,15 @@
 import { NextRequest } from "next/server";
 import logger from "logger";
 
-const EDGE_TTS_URL = "https://edge-tts.llamai.workers.dev/v1/audio/speech";
+const LOVO_TTS_URL = "https://lovo-tts.llamai.workers.dev/v1/audio/speech";
 
 /**
- * TTS API Proxy – Free Edge TTS (OpenAI-compatible)
- * Streams high-quality Microsoft Edge neural voices back to the client.
+ * TTS API Proxy – LOVO TTS Worker (OpenAI-compatible)
+ * Streams raw MP3 audio back to the client to avoid CORS issues.
  *
- * Voice mapping (Edge provider):
- *   alloy, nova, shimmer → Female Neural
- *   echo, onyx, fable    → Male Neural
+ * Voice mapping (LOVO worker):
+ *   alloy, nova, shimmer → Chloe (Female US)
+ *   echo, onyx, fable    → Thomas (Male US)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -23,27 +23,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.info(`Edge TTS: voice=${voice}, text="${text.substring(0, 60)}..."`);
+    logger.info(`LOVO TTS: voice=${voice}, text="${text.substring(0, 60)}..."`);
 
-    const ttsResponse = await fetch(EDGE_TTS_URL, {
+    const lovoResponse = await fetch(LOVO_TTS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ input: text.trim(), voice }),
     });
 
-    if (!ttsResponse.ok) {
-      const err = await ttsResponse.text();
-      logger.error(`Edge TTS error ${ttsResponse.status}: ${err}`);
+    if (!lovoResponse.ok) {
+      const err = await lovoResponse.text();
+      logger.error(`LOVO TTS error ${lovoResponse.status}: ${err}`);
       return Response.json(
-        { success: false, error: `TTS provider error: ${ttsResponse.status}` },
+        { success: false, error: `TTS provider error: ${lovoResponse.status}` },
         { status: 502 },
       );
     }
 
     // Stream the raw audio bytes back to the browser
-    const audioBuffer = await ttsResponse.arrayBuffer();
+    const audioBuffer = await lovoResponse.arrayBuffer();
 
-    logger.info(`Edge TTS success: ${audioBuffer.byteLength} bytes returned`);
+    logger.info(`LOVO TTS success: ${audioBuffer.byteLength} bytes returned`);
 
     return new Response(audioBuffer, {
       status: 200,
