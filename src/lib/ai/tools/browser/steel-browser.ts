@@ -1,33 +1,149 @@
 import { Tool } from "ai";
 import { z } from "zod";
 import Steel from "steel-sdk";
-import { chromium } from "playwright";
+import { chromium, type Page } from "playwright";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function inspectPage(page: Page) {
+  return await page.evaluate(() => {
+    const interactiveElements = Array.from(
+      document.querySelectorAll(
+        'button, input, textarea, a, select, [role="button"], [role="link"], [role="checkbox"], [role="menuitem"]',
+      ),
+    );
+
+    return interactiveElements
+      .filter((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== "hidden" &&
+          style.display !== "none" &&
+          style.opacity !== "0"
+        );
+      })
+      .map((el, index) => {
+        return {
+          id: index,
+          tag: el.tagName.toLowerCase(),
+          text: (el.textContent || "").trim().slice(0, 80),
+          ariaLabel: el.getAttribute("aria-label") || "",
+          placeholder: el.getAttribute("placeholder") || "",
+          role: el.getAttribute("role") || "",
+          name: el.getAttribute("name") || "",
+          suggestedSelector: el.id
+            ? `#${CSS.escape(el.id)}`
+            : el.getAttribute("name")
+              ? `[name="${CSS.escape(el.getAttribute("name")!)}"]`
+              : el.getAttribute("aria-label")
+                ? `[aria-label="${CSS.escape(el.getAttribute("aria-label")!)}"]`
+                : null,
+        };
+      })
+      .slice(0, 50);
+  });
+}
+
+async function findTargetElement(
+  page: Page,
+  intent?: string,
+  selector?: string,
+) {
+  // Strategy 1: Exact selector (if provided and visible)
+  if (selector) {
+    try {
+      const loc = page.locator(selector).filter({ visible: true }).first();
+      if (await loc.isVisible().catch(() => false)) return loc;
+    } catch (_e) {
+      console.warn(`Selector ${selector} failed, trying semantic matching...`);
+    }
+  }
+
+  if (!intent) return null;
+
+  // Strategy 2: Role + Name matching
+  const commonRoles = ["button", "link", "textbox", "checkbox", "menuitem"];
+  for (const role of commonRoles) {
+    try {
+      const loc = page
+        .getByRole(role as any, { name: new RegExp(intent, "i") })
+        .filter({ visible: true })
+        .first();
+      if (await loc.isVisible().catch(() => false)) return loc;
+    } catch (_e) {
+      /* ignore */
+    }
+  }
+
+  // Strategy 3: Just Text matching
+  try {
+    const textLoc = page
+      .getByText(intent, { exact: false })
+      .filter({ visible: true })
+      .first();
+    if (await textLoc.isVisible().catch(() => false)) return textLoc;
+  } catch (_e) {
+    /* ignore */
+  }
+
+  // Strategy 4: Placeholder
+  try {
+    const placeholderLoc = page
+      .getByPlaceholder(intent, { exact: false })
+      .filter({ visible: true })
+      .first();
+    if (await placeholderLoc.isVisible().catch(() => false))
+      return placeholderLoc;
+  } catch (_e) {
+    /* ignore */
+  }
+
+  return null;
+}
 
 export const steelBrowserTool: Tool = {
   description:
-    "Control a cloud browser session with Steel.dev. Support modular actions like navigate, type, click, and press. IMPORTANT: Use specific CSS selectors! If multiple elements match, the tool will pick the first VISIBLE one. To keep using the same browser tab, always pass the sessionId returned from the previous step.",
+    "A robust cloud browser engine with semantic matching. Use 'inspect' to discover elements on unknown pages, then use 'click' or 'type' with an 'intent' or 'selector'. Supports human-like interaction and automatic fallbacks.",
   inputSchema: z.object({
     action: z
-      .enum(["navigate", "click", "type", "press", "wait", "screenshot"])
+      .enum([
+        "navigate",
+        "click",
+        "type",
+        "press",
+        "wait",
+        "screenshot",
+        "inspect",
+        "scroll",
+        "extract",
+      ])
       .describe("The action to perform in the browser."),
     url: z
       .string()
       .optional()
       .describe("The URL to navigate to (only for 'navigate')."),
-    selector: z
+    selector: z.string().optional().describe("The CSS selector to target."),
+    intent: z
       .string()
       .optional()
-      .describe("The CSS selector to target (for 'click' or 'type')."),
+      .describe(
+        "The semantic description of the element to target (e.g. 'the send button'). Use this when selectors are unknown or dynamic.",
+      ),
     value: z
       .string()
       .optional()
-      .describe("The text to type, key to press, or ms to wait."),
+      .describe(
+        "The text to type, key to press, or ms/direction (up/down) to wait/scroll.",
+      ),
     sessionId: z
       .string()
       .optional()
       .describe("The ID of an existing session to reuse."),
   }),
-  execute: async ({ action, url, selector, value, sessionId }) => {
+  execute: async ({ action, url, selector, intent, value, sessionId }) => {
     const apiKey = process.env.STEEL_API_KEY;
     if (!apiKey) {
       throw new Error("STEEL_API_KEY is not configured.");
@@ -41,112 +157,118 @@ export const steelBrowserTool: Tool = {
     try {
       if (sessionId) {
         try {
-          // Retrieve existing session
           session = await client.sessions.retrieve(sessionId);
           if (session.status !== "live") {
-            // If session expired, create a new one
             session = await client.sessions.create();
           }
-        } catch (retrieveError) {
-          console.warn(
-            `[Steel Browser] Failed to retrieve session ${sessionId}, creating new one:`,
-            retrieveError,
-          );
+        } catch (_retrieveError) {
           session = await client.sessions.create();
         }
       } else {
-        // Create a new session
         session = await client.sessions.create();
       }
 
-      // Connect to the session via Playwright using a manually constructed URL
-      // (The default session.websocketUrl sometimes fails with a 502)
       const manualUrl = `wss://connect.steel.dev/?apiKey=${apiKey}&sessionId=${session.id}`;
       const browser = await chromium.connectOverCDP(manualUrl);
       const context = browser.contexts()[0];
       const page = context.pages()[0] || (await context.newPage());
 
+      const result: any = { sessionId: session.id };
       let actionMessage = "";
 
+      // Action Engine
       switch (action) {
         case "navigate":
-          if (!url) throw new Error("URL is required for 'navigate' action.");
+          if (!url) throw new Error("URL is required for 'navigate'.");
           await page.goto(url, {
             waitUntil: "domcontentloaded",
             timeout: 30000,
           });
           actionMessage = `Navigated to ${url}.`;
           break;
-        case "click":
-          if (!selector)
-            throw new Error("Selector is required for 'click' action.");
-          // Target visible elements first to avoid hidden inputs/buttons
-          await page
-            .locator(selector)
-            .filter({ visible: true })
-            .first()
-            .click({ timeout: 15000 });
-          actionMessage = `Clicked on visible ${selector}.`;
+
+        case "inspect":
+          const elements = await inspectPage(page);
+          result.elements = elements;
+          actionMessage = `Scanned page. Found ${elements.length} interactive elements.`;
           break;
-        case "type":
-          if (!selector || value === undefined)
+
+        case "extract":
+          const textContent = await page.innerText("body");
+          result.content = textContent.slice(0, 5000);
+          actionMessage = `Extracted page text content.`;
+          break;
+
+        case "scroll": {
+          const scrollValue = value === "up" ? -500 : 500;
+          await page.mouse.wheel(0, scrollValue);
+          await sleep(500);
+          actionMessage = `Scrolled ${value || "down"}.`;
+          break;
+        }
+
+        case "click": {
+          const element = await findTargetElement(page, intent, selector);
+          if (!element)
             throw new Error(
-              "Selector and value are required for 'type' action.",
+              `Could not find clickable element matching: ${intent || selector}`,
             );
-          // Target visible elements first to avoid hidden inputs/buttons
-          await page
-            .locator(selector)
-            .filter({ visible: true })
-            .first()
-            .fill(value, { timeout: 15000 });
-          actionMessage = `Typed "${value}" into visible ${selector}.`;
+
+          await element.scrollIntoViewIfNeeded();
+          await sleep(200);
+          await element.click({ timeout: 15000 });
+          actionMessage = `Clicked on element matching "${intent || selector}".`;
           break;
+        }
+
+        case "type": {
+          const element = await findTargetElement(page, intent, selector);
+          if (!element)
+            throw new Error(
+              `Could not find input element matching: ${intent || selector}`,
+            );
+
+          await element.scrollIntoViewIfNeeded();
+          await sleep(200);
+          await element.click(); // Focus first
+          await element.fill(""); // Clear if needed
+          await page.keyboard.type(value || "", { delay: 50 }); // Human-like typing
+          actionMessage = `Typed "${value}" into element matching "${intent || selector}".`;
+          break;
+        }
+
         case "press":
-          if (!value)
-            throw new Error("Key (value) is required for 'press' action.");
-          await page.keyboard.press(value);
-          actionMessage = `Pressed ${value}.`;
+          await page.keyboard.press(value || "Enter");
+          actionMessage = `Pressed ${value || "Enter"}.`;
           break;
+
         case "wait":
-          const ms = parseInt(value || "1000", 10);
-          await page.waitForTimeout(ms);
-          actionMessage = `Waited for ${ms}ms.`;
+          await sleep(parseInt(value || "1000", 10));
+          actionMessage = `Waited for ${value}ms.`;
           break;
+
         case "screenshot":
-          await page.screenshot({ type: "jpeg", quality: 80 });
-          actionMessage = `Screenshot captured. (Omitted from text response)`;
+          const buffer = await page.screenshot({ type: "jpeg", quality: 80 });
+          result.screenshot_base64 = buffer.toString("base64");
+          actionMessage = `Screenshot captured.`;
           break;
       }
 
-      // Always close the Playwright connection (but not the Steel session!)
-      // Steel sessions stay alive until timeout or manual release.
       await browser.close();
 
-      // Get live details for the UI preview
       const liveDetails = await client.sessions.liveDetails(session.id);
-      const viewerUrl =
-        liveDetails.sessionViewerUrl || `${session.sessionViewerUrl}/player`;
+      result.sessionUrl = `${liveDetails.sessionViewerUrl || session.sessionViewerUrl}/player?interactive=true&showControls=true`;
+      result.message = `${actionMessage} You can view the live progress below.`;
 
-      const finalUrl = new URL(viewerUrl);
-      finalUrl.searchParams.set("interactive", "true");
-      finalUrl.searchParams.set("showControls", "true");
-
-      return {
-        sessionId: session.id,
-        sessionUrl: finalUrl.toString(),
-        message: `${actionMessage} You can view the live progress below.`,
-      };
+      return result;
     } catch (error: any) {
-      console.error(`Failed to execute Steel browser action ${action}:`, error);
+      console.error(`[Steel Browser V2] Error:`, error);
       let friendlyMessage = error.message;
-      if (
-        error.message.includes("502 Bad Gateway") ||
-        error.message.includes("WebSocket error")
-      ) {
+      if (error.message.includes("502 Bad Gateway")) {
         friendlyMessage =
-          "The cloud browser service (Steel.dev) is currently experiencing connection issues (502 Gateway). Please try again in a moment.";
+          "Connection issue with Steel.dev (502). Please retry.";
       }
-      throw new Error(`Cloud browser action failed: ${friendlyMessage}`);
+      throw new Error(`Browser V2 failed: ${friendlyMessage}`);
     }
   },
 };
