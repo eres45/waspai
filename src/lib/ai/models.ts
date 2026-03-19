@@ -437,8 +437,23 @@ export const customModelProvider = {
     if (!model) {
       throw new Error("No model specified");
     }
-    const selectedModel =
-      allModels[model.provider as keyof typeof allModels]?.[model.model];
+
+    // Find provider key case-insensitively
+    const providerKey = Object.keys(allModels).find(
+      (k) => k.toLowerCase() === model.provider.toLowerCase(),
+    );
+
+    // Find model key case-insensitively
+    let selectedModel: LanguageModel | undefined;
+    if (providerKey && allModels[providerKey]) {
+      const modelKey = Object.keys(allModels[providerKey]).find(
+        (k) => k.toLowerCase() === model.model.toLowerCase(),
+      );
+      if (modelKey) {
+        selectedModel = allModels[providerKey][modelKey];
+      }
+    }
+
     if (!selectedModel) {
       console.warn(
         `⚠️  Model not found: ${model.provider}/${model.model}. Using fallback: Meta/Llama 3.3 70B`,
