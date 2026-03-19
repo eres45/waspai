@@ -191,18 +191,22 @@ export const steelBrowserTool: Tool = {
     });
 
     let session;
+    let actionMessage = "";
     try {
       if (sessionId) {
         try {
           session = await client.sessions.retrieve(sessionId);
           if (session.status !== "live") {
-            session = await client.sessions.create();
+            // Inform about inactivity before creating new session
+            actionMessage =
+              "(Note: Previous session closed due to 2 minutes of inactivity. Starting a fresh one.) ";
+            session = await client.sessions.create({ timeout: 120000 });
           }
         } catch (_retrieveError) {
-          session = await client.sessions.create();
+          session = await client.sessions.create({ timeout: 120000 });
         }
       } else {
-        session = await client.sessions.create();
+        session = await client.sessions.create({ timeout: 120000 });
       }
 
       const manualUrl = `wss://connect.steel.dev/?apiKey=${apiKey}&sessionId=${session.id}`;
@@ -211,8 +215,6 @@ export const steelBrowserTool: Tool = {
       const page = context.pages()[0] || (await context.newPage());
 
       const result: any = { sessionId: session.id };
-      let actionMessage = "";
-
       // Action Engine
       switch (action) {
         case "navigate":
@@ -297,19 +299,25 @@ export const steelBrowserTool: Tool = {
 
       await browser.close();
 
-      const liveDetails = await client.sessions.liveDetails(session.id);
-      const baseViewerUrl =
-        liveDetails.sessionViewerUrl || session.sessionViewerUrl;
-      const viewerUrl = baseViewerUrl.includes("/player")
-        ? baseViewerUrl
-        : `${baseViewerUrl}/player`;
+      // Only return the sessionUrl if it's a launch action or the first call (initialization)
+      // This prevents the UI from showing multiple redundant browser frames in the chat history.
+      if (action === "launch" || !sessionId) {
+        const liveDetails = await client.sessions.liveDetails(session.id);
+        const baseViewerUrl =
+          liveDetails.sessionViewerUrl || session.sessionViewerUrl;
+        const viewerUrl = baseViewerUrl.includes("/player")
+          ? baseViewerUrl
+          : `${baseViewerUrl}/player`;
 
-      const finalUrl = new URL(viewerUrl);
-      finalUrl.searchParams.set("interactive", "true");
-      finalUrl.searchParams.set("showControls", "true");
+        const finalUrl = new URL(viewerUrl);
+        finalUrl.searchParams.set("interactive", "true");
+        finalUrl.searchParams.set("showControls", "true");
 
-      result.sessionUrl = finalUrl.toString();
-      result.message = `${actionMessage} You can view the live progress below.`;
+        result.sessionUrl = finalUrl.toString();
+        result.message = `${actionMessage} You can view the live progress below.`;
+      } else {
+        result.message = actionMessage;
+      }
 
       return result;
     } catch (error: any) {

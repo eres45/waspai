@@ -6,7 +6,7 @@ import {
   LockIcon,
   UnlockIcon,
 } from "lucide-react";
-import { memo, useMemo, useState, useCallback } from "react";
+import { memo, useMemo, useState, useCallback, useEffect } from "react";
 import { TextShimmer } from "ui/text-shimmer";
 import { Button } from "ui/button";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,19 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
     url.searchParams.set("interactive", isInteractive ? "true" : "false");
     return url.toString();
   }, [output, isInteractive]);
+
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    if (!sessionUrl) return;
+
+    setIsExpired(false);
+    const timer = setTimeout(() => {
+      setIsExpired(true);
+    }, 120000);
+
+    return () => clearTimeout(timer);
+  }, [sessionUrl, part.state]);
 
   const handleToggleControl = useCallback(() => {
     setIsInteractive((prev) => !prev);
@@ -97,16 +110,33 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
         </div>
 
         <div className="relative w-full h-full">
+          {isExpired && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-all duration-500 animate-in fade-in">
+              <div className="flex flex-col items-center gap-4 text-center p-6">
+                <div className="p-3 bg-red-500/10 rounded-full border border-red-500/20">
+                  <LockIcon className="size-6 text-red-500" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-white font-semibold italic">
+                    Session Closed
+                  </h3>
+                  <p className="text-xs text-zinc-400 max-w-[200px]">
+                    Closed due to 2 mins of inactivity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <iframe
             src={sessionUrl}
             className={cn(
               "w-full h-full border-0 transition-opacity",
-              !isInteractive && "opacity-90 grayscale-[0.2]",
+              (!isInteractive || isExpired) && "opacity-90 grayscale-[0.2]",
             )}
             title="Steel Browser Preview"
             allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
           />
-          {!isInteractive && (
+          {!isInteractive && !isExpired && (
             <div
               className="absolute inset-0 z-10 cursor-not-allowed"
               title="AI is controlling this browser. Click 'Take control' to interact."
