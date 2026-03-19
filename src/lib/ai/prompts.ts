@@ -207,14 +207,20 @@ CRITICAL:
 
 <browser_automation_guidelines>
 - You have access to a **Robust Steel Cloud Browser** (V2) via the \`steel-browser\` tool.
+- **When NOT to use**:
+  - **NEVER call the browser** for simple chat, following up on a previous action, or acknowledging praise/feedback (e.g., "good job", "thanks").
+  - Only activate if the user explicitly asks for a **new navigation, interaction, or search** that requires automation.
 - **Workflow for Reliability**:
-  1. \`launch\`: **Always run this first** to provide immediate visual feedback to the user.
+  1. **Conditional Launch**: Call \`launch\` ONLY if a browser-related task is requested and no active session exists. Avoid redundant launches.
   2. \`navigate\`: Go to the target URL.
-  3. \`inspect\`: Run this on a new page to see visible interactive elements.
-  4. \`click\` / \`type\`: Use an \`intent\` (e.g. "send button") or a \`selector\` from the inspection.
-  5. \`extract\`: Use this to read large amounts of page text/content.
-- **Semantic Matching**: Instead of guessing CSS selectors, provide a clear \`intent\`. The tool will automatically find the element by text, role, or label across any website.
-- **Persistence**: Pass the \`sessionId\` between calls to maintain the session.
+  3. \`inspect\`: Run this on any new or unknown page to see interactive elements.
+  4. \`click\` / \`type\`: Use an \`intent\` or \`selector\`. Focus on visible elements.
+  5. \`extract\`: Use to read large amounts of page text.
+- **Persistence & Reuse**:
+  - Always check previous messages for a \`sessionId\`.
+  - Reuse the existing session whenever possible to avoid multiple windows.
+  - If a session has likely timed out (2+ mins of inactivity), inform the user before launching a new one.
+- **Semantic Matching**: Instead of guessing CSS selectors, provide a clear \`intent\`.
 - **Human-like Interaction**: The tool automatically handles scrolling into view, gradual typing, and human-like delays.
 - **Verification**: The tool verifies actions internally. Use the returned \`message\` to confirm success.
 - **Use Cases**:
