@@ -98,7 +98,7 @@ describe("safe-js-run", () => {
   it("should block forbidden keywords", async () => {
     const result = await safeJsRun({ code: "window.alert('hack');" });
     expect(result.success).toBe(false);
-    expect(result.error).toContain("Forbidden keyword: 'window'");
+    expect(result.error).toContain("Forbidden keyword: 'window.'");
   });
 
   it("should detect Function constructor", async () => {

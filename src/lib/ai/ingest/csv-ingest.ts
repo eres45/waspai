@@ -1,6 +1,5 @@
 import { Buffer } from "node:buffer";
 import { ChatAttachment } from "app-types/chat";
-import { isIngestSupported } from "@/lib/ai/file-support";
 import { storageKeyFromUrl } from "@/lib/file-storage/storage-utils";
 import { formatCsvPreviewText, parseCsvPreview } from "@/lib/file-ingest/csv";
 
@@ -14,7 +13,13 @@ export type DownloadFile = (key: string) => Promise<Buffer>;
 
 const isCsvLikeAttachment = (attachment: ChatAttachment, key: string) => {
   const mediaType = attachment.mediaType || "";
-  if (isIngestSupported(mediaType)) return true;
+  const csvLikeMimeTypes = [
+    "text/csv",
+    "text/plain",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ];
+  if (csvLikeMimeTypes.includes(mediaType)) return true;
   const name = (attachment.filename || key || "").toLowerCase();
   if (/\.(csv)$/.test(name)) return true;
   if (

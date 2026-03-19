@@ -1,5 +1,8 @@
-import "server-only";
 import { LanguageModel } from "ai";
+import {
+  ANTHROPIC_FILE_MIME_TYPES,
+  OPENAI_FILE_MIME_TYPES,
+} from "./file-support";
 import { createNvidiaModels } from "./nvidia";
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -393,7 +396,16 @@ export const isImageInputUnsupportedModel = (model: LanguageModel) => {
   return !Object.values(staticSupportImageInputModels).includes(model);
 };
 
-export const getFilePartSupportedMimeTypes = (_model: LanguageModel) => {
+export const getFilePartSupportedMimeTypes = (model: LanguageModel) => {
+  // Check if it's an OpenAI model
+  if (Object.values(staticModels.OpenAI).includes(model)) {
+    return Array.from(OPENAI_FILE_MIME_TYPES);
+  }
+  // Check if it's an Anthropic model
+  if (Object.values(staticModels.Anthropic).includes(model)) {
+    return Array.from(ANTHROPIC_FILE_MIME_TYPES);
+  }
+  // Fallback to empty
   return [];
 };
 
@@ -415,9 +427,7 @@ export const customModelProvider = {
           name,
           isToolCallUnsupported: isToolCallUnsupportedModel(model),
           isImageInputUnsupported: !supportsImages,
-          supportedFileMimeTypes: supportsImages
-            ? ["image/jpeg", "image/png", "image/webp", "image/gif"]
-            : [],
+          supportedFileMimeTypes: getFilePartSupportedMimeTypes(model),
           tier,
         };
       }),

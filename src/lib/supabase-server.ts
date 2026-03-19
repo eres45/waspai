@@ -12,11 +12,23 @@ function initializeSupabaseServer() {
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl) {
+    if (process.env.VITEST || process.env.NODE_ENV === "test") {
+      return (supabaseServerInstance = createClient(
+        "https://mock.supabase.co",
+        "mock-key",
+      ));
+    }
     logger.error("SUPABASE_URL environment variable is not set");
     throw new Error("SUPABASE_URL environment variable is not set");
   }
 
   if (!supabaseServiceRoleKey) {
+    if (process.env.VITEST || process.env.NODE_ENV === "test") {
+      return (supabaseServerInstance = createClient(
+        supabaseUrl || "https://mock.supabase.co",
+        "mock-key",
+      ));
+    }
     logger.error("SUPABASE_SERVICE_ROLE_KEY environment variable is not set");
     throw new Error(
       "SUPABASE_SERVICE_ROLE_KEY environment variable is not set",

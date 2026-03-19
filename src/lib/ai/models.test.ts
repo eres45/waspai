@@ -13,21 +13,21 @@ beforeAll(async () => {
 });
 
 describe("customModelProvider file support metadata", () => {
-  it("includes default file support for OpenAI gpt-4.1", () => {
+  it("includes default file support for OpenAI GPT-4o (P1)", () => {
     const { customModelProvider, getFilePartSupportedMimeTypes } = modelsModule;
     const model = customModelProvider.getModel({
-      provider: "openai",
-      model: "gpt-4.1",
+      provider: "OpenAI",
+      model: "GPT-4o (P1)",
     });
     expect(getFilePartSupportedMimeTypes(model)).toEqual(
       Array.from(OPENAI_FILE_MIME_TYPES),
     );
 
     const openaiProvider = customModelProvider.modelsInfo.find(
-      (item) => item.provider === "openai",
+      (item) => item.provider === "OpenAI",
     );
     const metadata = openaiProvider?.models.find(
-      (item) => item.name === "gpt-4.1",
+      (item) => item.name === "GPT-4o (P1)",
     );
 
     expect(metadata?.supportedFileMimeTypes).toEqual(
@@ -35,11 +35,11 @@ describe("customModelProvider file support metadata", () => {
     );
   });
 
-  it("adds rich support for anthropic sonnet-4.5", () => {
+  it("adds rich support for Anthropic Claude 3.5 Sonnet (P1)", () => {
     const { customModelProvider, getFilePartSupportedMimeTypes } = modelsModule;
     const model = customModelProvider.getModel({
-      provider: "anthropic",
-      model: "sonnet-4.5",
+      provider: "Anthropic",
+      model: "Claude 3.5 Sonnet (P1)",
     });
     expect(getFilePartSupportedMimeTypes(model)).toEqual(
       Array.from(ANTHROPIC_FILE_MIME_TYPES),
