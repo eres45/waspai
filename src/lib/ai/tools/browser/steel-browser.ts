@@ -9,7 +9,7 @@ async function inspectPage(page: Page) {
   return await page.evaluate(() => {
     const interactiveElements = Array.from(
       document.querySelectorAll(
-        'button, input, textarea, a, select, [role="button"], [role="link"], [role="checkbox"], [role="menuitem"]',
+        'button, input, textarea, a, select, [role="button"], [role="link"], [role="checkbox"], [role="menuitem"], [contenteditable="true"]',
       ),
     );
 
@@ -32,7 +32,11 @@ async function inspectPage(page: Page) {
           text: (el.textContent || "").trim().slice(0, 80),
           ariaLabel: el.getAttribute("aria-label") || "",
           placeholder: el.getAttribute("placeholder") || "",
-          role: el.getAttribute("role") || "",
+          role:
+            el.getAttribute("role") ||
+            el.getAttribute("contenteditable") === "true"
+              ? "textbox"
+              : "",
           name: el.getAttribute("name") || "",
           suggestedSelector: el.id
             ? `#${CSS.escape(el.id)}`
@@ -40,7 +44,9 @@ async function inspectPage(page: Page) {
               ? `[name="${CSS.escape(el.getAttribute("name")!)}"]`
               : el.getAttribute("aria-label")
                 ? `[aria-label="${CSS.escape(el.getAttribute("aria-label")!)}"]`
-                : null,
+                : el.getAttribute("placeholder")
+                  ? `[placeholder="${CSS.escape(el.getAttribute("placeholder")!)}"]`
+                  : null,
         };
       })
       .slice(0, 50);
@@ -78,13 +84,13 @@ async function findTargetElement(
     }
   }
 
-  // Strategy 3: Just Text matching
+  // Strategy 3: Label matching
   try {
-    const textLoc = page
-      .getByText(intent, { exact: false })
+    const labelLoc = page
+      .getByLabel(intent, { exact: false })
       .filter({ visible: true })
       .first();
-    if (await textLoc.isVisible().catch(() => false)) return textLoc;
+    if (await labelLoc.isVisible().catch(() => false)) return labelLoc;
   } catch (_e) {
     /* ignore */
   }
@@ -99,6 +105,34 @@ async function findTargetElement(
       return placeholderLoc;
   } catch (_e) {
     /* ignore */
+  }
+
+  // Strategy 5: Just Text matching
+  try {
+    const textLoc = page
+      .getByText(intent, { exact: false })
+      .filter({ visible: true })
+      .first();
+    if (await textLoc.isVisible().catch(() => false)) return textLoc;
+  } catch (_e) {
+    /* ignore */
+  }
+
+  // Strategy 6: Contenteditable fallback (common for rich editors like ChatGPT)
+  if (
+    intent.toLowerCase().includes("input") ||
+    intent.toLowerCase().includes("type") ||
+    intent.toLowerCase().includes("message")
+  ) {
+    try {
+      const ceLoc = page
+        .locator('[contenteditable="true"]')
+        .filter({ visible: true })
+        .first();
+      if (await ceLoc.isVisible().catch(() => false)) return ceLoc;
+    } catch (_e) {
+      /* ignore */
+    }
   }
 
   return null;
