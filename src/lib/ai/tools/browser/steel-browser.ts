@@ -197,16 +197,37 @@ export const steelBrowserTool: Tool = {
         try {
           session = await client.sessions.retrieve(sessionId);
           if (session.status !== "live") {
-            // Inform about inactivity before creating new session
             actionMessage =
               "(Note: Previous session closed due to 2 minutes of inactivity. Starting a fresh one.) ";
             session = await client.sessions.create({ timeout: 120000 });
           }
         } catch (_retrieveError) {
-          session = await client.sessions.create({ timeout: 120000 });
+          // Fallback to discovery if retrieval fails
+          const sessions = await client.sessions.list();
+          for await (const s of sessions) {
+            if (s.status === "live") {
+              session = s;
+              break;
+            }
+          }
+          if (!session) {
+            session = await client.sessions.create({ timeout: 120000 });
+          }
         }
       } else {
-        session = await client.sessions.create({ timeout: 120000 });
+        // Backend Guard: Force reuse of ANY existing live session
+        const sessions = await client.sessions.list();
+        for await (const s of sessions) {
+          if (s.status === "live") {
+            session = s;
+            break;
+          }
+        }
+        if (session) {
+          actionMessage = "(Re-attached to active session) ";
+        } else {
+          session = await client.sessions.create({ timeout: 120000 });
+        }
       }
 
       const manualUrl = `wss://connect.steel.dev/?apiKey=${apiKey}&sessionId=${session.id}`;

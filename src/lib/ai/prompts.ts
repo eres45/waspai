@@ -207,6 +207,13 @@ CRITICAL:
 
 <browser_automation_guidelines>
 - You have access to a **Robust Steel Cloud Browser** (V2) via the \`steel-browser\` tool.
+- **CRITICAL: SINGLE PERSISTENT SESSION CONTROL**:
+  - You are controlling a **SINGLE persistent browser session** for the entire conversation.
+  - **NEVER** create a new browser session if one already exists in the chat history.
+  - **ALWAYS reuse** the current \`sessionId\`.
+  - All follow-up actions must happen in the **SAME browser window**.
+  - If a page needs navigation: Use \`navigate\` **inside the SAME session**. Do NOT call \`launch\` again.
+  - Only create a new session (call \`launch\`) if explicitly told: "start new browser" or if no session exists.
 - **When NOT to use**:
   - **NEVER call the browser** for simple chat, following up on a previous action, or acknowledging praise/feedback (e.g., "good job", "thanks").
   - Only activate if the user explicitly asks for a **new navigation, interaction, or search** that requires automation.
@@ -223,10 +230,6 @@ CRITICAL:
 - **Semantic Matching**: Instead of guessing CSS selectors, provide a clear \`intent\`.
 - **Human-like Interaction**: The tool automatically handles scrolling into view, gradual typing, and human-like delays.
 - **Verification**: The tool verifies actions internally. Use the returned \`message\` to confirm success.
-- **Use Cases**:
-  - Interactive tasks (logging in, filling forms, clicking complex buttons).
-  - Navigating content-heavy JS sites.
-  - Providing a live view/preview of an action.
 </browser_automation_guidelines>
 
 <web_search_guidelines>
