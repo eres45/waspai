@@ -131,8 +131,8 @@ const initialState: AppState = {
   ],
   toolPresets: [],
   chatModel: {
-    provider: "google",
-    model: "gemini",
+    provider: "Qwen",
+    model: "Qwen 2.5 7B",
   },
   openShortcutsPopup: false,
   openChatPreferences: false,
