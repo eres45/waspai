@@ -1,42 +1,30 @@
 import { tool as createTool } from "ai";
-import { JSONSchema7 } from "json-schema";
-import { jsonSchemaToZod } from "lib/json-schema-to-zod";
+import { z } from "zod";
 import { safe } from "ts-safe";
 import { load } from "cheerio";
 
 // --- FreeWebSearch API Integration ---
 
-export const freeSearchSchema: JSONSchema7 = {
-  type: "object",
-  properties: {
-    query: {
-      type: "string",
-      description:
-        'Search query. Supports advanced operators like site:github.com, filetype:pdf, intitle:guide, or exact "phrases". Combine them for powerful searches.',
-    },
-    numResults: {
-      type: "number",
-      description: "Number of search results to return (max 100)",
-      default: 30,
-      minimum: 1,
-      maximum: 100,
-    },
-  },
-  required: ["query"],
-};
+export const freeSearchSchema = z.object({
+  query: z
+    .string()
+    .describe(
+      'Search query. Supports advanced operators like site:github.com, filetype:pdf, intitle:guide, or exact "phrases". Combine them for powerful searches.',
+    ),
+  numResults: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .default(30)
+    .describe("Number of search results to return (max 100)"),
+});
 
 // Fallback schema for content scraping
-export const freeContentsSchema: JSONSchema7 = {
-  type: "object",
-  properties: {
-    urls: {
-      type: "array",
-      items: { type: "string" },
-      description: "List of URLs to extract text content from",
-    },
-  },
-  required: ["urls"],
-};
+export const freeContentsSchema = z.object({
+  urls: z
+    .array(z.string())
+    .describe("List of URLs to extract text content from"),
+});
 
 // --- Generic Search Interfaces (Exa Compatible) ---
 
@@ -148,7 +136,7 @@ const scrapeWebpage = async (url: string) => {
 export const exaSearchToolForWorkflow = createTool({
   description:
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
-  inputSchema: jsonSchemaToZod(freeSearchSchema),
+  inputSchema: freeSearchSchema,
   execute: async (params) => {
     return fetchFreeSearch(params.query, params.numResults);
   },
@@ -157,7 +145,7 @@ export const exaSearchToolForWorkflow = createTool({
 export const exaContentsToolForWorkflow = createTool({
   description:
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
-  inputSchema: jsonSchemaToZod(freeContentsSchema),
+  inputSchema: freeContentsSchema,
   execute: async (params) => {
     const results = await Promise.all(
       params.urls.map((url) => scrapeWebpage(url)),
@@ -169,7 +157,7 @@ export const exaContentsToolForWorkflow = createTool({
 export const exaSearchTool = createTool({
   description:
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
-  inputSchema: jsonSchemaToZod(freeSearchSchema),
+  inputSchema: freeSearchSchema,
   execute: (params) => {
     return safe(async () => {
       let queryStr = "";
@@ -218,7 +206,7 @@ export const exaSearchTool = createTool({
 export const exaContentsTool = createTool({
   description:
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
-  inputSchema: jsonSchemaToZod(freeContentsSchema),
+  inputSchema: freeContentsSchema,
   execute: async (params) => {
     return safe(async () => {
       const results = await Promise.all(

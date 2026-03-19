@@ -1,5 +1,7 @@
 "use client";
 
+import { JSONSchema7 } from "json-schema";
+
 import {
   ToolNodeData,
   UINode,
@@ -22,12 +24,7 @@ import { useTranslations } from "next-intl";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { useMcpList } from "@/hooks/queries/use-mcp-list";
 
-import {
-  exaSearchSchema,
-  exaSearchTool,
-  exaContentsSchema,
-  exaContentsTool,
-} from "lib/ai/tools/web/web-search";
+import { exaSearchTool, exaContentsTool } from "lib/ai/tools/web/web-search";
 import { DefaultToolName } from "lib/ai/tools";
 
 export const ToolNodeDataConfig = memo(function ({
@@ -67,13 +64,40 @@ export const ToolNodeDataConfig = memo(function ({
         type: "app-tool",
         id: DefaultToolName.WebSearch,
         description: exaSearchTool.description!,
-        parameterSchema: exaSearchSchema,
+        parameterSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description:
+                'Search query. Supports advanced operators like site:github.com, filetype:pdf, intitle:guide, or exact "phrases". Combine them for powerful searches.',
+            },
+            numResults: {
+              type: "number",
+              description: "Number of search results to return (max 100)",
+              default: 30,
+              minimum: 1,
+              maximum: 100,
+            },
+          },
+          required: ["query"],
+        } as JSONSchema7,
       },
       {
         type: "app-tool",
         id: DefaultToolName.WebContent,
         description: exaContentsTool.description!,
-        parameterSchema: exaContentsSchema,
+        parameterSchema: {
+          type: "object",
+          properties: {
+            urls: {
+              type: "array",
+              items: { type: "string" },
+              description: "List of URLs to extract text content from",
+            },
+          },
+          required: ["urls"],
+        } as JSONSchema7,
       },
     ];
     return [...mcpTools, ...defaultTools];
