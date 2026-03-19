@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 
 export const steelBrowserTool: Tool = {
   description:
-    "Control a cloud browser session with Steel.dev. Support modular actions like navigate, type, click, and press. To keep using the same browser tab, always pass the sessionId returned from the previous step.",
+    "Control a cloud browser session with Steel.dev. Support modular actions like navigate, type, click, and press. IMPORTANT: Use specific CSS selectors! If multiple elements match, the tool will pick the first VISIBLE one. To keep using the same browser tab, always pass the sessionId returned from the previous step.",
   inputSchema: z.object({
     action: z
       .enum(["navigate", "click", "type", "press", "wait", "screenshot"])
@@ -80,16 +80,26 @@ export const steelBrowserTool: Tool = {
         case "click":
           if (!selector)
             throw new Error("Selector is required for 'click' action.");
-          await page.click(selector, { timeout: 10000 });
-          actionMessage = `Clicked on ${selector}.`;
+          // Target visible elements first to avoid hidden inputs/buttons
+          await page
+            .locator(selector)
+            .filter({ visible: true })
+            .first()
+            .click({ timeout: 15000 });
+          actionMessage = `Clicked on visible ${selector}.`;
           break;
         case "type":
           if (!selector || value === undefined)
             throw new Error(
               "Selector and value are required for 'type' action.",
             );
-          await page.fill(selector, value, { timeout: 10000 });
-          actionMessage = `Typed "${value}" into ${selector}.`;
+          // Target visible elements first to avoid hidden inputs/buttons
+          await page
+            .locator(selector)
+            .filter({ visible: true })
+            .first()
+            .fill(value, { timeout: 15000 });
+          actionMessage = `Typed "${value}" into visible ${selector}.`;
           break;
         case "press":
           if (!value)

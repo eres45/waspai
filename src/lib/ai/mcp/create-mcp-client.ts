@@ -311,8 +311,14 @@ export class MCPClient {
       this.isConnected = true;
 
       this.scheduleAutoDisconnect();
-    } catch (error) {
-      this.logger.error(error);
+    } catch (error: any) {
+      if (
+        error?.message?.includes("VERCEL: Stdio transport is not supported")
+      ) {
+        this.logger.warn(error.message);
+      } else {
+        this.logger.error(error);
+      }
       this.isConnected = false;
       this.error = errorToString(error);
       this.transport = undefined;

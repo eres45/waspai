@@ -214,7 +214,8 @@ CRITICAL:
   2. \`type\`: Enter search queries or form data (requires a selector).
   3. \`click\`: Submit forms or open links (requires a selector).
   4. \`press\`: Use for keys like "Enter" if clicking isn't enough.
-- Use descriptive selectors like \`input[name="q"]\` or \`button[type="submit"]\`.
+- Use highly specific selectors like \`textarea[placeholder*="Type a message"]\` or \`button[aria-label="Send message"]\` instead of generic \`textarea\` or \`button\`.
+- The tool will automatically attempt to find the first **visible** element matching your selector.
 - **DECISION LOGIC**: 
   - Use \`webSearch\` for searching information, news, and research results (faster/efficient).
   - Use \`steel-browser\` ONLY for:
