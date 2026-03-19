@@ -224,8 +224,8 @@ const staticModels = {
     "o1-mini": claudeTalkAIProvider("o1-mini"),
     "o1-preview": claudeTalkAIProvider("o1-preview"),
     "o3-mini": claudeTalkAIProvider("o3-mini"),
-    "GPT-OSS 20B": nvidiaModels["openai-gpt-oss-20b"],
-    "GPT-OSS 120B": nvidiaModels["openai-gpt-oss-120b"],
+    "openai-gpt-oss-20b": nvidiaModels["openai-gpt-oss-20b"],
+    "openai-gpt-oss-120b": nvidiaModels["openai-gpt-oss-120b"],
   },
 
   // --- DeepSeek Models ---
@@ -262,8 +262,8 @@ const staticModels = {
 
   // --- Qwen Models ---
   Qwen: {
-    "Qwen 2.5 Coder (Plus)": qwenProvider("qwen3-coder-plus"),
-    "Qwen 2.5 Coder (Flash)": qwenProvider("qwen3-coder-flash"),
+    "qwen3-coder-plus": qwenProvider("qwen3-coder-plus"),
+    "qwen3-coder-flash": qwenProvider("qwen3-coder-flash"),
     "Qwen Vision (VL)": qwenProvider("vision-model"),
     "Qwen 2 7B": nvidiaModels["qwen-qwen2-7b-instruct"],
     "Qwen 2.5 7B": nvidiaModels["qwen-qwen2.5-7b-instruct"],

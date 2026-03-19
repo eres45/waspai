@@ -59,8 +59,10 @@ export const steelBrowserTool: Tool = {
         session = await client.sessions.create();
       }
 
-      // Connect to the session via Playwright
-      const browser = await chromium.connectOverCDP(session.websocketUrl);
+      // Connect to the session via Playwright using a manually constructed URL
+      // (The default session.websocketUrl sometimes fails with a 502)
+      const manualUrl = `wss://connect.steel.dev/?apiKey=${apiKey}&sessionId=${session.id}`;
+      const browser = await chromium.connectOverCDP(manualUrl);
       const context = browser.contexts()[0];
       const page = context.pages()[0] || (await context.newPage());
 
@@ -126,7 +128,15 @@ export const steelBrowserTool: Tool = {
       };
     } catch (error: any) {
       console.error(`Failed to execute Steel browser action ${action}:`, error);
-      throw new Error(`Cloud browser action failed: ${error.message}`);
+      let friendlyMessage = error.message;
+      if (
+        error.message.includes("502 Bad Gateway") ||
+        error.message.includes("WebSocket error")
+      ) {
+        friendlyMessage =
+          "The cloud browser service (Steel.dev) is currently experiencing connection issues (502 Gateway). Please try again in a moment.";
+      }
+      throw new Error(`Cloud browser action failed: ${friendlyMessage}`);
     }
   },
 };

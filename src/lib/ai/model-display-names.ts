@@ -91,6 +91,8 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
   "zai-org-GLM-4.5-air": "GLM-4.5 Air",
   "zai-org-GLM-5": "GLM-5 (Reasoning)",
+  "qwen3-coder-flash": "Qwen 2.5 Coder (Flash)",
+  "qwen3-coder-plus": "Qwen 2.5 Coder (Plus)",
 };
 
 // Create reverse mapping from display names to backend names

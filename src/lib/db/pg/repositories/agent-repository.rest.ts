@@ -28,21 +28,31 @@ export const restAgentRepository: AgentRepository = {
   async selectAgentById(id, userId) {
     // Left join bookmark to check if bookmarked
     // Filter by id AND (owner OR public OR readonly)
-    const { data, error } = await supabaseRest
+    const { data: agentData, error: agentError } = await supabaseRest
       .from("agent")
-      .select(`
-        *,
-        bookmark!left(id)
-      `)
+      .select("*")
       .eq("id", id)
-      .eq("bookmark.user_id", userId)
-      .eq("bookmark.item_type", "agent")
       .or(`user_id.eq.${userId},visibility.in.(public,readonly)`)
       .single();
 
-    if (error) return null;
+    if (agentError || !agentData) return null;
 
-    return mapAgentResponse(data, true);
+    // Check if bookmarked
+    const { data: bookmarkData } = await supabaseRest
+      .from("bookmark")
+      .select("id")
+      .eq("item_id", id)
+      .eq("user_id", userId)
+      .eq("item_type", "agent")
+      .maybeSingle();
+
+    return mapAgentResponse(
+      {
+        ...agentData,
+        bookmark: bookmarkData ? [bookmarkData] : [],
+      },
+      true,
+    );
   },
 
   async selectAgentsByUserId(userId) {
@@ -92,15 +102,10 @@ export const restAgentRepository: AgentRepository = {
   },
 
   async selectAgents(currentUserId, filters = ["all"], limit = 50) {
-    let query = supabaseRest
-      .from("agent")
-      .select(`
+    let query = supabaseRest.from("agent").select(`
         id, name, description, icon, user_id, visibility, created_at, updated_at,
-        user:user_id(name, image),
-        bookmark!left(id)
-      `)
-      .eq("bookmark.user_id", currentUserId)
-      .eq("bookmark.item_type", "agent");
+        user:user_id(name, image)
+      `);
 
     // Applying filtering logic similar to PG repo
     // Note: This is tricky in Supabase because filters logic (mine vs shared)
@@ -184,13 +189,22 @@ export const restAgentRepository: AgentRepository = {
     const { data, error } = await query;
     if (error) throw error;
 
+    if (data.length === 0) return [];
+
+    // Fetch bookmarks for these agents
+    const agentIds = data.map((a: any) => a.id);
+    const { data: bookmarks } = await supabaseRest
+      .from("bookmark")
+      .select("item_id")
+      .eq("user_id", currentUserId)
+      .eq("item_type", "agent")
+      .in("item_id", agentIds);
+
+    const bookmarkedIds = new Set(bookmarks?.map((b: any) => b.item_id) || []);
+
     return data.map((item: any) => ({
       ...mapAgentResponse(item),
-      // Check if bookmark array (from one-to-many relationship technically) has items
-      // or object from one-to-one
-      isBookmarked: Array.isArray(item.bookmark)
-        ? item.bookmark.length > 0
-        : !!item.bookmark,
+      isBookmarked: bookmarkedIds.has(item.id),
       userName: item.user?.name,
       userAvatar: item.user?.image,
     }));
