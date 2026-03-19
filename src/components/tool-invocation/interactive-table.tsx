@@ -179,6 +179,9 @@ export function InteractiveTable(props: InteractiveTableProps) {
             return value;
           }
         default:
+          if (Array.isArray(value)) return value.join(", ");
+          if (typeof value === "object" && value !== null)
+            return JSON.stringify(value);
           return String(value);
       }
     },
