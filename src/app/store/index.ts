@@ -127,6 +127,7 @@ const initialState: AppState = {
     AppDefaultToolkit.WebSearch,
     AppDefaultToolkit.Media,
     AppDefaultToolkit.Utilities,
+    AppDefaultToolkit.Browser,
   ],
   toolPresets: [],
   chatModel: {

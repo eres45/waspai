@@ -80,7 +80,12 @@ import { chatExportTool } from "lib/ai/tools/chat-export";
 import { exaSearchTool as webSearchTool } from "lib/ai/tools/web/web-search";
 import { ImageToolName } from "lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
-import { saveMemoryTool, searchMemoriesTool } from "lib/ai/tools/memory-tools";
+import {
+  saveMemoryTool,
+  updateMemoryTool,
+  deleteMemoryTool,
+  getMemoriesTool,
+} from "lib/ai/tools/memory-tools";
 import { serverFileStorage } from "lib/file-storage";
 import {
   truncateTextToLimit,
@@ -1355,13 +1360,13 @@ BEGIN ROLEPLAY NOW.`
         // Load User Memories
         let userMemoriesPrompt = "";
         try {
-          const memories = await memoryRepository.list(session.user.id, 20);
+          const memories = await memoryRepository.list(session.user.id, 50);
           if (memories.length > 0) {
             userMemoriesPrompt = `\n\n[User Long-Term Memory]\nThe following facts are known about the user from previous interactions:\n${memories
-              .map((m) => `- ${m.content} [${m.tags?.join(", ")}]`)
+              .map((m) => `[ID:${m.id}] ${m.content}`)
               .join(
                 "\n",
-              )}\n\nUse this information to personalize your responses.`;
+              )}\n\nUse this information to personalize your responses. For updating or deleting, use the provided IDs.`;
           }
         } catch (error) {
           logger.error("Failed to load user memories", error);
@@ -1415,9 +1420,14 @@ BEGIN ROLEPLAY NOW.`
           `[MEMORY PERSISTENCE POLICY]
           You are responsible for building a long-term understanding of the user.
           1. ACTIVE LISTENING: Constantly monitor for facts the user shares about themselves (e.g., profession, name, hobbies, specific technical preferences, location).
-          2. AUTO-SAVE: When you identify such a fact, YOU MUST use the 'save-memory' tool to store it immediately.
-          3. SILENT OPERATION: Do not ask for permission. Do not announce "I am saving this." Just use the tool in the background.
-          4. RETRIEVAL: If the user asks about themselves, use 'search-memories'.`,
+          2. THE 2-WEEK RULE: Before saving, ask yourself: "Will this matter in 2 weeks?" If no, don't save it.
+          3. AUTO-MANAGEMENT:
+             - Use 'get_memories' to check if a fact already exists.
+             - Use 'update_memory' if new info contradicts or upgrades an old memory.
+             - Use 'delete_memory' if a memory is wrong or outdated.
+             - Use 'save_memory' ONLY for new, permanent, reusable facts.
+          4. SILENT OPERATION: All tool calls are background actions. Do NOT announce "I am saving this" or "I've updated your preferences." Just respond naturally.
+          5. NO NARRATION: NEVER mention these memory tools to the user.`,
 
           // Tool Calling Format Reinforcement (fixes some models leaking XML)
           `[TOOL USE STANDARD]
@@ -1432,6 +1442,7 @@ BEGIN ROLEPLAY NOW.`
               1. Browsing websites with Javascript (which "web-search" cannot do)
               2. Interacting with pages (clicking, typing, taking control)
               3. Real-time visual verification of websites
+          - IMPORTANT: Always pass the "sessionId" from previous browser tool results to subsequent calls. This maintains the same browser tab and state across multiple turns.
           - When used, the user will see a LIVE deep-linked preview of the browser.
           - Prefer "web-search" for information retrieval and "steel-browser" for interactive web tasks.`,
 
@@ -1528,8 +1539,10 @@ BEGIN ROLEPLAY NOW.`
             ? { "web-search": webSearchTool }
             : {}),
           // ALWAYS include memory tools
-          "save-memory": saveMemoryTool,
-          "search-memories": searchMemoriesTool,
+          save_memory: saveMemoryTool,
+          update_memory: updateMemoryTool,
+          delete_memory: deleteMemoryTool,
+          get_memories: getMemoriesTool,
           // Note: YouTube transcript now handled client-side (bypasses IP blocking)
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;

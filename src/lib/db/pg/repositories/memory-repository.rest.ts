@@ -110,4 +110,30 @@ export const memoryRepository = {
       id: data.id,
     };
   },
+
+  async update(userId: string, id: string, content: string) {
+    console.log("[Memory REST] Updating memory:", id);
+
+    const { data, error } = await supabaseRest
+      .from("user_memory")
+      .update({
+        content,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[Memory REST] update error:", error);
+      throw new Error(error.message || "Failed to update memory");
+    }
+
+    return {
+      id: data.id,
+      content: data.content,
+      updatedAt: new Date(data.updated_at),
+    };
+  },
 };

@@ -40,10 +40,18 @@ export const steelBrowserTool: Tool = {
     let session;
     try {
       if (sessionId) {
-        // Retrieve existing session
-        session = await client.sessions.retrieve(sessionId);
-        if (session.status !== "live") {
-          // If session expired, create a new one
+        try {
+          // Retrieve existing session
+          session = await client.sessions.retrieve(sessionId);
+          if (session.status !== "live") {
+            // If session expired, create a new one
+            session = await client.sessions.create();
+          }
+        } catch (retrieveError) {
+          console.warn(
+            `[Steel Browser] Failed to retrieve session ${sessionId}, creating new one:`,
+            retrieveError,
+          );
           session = await client.sessions.create();
         }
       } else {

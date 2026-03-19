@@ -8,7 +8,12 @@ import { Tool } from "ai";
 import { httpFetchTool } from "./http/fetch";
 import { jsExecutionTool } from "./code/js-run-tool";
 import { pythonExecutionTool } from "./code/python-run-tool";
-import { saveMemoryTool, searchMemoriesTool } from "./memory-tools";
+import {
+  saveMemoryTool,
+  updateMemoryTool,
+  deleteMemoryTool,
+  getMemoriesTool,
+} from "./memory-tools";
 import { youtubeTranscriptTool } from "./web/youtube-transcript";
 import {
   createTempEmailTool,
@@ -42,7 +47,9 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   },
   [AppDefaultToolkit.Memory]: {
     [DefaultToolName.SaveMemory]: saveMemoryTool,
-    [DefaultToolName.SearchMemories]: searchMemoriesTool,
+    [DefaultToolName.UpdateMemory]: updateMemoryTool,
+    [DefaultToolName.DeleteMemory]: deleteMemoryTool,
+    [DefaultToolName.GetMemories]: getMemoriesTool,
   },
   [AppDefaultToolkit.Utilities]: {
     [DefaultToolName.CreateTempEmail]: createTempEmailTool,
