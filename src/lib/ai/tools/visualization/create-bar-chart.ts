@@ -17,7 +17,8 @@ export const createBarChartTool = createTool({
           ),
         }),
       )
-      .describe("Chart data with x-axis labels and series values"),
+      .min(2, "At least 2 data points are required to create a chart.")
+      .describe("Chart data with x-axis labels and series values. MINIMUM 2 DATA POINTS."),
     title: z.string(),
     description: z.string().nullable(),
     yAxisLabel: z.string().nullable().describe("Label for Y-axis"),

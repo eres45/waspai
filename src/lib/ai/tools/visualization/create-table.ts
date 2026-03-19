@@ -5,31 +5,36 @@ export const createTableTool = createTool({
   description:
     "Create an interactive table with data. The table will automatically have sorting, filtering, and search functionality.",
   inputSchema: z.object({
-    title: z.string().describe("Table title"),
-    description: z.string().nullable().describe("Optional table description"),
+    title: z.string().min(1).describe("The mandatory title of the table."),
+    description: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("An optional description for the table content."),
     columns: z
       .array(
         z.object({
           key: z
             .string()
+            .min(1)
             .describe(
-              "Unique key for the column. This MUST match the property keys in the data objects.",
+              "Unique identifier for the column. MUST exactly match keys in the data objects.",
             ),
-          label: z.string().describe("Display label for the column header"),
+          label: z.string().min(1).describe("Display name for the column header."),
           type: z
             .enum(["string", "number", "date", "boolean"])
-            .nullable()
+            .optional()
             .default("string")
-            .describe(
-              "Data type: 'number' for stats, 'date' for timestamps, 'boolean' for status, 'string' for text",
-            ),
+            .describe("Data type: string, number, date, or boolean."),
         }),
       )
-      .describe("Column configuration defining keys and labels"),
+      .min(1)
+      .describe("Array of column definitions. At least one column is required."),
     data: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])))
+      .min(2, "At least 2 data rows are required to create a table.")
       .describe(
-        "Array of row objects. IMPORTANT: Each object property name (key) MUST exactly match one of the 'key' values defined in the columns array.",
+        "Array of row data objects. Each object must contain keys matching the column definitions. MINIMUM 2 ROWS.",
       ),
   }),
   execute: async () => {

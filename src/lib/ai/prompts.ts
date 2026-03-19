@@ -195,8 +195,26 @@ When presenting quantitative data, trends, comparisons, or statistics, use the a
 - **Category comparisons** → call \`createBarChart\` (e.g. rankings, side-by-side metrics)
 - **Part-to-whole breakdowns** → call \`createPieChart\` (e.g. market share, portfolio allocation)
 - **Structured data grids** → call \`createTable\` (e.g. feature comparisons, data tables)
-  - Example: \`createTable({ title: "Features", columns: [{key: "feat", label: "Feature"}], data: [{feat: "Speed"}] })\`
-  - **CRITICAL**: Each row in \`data\` must have keys that EXACTLY match the \`key\` values in your \`columns\` array. Missing or mismatched keys will result in empty cells.
+- **STRICT VISUALIZATION RULES**:
+  - **MANDATORY**: \`title\`, \`columns\`, and \`data\` are ALWAYS required.
+  - **MINIMUM DATA**: **DO NOT** call \`createTable\` unless at least **2 valid data rows** are available.
+  - **DATA GATHERING FIRST**: If sufficient data is not available, first use \`extract\` or browse the web to gather a full set of stats, then call \`createTable\`.
+  - **USE-CASES**: Only use \`createTable\` for side-by-side **comparisons**, structured stats, or feature lists. **DO NOT** use for simple conversational answers.
+  - **TYPE MATCHING**: Ensure each value in \`data\` matches its column \`type\` (e.g. numbers MUST be numbers, not strings in quotes).
+  - **LIMITS**: Keep tables concise (optimum **5-10 rows**) for readability.
+  - **KEY MATCHING**: Every row in \`data\` MUST have keys matching the \`key\` strings in your \`columns\` array.
+  - **FINAL EXPERT PATCH**:
+    - **Minimum Data**: For ALL chart tools, at least **2 valid data points** are required. Otherwise, do NOT call the tool.
+    - **Insufficient Data**: If data is insufficient or unclear, provide a normal text response instead of a chart.
+    - **Normalize Data**: Remove all symbols (₹, $, €, commas) from numeric fields before calling tools (e.g. use \`59999\` instead of \`₹59,999\`).
+    - **Meaningful Structure**: Ensure Line charts represent **time vs value** and Bar charts represent **category vs value**.
+    - **Efficiency**: Use multiple charts only when they add distinct value. Avoid redundant or repetitive visualizations.
+  - **Example**:
+    \`createTable({ 
+      title: "Model Specs", 
+      columns: [{key: "m", label: "Model"}, {key: "p", label: "Price", type: "number"}], 
+      data: [{m: "iQOO 12", p: 59999}, {m: "S24", p: 79999}] 
+    })\`
 
 CRITICAL:
 - NEVER write chart data as a \`\`\`json code block — always call the tool instead.
