@@ -44,7 +44,13 @@ function PureWebSearchToolInvocation({ part }: WebSearchToolInvocationProps) {
             {t("Chat.Tool.searchOptionsDescription")}
           </p>
           <div className="p-2">
-            <JsonView data={part.input} />
+            {part.input ? (
+              <JsonView data={part.input} />
+            ) : (
+              <p className="text-[10px] text-muted-foreground italic">
+                {t("Common.noInputProvided")}
+              </p>
+            )}
           </div>
         </HoverCardContent>
       </HoverCard>

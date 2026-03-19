@@ -63,6 +63,7 @@ import {
 
 import { WorkflowInvocation } from "./tool-invocation/workflow-invocation";
 import { SteelBrowserPreview } from "./tool-invocation/steel-browser";
+import { DocumentGeneratorToolInvocation } from "./tool-invocation/document-generator";
 import dynamic from "next/dynamic";
 import { notify } from "lib/notify";
 import { ModelProviderIcon } from "ui/model-provider-icon";
@@ -1018,7 +1019,9 @@ export const ToolMessagePart = memo(
     const CustomToolComponent = useMemo(() => {
       if (
         toolName === DefaultToolName.WebSearch ||
-        toolName === DefaultToolName.WebContent
+        toolName === DefaultToolName.WebContent ||
+        toolName === "webSearch" ||
+        toolName === "webContent"
       ) {
         return <WebSearchToolInvocation part={part} />;
       }
@@ -1037,6 +1040,14 @@ export const ToolMessagePart = memo(
 
       if (toolName === "video-gen") {
         return <VideoGenToolInvocation part={part} />;
+      }
+
+      if (
+        toolName === "generate-word-document" ||
+        toolName === "generate-csv" ||
+        toolName === "generate-text-file"
+      ) {
+        return <DocumentGeneratorToolInvocation part={part} />;
       }
 
       if (

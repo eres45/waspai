@@ -18,11 +18,13 @@ describe("file-support", () => {
 
   it("returns true for default supported document types", () => {
     expect(isFilePartSupported("application/pdf")).toBe(true);
+    expect(isFilePartSupported("text/plain")).toBe(true);
+    expect(isFilePartSupported("application/vnd.ms-excel")).toBe(true);
   });
 
   it("returns false for unsupported mime types by default", () => {
-    expect(isFilePartSupported("text/plain")).toBe(false);
-    expect(isFilePartSupported("application/vnd.ms-excel")).toBe(false);
+    expect(isFilePartSupported("video/mp4")).toBe(false);
+    expect(isFilePartSupported("application/zip")).toBe(false);
   });
 
   it("respects an explicitly provided mime whitelist", () => {

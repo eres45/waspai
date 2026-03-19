@@ -172,11 +172,35 @@ export const exaSearchTool = createTool({
   inputSchema: jsonSchemaToZod(freeSearchSchema),
   execute: (params) => {
     return safe(async () => {
-      const result = await fetchFreeSearch(params.query, params.numResults);
+      let queryStr = "";
+      let numRes = 30;
+
+      if (typeof params === "string") {
+        queryStr = params;
+      } else if (params && typeof params === "object") {
+        queryStr = (params as any).query || "";
+        numRes = (params as any).numResults || 30;
+      }
+
+      if (!queryStr) {
+        throw new Error("Search query is missing or undefined.");
+      }
+
+      const result = await fetchFreeSearch(queryStr, numRes);
+
+      const guide =
+        result.results.length > 0
+          ? `Use these search results to answer the user's question accurately. If you used advanced operators (like site:), mention that you filtered the search.`
+          : `No search results were found for "${params.query}". 
+             DANGER: Do NOT repeat the exact same search. 
+             Instead: 
+             1. Refine your query (use broader terms). 
+             2. Use the 'steel-browser' tool if you need to find a specific page manually. 
+             3. Explain to the user that direct search results are limited.`;
 
       return {
         ...result,
-        guide: `Use these search results to answer the user's question accurately. If you used advanced operators (like site:), mention that you filtered the search.`,
+        guide,
       };
     })
       .ifFail((e) => {

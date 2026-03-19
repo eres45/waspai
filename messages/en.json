@@ -42,7 +42,8 @@
     "createWithExample": "Create With Example",
     "resultsFound": "{count} results found",
     "youAreAnExpertIn": "You are an expert in {role}",
-    "sharedBy": "Shared by {userName}"
+    "sharedBy": "Shared by {userName}",
+    "noInputProvided": "No input provided"
   },
   "Error": {},
   "Info": {
@@ -249,7 +250,9 @@
         "http": "HTTP Request",
         "code": "Code Execution",
         "browser": "Cloud Browser"
-      }
+      },
+      "generatingDocument": "Generating document...",
+      "failedToGenerateDocument": "Failed to generate document"
     },
     "VoiceChat": {
       "title": "Voice Chat Mode",
