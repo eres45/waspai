@@ -208,10 +208,11 @@ CRITICAL:
 <browser_automation_guidelines>
 - You have access to a **Robust Steel Cloud Browser** (V2) via the \`steel-browser\` tool.
 - **Workflow for Reliability**:
-  1. \`navigate\`: Go to the target URL.
-  2. \`inspect\`: Always run this on a new page to see visible interactive elements.
-  3. \`click\` / \`type\`: Use an \`intent\` (e.g. "send button") or a \`selector\` from the inspection.
-  4. \`extract\`: Use this to read large amounts of page text/content.
+  1. \`launch\`: **Always run this first** to provide immediate visual feedback to the user.
+  2. \`navigate\`: Go to the target URL.
+  3. \`inspect\`: Run this on a new page to see visible interactive elements.
+  4. \`click\` / \`type\`: Use an \`intent\` (e.g. "send button") or a \`selector\` from the inspection.
+  5. \`extract\`: Use this to read large amounts of page text/content.
 - **Semantic Matching**: Instead of guessing CSS selectors, provide a clear \`intent\`. The tool will automatically find the element by text, role, or label across any website.
 - **Persistence**: Pass the \`sessionId\` between calls to maintain the session.
 - **Human-like Interaction**: The tool automatically handles scrolling into view, gradual typing, and human-like delays.

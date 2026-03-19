@@ -153,8 +153,11 @@ export const steelBrowserTool: Tool = {
         "inspect",
         "scroll",
         "extract",
+        "launch",
       ])
-      .describe("The action to perform in the browser."),
+      .describe(
+        "The action to perform in the browser. Use 'launch' first for immediate visual feedack.",
+      ),
     url: z
       .string()
       .optional()
@@ -286,12 +289,26 @@ export const steelBrowserTool: Tool = {
           result.screenshot_base64 = buffer.toString("base64");
           actionMessage = `Screenshot captured.`;
           break;
+
+        case "launch":
+          actionMessage = `Browser session launched and ready. You can see the live view below.`;
+          break;
       }
 
       await browser.close();
 
       const liveDetails = await client.sessions.liveDetails(session.id);
-      result.sessionUrl = `${liveDetails.sessionViewerUrl || session.sessionViewerUrl}/player?interactive=true&showControls=true`;
+      const baseViewerUrl =
+        liveDetails.sessionViewerUrl || session.sessionViewerUrl;
+      const viewerUrl = baseViewerUrl.includes("/player")
+        ? baseViewerUrl
+        : `${baseViewerUrl}/player`;
+
+      const finalUrl = new URL(viewerUrl);
+      finalUrl.searchParams.set("interactive", "true");
+      finalUrl.searchParams.set("showControls", "true");
+
+      result.sessionUrl = finalUrl.toString();
       result.message = `${actionMessage} You can view the live progress below.`;
 
       return result;
