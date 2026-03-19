@@ -1381,53 +1381,19 @@ BEGIN ROLEPLAY NOW.`
           isEnhanceImageRequest && enhanceImagePrompt,
           isAnimeConversionRequest && animeConversionPrompt,
 
-          // Specialized document generation prompts - reinforce knowledge
+          // Specialized document generation prompts - reinforce knowledge (already conditional)
           pdfPrompt,
           wordPrompt,
           csvPrompt,
           textFilePrompt,
 
-          // Documentation Reading Reinforcement
-          `[DOCUMENT READING SERVICE ENABLED]
+          // Document Reading — only inject when user actually uploaded files
+          fileUrls.length > 0 &&
+            `[DOCUMENT READING SERVICE ENABLED]
           IMPORTANT: Text content has been extracted from any uploaded PDF, Word, or PowerPoint files and is included in your current message context below the user's text.
           1. DO NOT claim you cannot read files.
           2. Use the "File Content" blocks to fulfill the user's request.
           3. Base your answers strictly on the extracted text provided.`,
-
-          // Permanent Tool Knowledge Reinforcement
-          `IMPORTANT: You have specialized tools for:
-          - Generating documents: "generate-pdf", "generate-word-document", "generate-csv", "generate-text-file".
-          - Processing images: "edit-image", "remove-background", "enhance-image", "anime-conversion".
-          NEVER say you cannot create these files or perform these actions. If requested, call the appropriate tool immediately.`,
-
-          // Visualization & Diagramming Policy
-          `[VISUALIZATION CAPABILITIES]
-          1. DIAGRAMS (Flowcharts, Sequence, Mindmaps): You can create diagrams using Mermaid.js. Use a markdown code block with language 'mermaid'.
-             Example:
-             \`\`\`mermaid
-             graph TD; A-->B;
-             \`\`\`
-             IMPORTANT: DO NOT use the 'html-preview' tool for Mermaid diagrams. Just output the markdown block directly.
-          2. CHARTS (Pie, Bar, Line): You have specific tools ('create-pie-chart', 'create-bar-chart', 'create-line-chart'). Use them for data visualization.
-          3. TABLES: Use 'create-table' for structured data.
-          
-          [VIDEO ANALYSIS]
-          You can analyze YouTube videos using the "get-youtube-transcript" tool.
-          1. TRIGGER: Only call this if the user shares a YouTube URL.
-          2. LIMIT: The tool has a 30-minute video limit. If the tool returns a limit error, politely inform the user about the Premium requirement.`,
-
-          // Memory Persistence Policy
-          `[MEMORY PERSISTENCE POLICY]
-          You are responsible for building a long-term understanding of the user.
-          1. ACTIVE LISTENING: Constantly monitor for facts the user shares about themselves (e.g., profession, name, hobbies, specific technical preferences, location).
-          2. THE 2-WEEK RULE: Before saving, ask yourself: "Will this matter in 2 weeks?" If no, don't save it.
-          3. AUTO-MANAGEMENT:
-             - Use 'get_memories' to check if a fact already exists.
-             - Use 'update_memory' if new info contradicts or upgrades an old memory.
-             - Use 'delete_memory' if a memory is wrong or outdated.
-             - Use 'save_memory' ONLY for new, permanent, reusable facts.
-          4. SILENT OPERATION: All tool calls are background actions. Do NOT announce "I am saving this" or "I've updated your preferences." Just respond naturally.
-          5. NO NARRATION: NEVER mention these memory tools to the user.`,
 
           // Tool Calling Format Reinforcement (fixes some models leaking XML)
           `[TOOL USE STANDARD]
@@ -1435,16 +1401,10 @@ BEGIN ROLEPLAY NOW.`
            2. DO NOT output XML tag <invoke> or <tool_code> or <minimax:tool_call> in your text response.
            3. If you want to call a tool, generate the tool call object, do not write code to call it.`,
 
-          // Browser tool prompt
-          `[CLOUD BROWSER ENABLED]
-          - You have a "steel-browser" tool that provides a REAL cloud-based Chrome browser.
-          - Use this tool for any task requiring:
-              1. Browsing websites with Javascript (which "web-search" cannot do)
-              2. Interacting with pages (clicking, typing, taking control)
-              3. Real-time visual verification of websites
-          - IMPORTANT: Always pass the "sessionId" from previous browser tool results to subsequent calls. This maintains the same browser tab and state across multiple turns.
-          - When used, the user will see a LIVE deep-linked preview of the browser.
-          - Prefer "web-search" for information retrieval and "steel-browser" for interactive web tasks.`,
+          // NOTE: Visualization, Memory, Browser, and Tool Knowledge blocks
+          // are already covered by buildUserSystemPrompt() in prompts.ts
+          // (see <visualization_guidelines>, <memory_usage_guidelines>,
+          //  <browser_automation_guidelines>, <system_capabilities>)
 
           // Character prompt
           characterContext ? characterPrompt : undefined,
