@@ -335,9 +335,10 @@ export const steelBrowserTool: Tool = {
         finalUrl.searchParams.set("showControls", "true");
 
         result.sessionUrl = finalUrl.toString();
-        result.message = `${actionMessage} You can view the live progress below.`;
+        result.sessionId = session.id;
       } else {
         result.message = actionMessage;
+        result.sessionId = session.id;
       }
 
       return result;
