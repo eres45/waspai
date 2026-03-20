@@ -17,7 +17,7 @@ export interface VideoGenResult {
  */
 export async function generateVideoWithMeta(
   options: VideoGenOptions,
-  retries: number = 3,
+  retries: number = 5,
 ): Promise<VideoGenResult> {
   let lastError: Error | null = null;
 
@@ -76,13 +76,16 @@ export async function generateVideoWithMeta(
       lastError = error instanceof Error ? error : new Error(String(error));
       logger.warn(`Video Gen attempt ${attempt} failed: ${lastError.message}`);
 
-      // If it's a 502/503 error and we have retries left, wait and retry
-      if (
-        attempt < retries &&
-        (lastError.message.includes("HTTP 502") ||
-          lastError.message.includes("HTTP 503"))
-      ) {
-        const waitTime = Math.pow(2, attempt - 1) * 1000;
+      // If it's a 5xx error or timeout and we have retries left, wait and retry
+      const isRetryable =
+        lastError.message.includes("HTTP 5") ||
+        lastError.message.includes("Service Unavailable") ||
+        lastError.message.includes("Bad Gateway") ||
+        lastError.message.includes("timeout") ||
+        lastError.name === "AbortError";
+
+      if (attempt < retries && isRetryable) {
+        const waitTime = Math.pow(2, attempt) * 1000;
         logger.info(`Video Gen: Waiting ${waitTime}ms before retry...`);
         await new Promise((resolve) => setTimeout(resolve, waitTime));
         continue;

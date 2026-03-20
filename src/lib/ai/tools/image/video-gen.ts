@@ -26,9 +26,9 @@ export const videoGenTool = createTool({
       ),
   }),
   execute: async ({ prompt }, { abortSignal }) => {
-    logger.info(`Video Gen tool called with prompt: "${prompt}"`);
-
     try {
+      logger.info(`Video Gen tool called with prompt: "${prompt}"`);
+
       // Call the video generation API
       const generatedVideo = await generateVideoWithMeta({
         prompt,
@@ -37,16 +37,23 @@ export const videoGenTool = createTool({
 
       logger.info(`Video Gen: Video generated successfully`);
 
-      return {
+      const result = {
         video: generatedVideo.video,
         guide:
           generatedVideo.video.url.length > 0
             ? "Your video has been generated successfully! You can view it above."
             : "I apologize, but the video generation was not successful. Please try again with a different prompt.",
       };
-    } catch (e) {
-      logger.error(e);
-      throw e;
+
+      logger.info(`Video Gen: Returning result: ${JSON.stringify(result)}`);
+
+      return result;
+    } catch (e: any) {
+      logger.error("Video Gen Tool Error:", e);
+      return {
+        video: { url: "" },
+        guide: `Error generating video: ${e.message || "Unknown error"}. Please try again later.`,
+      };
     }
   },
 });
