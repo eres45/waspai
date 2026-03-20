@@ -103,12 +103,28 @@ export async function POST(request: Request) {
     const isVoiceChat = request.headers.get("X-Voice-Chat") === "true";
 
     const json = await request.json();
+    console.log(
+      "[DEBUG] Chat API Request Body:",
+      JSON.stringify(json, null, 2),
+    );
 
     const session = await getSession();
 
     if (!session?.user.id) {
       return new Response("Unauthorized", { status: 401 });
     }
+
+    let parsedBody;
+    try {
+      parsedBody = chatApiSchemaRequestBodySchema.parse(json);
+    } catch (parseError) {
+      console.error("[DEBUG] Chat API Schema Parse Error:", parseError);
+      return new Response(
+        `Schema validation failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+        { status: 400 },
+      );
+    }
+
     const {
       id,
       message,
@@ -122,7 +138,7 @@ export async function POST(request: Request) {
       attachments = [],
       editImageModel,
       videoGenModel,
-    } = chatApiSchemaRequestBodySchema.parse(json);
+    } = parsedBody;
 
     // Convert display names back to backend names
     const { models: modelReverseMapping, providers: providerReverseMapping } =
