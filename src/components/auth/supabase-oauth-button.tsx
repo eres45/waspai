@@ -9,6 +9,7 @@ import { signInWithGitHubAction } from "@/app/api/auth/actions";
 
 export function GitHubOAuthButton() {
   const [loading, setLoading] = useState(false);
+  console.log("[DEBUG] Rendering GitHubOAuthButton");
 
   const handleGitHubSignIn = async () => {
     setLoading(true);

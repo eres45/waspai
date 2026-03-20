@@ -30,10 +30,14 @@ function parseSocialAuthConfigs() {
   } = {};
   const disableSignUp = parseEnvBoolean(process.env.DISABLE_SIGN_UP);
 
-  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  const githubClientId = process.env.GITHUB_CLIENT_ID || process.env.GITHUB_ID;
+  const githubClientSecret =
+    process.env.GITHUB_CLIENT_SECRET || process.env.GITHUB_SECRET;
+
+  if (githubClientId && githubClientSecret) {
     const githubResult = GitHubConfigSchema.safeParse({
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      clientId: githubClientId,
+      clientSecret: githubClientSecret,
       disableSignUp,
     });
     if (githubResult.success) {
@@ -113,6 +117,11 @@ export function getAuthConfig(): AuthConfig {
   if (!result.success) {
     throw new Error(`Invalid auth configuration: ${result.error.message}`);
   }
+
+  console.log(
+    "[DEBUG] AuthConfig providers:",
+    result.data.socialAuthenticationProviders,
+  );
 
   return result.data;
 }
