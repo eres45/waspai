@@ -927,7 +927,7 @@ export default function PromptInput({
                               appStoreMutate({
                                 videoGenState: {
                                   isOpen: false,
-                                  model: "sora",
+                                  model: "meta-ai",
                                 },
                               });
                               // Focus on the input
@@ -936,7 +936,7 @@ export default function PromptInput({
                             className="cursor-pointer"
                           >
                             <Film className="mr-2 size-4" />
-                            SORA
+                            Meta AI
                           </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
