@@ -40,6 +40,11 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const isPlayingQueue = useRef<boolean>(false);
   const sentenceBuffer = useRef<string>("");
 
+  // VAD state
+  const lastSpeechTimeRef = useRef<number>(0);
+  const currentTranscriptRef = useRef<string>("");
+  const vadIntervalRef = useRef<any>(null);
+
   const playNextInQueue = useCallback(async () => {
     if (isPlayingQueue.current || ttsQueue.current.length === 0) return;
 
@@ -140,16 +145,37 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       };
 
       recognitionRef.current.onresult = (event: any) => {
+        let interimTranscript = "";
         let finalTranscript = "";
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + " ";
+            finalTranscript += transcript + " ";
+          } else {
+            interimTranscript += transcript;
           }
         }
 
-        if (finalTranscript) {
-          handleUserMessage(finalTranscript.trim());
+        // Update VAD state
+        if (finalTranscript || interimTranscript.trim().length > 2) {
+          lastSpeechTimeRef.current = Date.now();
+          currentTranscriptRef.current += finalTranscript;
+
+          // INTERRUPTION: If user is speaking and AI is talking, stop AI
+          if (
+            isAssistantSpeakingRef.current &&
+            (interimTranscript.trim().length > 3 || finalTranscript)
+          ) {
+            if (audioElement.current && !audioElement.current.paused) {
+              audioElement.current.pause();
+              audioElement.current.src = "";
+              ttsQueue.current = [];
+              isPlayingQueue.current = false;
+              setIsAssistantSpeaking(false);
+              isAssistantSpeakingRef.current = false;
+            }
+          }
         }
       };
     }
@@ -159,6 +185,8 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     isAssistantSpeakingRef.current = isAssistantSpeaking;
 
     if (isAssistantSpeaking && recognitionRef.current) {
+      // Temporarily stop recognition while AI is speaking to prevent echo
+      // This will be restarted by onend or the effect below when AI stops
       try {
         recognitionRef.current.stop();
       } catch (_e) {}
@@ -173,6 +201,8 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       } catch (_e) {}
     }
   }, [isAssistantSpeaking, isActive]);
+
+  // Main Chat API logic
 
   const handleUserMessage = useCallback(
     async (text: string) => {
@@ -310,8 +340,35 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         setIsAssistantSpeaking(false);
       }
     },
-    [voice],
+    [voice, playNextInQueue],
   );
+
+  // VAD Interval Logic
+  useEffect(() => {
+    if (isActive && !isAssistantSpeaking) {
+      vadIntervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const timeSinceSpeech = now - lastSpeechTimeRef.current;
+        const transcript = currentTranscriptRef.current.trim();
+
+        // If 1.5s of silence and we have a transcript, send it
+        if (timeSinceSpeech > 1500 && transcript.length > 0) {
+          handleUserMessage(transcript);
+          currentTranscriptRef.current = "";
+          lastSpeechTimeRef.current = 0;
+        }
+      }, 300);
+    } else {
+      if (vadIntervalRef.current) {
+        clearInterval(vadIntervalRef.current);
+        vadIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (vadIntervalRef.current) clearInterval(vadIntervalRef.current);
+    };
+  }, [isActive, isAssistantSpeaking, handleUserMessage]);
 
   const startListening = useCallback(async () => {
     try {

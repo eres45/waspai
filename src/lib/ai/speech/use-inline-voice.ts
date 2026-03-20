@@ -143,10 +143,6 @@ export function useInlineVoice({
             },
           });
 
-          // Reset for NEXT user turn, but KEEP recognition alive
-          finalTranscript = "";
-          userSpeechStartTime.current = Date.now();
-
           // Reset TTS processor for new response
           lastProcessedCharIndex.current = 0;
           lastProcessedMessageId.current = null;
@@ -154,14 +150,12 @@ export function useInlineVoice({
           isFirstSentenceEmitted.current = false;
           ttsQueue.current = [];
           assistantSpeechStartTime.current = Date.now();
-        }
-
-        // ALWAYS restart if isActive is true
-        if (isActive) {
-          try {
-            recognitionRef.current?.start();
-          } catch (_e) {
-            // Already started or busy
+        } else {
+          // If active and no text, restart to keep it "awake"
+          if (isActive) {
+            try {
+              recognitionRef.current?.start();
+            } catch (_e) {}
           }
         }
       };
@@ -217,7 +211,10 @@ export function useInlineVoice({
           playNextInQueue();
         } else {
           setIsAssistantSpeaking(false);
-          // Auto-restart listening is now handled by the always-on recognition logic in onend
+          // Auto-restart listening for continuous chat
+          if (isActive) {
+            startListening();
+          }
         }
       };
 
