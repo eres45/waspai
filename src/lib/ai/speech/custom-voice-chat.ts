@@ -123,27 +123,20 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           try {
             recognitionRef.current.start();
           } catch (_e) {
-            // Already started
+            // Already started or busy
           }
         }
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        if (event.error === "no-speech") {
-          if (
-            isListeningRef.current &&
-            recognitionRef.current &&
-            !isAssistantSpeakingRef.current
-          ) {
-            try {
-              recognitionRef.current.start();
-            } catch (_e) {
-              // Already started
-            }
-          }
-        } else {
-          setError(new Error(`Speech recognition error: ${event.error}`));
+        console.warn(`Speech recognition error: ${event.error}`);
+        // If it's a "no-speech" error, we just ignore it as onend will restart it if needed
+        if (event.error === "network") {
+          setError(
+            new Error("Speech recognition network error. Check connection."),
+          );
         }
+        // No need to stop everything on common mobile/desktop minor errors
       };
 
       recognitionRef.current.onresult = (event: any) => {
@@ -211,8 +204,8 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
             content: (m.parts[0] as TextPart).text,
           })),
           chatModel: {
-            provider: "openai-free",
-            model: "gpt-4o",
+            provider: "Meta",
+            model: "Llama 3.3 70B",
           },
           toolChoice: "auto",
           systemPrompt: voiceSystemPrompt,
