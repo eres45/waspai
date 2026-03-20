@@ -157,15 +157,19 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           }
         }
 
-        // Update VAD state
-        if (finalTranscript || interimTranscript.trim().length > 2) {
+        const combinedInterim = interimTranscript.trim();
+        const combinedFinal = finalTranscript.trim();
+
+        // Confidence Filtering: Only process significant speech
+        if (combinedFinal || combinedInterim.length > 5) {
           lastSpeechTimeRef.current = Date.now();
           currentTranscriptRef.current += finalTranscript;
 
-          // INTERRUPTION: If user is speaking and AI is talking, stop AI
+          // INTERRUPTION: If user is speaking significantly and AI is talking, stop AI
+          // Higher threshold (8 chars) to prevent accidental stops from breathing/noise
           if (
             isAssistantSpeakingRef.current &&
-            (interimTranscript.trim().length > 3 || finalTranscript)
+            (combinedInterim.length > 8 || combinedFinal.length > 3)
           ) {
             if (audioElement.current && !audioElement.current.paused) {
               audioElement.current.pause();
@@ -207,6 +211,8 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const handleUserMessage = useCallback(
     async (text: string) => {
       if (!text.trim()) return;
+
+      setIsLoading(true); // Show thinking indicator immediately
 
       const userMessage: UIMessageWithCompleted = {
         id: generateUUID(),
@@ -292,10 +298,11 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                   assistantText += content;
                   sentenceBuffer.current += content;
 
-                  // Check if we have a full sentence or enough text to speak
-                  // Look for punctuation followed by space or end of line
-                  const sentenceMatch =
-                    sentenceBuffer.current.match(/[^.!?\n]+[.!?\n]+/);
+                  // Robust sentence splitting: split by punctuation followed by space or end
+                  // This captures sentences more naturally than a simple split
+                  const sentenceMatch = sentenceBuffer.current.match(
+                    /[^.!?\n]+[.!?\n]+(?=\s|$)/,
+                  );
                   if (sentenceMatch) {
                     const sentence = sentenceMatch[0];
                     sentenceBuffer.current = sentenceBuffer.current.slice(
@@ -351,8 +358,15 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         const timeSinceSpeech = now - lastSpeechTimeRef.current;
         const transcript = currentTranscriptRef.current.trim();
 
-        // If 1.5s of silence and we have a transcript, send it
-        if (timeSinceSpeech > 1500 && transcript.length > 0) {
+        // DYNAMIC SILENCE: Short sentence -> faster response, Long sentence -> let them pause
+        const silenceThreshold = transcript.length < 20 ? 1000 : 1800;
+
+        // If silence detected and we have a transcript, send it
+        if (
+          lastSpeechTimeRef.current > 0 &&
+          timeSinceSpeech > silenceThreshold &&
+          transcript.length > 0
+        ) {
           handleUserMessage(transcript);
           currentTranscriptRef.current = "";
           lastSpeechTimeRef.current = 0;
