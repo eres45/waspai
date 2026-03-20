@@ -35,6 +35,56 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const audioStream = useRef<MediaStream | null>(null);
   const isListeningRef = useRef<boolean>(false);
 
+  // Streaming TTS state
+  const ttsQueue = useRef<string[]>([]);
+  const isPlayingQueue = useRef<boolean>(false);
+  const sentenceBuffer = useRef<string>("");
+
+  const playNextInQueue = useCallback(async () => {
+    if (isPlayingQueue.current || ttsQueue.current.length === 0) return;
+
+    isPlayingQueue.current = true;
+    setIsAssistantSpeaking(true);
+
+    const sentence = ttsQueue.current.shift();
+    if (!sentence) {
+      isPlayingQueue.current = false;
+      return;
+    }
+
+    try {
+      const audioUrl = await generateSpeech(sentence, voice as CustomTTSVoice);
+
+      if (!audioElement.current) {
+        audioElement.current = new Audio();
+      }
+
+      audioElement.current.src = audioUrl;
+      audioElement.current.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        isPlayingQueue.current = false;
+
+        if (ttsQueue.current.length > 0) {
+          playNextInQueue();
+        } else {
+          setIsAssistantSpeaking(false);
+        }
+      };
+
+      audioElement.current.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        isPlayingQueue.current = false;
+        playNextInQueue();
+      };
+
+      await audioElement.current.play();
+    } catch (err) {
+      console.error("TTS Queue error", err);
+      isPlayingQueue.current = false;
+      playNextInQueue();
+    }
+  }, [voice]);
+
   // Ref to track assistant speaking state inside callbacks without re-creating them
   const isAssistantSpeakingRef = useRef(false);
 
@@ -53,6 +103,14 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
       recognitionRef.current.onstart = () => {
         setIsUserSpeaking(true);
+        // INTERRUPTION: If user starts speaking, stop AI audio
+        if (audioElement.current && !audioElement.current.paused) {
+          audioElement.current.pause();
+          audioElement.current.src = "";
+          ttsQueue.current = [];
+          isPlayingQueue.current = false;
+          setIsAssistantSpeaking(false);
+        }
       };
 
       recognitionRef.current.onend = () => {
@@ -184,9 +242,10 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
-        setIsAssistantSpeaking(true);
 
         let buffer = "";
+        sentenceBuffer.current = "";
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -208,6 +267,23 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                   data.choices?.[0]?.message?.content;
                 if (content) {
                   assistantText += content;
+                  sentenceBuffer.current += content;
+
+                  // Check if we have a full sentence or enough text to speak
+                  // Look for punctuation followed by space or end of line
+                  const sentenceMatch =
+                    sentenceBuffer.current.match(/[^.!?\n]+[.!?\n]+/);
+                  if (sentenceMatch) {
+                    const sentence = sentenceMatch[0];
+                    sentenceBuffer.current = sentenceBuffer.current.slice(
+                      sentence.length,
+                    );
+                    ttsQueue.current.push(sentence.trim());
+                    if (!isPlayingQueue.current) {
+                      playNextInQueue();
+                    }
+                  }
+
                   setMessages((prev) => {
                     const updated = [...prev];
                     const lastMsg = updated[updated.length - 1];
@@ -222,33 +298,20 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           }
         }
 
+        // Handle remaining text in buffer
+        if (sentenceBuffer.current.trim()) {
+          ttsQueue.current.push(sentenceBuffer.current.trim());
+          if (!isPlayingQueue.current) {
+            playNextInQueue();
+          }
+        }
+
         setMessages((prev) => {
           const updated = [...prev];
           const lastMsg = updated[updated.length - 1];
           if (lastMsg) lastMsg.completed = true;
           return updated;
         });
-
-        if (assistantText) {
-          try {
-            const audioUrl = await generateSpeech(
-              assistantText,
-              voice as CustomTTSVoice,
-            );
-            if (!audioElement.current) audioElement.current = new Audio();
-            audioElement.current.src = audioUrl;
-            audioElement.current.onended = () => {
-              setIsAssistantSpeaking(false);
-              URL.revokeObjectURL(audioUrl);
-            };
-            audioElement.current.onerror = () => setIsAssistantSpeaking(false);
-            await audioElement.current.play();
-          } catch (_e) {
-            setIsAssistantSpeaking(false);
-          }
-        } else {
-          setIsAssistantSpeaking(false);
-        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsAssistantSpeaking(false);
