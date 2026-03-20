@@ -13,9 +13,9 @@ export interface VideoGenResult {
 }
 
 /**
- * Generate video using SORA API
+ * Generate video using Meta AI API
  */
-export async function generateVideoWithSora(
+export async function generateVideoWithMeta(
   options: VideoGenOptions,
   retries: number = 3,
 ): Promise<VideoGenResult> {
@@ -24,23 +24,21 @@ export async function generateVideoWithSora(
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       logger.info(
-        `Video Gen (SORA): Starting video generation (attempt ${attempt}/${retries})`,
+        `Video Gen (Meta): Starting video generation (attempt ${attempt}/${retries})`,
       );
-      logger.info(`Video Gen (SORA): Prompt: ${options.prompt}`);
+      logger.info(`Video Gen (Meta): Prompt: ${options.prompt}`);
 
       // Use AbortController with 120 second timeout for video generation
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       try {
-        const response = await fetch("https://vetrex.x10.mx/api/sora.php", {
+        const apiUrl = `https://metaai-1xpj.onrender.com/generate/video/v2?prompt=${encodeURIComponent(options.prompt)}`;
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            prompt: options.prompt,
-          }),
           signal: options.abortSignal || controller.signal,
         });
 
@@ -54,14 +52,15 @@ export async function generateVideoWithSora(
         }
 
         const data = await response.json();
-        const videoUrl = data.video || data.url || data.result;
+        // Updated for Meta API response format: { success: true, video_urls: [...], ... }
+        const videoUrl = data.video_urls?.[0] || data.video || data.url;
 
         if (!videoUrl) {
-          throw new Error("No video URL in response");
+          throw new Error("No video URL in response from Meta API");
         }
 
-        logger.info(`Video Gen (SORA): Video generated successfully`);
-        logger.info(`Video Gen (SORA): Video URL: ${videoUrl}`);
+        logger.info(`Video Gen (Meta): Video generated successfully`);
+        logger.info(`Video Gen (Meta): Video URL: ${videoUrl}`);
 
         return {
           video: {

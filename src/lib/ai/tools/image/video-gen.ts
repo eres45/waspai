@@ -1,7 +1,7 @@
 import { tool as createTool } from "ai";
 import z from "zod";
 import logger from "logger";
-import { generateVideoWithSora } from "lib/ai/image/video-gen";
+import { generateVideoWithMeta } from "lib/ai/image/video-gen";
 
 export type VideoGenToolResult = {
   video: {
@@ -12,12 +12,12 @@ export type VideoGenToolResult = {
 };
 
 /**
- * Video generation tool using SORA API
+ * Video generation tool using Meta AI API
  */
 export const videoGenTool = createTool({
   name: "video-gen",
   description:
-    "Generate a video based on a text prompt using SORA. Provide a detailed description of the video you want to create.",
+    "Generate a video based on a text prompt using Meta AI. Provide a detailed description of the video you want to create.",
   inputSchema: z.object({
     prompt: z
       .string()
@@ -30,7 +30,7 @@ export const videoGenTool = createTool({
 
     try {
       // Call the video generation API
-      const generatedVideo = await generateVideoWithSora({
+      const generatedVideo = await generateVideoWithMeta({
         prompt,
         abortSignal,
       });
