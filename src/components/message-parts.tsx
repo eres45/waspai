@@ -412,10 +412,14 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                 data-testid="message-edit-button"
                 variant="ghost"
                 size="icon"
-                className="size-3! p-4!"
+                className="size-8 p-1"
                 onClick={() => copy(part.text)}
               >
-                {copied ? <Check /> : <Copy />}
+                {copied ? (
+                  <Check className="size-4" />
+                ) : (
+                  <Copy className="size-4" />
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Copy</TooltipContent>
@@ -430,9 +434,9 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                         data-testid="message-edit-button data-[state=open]:bg-secondary!"
                         variant="ghost"
                         size="icon"
-                        className="size-3! p-4!"
+                        className="size-8 p-1"
                       >
-                        {<RefreshCw />}
+                        {<RefreshCw className="size-4" />}
                       </Button>
                     </SelectModel>
                   </div>
@@ -483,11 +487,11 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                       }
                     }}
                     className={cn(
-                      "size-3! p-4! transition-all duration-300",
+                      "size-8 p-1 transition-all duration-300",
                       isPlaying && "text-blue-400",
                     )}
                   >
-                    <Volume2 />
+                    <Volume2 className="size-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -502,12 +506,12 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                     size="icon"
                     disabled={isDeleting}
                     onClick={deleteMessage}
-                    className="size-3! p-4! hover:text-destructive"
+                    className="size-8 p-1 hover:text-destructive"
                   >
                     {isDeleting ? (
-                      <Loader className="animate-spin" />
+                      <Loader className="animate-spin size-4" />
                     ) : (
-                      <Trash2 />
+                      <Trash2 className="size-4" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -524,9 +528,9 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-3! p-4! opacity-0 group-hover/message:opacity-100 transition-opacity duration-300"
+                  className="size-8 p-1 opacity-0 group-hover/message:opacity-100 transition-opacity duration-300"
                 >
-                  <EllipsisIcon />
+                  <EllipsisIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="p-4 w-72 bg-card border shadow-lg">

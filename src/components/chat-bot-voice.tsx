@@ -329,9 +329,9 @@ export function ChatBotVoice() {
                     onClick={() => setUseCompactView(!useCompactView)}
                   >
                     {useCompactView ? (
-                      <MessageSquareMoreIcon />
+                      <MessageSquareMoreIcon className="size-5" />
                     ) : (
-                      <MessagesSquareIcon />
+                      <MessagesSquareIcon className="size-5" />
                     )}
                   </Button>
                 </TooltipTrigger>
