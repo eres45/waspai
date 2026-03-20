@@ -8,6 +8,7 @@ import {
   Tool,
   UIMessage,
 } from "ai";
+import { AllowedMCPServer } from "app-types/mcp";
 
 import {
   customModelProvider,
@@ -1529,7 +1530,7 @@ BEGIN ROLEPLAY NOW.`
         metadata.toolCount = Object.keys(vercelAITooles).length;
 
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
-          .map((t) => t.tools)
+          .map((t) => (t as AllowedMCPServer).tools)
           .flat();
 
         logger.info(
