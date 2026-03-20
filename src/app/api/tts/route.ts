@@ -1,20 +1,24 @@
 import { NextRequest } from "next/server";
 import logger from "logger";
 
-const LOVO_TTS_URL = "https://lovo-tts.llamai.workers.dev/v1/audio/speech";
+const TTS_WORKER_URL = "https://tts-worker.llamai.workers.dev/v1/audio/speech";
 
 /**
- * TTS API Proxy – LOVO TTS Worker (OpenAI-compatible)
+ * TTS API Proxy – LLAMAI TTS Worker (OpenAI-compatible)
  * Streams raw MP3 audio back to the client to avoid CORS issues.
- *
- * Voice mapping (LOVO worker):
- *   alloy, nova, shimmer → Chloe (Female US)
- *   echo, onyx, fable    → Thomas (Male US)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, voice = "nova" } = body;
+    const { text, voice = "en-US-JennyNeural" } = body;
+
+    // Map common names to the new worker voices if needed
+    let targetVoice = voice;
+    if (["nova", "shimmer", "alloy"].includes(voice)) {
+      targetVoice = "en-US-JennyNeural";
+    } else if (["echo", "onyx", "fable"].includes(voice)) {
+      targetVoice = "en-US-GuyNeural";
+    }
 
     if (!text || typeof text !== "string") {
       return Response.json(
@@ -23,27 +27,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logger.info(`LOVO TTS: voice=${voice}, text="${text.substring(0, 60)}..."`);
+    logger.info(
+      `LLAMAI TTS: voice=${targetVoice}, text="${text.substring(0, 60)}..."`,
+    );
 
-    const lovoResponse = await fetch(LOVO_TTS_URL, {
+    const ttsResponse = await fetch(TTS_WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: text.trim(), voice }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer abc",
+      },
+      body: JSON.stringify({
+        input: text.trim(),
+        voice: targetVoice,
+        model: "tts-1",
+      }),
     });
 
-    if (!lovoResponse.ok) {
-      const err = await lovoResponse.text();
-      logger.error(`LOVO TTS error ${lovoResponse.status}: ${err}`);
+    if (!ttsResponse.ok) {
+      const err = await ttsResponse.text();
+      logger.error(`LLAMAI TTS error ${ttsResponse.status}: ${err}`);
       return Response.json(
-        { success: false, error: `TTS provider error: ${lovoResponse.status}` },
+        { success: false, error: `TTS provider error: ${ttsResponse.status}` },
         { status: 502 },
       );
     }
 
     // Stream the raw audio bytes back to the browser
-    const audioBuffer = await lovoResponse.arrayBuffer();
+    const audioBuffer = await ttsResponse.arrayBuffer();
 
-    logger.info(`LOVO TTS success: ${audioBuffer.byteLength} bytes returned`);
+    logger.info(`LLAMAI TTS success: ${audioBuffer.byteLength} bytes returned`);
 
     return new Response(audioBuffer, {
       status: 200,
