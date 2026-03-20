@@ -76,7 +76,16 @@ export function useInlineVoice({
 
       // Mark the current last message as "processed" so we don't read history
       if (messages.length > 0) {
-        lastProcessedMessageId.current = messages[messages.length - 1].id;
+        const lastMsg = messages[messages.length - 1];
+        lastProcessedMessageId.current = lastMsg.id;
+        // Also treat it as processed for text index
+        const textPart = lastMsg.parts.find((p) => p.type === "text") as any;
+        if (textPart?.text) {
+          lastProcessedCharIndex.current = textPart.text.length;
+        }
+      } else {
+        lastProcessedMessageId.current = "__empty__";
+        lastProcessedCharIndex.current = 0;
       }
 
       recognitionRef.current.onstart = () => {
@@ -222,7 +231,10 @@ export function useInlineVoice({
     const lastMessage = messages[messages.length - 1];
 
     // Process only if it's an assistant message and we are actively in a voice session
-    if (lastMessage?.role === "assistant") {
+    if (
+      lastMessage?.role === "assistant" &&
+      lastMessage.id !== lastProcessedMessageId.current
+    ) {
       const parts = lastMessage.parts;
       const textPart = parts.find((p) => p.type === "text") as any;
 
@@ -231,8 +243,7 @@ export function useInlineVoice({
       const fullText = textPart.text;
 
       // If it's a new message, reset tracking
-      if (lastProcessedMessageId.current !== lastMessage.id) {
-        lastProcessedMessageId.current = lastMessage.id;
+      if (currentAssistantMessageId.current !== lastMessage.id) {
         currentAssistantMessageId.current = lastMessage.id;
         lastProcessedCharIndex.current = 0;
         sentenceBuffer.current = "";
