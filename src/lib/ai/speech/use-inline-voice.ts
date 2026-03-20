@@ -91,6 +91,14 @@ export function useInlineVoice({
       recognitionRef.current.onstart = () => {
         setIsListening(true);
         setIsActive(true);
+        // INTERRUPTION: If user starts speaking, stop AI audio
+        if (audioElement.current && !audioElement.current.paused) {
+          audioElement.current.pause();
+          audioElement.current.src = "";
+          ttsQueue.current = [];
+          isPlayingQueue.current = false;
+          setIsAssistantSpeaking(false);
+        }
       };
 
       recognitionRef.current.onresult = (event: any) => {
@@ -102,14 +110,13 @@ export function useInlineVoice({
         }
         if (tempFinal) {
           finalTranscript += tempFinal;
-          // Stop listening automatically after a final result is captured
-          // (Can be adjusted for continuous conversation, but for typical "walkie-talkie" or single-turn voice, this works well)
-          recognitionRef.current?.stop();
+          // For continuous mode, we DON'T stop here. We let the user finish naturally.
+          // The onend will be triggered by quiet or manual stop if needed.
         }
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        if (event.error !== "no-speech") {
+        if (event.error !== "no-speech" && event.error !== "aborted") {
           console.error("Speech recognition error:", event.error);
           setIsListening(false);
           setIsActive(false);
@@ -144,9 +151,11 @@ export function useInlineVoice({
           ttsQueue.current = [];
           assistantSpeechStartTime.current = Date.now();
         } else {
-          // If active, restart (unless stopped intentionally)
+          // If active and no text, restart to keep it "awake"
           if (isActive) {
-            setIsActive(false);
+            try {
+              recognitionRef.current?.start();
+            } catch (_e) {}
           }
         }
       };
@@ -250,13 +259,27 @@ export function useInlineVoice({
         isFirstSentenceEmitted.current = false;
       }
 
-      // Accumulate the entire text stream without splitting
+      // Accumulate the entire text stream
       if (fullText.length > lastProcessedCharIndex.current) {
+        const newText = fullText.slice(lastProcessedCharIndex.current);
         lastProcessedCharIndex.current = fullText.length;
-        sentenceBuffer.current = fullText;
+        sentenceBuffer.current += newText;
+
+        // Peak ahead for sentences
+        const sentenceMatch = sentenceBuffer.current.match(/[^.!?\n]+[.!?\n]+/);
+        if (sentenceMatch) {
+          const sentence = sentenceMatch[0];
+          sentenceBuffer.current = sentenceBuffer.current.slice(
+            sentence.length,
+          );
+          ttsQueue.current.push(sentence.trim());
+          if (!isPlayingQueue.current) {
+            playNextInQueue();
+          }
+        }
       }
 
-      // If message is complete (not streaming), queue the entire text once
+      // If message is complete (not streaming), queue the remaining buffer
       if (!isLoading) {
         if (sentenceBuffer.current.trim()) {
           ttsQueue.current.push(sentenceBuffer.current.trim());

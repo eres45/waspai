@@ -1705,6 +1705,13 @@ BEGIN ROLEPLAY NOW.`
           return;
         }
 
+        // Add isVoice metadata to the response if this was a voice interaction
+        const isVoiceInteraction = (message.metadata as any)?.isVoice === true;
+        const finalMetadata: any = {
+          ...metadata,
+          ...(isVoiceInteraction ? { isVoice: true } : {}),
+        };
+
         try {
           logger.info(
             `onFinish: Starting to save response message with ID: ${responseMessage.id}`,
@@ -1756,13 +1763,14 @@ BEGIN ROLEPLAY NOW.`
               role: message.role,
               parts: message.parts.map(convertToSavePart),
               id: message.id,
+              metadata: message.metadata as any, // Persist user message metadata (isVoice, etc.)
             });
             await chatRepository.upsertMessage({
               threadId: thread!.id,
               role: responseMessage.role,
               id: responseId,
               parts: filteredParts.map(convertToSavePart),
-              metadata,
+              metadata: finalMetadata,
             });
           }
 
