@@ -370,6 +370,7 @@ export function ChatBotVoice() {
                             {CUSTOM_TTS_VOICES.map((voice) => (
                               <DropdownMenuItem
                                 className="cursor-pointer flex items-center justify-between"
+                                key={voice}
                                 onClick={() =>
                                   appStoreMutate({
                                     voiceChat: {
@@ -383,7 +384,6 @@ export function ChatBotVoice() {
                                     },
                                   })
                                 }
-                                key={voice}
                               >
                                 {getVoiceDisplayName(voice)}
 

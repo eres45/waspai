@@ -8,6 +8,8 @@
  */
 
 export const CUSTOM_TTS_VOICES = [
+  "en-US-JennyNeural",
+  "en-US-GuyNeural",
   "alloy",
   "nova",
   "shimmer",
@@ -18,14 +20,16 @@ export const CUSTOM_TTS_VOICES = [
 
 export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number];
 
-// Voice display metadata for LOVO voices
+// Voice display metadata for worker voices
 export const VOICE_LANGUAGE_MAP: Record<string, string> = {
-  alloy: "Female US (Chloe)",
-  nova: "Female US (Chloe)",
-  shimmer: "Female US (Chloe)",
-  echo: "Male US (Thomas)",
-  onyx: "Male US (Thomas)",
-  fable: "Male US (Thomas)",
+  "en-US-JennyNeural": "Female US (Jenny)",
+  "en-US-GuyNeural": "Male US (Guy)",
+  alloy: "Female US (Legacy)",
+  nova: "Female US (Legacy)",
+  shimmer: "Female US (Legacy)",
+  echo: "Male US (Legacy)",
+  onyx: "Male US (Legacy)",
+  fable: "Male US (Legacy)",
 };
 
 /**

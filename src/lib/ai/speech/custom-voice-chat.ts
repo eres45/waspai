@@ -20,7 +20,9 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const [messages, setMessages] = useState<UIMessageWithCompleted[]>([]);
 
   // Track voice from props - update when props change
-  const [voice, setVoice] = useState<string>(props?.voice || "nova");
+  const [voice, setVoice] = useState<string>(
+    props?.voice || "en-US-JennyNeural",
+  );
 
   useEffect(() => {
     if (props?.voice) {
@@ -33,6 +35,9 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const audioStream = useRef<MediaStream | null>(null);
   const isListeningRef = useRef<boolean>(false);
 
+  // Ref to track assistant speaking state inside callbacks without re-creating them
+  const isAssistantSpeakingRef = useRef(false);
+
   // Initialize Web Speech API
   useEffect(() => {
     const SpeechRecognition =
@@ -44,7 +49,6 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = "en-US";
-      // Increase timeout for longer speech
       (recognitionRef.current as any).maxAlternatives = 1;
 
       recognitionRef.current.onstart = () => {
@@ -53,22 +57,26 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
       recognitionRef.current.onend = () => {
         setIsUserSpeaking(false);
-        // Restart listening if still active
-        if (recognitionRef.current && isListeningRef.current) {
+        if (
+          recognitionRef.current &&
+          isListeningRef.current &&
+          !isAssistantSpeakingRef.current
+        ) {
           try {
             recognitionRef.current.start();
           } catch (_e) {
-            // Already started, ignore error
+            // Already started
           }
         }
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        // Ignore "no-speech" errors - they happen when AI is speaking
         if (event.error === "no-speech") {
-          console.log("No speech detected, continuing...");
-          // Restart listening if still active
-          if (isListeningRef.current && recognitionRef.current) {
+          if (
+            isListeningRef.current &&
+            recognitionRef.current &&
+            !isAssistantSpeakingRef.current
+          ) {
             try {
               recognitionRef.current.start();
             } catch (_e) {
@@ -81,61 +89,29 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       };
 
       recognitionRef.current.onresult = (event: any) => {
-        let _interimTranscript = "";
         let finalTranscript = "";
 
-        console.log(
-          `Speech result event - resultIndex: ${event.resultIndex}, results length: ${event.results.length}`,
-        );
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          const isFinal = event.results[i].isFinal;
-
-          console.log(`Result ${i}: "${transcript}" (final: ${isFinal})`);
-
-          if (isFinal) {
-            finalTranscript += transcript + " ";
-          } else {
-            _interimTranscript += transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + " ";
           }
         }
 
         if (finalTranscript) {
-          const trimmedText = finalTranscript.trim();
-          handleUserMessage(trimmedText);
-        }
-      };
-
-      recognitionRef.current.onend = () => {
-        // Echo prevention: If assistant is speaking, don't restart yet.
-        // The speaker end handler will restart it.
-        if (isListeningRef.current && !isAssistantSpeakingRef.current) {
-          try {
-            recognitionRef.current.start();
-          } catch (e) {
-            console.error("Failed to restart recognition:", e);
-          }
+          handleUserMessage(finalTranscript.trim());
         }
       };
     }
   }, []);
 
-  // Ref to track assistant speaking state inside callbacks without re-creating them
-  const isAssistantSpeakingRef = useRef(false);
   useEffect(() => {
     isAssistantSpeakingRef.current = isAssistantSpeaking;
 
-    // If assistant starts speaking, stop the mic to prevent echo
     if (isAssistantSpeaking && recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch (_e) {
-        // Ignore if already stopped
-      }
-    }
-    // If assistant stops speaking and chat is still active, resume mic
-    else if (
+      } catch (_e) {}
+    } else if (
       !isAssistantSpeaking &&
       isActive &&
       recognitionRef.current &&
@@ -143,9 +119,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     ) {
       try {
         recognitionRef.current.start();
-      } catch (_e) {
-        // Ignore if already started
-      }
+      } catch (_e) {}
     }
   }, [isAssistantSpeaking, isActive]);
 
@@ -153,68 +127,50 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     async (text: string) => {
       if (!text.trim()) return;
 
-      // Add user message
       const userMessage: UIMessageWithCompleted = {
         id: generateUUID(),
         role: "user",
-        parts: [
-          {
-            type: "text",
-            text: text,
-          },
-        ],
+        parts: [{ type: "text", text: text }],
         completed: true,
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      // Add user message to state and get fresh history for the API call
+      let currentHistory: UIMessageWithCompleted[] = [];
+      setMessages((prev) => {
+        currentHistory = [...prev, userMessage];
+        return currentHistory;
+      });
 
       try {
-        // Create a voice-based system prompt for roleplay
-        const voiceSystemPrompt =
-          voice && voice !== "nova"
-            ? `You are a helpful AI assistant with the voice personality of ${voice}. Respond naturally and conversationally as if you are ${voice}.`
-            : undefined;
+        const voiceSystemPrompt = `You are a helpful AI assistant. Respond naturally and conversationally. Your current voice identity is ${voice}.`;
 
-        // Send to chat API
         const messageId = generateUUID();
         const requestBody: any = {
           id: messageId,
-          message: {
-            id: messageId,
-            role: "user",
-            content: text,
-            parts: [
-              {
-                type: "text",
-                text: text,
-              },
-            ],
-          },
+          messages: currentHistory.map((m) => ({
+            id: m.id,
+            role: m.role,
+            content: (m.parts[0] as TextPart).text,
+          })),
           chatModel: {
             provider: "openai-free",
             model: "gpt-4o",
           },
           toolChoice: "auto",
+          systemPrompt: voiceSystemPrompt,
         };
-
-        // Add voice system prompt if available
-        if (voiceSystemPrompt) {
-          requestBody.systemPrompt = voiceSystemPrompt;
-        }
 
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Flag to indicate this is a voice chat session (don't save to history)
             "X-Voice-Chat": "true",
           },
           body: JSON.stringify(requestBody),
         });
 
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error("Failed to get response from chat API");
-        }
 
         const reader = response.body?.getReader();
         if (!reader) throw new Error("No response body");
@@ -223,101 +179,49 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         const assistantMessage: UIMessageWithCompleted = {
           id: generateUUID(),
           role: "assistant",
-          parts: [
-            {
-              type: "text",
-              text: "",
-            },
-          ],
+          parts: [{ type: "text", text: "" }],
           completed: false,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
         setIsAssistantSpeaking(true);
 
-        // Read streaming response (SSE format)
         let buffer = "";
-        let chunkCount = 0;
-
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = new TextDecoder().decode(value);
-          chunkCount++;
-          console.log(`Chunk ${chunkCount}:`, chunk.substring(0, 200));
-          buffer += chunk;
-
-          // Parse SSE format: data: {...}\n\n
+          buffer += new TextDecoder().decode(value);
           const lines = buffer.split("\n");
-          buffer = lines[lines.length - 1]; // Keep incomplete line in buffer
+          buffer = lines.pop() || "";
 
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            console.log(`Line ${i}:`, line.substring(0, 100));
-
-            if (line.startsWith("data: ")) {
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("data: ")) {
+              const jsonStr = trimmed.slice(6);
+              if (jsonStr === "[DONE]") continue;
               try {
-                const jsonStr = line.slice(6); // Remove "data: " prefix
-                if (jsonStr === "[DONE]") {
-                  console.log("Received [DONE]");
-                  continue;
-                }
-
                 const data = JSON.parse(jsonStr);
-                console.log(
-                  "Parsed data:",
-                  JSON.stringify(data).substring(0, 200),
-                );
-
-                // Extract text from different event types
-                if (data.delta) {
-                  // Direct delta field (Vercel AI format)
-                  assistantText += data.delta;
-                  console.log("Added delta:", data.delta);
-                } else if (data.choices?.[0]?.delta?.content) {
-                  // OpenAI format
-                  assistantText += data.choices[0].delta.content;
-                  console.log(
-                    "Added choices delta:",
-                    data.choices[0].delta.content,
-                  );
-                } else if (data.choices?.[0]?.message?.content) {
-                  // OpenAI message format
-                  assistantText += data.choices[0].message.content;
-                  console.log(
-                    "Added message:",
-                    data.choices[0].message.content,
-                  );
+                const content =
+                  data.delta ||
+                  data.choices?.[0]?.delta?.content ||
+                  data.choices?.[0]?.message?.content;
+                if (content) {
+                  assistantText += content;
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    const lastMsg = updated[updated.length - 1];
+                    if (lastMsg && lastMsg.role === "assistant") {
+                      (lastMsg.parts[0] as TextPart).text = assistantText;
+                    }
+                    return updated;
+                  });
                 }
-              } catch (e) {
-                // Ignore JSON parse errors for malformed SSE
-                console.error("Failed to parse SSE line:", line, e);
-              }
+              } catch (_e) {}
             }
-          }
-
-          // Update message in real-time
-          if (assistantText) {
-            setMessages((prev) => {
-              const updated = [...prev];
-              const lastMsg = updated[updated.length - 1];
-              if (lastMsg && lastMsg.role === "assistant") {
-                (lastMsg.parts[0] as TextPart).text = assistantText;
-              }
-              return updated;
-            });
           }
         }
 
-        console.log(
-          "Final assistantText:",
-          assistantText,
-          "Length:",
-          assistantText.length,
-        );
-
-        // Mark as completed
         setMessages((prev) => {
           const updated = [...prev];
           const lastMsg = updated[updated.length - 1];
@@ -325,40 +229,24 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           return updated;
         });
 
-        // Generate speech from complete response
-        try {
-          const audioUrl = await generateSpeech(
-            assistantText,
-            voice as CustomTTSVoice,
-          );
-
-          // Play audio directly — audioUrl is a blob: URL (local to browser),
-          // so no CORS proxy needed.
-          if (!audioElement.current) {
-            audioElement.current = new Audio();
-          }
-
-          audioElement.current.src = audioUrl;
-
-          audioElement.current.onended = () => {
-            setIsAssistantSpeaking(false);
-            // Free the blob URL memory
-            URL.revokeObjectURL(audioUrl);
-          };
-
-          audioElement.current.onerror = (error) => {
-            console.error("Audio playback error:", error);
-            setIsAssistantSpeaking(false);
-          };
-
+        if (assistantText) {
           try {
+            const audioUrl = await generateSpeech(
+              assistantText,
+              voice as CustomTTSVoice,
+            );
+            if (!audioElement.current) audioElement.current = new Audio();
+            audioElement.current.src = audioUrl;
+            audioElement.current.onended = () => {
+              setIsAssistantSpeaking(false);
+              URL.revokeObjectURL(audioUrl);
+            };
+            audioElement.current.onerror = () => setIsAssistantSpeaking(false);
             await audioElement.current.play();
-          } catch (playError) {
-            console.error("Failed to play audio:", playError);
+          } catch (_e) {
             setIsAssistantSpeaking(false);
           }
-        } catch (ttsError) {
-          console.error("TTS error:", ttsError);
+        } else {
           setIsAssistantSpeaking(false);
         }
       } catch (err) {
@@ -366,54 +254,21 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         setIsAssistantSpeaking(false);
       }
     },
-    [voice, props?.voice], // Re-run when voice changes
+    [voice],
   );
 
   const startListening = useCallback(async () => {
     try {
-      // Check if browser supports Web Speech API
       const SpeechRecognition =
         (window as any).SpeechRecognition ||
         (window as any).webkitSpeechRecognition;
-
-      if (!SpeechRecognition) {
-        throw new Error(
-          "Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.",
-        );
-      }
-
-      // Check if microphone is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error(
-          "Microphone access not available. Please check your browser permissions and ensure a microphone is connected.",
-        );
-      }
+      if (!SpeechRecognition)
+        throw new Error("Speech recognition not supported");
 
       if (!audioStream.current) {
-        try {
-          audioStream.current = await navigator.mediaDevices.getUserMedia({
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-            },
-          });
-        } catch (micError: any) {
-          if (micError.name === "NotFoundError") {
-            throw new Error(
-              "No microphone found. Please connect a microphone and try again.",
-            );
-          } else if (micError.name === "NotAllowedError") {
-            throw new Error(
-              "Microphone permission denied. Please allow microphone access in your browser settings.",
-            );
-          } else if (micError.name === "NotReadableError") {
-            throw new Error(
-              "Microphone is in use by another application. Please close other apps using the microphone.",
-            );
-          }
-          throw micError;
-        }
+        audioStream.current = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+        });
       }
 
       if (recognitionRef.current) {
@@ -422,27 +277,18 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         setIsListening(true);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(new Error(errorMessage));
-      isListeningRef.current = false;
-      setIsListening(false);
+      setError(err instanceof Error ? err : new Error(String(err)));
     }
   }, []);
 
   const stopListening = useCallback(async () => {
-    try {
-      isListeningRef.current = false;
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (audioStream.current) {
-        audioStream.current.getTracks().forEach((track) => track.stop());
-        audioStream.current = null;
-      }
-      setIsListening(false);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
+    isListeningRef.current = false;
+    if (recognitionRef.current) recognitionRef.current.stop();
+    if (audioStream.current) {
+      audioStream.current.getTracks().forEach((track) => track.stop());
+      audioStream.current = null;
     }
+    setIsListening(false);
   }, []);
 
   const start = useCallback(async () => {
@@ -462,18 +308,14 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   }, [isActive, isLoading, startListening]);
 
   const stop = useCallback(async () => {
-    try {
-      await stopListening();
-      if (audioElement.current) {
-        audioElement.current.pause();
-        audioElement.current.src = "";
-      }
-      setIsActive(false);
-      setIsListening(false);
-      setIsLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
+    await stopListening();
+    if (audioElement.current) {
+      audioElement.current.pause();
+      audioElement.current.src = "";
     }
+    setIsActive(false);
+    setIsListening(false);
+    setIsLoading(false);
   }, [stopListening]);
 
   useEffect(() => {

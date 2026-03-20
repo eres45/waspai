@@ -112,6 +112,7 @@ export async function POST(request: Request) {
     const {
       id,
       message,
+      messages: clientMessages = [],
       chatModel,
       toolChoice,
       allowedAppDefaultToolkit,
@@ -238,11 +239,15 @@ export async function POST(request: Request) {
       }
     });
 
-    if (messages.at(-1)?.id == message.id) {
-      messages.pop();
+    if (isVoiceChat && clientMessages.length > 0) {
+      logger.info(
+        `Voice chat: using ${clientMessages.length} client-provided messages instead of DB history`,
+      );
+      messages.length = 0;
+      messages.push(...clientMessages);
+    } else {
+      logger.info(`Loaded ${messages.length} messages from thread history`);
     }
-
-    logger.info(`Loaded ${messages.length} messages from thread history`);
 
     // Sanitize messages to remove huge base64 data URLs from history
     // This prevents context explosion (5MB+ prompts) when using data: URLs for image previews
