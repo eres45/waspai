@@ -34,13 +34,21 @@ export async function generateVideoWithMeta(
 
       try {
         const apiUrl = `https://metaai-1xpj.onrender.com/generate/video/v2?prompt=${encodeURIComponent(options.prompt)}`;
+        logger.info(`Video Gen (Meta): Fetching from URL: ${apiUrl}`);
+
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "x-log-request": "true",
+            "User-Agent": "WaspAI-Bot",
           },
           signal: options.abortSignal || controller.signal,
         });
+
+        logger.info(
+          `Video Gen (Meta): Received response status: ${response.status}`,
+        );
 
         clearTimeout(timeoutId);
 
