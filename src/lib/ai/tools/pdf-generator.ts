@@ -25,6 +25,22 @@ export const pdfGeneratorTool = createTool({
       .string()
       .optional()
       .describe("A high-level summary or 'Key Takeaways' box"),
+    theme: z
+      .enum(["executive", "modern", "minimal", "midnight", "professional"])
+      .default("executive")
+      .describe("The visual style of the document"),
+    primaryColor: z
+      .string()
+      .optional()
+      .describe("Primary accent color (HEX, e.g. #f97316 for orange)"),
+    secondaryColor: z
+      .string()
+      .optional()
+      .describe("Secondary accent color (HEX)"),
+    layout: z
+      .enum(["standard", "compact", "spaced"])
+      .default("standard")
+      .describe("The spacing and layout style"),
     sections: z
       .array(
         z.object({
@@ -46,8 +62,18 @@ export const pdfGeneratorTool = createTool({
       .optional()
       .describe("Optional filename (without .pdf extension)"),
   }),
-  execute: async ({ title, description, summary, sections, filename }) => {
-    logger.info(`PDF Generator: Preparing structured document: "${title}"`);
+  execute: async ({
+    title,
+    description,
+    summary,
+    sections,
+    filename,
+    theme,
+    primaryColor,
+    secondaryColor,
+    layout,
+  }) => {
+    logger.info(`PDF Generator: Preparing ${theme} document: "${title}"`);
 
     const pdfFilename =
       filename && !filename.endsWith(".pdf")
@@ -60,8 +86,12 @@ export const pdfGeneratorTool = createTool({
       description,
       summary,
       sections,
+      theme,
+      primaryColor,
+      secondaryColor,
+      layout,
       filename: pdfFilename,
-      guide: `Professional document "${title}" has been structured. You can preview it and download the PDF below.`,
+      guide: `The document "${title}" has been created with the ${theme} theme. Access the preview and download below.`,
     };
   },
 });

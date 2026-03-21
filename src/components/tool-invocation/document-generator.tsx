@@ -5,6 +5,7 @@ import { FileIcon, Download, Loader2, Eye, EyeOff, Layout } from "lucide-react";
 import { useMemo, useState, useRef } from "react";
 import { Button } from "ui/button";
 import { Badge } from "ui/badge";
+import { cn } from "lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
@@ -17,6 +18,10 @@ interface DocumentData {
   title: string;
   description?: string;
   summary?: string;
+  theme?: "executive" | "modern" | "minimal" | "midnight" | "professional";
+  primaryColor?: string;
+  secondaryColor?: string;
+  layout?: "standard" | "compact" | "spaced";
   sections: Array<{
     heading: string;
     content: string;
@@ -28,6 +33,39 @@ interface DocumentData {
   filename: string;
   guide: string;
 }
+
+const THEME_CONFIGS = {
+  executive: {
+    primary: "#f97316", // Orange
+    secondary: "#0f172a", // Dark Blue
+    font: "font-serif",
+    borderWidth: "border-t-[12px]",
+  },
+  modern: {
+    primary: "#06b6d4", // Cyan
+    secondary: "#000000",
+    font: "font-sans",
+    borderWidth: "border-t-[8px]",
+  },
+  minimal: {
+    primary: "#64748b", // Slate
+    secondary: "#f8fafc", // Very Light Gray
+    font: "font-sans",
+    borderWidth: "border-t-2",
+  },
+  midnight: {
+    primary: "#3b82f6", // Blue
+    secondary: "#020617", // Midnight
+    font: "font-sans",
+    borderWidth: "border-t-[16px]",
+  },
+  professional: {
+    primary: "#eab308", // Gold
+    secondary: "#1e3a8a", // Navy
+    font: "font-serif",
+    borderWidth: "border-t-[10px]",
+  },
+};
 
 export function DocumentGeneratorToolInvocation({
   part,
@@ -42,28 +80,54 @@ export function DocumentGeneratorToolInvocation({
     return part.output as DocumentData;
   }, [part.state, part.output]);
 
+  const theme = THEME_CONFIGS[result?.theme || "executive"];
+  const primaryColor = result?.primaryColor || theme.primary;
+  const secondaryColor = result?.secondaryColor || theme.secondary;
+
   const handleExport = async () => {
-    if (!reportRef.current || !result) return;
+    if (!result) return;
 
     setIsExporting(true);
     try {
-      // Dynamic import to avoid SSR issues
-      const html2pdf = (await import("html2pdf.js" as any)).default;
+      // Dynamic import with more robust error handling
+      let html2pdfModule;
+      try {
+        html2pdfModule = await import("html2pdf.js" as any);
+      } catch (_e) {
+        console.warn("Standard import failed, trying global approach...");
+        // Fallback for some bundling environments
+        if (typeof window !== "undefined") {
+          html2pdfModule = { default: (window as any).html2pdf };
+        }
+      }
+
+      const html2pdf = html2pdfModule?.default || html2pdfModule;
+      if (!html2pdf) throw new Error("html2pdf library not found");
+
+      // We need to ensure the element is in the DOM and visible for html2canvas
+      // If it's closed, we momentarily show it in a portal or off-screen
+      const element = reportRef.current;
+      if (!element) throw new Error("Report element not found");
 
       const opt = {
         margin: [15, 15],
         filename: result.filename,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: true,
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
 
-      await html2pdf().set(opt).from(reportRef.current).save();
+      await html2pdf().set(opt).from(element).save();
       toast.success("PDF generated successfully!");
-    } catch (error) {
-      console.error("PDF Export Error:", error);
-      toast.error("Failed to generate PDF. Please try again.");
+    } catch (error: any) {
+      console.error("PDF Export Details:", error);
+      toast.error(`Export failed: ${error.message || "Unknown error"}`);
     } finally {
       setIsExporting(false);
     }
@@ -102,8 +166,8 @@ export function DocumentGeneratorToolInvocation({
             <p className="text-sm font-semibold truncate text-foreground group-hover/file:text-primary transition-colors duration-300">
               {result.title}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Professional Report • {result.sections.length} Sections
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+              {result.theme || "executive"} • {result.sections.length} Sections
             </p>
           </div>
 
@@ -129,7 +193,7 @@ export function DocumentGeneratorToolInvocation({
 
             <Button
               size="sm"
-              className="h-8 gap-2"
+              className="h-8 gap-2 bg-primary hover:bg-primary/90"
               disabled={isExporting}
               onClick={handleExport}
             >
@@ -144,109 +208,158 @@ export function DocumentGeneratorToolInvocation({
         </div>
       </div>
 
-      {/* Professional Document Preview */}
-      {isPreviewOpen && (
-        <div className="mt-4 rounded-xl border border-border/50 bg-white shadow-xl overflow-hidden animate-in zoom-in-95 duration-300">
-          <div className="bg-slate-50 border-b border-border/50 px-4 py-2 flex justify-between items-center">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              Document Preview
-            </span>
-            <Badge
-              variant="outline"
-              className="text-[10px] bg-orange-50 text-orange-600 border-orange-200"
+      {/* Professional Document Preview Container */}
+      {/* 
+          IMPORTANT: We keep this in the DOM even when closed 
+          so that html2pdf can always find it. 
+          We use position absolute and off-screen to hide it.
+      */}
+      <div
+        className={cn(
+          "mt-4 rounded-xl border border-border/50 bg-white shadow-xl overflow-hidden transition-all duration-300",
+          isPreviewOpen
+            ? "block animate-in zoom-in-95"
+            : "absolute -left-[9999px] opacity-0 pointer-events-none",
+        )}
+      >
+        <div className="bg-slate-50 border-b border-border/50 px-4 py-2 flex justify-between items-center">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Document Preview ({result.theme})
+          </span>
+          <Badge
+            variant="outline"
+            className="text-[10px] bg-primary/5 text-primary border-primary/20"
+          >
+            A4 Format
+          </Badge>
+        </div>
+
+        <div
+          ref={reportRef}
+          className={cn(
+            "p-12 text-slate-900 bg-white max-h-[600px] overflow-y-auto",
+            theme.font,
+          )}
+          style={{ width: "100%", minHeight: "297mm" }}
+        >
+          {/* Cover Page */}
+          <div
+            className={cn(
+              "pt-20 pb-32 flex flex-col items-center text-center",
+              theme.borderWidth,
+            )}
+            style={{ borderTopColor: secondaryColor }}
+          >
+            <div
+              className="w-16 h-1 mb-8"
+              style={{ backgroundColor: primaryColor }}
+            />
+            <h1
+              className="text-4xl font-extrabold tracking-tight mb-6"
+              style={{ color: secondaryColor }}
             >
-              A4 Format
-            </Badge>
+              {result.title}
+            </h1>
+            {result.description && (
+              <p className="max-w-md text-xl text-slate-500 italic font-sans leading-relaxed">
+                {result.description}
+              </p>
+            )}
+            <div className="mt-auto pt-20 text-sm text-slate-400 font-sans uppercase tracking-[0.2em]">
+              {new Date().toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </div>
           </div>
 
-          <div
-            ref={reportRef}
-            className="p-12 text-slate-900 bg-white font-serif max-h-[600px] overflow-y-auto"
-            style={{ width: "100%", minHeight: "297mm" }}
-          >
-            {/* Cover Page */}
-            <div className="border-t-[12px] border-[#0f172a] pt-20 pb-32 flex flex-col items-center text-center">
-              <div className="w-16 h-1 bg-orange-500 mb-8" />
-              <h1 className="text-4xl font-extrabold text-[#0f172a] tracking-tight mb-6">
-                {result.title}
-              </h1>
-              {result.description && (
-                <p className="max-w-md text-xl text-slate-500 italic font-sans leading-relaxed">
-                  {result.description}
-                </p>
+          <div className="html2pdf__page-break" />
+
+          {/* Summary Box */}
+          {result.summary && (
+            <div
+              className={cn(
+                "my-12 p-6 border-l-4 rounded-r-lg font-sans",
+                result.theme === "midnight"
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-50",
               )}
-              <div className="mt-auto pt-20 text-sm text-slate-400 font-sans uppercase tracking-[0.2em]">
-                {new Date().toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </div>
+              style={{ borderLeftColor: primaryColor }}
+            >
+              <h3
+                className="font-bold uppercase tracking-wider text-xs mb-3"
+                style={{ color: primaryColor }}
+              >
+                Executive Summary
+              </h3>
+              <p className="leading-relaxed italic">{result.summary}</p>
             </div>
+          )}
 
-            <div className="html2pdf__page-break" />
-
-            {/* Summary Box */}
-            {result.summary && (
-              <div className="my-12 p-6 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg font-sans">
-                <h3 className="text-orange-700 font-bold uppercase tracking-wider text-xs mb-3">
-                  Executive Summary
-                </h3>
-                <p className="text-slate-800 leading-relaxed italic">
-                  {result.summary}
-                </p>
-              </div>
+          {/* Main Sections */}
+          <div
+            className={cn(
+              "space-y-12 pb-20",
+              result.layout === "compact"
+                ? "space-y-6"
+                : result.layout === "spaced"
+                  ? "space-y-20"
+                  : "space-y-12",
             )}
+          >
+            {result.sections.map((section, idx) => (
+              <article key={idx} className="space-y-4 break-inside-avoid">
+                <div className="flex items-baseline gap-4 border-b border-slate-100 pb-2">
+                  <span
+                    className="font-bold font-sans"
+                    style={{ color: primaryColor }}
+                  >
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <h2
+                    className="text-2xl font-bold"
+                    style={{ color: secondaryColor }}
+                  >
+                    {section.heading}
+                  </h2>
+                </div>
 
-            {/* Main Sections */}
-            <div className="space-y-12 pb-20">
-              {result.sections.map((section, idx) => (
-                <article key={idx} className="space-y-4 break-inside-avoid">
-                  <div className="flex items-baseline gap-4 border-b border-slate-100 pb-2">
-                    <span className="text-orange-500 font-bold font-sans">
-                      0{idx + 1}
-                    </span>
-                    <h2 className="text-2xl font-bold text-[#0f172a]">
-                      {section.heading}
-                    </h2>
+                <div className="text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
+                  {section.content}
+                </div>
+
+                {/* Subsections */}
+                {section.subsections && section.subsections.length > 0 && (
+                  <div className="ml-8 mt-6 space-y-6 border-l-2 border-slate-50 pl-6">
+                    {section.subsections.map((sub, subIdx) => (
+                      <div
+                        key={subIdx}
+                        className="space-y-2 break-inside-avoid"
+                      >
+                        {sub.title && (
+                          <h3 className="text-lg font-bold text-slate-800 font-sans flex items-center gap-2">
+                            {sub.title}
+                          </h3>
+                        )}
+                        <p className="text-sm text-slate-600 leading-relaxed font-sans font-normal">
+                          {sub.text}
+                        </p>
+                      </div>
+                    ))}
                   </div>
+                )}
+              </article>
+            ))}
+          </div>
 
-                  <div className="text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
-                    {section.content}
-                  </div>
-
-                  {/* Subsections */}
-                  {section.subsections && section.subsections.length > 0 && (
-                    <div className="ml-8 mt-6 space-y-6 border-l-2 border-slate-50 pl-6">
-                      {section.subsections.map((sub, subIdx) => (
-                        <div
-                          key={subIdx}
-                          className="space-y-2 break-inside-avoid"
-                        >
-                          {sub.title && (
-                            <h3 className="text-lg font-bold text-slate-800 font-sans flex items-center gap-2">
-                              {sub.title}
-                            </h3>
-                          )}
-                          <p className="text-sm text-slate-600 leading-relaxed font-sans">
-                            {sub.text}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </article>
-              ))}
-            </div>
-
-            {/* Footer */}
-            <div className="pt-8 border-t border-slate-100 mt-20 flex justify-between items-center text-[10px] text-slate-300 font-sans uppercase tracking-widest">
-              <span>Wasp Code AI Insights</span>
-              <span>Confidential • {new Date().getFullYear()}</span>
-            </div>
+          {/* Footer */}
+          <div className="pt-8 border-t border-slate-100 mt-20 flex justify-between items-center text-[10px] text-slate-300 font-sans uppercase tracking-widest">
+            <span>Wasp Code AI Insights</span>
+            <span>Confidential • {new Date().getFullYear()}</span>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
