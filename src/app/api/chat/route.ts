@@ -98,6 +98,9 @@ const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
 });
 
+// Allow up to 120 seconds for this route (video generation takes ~30s)
+export const maxDuration = 120;
+
 export async function POST(request: Request) {
   try {
     // Check if this is a voice chat session (don't save to history)

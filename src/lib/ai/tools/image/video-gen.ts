@@ -25,14 +25,17 @@ export const videoGenTool = createTool({
         "Detailed description of the video to generate (e.g., 'A cat playing with a ball in a sunny garden')",
       ),
   }),
-  execute: async ({ prompt }, { abortSignal }) => {
+  execute: async ({ prompt }) => {
     try {
       logger.info(`Video Gen tool called with prompt: "${prompt}"`);
 
       // Call the video generation API
+      // NOTE: We intentionally do NOT pass the AI SDK's abortSignal here.
+      // The AI SDK fires abortSignal when the streaming response to the client ends,
+      // which would cancel our fetch to Render mid-flight (~21-30s).
+      // Instead, generateVideoWithMeta uses its own 120s AbortController timeout.
       const generatedVideo = await generateVideoWithMeta({
         prompt,
-        abortSignal,
       });
 
       logger.info(`Video Gen: Video generated successfully`);
