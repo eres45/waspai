@@ -33,13 +33,13 @@ export async function generateVideoWithMeta(
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       try {
-        const url = new URL(
-          "https://metaai-1xpj.onrender.com/generate/video/v2",
-        );
+        const renderBaseUrl =
+          process.env.RENDER_URL || "https://metaai-1xpj.onrender.com";
+        const url = new URL(`${renderBaseUrl}/generate/video/v2`);
         url.searchParams.set("prompt", options.prompt);
         const apiUrl = url.toString();
 
-        logger.info(`Video Gen (Meta): Fetching from URL: ${apiUrl}`);
+        logger.info(`Video Gen (Meta): Attempting fetch to ${apiUrl}`);
 
         const response = await fetch(apiUrl, {
           method: "POST",
@@ -80,8 +80,13 @@ export async function generateVideoWithMeta(
             mimeType: "video/mp4",
           },
         };
-      } catch (error) {
+      } catch (error: any) {
         clearTimeout(timeoutId);
+        logger.error("FATAL FETCH ERROR in Video Gen Tool:", {
+          message: error.message,
+          stack: error.stack,
+          cause: error.cause,
+        });
         throw error;
       }
     } catch (error) {
