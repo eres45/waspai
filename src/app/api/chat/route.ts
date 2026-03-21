@@ -562,10 +562,14 @@ export async function POST(request: Request) {
         "can you",
         "please",
         "i want",
+        "try",
+        "use",
+        "another",
+        "more",
+        "give",
       ];
       const hasIntent = intentWords.some((word) => text.includes(word));
 
-      // Image-related words: what they want to create
       const imageWords = [
         "image",
         "picture",
@@ -576,6 +580,14 @@ export async function POST(request: Request) {
         "drawing",
         "painting",
         "render",
+        "flux",
+        "juggernaut",
+        "realvis",
+        "sdxl",
+        "seedream",
+        "imagen",
+        "gpt-imager",
+        "img-cv",
       ];
       const hasImageWord = imageWords.some((word) => text.includes(word));
 
