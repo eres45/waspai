@@ -2,6 +2,7 @@ import { tool as createTool } from "ai";
 import z from "zod";
 import logger from "logger";
 import { generateVideoWithMeta } from "lib/ai/image/video-gen";
+import { videoQueueRepository } from "lib/db/repository";
 
 export type VideoGenToolResult = {
   video: {
@@ -9,10 +10,17 @@ export type VideoGenToolResult = {
     mimeType?: string;
   };
   guide?: string;
+  queueInfo?: {
+    position: number;
+    estimatedWaitSeconds: number;
+    totalInQueue: number;
+  };
 };
 
+const ESTIMATED_TIME_PER_VIDEO = 30; // seconds
+
 /**
- * Video generation tool using Meta AI API
+ * Video generation tool using Meta AI API with global queue
  */
 export const videoGenTool = createTool({
   name: "video-gen",
@@ -29,28 +37,107 @@ export const videoGenTool = createTool({
     try {
       logger.info(`Video Gen tool called with prompt: "${prompt}"`);
 
-      // Call the video generation API
-      // NOTE: We intentionally do NOT pass the AI SDK's abortSignal here.
-      // The AI SDK fires abortSignal when the streaming response to the client ends,
-      // which would cancel our fetch to Render mid-flight (~21-30s).
-      // Instead, generateVideoWithMeta uses its own 120s AbortController timeout.
-      const generatedVideo = await generateVideoWithMeta({
+      // Step 1: Cleanup any stale jobs (stuck in processing > 3min)
+      const staleCount = await videoQueueRepository.cleanupStaleJobs();
+      if (staleCount > 0) {
+        logger.info(`Video Gen: Cleaned up ${staleCount} stale queue jobs`);
+      }
+
+      // Step 2: Enqueue this request
+      // We use a placeholder userId since in tool context we don't have the user.
+      // The queue still works globally — it serializes ALL requests.
+      const job = await videoQueueRepository.enqueue(
+        "00000000-0000-0000-0000-000000000000",
         prompt,
-      });
+      );
+      logger.info(`Video Gen: Enqueued job ${job.id}`);
 
-      logger.info(`Video Gen: Video generated successfully`);
+      // Step 3: Wait in queue until it's our turn
+      const maxWaitTime = 5 * 60 * 1000; // 5 minutes max wait
+      const pollInterval = 3000; // 3 seconds
+      const startTime = Date.now();
 
-      const result = {
-        video: generatedVideo.video,
-        guide:
-          generatedVideo.video.url.length > 0
-            ? "Your video has been generated successfully! You can view it above."
-            : "I apologize, but the video generation was not successful. Please try again with a different prompt.",
-      };
+      while (Date.now() - startTime < maxWaitTime) {
+        // Check if there's an active job that's NOT ours
+        const activeJob = await videoQueueRepository.getActiveJob();
+        const position = await videoQueueRepository.getQueuePosition(job.id);
+        const pendingCount = await videoQueueRepository.getPendingCount();
 
-      logger.info(`Video Gen: Returning result: ${JSON.stringify(result)}`);
+        logger.info(
+          `Video Gen: Job ${job.id} - Position: ${position}, Active: ${activeJob?.id ?? "none"}, Pending: ${pendingCount}`,
+        );
 
-      return result;
+        // If no active job, try to claim the next one
+        if (!activeJob) {
+          const claimed = await videoQueueRepository.claimNextJob();
+          if (claimed && claimed.id === job.id) {
+            logger.info(
+              `Video Gen: Job ${job.id} claimed! Starting generation...`,
+            );
+            break;
+          } else if (claimed) {
+            // Another job got claimed (race condition), keep waiting
+            logger.info(
+              `Video Gen: Another job ${claimed.id} was claimed first, continuing to wait`,
+            );
+          }
+        }
+
+        // If we're still waiting, sleep
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      }
+
+      // Step 4: Check if we got our turn or timed out
+      const currentJob = await videoQueueRepository.getJob(job.id);
+      if (!currentJob || currentJob.status !== "processing") {
+        // Timed out waiting in queue
+        await videoQueueRepository.failJob(job.id, "Queue wait timeout");
+        const position = await videoQueueRepository.getQueuePosition(job.id);
+        return {
+          video: { url: "" },
+          guide: `Your video generation request is still in queue (position #${position + 1}). The server is busy processing other videos. Please try again in a few minutes.`,
+          queueInfo: {
+            position: position + 1,
+            estimatedWaitSeconds: (position + 1) * ESTIMATED_TIME_PER_VIDEO,
+            totalInQueue: await videoQueueRepository.getPendingCount(),
+          },
+        };
+      }
+
+      // Step 5: Generate the video!
+      try {
+        const generatedVideo = await generateVideoWithMeta({ prompt });
+        logger.info(
+          `Video Gen: Video generated successfully for job ${job.id}`,
+        );
+
+        // Mark job as completed
+        await videoQueueRepository.completeJob(
+          job.id,
+          generatedVideo.video.url,
+        );
+
+        return {
+          video: generatedVideo.video,
+          guide:
+            generatedVideo.video.url.length > 0
+              ? "Your video has been generated successfully! You can view it above."
+              : "I apologize, but the video generation was not successful. Please try again with a different prompt.",
+        };
+      } catch (genError: any) {
+        logger.error(
+          `Video Gen: Generation failed for job ${job.id}:`,
+          genError,
+        );
+        await videoQueueRepository.failJob(
+          job.id,
+          genError.message || "Unknown error",
+        );
+        return {
+          video: { url: "" },
+          guide: `Error generating video: ${genError.message || "Unknown error"}. Please try again later.`,
+        };
+      }
     } catch (e: any) {
       logger.error("Video Gen Tool Error:", e);
       return {

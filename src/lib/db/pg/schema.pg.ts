@@ -515,3 +515,35 @@ export const ModelStatusHistoryTable = pgTable(
 
 export type ModelStatusHistoryEntity =
   typeof ModelStatusHistoryTable.$inferSelect;
+
+// Video Generation Queue - Global queue for serializing video gen requests
+export const VideoGenQueueTable = pgTable(
+  "video_gen_queue",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    prompt: text("prompt").notNull(),
+    status: varchar("status", {
+      enum: ["pending", "processing", "completed", "failed"],
+    })
+      .notNull()
+      .default("pending"),
+    videoUrl: text("video_url"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("video_gen_queue_status_idx").on(table.status),
+    index("video_gen_queue_created_at_idx").on(table.createdAt),
+    index("video_gen_queue_user_id_idx").on(table.userId),
+  ],
+);
+
+export type VideoGenQueueEntity = typeof VideoGenQueueTable.$inferSelect;
