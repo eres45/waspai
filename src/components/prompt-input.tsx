@@ -538,6 +538,10 @@ export default function PromptInput({
           isOpen: false,
           model: undefined,
         },
+        threadImageToolModel: {
+          ...prev.threadImageToolModel,
+          [threadId!]: undefined,
+        },
       }));
     } finally {
       // Always unlock after submission attempt
@@ -892,33 +896,36 @@ export default function PromptInput({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {!toolDisabled &&
-                  (imageToolModel ? (
-                    <Button
-                      variant={"ghost"}
-                      size={"sm"}
-                      className="rounded-full hover:bg-input! p-2! group/image-generator text-primary"
-                      onClick={() => handleGenerateImage()}
-                    >
-                      <ImagesIcon className="size-3.5" />
-                      {imageToolModel}
-                      <XIcon className="size-3 group-hover/image-generator:opacity-100 opacity-0 transition-opacity duration-200" />
-                    </Button>
-                  ) : (
-                    <>
-                      <ToolModeDropdown />
-                      <ToolSelectDropdown
-                        className="mx-1"
-                        align="start"
-                        side="top"
-                        onSelectWorkflow={onSelectWorkflow}
-                        onSelectAgent={onSelectAgent}
-                        onGenerateImage={handleGenerateImage}
-                        onEditImage={handleEditImage}
-                        mentions={mentions}
-                      />
-                    </>
-                  ))}
+                {!toolDisabled && (
+                  <>
+                    <ToolModeDropdown />
+                    <ToolSelectDropdown
+                      className="mx-1"
+                      align="start"
+                      side="top"
+                      onSelectWorkflow={onSelectWorkflow}
+                      onSelectAgent={onSelectAgent}
+                      onGenerateImage={handleGenerateImage}
+                      onEditImage={handleEditImage}
+                      mentions={mentions}
+                    />
+
+                    {imageToolModel && (
+                      <Button
+                        variant={"ghost"}
+                        size={"sm"}
+                        className="rounded-full hover:bg-input! p-2! group/image-generator text-primary"
+                        onClick={() => handleGenerateImage()}
+                      >
+                        <ImagesIcon className="size-3.5" />
+                        <span className="max-w-[100px] truncate">
+                          {imageToolModel}
+                        </span>
+                        <XIcon className="size-3 group-hover/image-generator:opacity-100 opacity-0 transition-opacity duration-200" />
+                      </Button>
+                    )}
+                  </>
+                )}
 
                 {!toolDisabled &&
                   editImageState &&

@@ -110,7 +110,7 @@ export async function generateImageWithFlux1Schnell(
     }
 
     const data = await response.json();
-    const imageUrl = data.url || data.image || data.imageUrl;
+    const imageUrl = data.url || data.image || data.imageUrl || data.image_url;
     if (!imageUrl) throw new Error("No image URL in response");
 
     const base64 = await downloadAndEncodeImage(imageUrl);
@@ -130,7 +130,7 @@ export async function generateImageWithJuggernautXL(
   options: GenerateImageOptions,
 ): Promise<GeneratedImageResult> {
   try {
-    const url = `https://image-world-king-proxy.llamai.workers.dev/?prompt=${encodeURIComponent(options.prompt)}`;
+    const url = `https://image-world-king-proxy.llamai.workers.dev/api/generate?prompt=${encodeURIComponent(options.prompt)}`;
     const response = await fetch(url, {
       method: "POST",
       signal: options.abortSignal,
@@ -151,7 +151,7 @@ export async function generateImageWithJuggernautXL(
     }
 
     const data = await response.json();
-    const imageUrl = data.url || data.image;
+    const imageUrl = data.url || data.image || data.image_url || data.imageUrl;
     if (!imageUrl) throw new Error("No image URL in response");
 
     const base64 = await downloadAndEncodeImage(imageUrl);
@@ -218,7 +218,12 @@ export async function generateImageWithRealVisXL(
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    const imageUrl = data.url || data.image;
+    const imageUrl =
+      data.url ||
+      data.image ||
+      data.imageUrl ||
+      data.image_url ||
+      (data.data && data.data[0]?.url);
     if (!imageUrl) throw new Error("No image URL in response");
 
     const base64 = await downloadAndEncodeImage(imageUrl);

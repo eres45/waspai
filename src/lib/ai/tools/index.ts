@@ -53,4 +53,4 @@ export enum DefaultToolName {
 
 export const SequentialThinkingToolName = "sequential-thinking";
 
-export const ImageToolName = "image-manager";
+export const ImageToolName = "image-manager" as const;

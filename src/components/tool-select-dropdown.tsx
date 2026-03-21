@@ -70,7 +70,6 @@ import { AppDefaultToolkit } from "lib/ai/tools";
 import { ChatMention } from "app-types/chat";
 import { CountAnimation } from "ui/count-animation";
 
-import { Separator } from "ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { AgentSummary } from "app-types/agent";
 import { authClient } from "auth/client";
@@ -205,19 +204,13 @@ export function ToolSelectDropdown({
           className,
         )}
       >
-        <span className={!bindingTools ? "text-muted-foreground" : ""}>
-          {agentMention
-            ? "Agent"
-            : (mentions?.length ?? 0 > 0)
-              ? "Mention"
-              : "Tools"}
-        </span>
+        <div className="p-1.5 text-primary bg-input/40 rounded">
+          <WrenchIcon className="size-3.5" />
+        </div>
 
         {((!agentMention && bindingTools.length > 0) || isLoading) && (
           <>
-            <div className="h-4 hidden sm:block mx-1">
-              <Separator orientation="vertical" />
-            </div>
+            <div className="h-4 hidden sm:block mx-1" />
 
             <div className="min-w-5 flex justify-center">
               {isLoading ? (

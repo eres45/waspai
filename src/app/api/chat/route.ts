@@ -5,7 +5,6 @@ import {
   smoothStream,
   stepCountIs,
   streamText,
-  Tool,
   UIMessage,
 } from "ai";
 import { AllowedMCPServer } from "app-types/mcp";
@@ -601,7 +600,8 @@ export async function POST(request: Request) {
 
     // If auto-detected but no model specified, use a default
     const effectiveImageTool =
-      imageTool || (hasImageGenerationKeywords ? { model: "sdxl" } : undefined);
+      imageTool ||
+      (hasImageGenerationKeywords ? { model: "flux-1-schnell" } : undefined);
 
     const isToolCallAllowed =
       supportToolCall &&
@@ -1374,7 +1374,7 @@ BEGIN ROLEPLAY NOW.`
           isChatExportRequest && chatExportPrompt,
         );
 
-        const IMAGE_TOOL: Record<string, Tool> = useImageTool
+        const IMAGE_TOOL = useImageTool
           ? {
               [ImageToolName]:
                 effectiveImageTool?.model === "google"
@@ -1620,9 +1620,11 @@ BEGIN ROLEPLAY NOW.`
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 3,
-          tools: vercelAITooles,
+          tools: vercelAITooles as any,
           stopWhen: stepCountIs(5),
-          toolChoice: "auto",
+          toolChoice: (imageTool?.model && useImageTool
+            ? { type: "tool", toolName: ImageToolName }
+            : "auto") as any,
           abortSignal: request.signal,
         });
         result.consumeStream();

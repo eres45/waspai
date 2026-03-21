@@ -12,9 +12,18 @@ async function testFlux1Schnell(prompt: string) {
       `https://ai-images-proxy.llamai.workers.dev/?prompt=${encodeURIComponent(prompt)}`,
       { method: "POST" },
     );
+    const text = await response.text();
+    console.log(`FLUX.1 Schnell Response:`, text);
+    let isOk = false;
+    try {
+      const data = JSON.parse(text);
+      isOk = !!(data.url || data.image || data.image_url || data.imageUrl);
+    } catch (_e) {
+      isOk = text.includes("http") || text.includes("base64");
+    }
     return {
-      success: response.ok,
-      error: response.ok ? undefined : `HTTP ${response.status}`,
+      success: response.ok && isOk,
+      error: response.ok ? undefined : `HTTP ${response.status}: ${text}`,
     };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -24,12 +33,15 @@ async function testFlux1Schnell(prompt: string) {
 async function testJuggernautXL(prompt: string) {
   try {
     const response = await fetch(
-      `https://image-world-king-proxy.llamai.workers.dev/?prompt=${encodeURIComponent(prompt)}`,
+      `https://image-world-king-proxy.llamai.workers.dev/api/generate?prompt=${encodeURIComponent(prompt)}`,
       { method: "POST" },
     );
+    const text = await response.text();
+    console.log(`Juggernaut XL Response:`, text);
     return {
-      success: response.ok,
-      error: response.ok ? undefined : `HTTP ${response.status}`,
+      success:
+        response.ok && (text.includes("http") || text.includes("base64")),
+      error: response.ok ? undefined : `HTTP ${response.status}: ${text}`,
     };
   } catch (e: any) {
     return { success: false, error: e.message };
