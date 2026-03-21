@@ -8,6 +8,7 @@ import { Badge } from "ui/badge";
 import { cn } from "lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "ui/dialog";
 
 interface DocumentGeneratorProps {
   part: ToolUIPart;
@@ -118,6 +119,34 @@ export function DocumentGeneratorToolInvocation({
           useCORS: true,
           letterRendering: true,
           logging: true,
+          onclone: (clonedDoc: Document) => {
+            // Replace oklch with safe rgb/hex in the cloned document
+            const elements = clonedDoc.querySelectorAll("*");
+            elements.forEach((el) => {
+              if (el instanceof HTMLElement) {
+                const style = window.getComputedStyle(el);
+                // html2canvas struggles with complex oklch, fallback to computed RGB
+                if (
+                  style.backgroundColor.includes("oklch") ||
+                  style.backgroundColor.startsWith("rgb")
+                ) {
+                  el.style.backgroundColor = style.backgroundColor;
+                }
+                if (
+                  style.color.includes("oklch") ||
+                  style.color.startsWith("rgb")
+                ) {
+                  el.style.color = style.color;
+                }
+                if (
+                  style.borderColor.includes("oklch") ||
+                  style.borderColor.startsWith("rgb")
+                ) {
+                  el.style.borderColor = style.borderColor;
+                }
+              }
+            });
+          },
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
@@ -209,157 +238,166 @@ export function DocumentGeneratorToolInvocation({
       </div>
 
       {/* Professional Document Preview Container */}
-      {/* 
-          IMPORTANT: We keep this in the DOM even when closed 
-          so that html2pdf can always find it. 
-          We use position absolute and off-screen to hide it.
-      */}
-      <div
-        className={cn(
-          "mt-4 rounded-xl border border-border/50 bg-white shadow-xl overflow-hidden transition-all duration-300",
-          isPreviewOpen
-            ? "block animate-in zoom-in-95"
-            : "absolute -left-[9999px] opacity-0 pointer-events-none",
-        )}
-      >
-        <div className="bg-slate-50 border-b border-border/50 px-4 py-2 flex justify-between items-center">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            Document Preview ({result.theme})
-          </span>
-          <Badge
-            variant="outline"
-            className="text-[10px] bg-primary/5 text-primary border-primary/20"
-          >
-            A4 Format
-          </Badge>
-        </div>
-
-        <div
-          ref={reportRef}
-          className={cn(
-            "p-12 text-slate-900 bg-white max-h-[600px] overflow-y-auto",
-            theme.font,
-          )}
-          style={{ width: "100%", minHeight: "297mm" }}
-        >
-          {/* Cover Page */}
-          <div
-            className={cn(
-              "pt-20 pb-32 flex flex-col items-center text-center",
-              theme.borderWidth,
-            )}
-            style={{ borderTopColor: secondaryColor }}
-          >
-            <div
-              className="w-16 h-1 mb-8"
-              style={{ backgroundColor: primaryColor }}
-            />
-            <h1
-              className="text-4xl font-extrabold tracking-tight mb-6"
-              style={{ color: secondaryColor }}
-            >
-              {result.title}
-            </h1>
-            {result.description && (
-              <p className="max-w-md text-xl text-slate-500 italic font-sans leading-relaxed">
-                {result.description}
-              </p>
-            )}
-            <div className="mt-auto pt-20 text-sm text-slate-400 font-sans uppercase tracking-[0.2em]">
-              {new Date().toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </div>
-          </div>
-
-          <div className="html2pdf__page-break" />
-
-          {/* Summary Box */}
-          {result.summary && (
-            <div
-              className={cn(
-                "my-12 p-6 border-l-4 rounded-r-lg font-sans",
-                result.theme === "midnight"
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-50",
-              )}
-              style={{ borderLeftColor: primaryColor }}
-            >
-              <h3
-                className="font-bold uppercase tracking-wider text-xs mb-3"
-                style={{ color: primaryColor }}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-slate-50 border-border/50 shadow-2xl h-[90vh] flex flex-col">
+          <DialogHeader className="px-4 py-3 border-b border-border/50 flex flex-row items-center justify-between sticky top-0 bg-slate-50 z-10">
+            <DialogTitle className="text-xs font-bold uppercase tracking-widest text-slate-500 m-0">
+              Document Preview ({result.theme})
+            </DialogTitle>
+            <div className="flex items-center gap-4">
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-primary/5 text-primary border-primary/20"
               >
-                Executive Summary
-              </h3>
-              <p className="leading-relaxed italic">{result.summary}</p>
+                A4 Format
+              </Badge>
+              <Button
+                size="sm"
+                className="h-8 gap-2 bg-primary hover:bg-primary/90"
+                disabled={isExporting}
+                onClick={handleExport}
+              >
+                {isExporting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Download className="size-3.5" />
+                )}
+                Export PDF
+              </Button>
             </div>
-          )}
+          </DialogHeader>
 
-          {/* Main Sections */}
-          <div
-            className={cn(
-              "space-y-12 pb-20",
-              result.layout === "compact"
-                ? "space-y-6"
-                : result.layout === "spaced"
-                  ? "space-y-20"
-                  : "space-y-12",
-            )}
-          >
-            {result.sections.map((section, idx) => (
-              <article key={idx} className="space-y-4 break-inside-avoid">
-                <div className="flex items-baseline gap-4 border-b border-slate-100 pb-2">
-                  <span
-                    className="font-bold font-sans"
+          {/* Scrollable Container for the Document */}
+          <div className="flex-1 overflow-y-auto w-full flex justify-center bg-slate-100 p-4 sm:p-8">
+            {/* The Actual A4 Document */}
+            <div
+              ref={reportRef}
+              className={cn(
+                "p-12 text-slate-900 bg-white shadow-sm ring-1 ring-slate-200/50 w-full max-w-[210mm] relative",
+                theme.font,
+              )}
+              style={{ minHeight: "297mm", margin: "0 auto" }}
+            >
+              {/* Cover Page */}
+              <div
+                className={cn(
+                  "pt-20 pb-32 flex flex-col items-center text-center",
+                  theme.borderWidth,
+                )}
+                style={{ borderTopColor: secondaryColor }}
+              >
+                <div
+                  className="w-16 h-1 mb-8"
+                  style={{ backgroundColor: primaryColor }}
+                />
+                <h1
+                  className="text-4xl font-extrabold tracking-tight mb-6"
+                  style={{ color: secondaryColor }}
+                >
+                  {result.title}
+                </h1>
+                {result.description && (
+                  <p className="max-w-md text-xl text-slate-500 italic font-sans leading-relaxed">
+                    {result.description}
+                  </p>
+                )}
+                <div className="mt-auto pt-20 text-sm text-slate-400 font-sans uppercase tracking-[0.2em]">
+                  {new Date().toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </div>
+              </div>
+
+              <div className="html2pdf__page-break" />
+
+              {/* Summary Box */}
+              {result.summary && (
+                <div
+                  className={cn(
+                    "my-12 p-6 border-l-4 rounded-r-lg font-sans",
+                    result.theme === "midnight"
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-50",
+                  )}
+                  style={{ borderLeftColor: primaryColor }}
+                >
+                  <h3
+                    className="font-bold uppercase tracking-wider text-xs mb-3"
                     style={{ color: primaryColor }}
                   >
-                    {String(idx + 1).padStart(2, "0")}
-                  </span>
-                  <h2
-                    className="text-2xl font-bold"
-                    style={{ color: secondaryColor }}
-                  >
-                    {section.heading}
-                  </h2>
+                    Executive Summary
+                  </h3>
+                  <p className="leading-relaxed italic">{result.summary}</p>
                 </div>
+              )}
 
-                <div className="text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
-                  {section.content}
-                </div>
-
-                {/* Subsections */}
-                {section.subsections && section.subsections.length > 0 && (
-                  <div className="ml-8 mt-6 space-y-6 border-l-2 border-slate-50 pl-6">
-                    {section.subsections.map((sub, subIdx) => (
-                      <div
-                        key={subIdx}
-                        className="space-y-2 break-inside-avoid"
-                      >
-                        {sub.title && (
-                          <h3 className="text-lg font-bold text-slate-800 font-sans flex items-center gap-2">
-                            {sub.title}
-                          </h3>
-                        )}
-                        <p className="text-sm text-slate-600 leading-relaxed font-sans font-normal">
-                          {sub.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+              {/* Main Sections */}
+              <div
+                className={cn(
+                  "space-y-12 pb-20",
+                  result.layout === "compact"
+                    ? "space-y-6"
+                    : result.layout === "spaced"
+                      ? "space-y-20"
+                      : "space-y-12",
                 )}
-              </article>
-            ))}
-          </div>
+              >
+                {result.sections.map((section, idx) => (
+                  <article key={idx} className="space-y-4 break-inside-avoid">
+                    <div className="flex items-baseline gap-4 border-b border-slate-100 pb-2">
+                      <span
+                        className="font-bold font-sans"
+                        style={{ color: primaryColor }}
+                      >
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <h2
+                        className="text-2xl font-bold"
+                        style={{ color: secondaryColor }}
+                      >
+                        {section.heading}
+                      </h2>
+                    </div>
 
-          {/* Footer */}
-          <div className="pt-8 border-t border-slate-100 mt-20 flex justify-between items-center text-[10px] text-slate-300 font-sans uppercase tracking-widest">
-            <span>Wasp Code AI Insights</span>
-            <span>Confidential • {new Date().getFullYear()}</span>
+                    <div className="text-slate-700 leading-relaxed font-sans whitespace-pre-wrap">
+                      {section.content}
+                    </div>
+
+                    {/* Subsections */}
+                    {section.subsections && section.subsections.length > 0 && (
+                      <div className="ml-8 mt-6 space-y-6 border-l-2 border-slate-50 pl-6">
+                        {section.subsections.map((sub, subIdx) => (
+                          <div
+                            key={subIdx}
+                            className="space-y-2 break-inside-avoid"
+                          >
+                            {sub.title && (
+                              <h3 className="text-lg font-bold text-slate-800 font-sans flex items-center gap-2">
+                                {sub.title}
+                              </h3>
+                            )}
+                            <p className="text-sm text-slate-600 leading-relaxed font-sans font-normal">
+                              {sub.text}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="pt-8 border-t border-slate-100 mt-20 flex justify-between items-center text-[10px] text-slate-300 font-sans uppercase tracking-widest">
+                <span>Wasp Code AI Insights</span>
+                <span>Confidential • {new Date().getFullYear()}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
