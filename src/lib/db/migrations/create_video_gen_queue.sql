@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS video_gen_queue (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES "user"(id) ON DELETE CASCADE,
   prompt TEXT NOT NULL,
   status VARCHAR NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'processing', 'completed', 'failed')),

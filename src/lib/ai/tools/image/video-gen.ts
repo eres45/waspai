@@ -46,10 +46,7 @@ export const videoGenTool = createTool({
       // Step 2: Enqueue this request
       // We use a placeholder userId since in tool context we don't have the user.
       // The queue still works globally — it serializes ALL requests.
-      const job = await videoQueueRepository.enqueue(
-        "00000000-0000-0000-0000-000000000000",
-        prompt,
-      );
+      const job = await videoQueueRepository.enqueue(null, prompt);
       logger.info(`Video Gen: Enqueued job ${job.id}`);
 
       // Step 3: Wait in queue until it's our turn

@@ -521,9 +521,9 @@ export const VideoGenQueueTable = pgTable(
   "video_gen_queue",
   {
     id: uuid("id").primaryKey().notNull().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => UserTable.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => UserTable.id, {
+      onDelete: "cascade",
+    }),
     prompt: text("prompt").notNull(),
     status: varchar("status", {
       enum: ["pending", "processing", "completed", "failed"],

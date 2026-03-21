@@ -29,7 +29,10 @@ export const videoQueueRepository = {
   /**
    * Add a new video generation request to the queue
    */
-  async enqueue(userId: string, prompt: string): Promise<VideoQueueEntry> {
+  async enqueue(
+    userId: string | null,
+    prompt: string,
+  ): Promise<VideoQueueEntry> {
     const { data, error } = await supabaseRest
       .from("video_gen_queue")
       .insert({
