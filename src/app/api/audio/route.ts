@@ -26,18 +26,37 @@ export async function GET(request: NextRequest) {
     // Decode the URL if it's encoded
     const decodedUrl = decodeURIComponent(audioUrl);
 
+    // Validate URL protocol to prevent Next.js fetch crash
+    if (
+      !decodedUrl.startsWith("http://") &&
+      !decodedUrl.startsWith("https://")
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid URL protocol. Must be http or https",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     console.log(`[Audio Proxy] Fetching audio from: ${decodedUrl}`);
 
     // Fetch the audio from the external source
     const response = await fetch(decodedUrl, {
+      method: "GET",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Accept: "*/*",
       },
+      // cache: "no-store" to prevent Next.js from caching the proxy response or breaking streams
+      cache: "no-store",
     });
 
     if (!response.ok) {
-      console.error(`[Audio Proxy] Failed to fetch audio: ${response.status}`);
+      console.error(
+        `[Audio Proxy] Failed to fetch audio: ${response.status} ${response.statusText}`,
+      );
       throw new Error(`Failed to fetch audio: ${response.status}`);
     }
 

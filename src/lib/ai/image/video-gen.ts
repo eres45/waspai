@@ -43,6 +43,7 @@ export async function generateVideoWithMeta(
           "Content-Type": "application/json",
           "x-log-request": "true",
         },
+        cache: "no-store", // Bypass Next.js fetch patching/deduplication
         signal: controller.signal, // strictly use our 65s timeout, ignoring AI SDK's premature aborts
       });
 
