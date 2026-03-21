@@ -427,6 +427,29 @@ export function stripReasoning(
     };
   }
 
+  // New: Detect partial tags at the beginning (streaming optimization)
+  // If the text starts with the beginning of a known tag but hasn't closed it yet,
+  // we count it as reasoning to avoid the "flash" of raw tags in the UI.
+  const partialTagMatch = REASONING_PATTERNS.some((pattern) => {
+    const rawTag = pattern.start.source
+      .replace(/\\s\+|gi/g, "")
+      .replace(/[<>]/g, "");
+    // Simple check: if it starts with '<' and then some characters from the tag name
+    return (
+      text.startsWith("<") &&
+      !text.includes(">") &&
+      (rawTag.startsWith(text.substring(1).toLowerCase()) || text.length < 5)
+    );
+  });
+
+  if (partialTagMatch) {
+    return {
+      reasoning: text,
+      cleanText: "",
+      hasReasoning: true,
+    };
+  }
+
   // Try delimited extraction first (most reliable)
   const delimited = extractDelimitedReasoning(text);
   if (delimited.hasReasoning) {
