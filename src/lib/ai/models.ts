@@ -14,28 +14,38 @@ const nvidiaModels = createNvidiaModels();
  * Creates a custom fetch wrapper that handles non-streaming proxies.
  * If a stream is requested but the proxy returns JSON, it wraps the JSON into an SSE stream.
  */
-function createStreamingProxyFetch() {
+function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
   return async (
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> => {
-    const res = await fetch(input, init);
+    let isStreamRequested = false;
+    let newInit = init;
+
+    // Check if stream was requested in the body
+    try {
+      if (init?.body && typeof init.body === "string") {
+        const body = JSON.parse(init.body);
+        isStreamRequested = body.stream === true;
+
+        if (isStreamRequested && options?.forceNonStreaming) {
+          body.stream = false;
+          newInit = {
+            ...init,
+            body: JSON.stringify(body),
+          };
+        }
+      }
+    } catch (_e) {
+      // Ignore parse errors
+    }
+
+    const res = await fetch(input, newInit);
 
     // Only intercept if its a successful response where we might have wanted a stream
     const contentType = res.headers.get("content-type");
     const isJson = contentType?.includes("application/json");
     const isEventStream = contentType?.includes("text/event-stream");
-
-    // Check if stream was requested in the body
-    let isStreamRequested = false;
-    try {
-      if (init?.body && typeof init.body === "string") {
-        const body = JSON.parse(init.body);
-        isStreamRequested = body.stream === true;
-      }
-    } catch (_e) {
-      // Ignore parse errors
-    }
 
     if (res.ok && (isEventStream || (isJson && isStreamRequested))) {
       // Clone the response so we can check if it's already a valid stream
@@ -190,7 +200,7 @@ const aiHubMixProvider = createOpenAICompatible({
   name: "AIHubMix",
   apiKey: "dummy",
   baseURL: "https://aihubmix-worker.llamai.workers.dev/v1",
-  fetch: streamingFetch,
+  fetch: createStreamingProxyFetch({ forceNonStreaming: true }),
 });
 
 const staticModels = {
