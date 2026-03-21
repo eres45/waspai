@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Loader2,
   PresentationIcon,
-  LayoutIcon,
   PaletteIcon,
 } from "lucide-react";
 import pptxgen from "pptxgenjs";
@@ -668,10 +667,19 @@ export function PresentationGeneratorToolInvocation({
         }
       });
 
-      await prs.writeFile({ fileName: `${data.title}.pptx` });
+      // Use blob-based download (browser-compatible, NOT writeFile which needs Node.js fs)
+      const blob = (await prs.write({ outputType: "blob" })) as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data.title}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
       setHasDownloaded(true);
-      toast.success("Presentation ready! 🚀");
+      toast.success("Presentation downloaded! 🚀");
     } catch (error) {
       console.error("PPTX Generation Error:", error);
       toast.error("Failed to generate presentation.");
@@ -732,14 +740,98 @@ export function PresentationGeneratorToolInvocation({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 my-2">
-        <div className="flex items-center gap-2 p-3 bg-white/5 border rounded-xl shadow-sm">
-          <PresentationIcon className="size-4 text-primary" />
-          <span className="text-sm font-medium">10 Professional Slides</span>
+      {/* Slide Preview */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Slide Preview — {data.slides.length} slides
+          </p>
         </div>
-        <div className="flex items-center gap-2 p-3 bg-white/5 border rounded-xl shadow-sm">
-          <LayoutIcon className="size-4 text-primary" />
-          <span className="text-sm font-medium">Smart Layouts</span>
+        <div
+          className="overflow-x-auto pb-2"
+          style={{ scrollbarWidth: "thin" }}
+        >
+          <div className="flex gap-2" style={{ width: "max-content" }}>
+            {data.slides.map((slide, idx) => (
+              <div
+                key={idx}
+                className="relative rounded-lg overflow-hidden flex-shrink-0 border border-white/10 shadow-md"
+                style={{
+                  width: 160,
+                  height: 90,
+                  background: theme.bg,
+                }}
+              >
+                {/* Accent top bar */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-[3px]"
+                  style={{ background: theme.accent }}
+                />
+
+                {/* Slide number */}
+                <div
+                  className="absolute top-2 right-2 text-[9px] font-bold opacity-60"
+                  style={{ color: theme.accent }}
+                >
+                  {idx + 1}
+                </div>
+
+                {/* Slide type badge */}
+                <div
+                  className="absolute bottom-1 left-2 text-[7px] uppercase tracking-widest opacity-50"
+                  style={{ color: theme.muted }}
+                >
+                  {slide.type.replace(/-/g, " ")}
+                </div>
+
+                {/* Slide title */}
+                <div className="absolute inset-0 flex flex-col justify-center px-3 pt-3">
+                  <p
+                    className="text-[10px] font-bold leading-tight line-clamp-2"
+                    style={{
+                      color: slide.type === "cover" ? "#fff" : theme.accent,
+                    }}
+                  >
+                    {slide.title ||
+                      (slide as any).heading ||
+                      (slide as any).quote?.slice(0, 40) ||
+                      ""}
+                  </p>
+                  {(slide as any).subtitle && (
+                    <p
+                      className="text-[8px] mt-0.5 leading-tight opacity-70 truncate"
+                      style={{ color: theme.text }}
+                    >
+                      {(slide as any).subtitle}
+                    </p>
+                  )}
+                  {(slide as any).stat && (
+                    <p
+                      className="text-[22px] font-black leading-none mt-1"
+                      style={{ color: theme.accent }}
+                    >
+                      {(slide as any).stat}
+                    </p>
+                  )}
+                  {(slide as any).points && (
+                    <div className="mt-1 flex flex-col gap-0.5">
+                      {((slide as any).points as string[])
+                        .slice(0, 2)
+                        .map((p, pIdx) => (
+                          <p
+                            key={pIdx}
+                            className="text-[7px] opacity-60 truncate"
+                            style={{ color: theme.text }}
+                          >
+                            • {p}
+                          </p>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -757,7 +849,7 @@ export function PresentationGeneratorToolInvocation({
           ) : hasDownloaded ? (
             <>
               <CheckCircle2 className="mr-2 size-4" />
-              Presentation Downloaded
+              Download Again (.pptx)
             </>
           ) : (
             <>
@@ -767,12 +859,6 @@ export function PresentationGeneratorToolInvocation({
           )}
         </Button>
       </div>
-
-      <style jsx>{`
-        .bg-card {
-           background-image: linear-gradient(to bottom right, rgba(255,255,255,0.05), rgba(0,0,0,0.1));
-        }
-      `}</style>
     </div>
   );
 }
