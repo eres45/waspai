@@ -186,6 +186,13 @@ const grokFreeProvider = createOpenAICompatible({
   fetch: streamingFetch,
 });
 
+const aiHubMixProvider = createOpenAICompatible({
+  name: "AIHubMix",
+  apiKey: "dummy",
+  baseURL: "https://aihubmix-worker.llamai.workers.dev/v1",
+  fetch: streamingFetch,
+});
+
 const staticModels = {
   // --- Anthropic Claude Models ---
   Anthropic: {
@@ -229,6 +236,10 @@ const staticModels = {
     "o3-mini": claudeTalkAIProvider("o3-mini"),
     "openai-gpt-oss-20b": nvidiaModels["openai-gpt-oss-20b"],
     "openai-gpt-oss-120b": nvidiaModels["openai-gpt-oss-120b"],
+    "gpt-4.1": aiHubMixProvider("gpt-4.1-free"),
+    "gpt-4.1-mini": aiHubMixProvider("gpt-4.1-mini-free"),
+    "gpt-4.1-nano": aiHubMixProvider("gpt-4.1-nano-free"),
+    "gpt-4o": aiHubMixProvider("gpt-4o-free"),
   },
 
   // --- DeepSeek Models ---
@@ -251,8 +262,12 @@ const staticModels = {
 
   // --- Google Gemini Models ---
   Google: {
-    "Gemini 3 Flash": n33AIProvider("gemini-3-flash"),
     "Gemini 3 Pro": n33AIProvider("gemini-3-pro"),
+    "Gemini 3.1 Flash Image Preview": aiHubMixProvider(
+      "gemini-3.1-flash-image-preview-free",
+    ),
+    "Gemini 3 Flash Preview": aiHubMixProvider("gemini-3-flash-preview-free"),
+    "Gemini 2.0 Flash": aiHubMixProvider("gemini-2.0-flash-free"),
   },
 
   // --- xAI (Grok) Models ---
@@ -326,12 +341,18 @@ const staticModels = {
     "Kimi K2-Thinking": kimiProvider("kimi-k2-thinking"),
     "Kimi K2-0905 (P2)": nvidiaModels["moonshotai-kimi-k2-instruct-0905"],
     "Kimi K2": nvidiaModels["moonshotai-kimi-k2-instruct"],
+    "Kimi for Coding": aiHubMixProvider("kimi-for-coding-free"),
   },
 
   // --- MiniMax Models ---
   MiniMax: {
     "MiniMax-01 (P1)": miniMaxM1Provider("minimax-01"),
     "MiniMax-01 (P2)": miniMaxM2Provider("minimax-01"),
+    "Coding MiniMax M2.7": aiHubMixProvider("coding-minimax-m2.7-free"),
+    "MiniMax M2.5": aiHubMixProvider("minimax-m2.5-free"),
+    "Coding MiniMax M2.5": aiHubMixProvider("coding-minimax-m2.5-free"),
+    "Coding MiniMax M2.1": aiHubMixProvider("coding-minimax-m2.1-free"),
+    "Coding MiniMax M2": aiHubMixProvider("coding-minimax-m2-free"),
   },
 
   // --- Perplexity Models ---
@@ -361,6 +382,21 @@ const staticModels = {
   "Z-AI": {
     "GLM 5": nvidiaModels["z-ai-glm5"],
     "ChatGLM3 6B": nvidiaModels["thudm-chatglm3-6b"],
+    "Coding GLM 5": aiHubMixProvider("coding-glm-5-free"),
+    "Coding GLM 5 Turbo": aiHubMixProvider("coding-glm-5-turbo-free"),
+    "Coding GLM 4.7": aiHubMixProvider("coding-glm-4.7-free"),
+    "Coding GLM 4.6": aiHubMixProvider("coding-glm-4.6-free"),
+    "GLM 4.7 Flash": aiHubMixProvider("glm-4.7-flash-free"),
+  },
+
+  // --- StepFun Models ---
+  StepFun: {
+    "Step 3.5 Flash": aiHubMixProvider("step-3.5-flash-free"),
+  },
+
+  // --- Xiaomi Models ---
+  Xiaomi: {
+    "Mimo v2 Flash": aiHubMixProvider("mimo-v2-flash-free"),
   },
 
   // --- Other Quality Models ---
@@ -380,6 +416,10 @@ const staticSupportImageInputModels: Record<string, LanguageModel> = {
   "Llama 3.2 90B Vision": staticModels.Meta["Llama 3.2 90B Vision"],
   "Phi-4 Multimodal": staticModels.Microsoft["Phi-4 Multimodal"],
   "Qwen Vision (VL)": staticModels.Qwen["Qwen Vision (VL)"],
+  "Gemini 3.1 Flash Image Preview":
+    staticModels.Google["Gemini 3.1 Flash Image Preview"],
+  "Gemini 3 Flash Preview": staticModels.Google["Gemini 3 Flash Preview"],
+  "Gemini 2.0 Flash": staticModels.Google["Gemini 2.0 Flash"],
 };
 
 export const allModels: Record<string, Record<string, LanguageModel>> = {

@@ -1576,10 +1576,19 @@ BEGIN ROLEPLAY NOW.`
               const estimateSize = (m: any) => {
                 // Rough char count logic
                 return (
-                  m.parts.reduce(
-                    (acc: number, p: any) => acc + (p.text?.length || 0) + 100,
-                    0,
-                  ) + 100
+                  m.parts.reduce((acc: number, p: any) => {
+                    let partSize = 0;
+                    if (p.type === "text") {
+                      partSize = p.text?.length || 0;
+                    } else if (p.type === "tool-call") {
+                      partSize = JSON.stringify(p.args).length + 200;
+                    } else if (p.type === "tool-result") {
+                      partSize = JSON.stringify(p.result).length + 200;
+                    } else if (p.type === "image") {
+                      partSize = 500; // Average for image metadata
+                    }
+                    return acc + partSize + 100;
+                  }, 0) + 100
                 );
               };
 
@@ -1637,12 +1646,13 @@ BEGIN ROLEPLAY NOW.`
             })(),
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
+          maxSteps: 15,
           maxRetries: 3,
           tools: vercelAITooles as any,
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(useImageTool ? 3 : 15),
           toolChoice: "auto",
           abortSignal: request.signal,
-        });
+        } as any);
         result.consumeStream();
         dataStream.merge(
           result.toUIMessageStream({

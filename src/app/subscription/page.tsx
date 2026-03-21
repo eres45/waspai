@@ -122,7 +122,7 @@ export default function SubscriptionPage() {
           category: "Premium Teasers (Limited)",
           items: [
             "Claude 4.5 Sonnet (Proxy)",
-            "DeepSeek V3 (Free)",
+            "DeepSeek V3",
             "WormGPT",
             "~5-10 msgs/day",
           ],

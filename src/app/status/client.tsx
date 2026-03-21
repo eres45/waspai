@@ -370,7 +370,7 @@ export default function StatusPageClient() {
             Real-time Model Monitoring
           </h2>
           <p className="text-muted-foreground text-sm max-w-2xl">
-            We monitor <strong>108+ specialized AI models</strong> across
+            We monitor <strong>128+ specialized AI models</strong> across
             multiple providers to ensure you always have access to the best
             intelligence. Status is updated every 30 minutes. Use the search and
             filters below to check specific model health.

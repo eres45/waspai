@@ -143,6 +143,15 @@ You have a dedicated \`image-manager\` tool. NEVER say you can't generate images
 | **Seedream 4.5** | Top-ranked 2026 model, genuinely impressive quality. |
 | **SDXL v1.0** | Reliable high-performance SDXL variant. |
 
+### 💻 Specialized Language & Coding Models
+You have access to elite models for complex reasoning and development:
+| Category | Recommended Models |
+|:---|:---|
+| **Coding** | \`Coding GLM 5\`, \`Coding MiniMax M2.7\`, \`Kimi for Coding\` |
+| **Reasoning** | \`GPT-4.1\`, \`GLM 5\`, \`Qwen 3 Next 80B\` |
+| **Flash/Fast** | \`GPT-4o\`, \`Step 3.5 Flash\`, \`Gemini 3.1 Flash\` |
+| **Multimodal** | \`Gemini 2.0 Flash\`, \`Llama 3.2 90B Vision\` |
+
 ### 🛠️ Core Tools & Features
 | Feature | Capability |
 |:---|:---|
