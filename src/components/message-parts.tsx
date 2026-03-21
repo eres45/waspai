@@ -19,6 +19,7 @@ import {
   Download,
   Volume2,
   MicIcon,
+  GlobeIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -1377,78 +1378,92 @@ export const ToolMessagePart = memo(
 
 ToolMessagePart.displayName = "ToolMessagePart";
 
-// File Message Part Component
-interface FileMessagePartProps {
-  part: FileUIPart; // FileUIPart from AI SDK
+// Reusable File Preview component for various file types
+const FilePartPreview = ({
+  url,
+  filename,
+  mediaType,
+  isUserMessage,
+  isSourceUrl = false,
+}: {
+  url: string;
+  filename: string;
+  mediaType?: string;
   isUserMessage: boolean;
-}
+  isSourceUrl?: boolean;
+}) => {
+  const isImage = mediaType?.startsWith("image/");
+  const isVideo = mediaType?.startsWith("video/");
+  const isAudio = mediaType?.startsWith("audio/");
+  const isPdf = mediaType === "application/pdf";
 
-export const FileMessagePart = memo(
-  ({ part, isUserMessage }: FileMessagePartProps) => {
-    const isImage = part.mediaType?.startsWith("image/");
+  const fileExtension =
+    filename?.split(".").pop()?.toUpperCase() ||
+    mediaType?.split("/").pop()?.toUpperCase() ||
+    "FILE";
 
-    const fileExtension =
-      part.filename?.split(".").pop()?.toUpperCase() ||
-      part.mediaType?.split("/").pop()?.toUpperCase() ||
-      "FILE";
-    const fileUrl = part.url;
-    const filename =
-      part.filename || part.url?.split("/").pop() || "Attachment";
-    const secondaryLabel =
-      part.mediaType && part.mediaType !== "application/octet-stream"
-        ? part.mediaType
-        : undefined;
+  const secondaryLabel =
+    mediaType && mediaType !== "application/octet-stream"
+      ? mediaType
+      : undefined;
 
-    if (isImage && fileUrl) {
+  const previewContent = useMemo(() => {
+    if (isImage) {
       return (
-        <div
-          className={cn(
-            "max-w-md rounded-lg overflow-hidden border border-border relative group",
-            isUserMessage ? "ml-auto" : "mr-auto",
-          )}
-        >
+        <div className="relative group/img overflow-hidden rounded-lg border border-border bg-card mb-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={fileUrl}
-            alt={part.filename || "Uploaded image"}
-            className="w-full h-auto"
+            src={url}
+            alt={filename}
+            className="w-full h-auto max-h-[500px] object-contain"
           />
-
-          {/* Download Button at Top Right Corner */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                asChild
-                size="icon"
-                variant="ghost"
-                className="absolute top-2 right-2 size-8 bg-background/80 hover:bg-background opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <a href={fileUrl} download={part.filename ?? filename}>
-                  <Download className="size-4" />
-                  <span className="sr-only">Download {filename}</span>
-                </a>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Download image</TooltipContent>
-          </Tooltip>
-
-          {part.filename && (
-            <div className="px-3 py-2 bg-muted text-sm text-muted-foreground">
-              {part.filename}
-            </div>
-          )}
         </div>
       );
     }
+    if (isVideo) {
+      return (
+        <div className="relative overflow-hidden rounded-lg border border-border bg-card mb-2">
+          <video src={url} controls className="w-full h-auto max-h-[500px]" />
+        </div>
+      );
+    }
+    if (isAudio) {
+      return (
+        <div className="relative p-4 rounded-lg border border-border bg-card mb-2 flex flex-col items-center gap-2">
+          <Volume2 className="size-8 text-primary opacity-50" />
+          <audio src={url} controls className="w-full h-8" />
+        </div>
+      );
+    }
+    if (isPdf) {
+      return (
+        <div className="relative overflow-hidden rounded-lg border border-border bg-card mb-2 aspect-[3/4] max-h-[600px] w-full">
+          <iframe
+            src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
+            className="w-full h-full border-0 rounded-lg"
+            title={filename}
+          />
+        </div>
+      );
+    }
+    return null;
+  }, [isImage, isVideo, isAudio, isPdf, url, filename]);
 
-    // Non-image file
-    return (
+  return (
+    <div
+      className={cn(
+        "max-w-md w-full animate-in fade-in slide-in-from-bottom-2 duration-300",
+        isUserMessage ? "ml-auto" : "mr-auto",
+      )}
+    >
+      {previewContent}
+
       <div
         className={cn(
-          "max-w-md rounded-2xl border border-border/80 p-4 shadow-sm backdrop-blur-sm",
+          "rounded-2xl border border-border/80 p-4 shadow-sm backdrop-blur-sm transition-all hover:border-primary/30",
           isUserMessage
-            ? "ml-auto bg-accent text-accent-foreground border-accent/40"
-            : "mr-auto bg-muted/60 text-foreground",
+            ? "bg-accent text-accent-foreground border-accent/40"
+            : "bg-muted/60 text-foreground",
         )}
       >
         <div className="flex items-start gap-4">
@@ -1456,6 +1471,7 @@ export const FileMessagePart = memo(
             className={cn(
               "flex-shrink-0 rounded-xl p-3",
               isUserMessage ? "bg-accent-foreground/10" : "bg-muted",
+              (isImage || isVideo || isAudio || isPdf) && "hidden sm:flex",
             )}
           >
             <FileIcon
@@ -1510,31 +1526,69 @@ export const FileMessagePart = memo(
               )}
             </div>
           </div>
-          {fileUrl && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  asChild
-                  size="icon"
-                  variant="ghost"
-                  className={cn(
-                    "size-9 flex-shrink-0 hover:text-foreground",
-                    isUserMessage
-                      ? "text-accent-foreground/70 hover:text-accent-foreground"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <a href={fileUrl} download={part.filename ?? filename}>
-                    <Download className="size-4" />
-                    <span className="sr-only">Download {filename}</span>
-                  </a>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download</TooltipContent>
-            </Tooltip>
-          )}
+          <div className="flex items-center gap-1">
+            {url && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    size="icon"
+                    variant="ghost"
+                    className={cn(
+                      "size-9 flex-shrink-0 hover:text-foreground",
+                      isUserMessage
+                        ? "text-accent-foreground/70 hover:text-accent-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <a
+                      href={url}
+                      download={filename}
+                      target={isSourceUrl ? "_blank" : undefined}
+                      rel={isSourceUrl ? "noopener noreferrer" : undefined}
+                    >
+                      {isSourceUrl && isPdf ? (
+                        <GlobeIcon className="size-4" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      <span className="sr-only">
+                        {isSourceUrl && isPdf ? "Open" : "Download"} {filename}
+                      </span>
+                    </a>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isSourceUrl && isPdf ? "Open in browser" : "Download"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+// File Message Part Component
+interface FileMessagePartProps {
+  part: FileUIPart; // FileUIPart from AI SDK
+  isUserMessage: boolean;
+}
+
+export const FileMessagePart = memo(
+  ({ part, isUserMessage }: FileMessagePartProps) => {
+    const fileUrl = part.url;
+    const filename =
+      part.filename || part.url?.split("/").pop() || "Attachment";
+
+    return (
+      <FilePartPreview
+        url={fileUrl}
+        filename={filename}
+        mediaType={part.mediaType}
+        isUserMessage={isUserMessage}
+      />
     );
   },
 );
@@ -1550,96 +1604,13 @@ export function SourceUrlMessagePart({
   isUserMessage: boolean;
 }) {
   const name = part.title || part.url?.split("/").pop() || "attachment";
-  const ext = name.split(".").pop()?.toUpperCase() || "FILE";
-  const mediaType =
-    part.mediaType && part.mediaType !== "application/octet-stream"
-      ? part.mediaType
-      : undefined;
   return (
-    <div
-      className={cn(
-        "max-w-md rounded-2xl border border-border/80 p-4 backdrop-blur-sm shadow-sm",
-        isUserMessage
-          ? "ml-auto bg-accent text-accent-foreground border-accent/40"
-          : "mr-auto bg-muted/60 text-foreground",
-      )}
-    >
-      <div className="flex items-start gap-4 max-w-sm">
-        <div
-          className={cn(
-            "flex-shrink-0 rounded-xl p-3",
-            isUserMessage ? "bg-accent-foreground/10" : "bg-muted",
-          )}
-        >
-          <FileIcon
-            className={cn(
-              "size-6",
-              isUserMessage
-                ? "text-accent-foreground/80"
-                : "text-muted-foreground",
-            )}
-          />
-        </div>
-        <div className="flex-1 min-w-0 space-y-1 pr-3">
-          <a
-            href={part.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              "text-sm font-medium hover:underline line-clamp-1",
-              isUserMessage ? "text-accent-foreground" : "text-foreground",
-            )}
-            title={name}
-          >
-            {name}
-          </a>
-          <div
-            className={cn(
-              "flex flex-wrap items-center gap-2 text-xs",
-              isUserMessage
-                ? "text-accent-foreground/70"
-                : "text-muted-foreground",
-            )}
-          >
-            <Badge
-              variant="outline"
-              className={cn(
-                "uppercase tracking-wide px-2 py-0.5",
-                isUserMessage &&
-                  "border-accent-foreground/30 text-accent-foreground/90",
-              )}
-            >
-              {ext}
-            </Badge>
-            {mediaType && (
-              <span className="truncate max-w-[10rem]" title={mediaType}>
-                {mediaType}
-              </span>
-            )}
-          </div>
-        </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              asChild
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "size-9 flex-shrink-0 hover:text-foreground",
-                isUserMessage
-                  ? "text-accent-foreground/70 hover:text-accent-foreground"
-                  : "text-muted-foreground",
-              )}
-            >
-              <a href={part.url} target="_blank" rel="noopener noreferrer">
-                <Download className="size-4" />
-                <span className="sr-only">Open attachment</span>
-              </a>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Open attachment</TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
+    <FilePartPreview
+      url={part.url}
+      filename={name}
+      mediaType={part.mediaType}
+      isUserMessage={isUserMessage}
+      isSourceUrl={true}
+    />
   );
 }
