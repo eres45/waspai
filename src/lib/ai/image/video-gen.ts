@@ -43,7 +43,7 @@ export async function generateVideoWithMeta(
           "Content-Type": "application/json",
           "x-log-request": "true",
         },
-        signal: options.abortSignal || controller.signal,
+        signal: controller.signal, // strictly use our 65s timeout, ignoring AI SDK's premature aborts
       });
 
       logger.info(
