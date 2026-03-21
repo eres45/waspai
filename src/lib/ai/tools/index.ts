@@ -7,6 +7,8 @@ export enum AppDefaultToolkit {
   Utilities = "utilities",
   Media = "media",
   Browser = "browser",
+  Documents = "documents",
+  QRCode = "qrCode",
 }
 
 export enum DefaultToolName {
@@ -29,6 +31,25 @@ export enum DefaultToolName {
   SendEmail = "send-email",
   VideoPlayer = "video-player",
   SteelBrowser = "steel-browser",
+  // Image Editing
+  EditImage = "edit-image",
+  RemoveBackground = "remove-background",
+  AnimeConversion = "anime-conversion",
+  EnhanceImage = "enhance-image",
+  // Documents
+  GenerateWord = "generate-word-document",
+  GenerateCSV = "generate-csv",
+  GenerateText = "generate-text-file",
+  GeneratePDF = "generate-pdf",
+  ProcessPPT = "process-ppt",
+  // Media
+  VideoGen = "video-gen",
+  // QR Code
+  GenerateQRCode = "generate-qr-code",
+  GenerateQRCodeWithLogo = "generate-qr-code-with-logo",
+  // Other
+  HtmlPreview = "html_preview",
+  ExportChat = "export-chat-messages",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";

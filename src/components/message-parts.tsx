@@ -1039,7 +1039,11 @@ export const ToolMessagePart = memo(
         return <ImageGeneratorToolInvocation part={part} />;
       }
 
-      if (toolName === "edit-image" || toolName === "remove-background") {
+      if (
+        toolName === "edit-image" ||
+        toolName === "remove-background" ||
+        toolName === "anime-conversion"
+      ) {
         return <ImageEditorToolInvocation part={part} />;
       }
 
@@ -1054,7 +1058,8 @@ export const ToolMessagePart = memo(
       if (
         toolName === "generate-word-document" ||
         toolName === "generate-csv" ||
-        toolName === "generate-text-file"
+        toolName === "generate-text-file" ||
+        toolName === "generate-pdf"
       ) {
         return <DocumentGeneratorToolInvocation part={part} />;
       }
