@@ -22,11 +22,11 @@ export async function generateVideoWithMeta(
     logger.info(`Video Gen (Meta): Starting video generation`);
     logger.info(`Video Gen (Meta): Prompt: ${options.prompt}`);
 
-    // Use AbortController with 105 second timeout for video generation
+    // Use AbortController with 85 second timeout for video generation
     // (Vercel max is 120s, background queue wait is 5s max before returning to UI)
-    // We use 105s to leave 15s of safety buffer for DB/routing overhead
+    // We use 85s to leave 35s of safety buffer for DB/routing overhead AND the secondary LLM text response
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 105000);
+    const timeoutId = setTimeout(() => controller.abort(), 85000);
 
     try {
       const renderBaseUrl =
