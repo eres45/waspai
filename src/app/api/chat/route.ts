@@ -1648,7 +1648,7 @@ BEGIN ROLEPLAY NOW.`
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 3,
           tools: vercelAITooles as any,
-          stopWhen: stepCountIs(useImageTool ? 2 : 5),
+          stopWhen: stepCountIs(useImageTool ? 3 : 5),
           toolChoice: "auto",
           abortSignal: request.signal,
         });

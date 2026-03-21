@@ -183,9 +183,14 @@ export const nanoBananaTool = createTool({
             ? "I have generated your image above."
             : "I apologize, but the image generation was not successful. Please try again.",
       };
-    } catch (e) {
-      logger.error(e);
-      throw e;
+    } catch (e: any) {
+      logger.error(`[Image Tool] Fatal error:`, e);
+      return {
+        images: [],
+        model,
+        mode: "create",
+        guide: `I apologize, but I encountered an error while generating the image with ${model}: ${e.message || String(e)}. Please try another model or rephrase your prompt.`,
+      };
     }
   },
 });
