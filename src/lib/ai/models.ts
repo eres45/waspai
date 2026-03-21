@@ -42,90 +42,105 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
 
     const res = await fetch(input, newInit);
 
-    // Only intercept if its a successful response where we might have wanted a stream
-    const contentType = res.headers.get("content-type");
-    const isJson = contentType?.includes("application/json");
-    const isEventStream = contentType?.includes("text/event-stream");
+    // If it's a 2xx response, we might need to intercept it
+    if (res.ok) {
+      const contentType = res.headers.get("content-type");
+      const isJson = contentType?.includes("application/json");
+      const isEventStream = contentType?.includes("text/event-stream");
 
-    if (res.ok && (isEventStream || (isJson && isStreamRequested))) {
-      // Clone the response so we can check if it's already a valid stream
-      const resClone = res.clone();
-      const reader = resClone.body?.getReader();
-      const decoder = new TextDecoder();
-      const { value } = (await reader?.read()) || {};
-      const chunk = decoder.decode(value);
+      if (isEventStream || (isJson && isStreamRequested)) {
+        // Read the full body once
+        const bodyText = await res.text();
 
-      // If it's already a valid SSE stream with data: prefixes, just return the original response
-      if (chunk && chunk.includes("data:")) {
-        return res;
-      }
+        // Check if it's a valid SSE stream with data: prefixes
+        if (bodyText.includes("data:")) {
+          // It's already an SSE stream, return a new response from the string
+          return new Response(bodyText, {
+            status: res.status,
+            statusText: res.statusText,
+            headers: res.headers,
+          });
+        }
 
-      // Otherwise, it's likely raw JSON (even if Content-Type is text/event-stream)
-      // We'll read the full body and polyfill it
-      const dataStr = chunk + (await res.text());
-      let data;
-      try {
-        data = JSON.parse(dataStr);
-      } catch (_e) {
-        // If it's not JSON, return original response
-        return res;
-      }
+        // Try to parse as JSON to see if we need to polyfill
+        let data;
+        try {
+          data = JSON.parse(bodyText);
+        } catch (_e) {
+          // Not valid JSON, return a new response from the original text
+          return new Response(bodyText, {
+            status: res.status,
+            statusText: res.statusText,
+            headers: res.headers,
+          });
+        }
 
-      // If it's already a full completion but we wanted a stream, polyfill it
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-          start(controller) {
-            // Send the content as a single delta chunk
-            const chunk = {
-              id: data.id || `poly-${Date.now()}`,
-              object: "chat.completion.chunk",
-              created: data.created || Math.floor(Date.now() / 1000),
-              model: data.model,
-              choices: [
-                {
-                  index: 0,
-                  delta: { content: data.choices[0].message.content },
-                  finish_reason: null,
-                },
-              ],
-            };
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
-            );
+        // Polyfill logic: If it's a completion JSON but we wanted a stream
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              // Send the content as a single delta chunk
+              const chunk = {
+                id: data.id || `poly-${Date.now()}`,
+                object: "chat.completion.chunk",
+                created: data.created || Math.floor(Date.now() / 1000),
+                model: data.model,
+                choices: [
+                  {
+                    index: 0,
+                    delta: { content: data.choices[0].message.content },
+                    finish_reason: null,
+                  },
+                ],
+              };
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
+              );
 
-            // Send a final chunk with finish_reason
-            const finishChunk = {
-              id: data.id || `poly-${Date.now()}`,
-              object: "chat.completion.chunk",
-              created: data.created || Math.floor(Date.now() / 1000),
-              model: data.model,
-              choices: [
-                {
-                  index: 0,
-                  delta: {},
-                  finish_reason: data.choices[0].finish_reason || "stop",
-                },
-              ],
-            };
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
-            );
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-            controller.close();
-          },
-        });
+              // Send a final chunk with finish_reason
+              const finishChunk = {
+                id: data.id || `poly-${Date.now()}`,
+                object: "chat.completion.chunk",
+                created: data.created || Math.floor(Date.now() / 1000),
+                model: data.model,
+                choices: [
+                  {
+                    index: 0,
+                    delta: {},
+                    finish_reason: data.choices[0].finish_reason || "stop",
+                  },
+                ],
+              };
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(finishChunk)}\n\n`),
+              );
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            },
+          });
 
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-          },
+          return new Response(stream, {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+            },
+          });
+        }
+
+        // If we reach here, it's a 200 with JSON but not a recognized completion
+        // It might be an error encoded in a 200 (common in some workers)
+        return new Response(bodyText, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: res.headers,
         });
       }
     }
 
+    // For all other cases (errors, non-intercepted successes), we still need to
+    // ensure the response is fresh if possible. But here 'res' hasn't been read yet.
     return res;
   };
 }

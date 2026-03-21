@@ -27,6 +27,16 @@ export const REASONING_LEAKY_MODELS = [
   /glm-4/i,
   /glm-5/i,
   /glm.*reasoning/i,
+  /glm.*flash/i, // GLM Flash models often leak reasoning
+
+  // Gemini Thinking/Flash variants (AIHubMix free ones often leak)
+  /gemini.*thinking/i,
+  /gemini.*flash.*free/i,
+  /gemini.*preview.*free/i,
+
+  // GPT-4.x / GPT-4o variants from AIHubMix
+  /gpt-4\.[1-9]/i,
+  /gpt-4o.*free/i,
 
   // OpenAI O-series (ALL of them use chain-of-thought that leaks)
   /^o1$/,
@@ -39,6 +49,12 @@ export const REASONING_LEAKY_MODELS = [
   // Grok Reasoning
   /grok.*reasoning/i,
   /grok.*deepsearch/i,
+
+  // Other AIHubMix Free Models that often leak internal thoughts
+  /.*-free$/i,
+  /coding-.*-free/i,
+  /step-.*-free/i,
+  /mimo-.*-free/i,
 ];
 
 /**
@@ -204,60 +220,61 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
     // Skip answer tags (we want to keep those)
     if (pattern.isAnswer) continue;
 
-		if (pattern.name === "glm-details") {
-			const startMatch = cleanText.match(pattern.start);
-			const endMatch = cleanText.match(pattern.end);
-			if (startMatch && !endMatch) {
-				hasReasoning = true;
-				const startIndex = cleanText.search(pattern.start);
-				if (startIndex !== -1) {
-					const tagMatch = cleanText.slice(startIndex).match(pattern.start);
-					const tagLength = tagMatch?.[0]?.length ?? 0;
-					const content = cleanText.slice(startIndex + tagLength).trim();
+    if (pattern.name === "glm-details") {
+      const startMatch = cleanText.match(pattern.start);
+      const endMatch = cleanText.match(pattern.end);
+      if (startMatch && !endMatch) {
+        hasReasoning = true;
+        const startIndex = cleanText.search(pattern.start);
+        if (startIndex !== -1) {
+          const tagMatch = cleanText.slice(startIndex).match(pattern.start);
+          const tagLength = tagMatch?.[0]?.length ?? 0;
+          const content = cleanText.slice(startIndex + tagLength).trim();
 
-					const answerPatterns = [
-						/[👋🎯✅💡🤔😊👍!][\s\S]*/i,
-						/I think[\s\S]*? would work best[\s\S]*/i,
-						/The answer is:/i,
-						/So, the answer is:/i,
-						/Therefore, /i,
-						/In conclusion, /i,
-						/To summarize, /i,
-						/I'll help/i,
-						/I can help/i,
-						/Here's /i,
-						/Here is /i,
-					];
+          const answerPatterns = [
+            /[👋🎯✅💡🤔😊👍!][\s\S]*/i,
+            /I think[\s\S]*? would work best[\s\S]*/i,
+            /The answer is:/i,
+            /So, the answer is:/i,
+            /Therefore, /i,
+            /In conclusion, /i,
+            /To summarize, /i,
+            /I'll help/i,
+            /I can help/i,
+            /Here's /i,
+            /Here is /i,
+          ];
 
-					let answerStart = -1;
-					for (const ansPattern of answerPatterns) {
-						const match = content.match(ansPattern);
-						if (match && match.index !== undefined) {
-							if (answerStart === -1 || match.index < answerStart) {
-								answerStart = match.index;
-							}
-						}
-					}
+          let answerStart = -1;
+          for (const ansPattern of answerPatterns) {
+            const match = content.match(ansPattern);
+            if (match && match.index !== undefined) {
+              if (answerStart === -1 || match.index < answerStart) {
+                answerStart = match.index;
+              }
+            }
+          }
 
-					if (answerStart > 0) {
-						const answerPart = content.substring(answerStart).trim();
-						const reasoningPart = content.substring(0, answerStart).trim();
-						if (reasoningPart) {
-							reasoning += (reasoning ? "\n\n" : "") + reasoningPart;
-						}
-						cleanText = cleanText.slice(0, startIndex).trim();
-						cleanText = `${cleanText}${cleanText ? "\n\n" : ""}${answerPart}`.trim();
-						continue;
-					}
+          if (answerStart > 0) {
+            const answerPart = content.substring(answerStart).trim();
+            const reasoningPart = content.substring(0, answerStart).trim();
+            if (reasoningPart) {
+              reasoning += (reasoning ? "\n\n" : "") + reasoningPart;
+            }
+            cleanText = cleanText.slice(0, startIndex).trim();
+            cleanText =
+              `${cleanText}${cleanText ? "\n\n" : ""}${answerPart}`.trim();
+            continue;
+          }
 
-					if (content) {
-						reasoning += (reasoning ? "\n\n" : "") + content;
-					}
-					cleanText = cleanText.slice(0, startIndex).trim();
-					continue;
-				}
-			}
-		}
+          if (content) {
+            reasoning += (reasoning ? "\n\n" : "") + content;
+          }
+          cleanText = cleanText.slice(0, startIndex).trim();
+          continue;
+        }
+      }
+    }
 
     const regex = new RegExp(
       `${pattern.start.source}([\\s\\S]*?)${pattern.end.source}`,

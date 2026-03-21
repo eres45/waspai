@@ -1764,17 +1764,23 @@ BEGIN ROLEPLAY NOW.`
       stream,
     });
   } catch (error: any) {
+    const errorMessage = error?.message || "Internal server error";
+    const errorStack = error?.stack;
+    const isModelError =
+      errorMessage.toLowerCase().includes("model") ||
+      errorMessage.toLowerCase().includes("provider");
+
     logger.error("Chat API Error:", {
-      message: error?.message,
-      stack: error?.stack,
-      error: String(error),
-      name: error?.name,
-      code: error?.code,
+      message: errorMessage,
+      isModelError,
+      stack: errorStack,
     });
-    console.error("Chat API Error Details:", error);
+
     return Response.json(
       {
-        message: error?.message || "Internal server error",
+        message: isModelError
+          ? `Model Error: ${errorMessage}`
+          : "The model is a bit shy right now. Maybe try its sibling? 🙈",
         error:
           process.env.NODE_ENV === "development" ? String(error) : undefined,
       },
