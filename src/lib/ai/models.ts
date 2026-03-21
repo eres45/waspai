@@ -265,6 +265,9 @@ const staticModels = {
     "gpt-4.1-mini": aiHubMixProvider("gpt-4.1-mini-free"),
     "gpt-4.1-nano": aiHubMixProvider("gpt-4.1-nano-free"),
     "gpt-4o": aiHubMixProvider("gpt-4o-free"),
+    "GPT-5.4 mini": aiHubMixProvider("gpt-5.4-mini-free"),
+    "GPT-5.4 nano": aiHubMixProvider("gpt-5.4-nano-free"),
+    "GPT-4o search preview": aiHubMixProvider("gpt-4o-search-preview-free"),
   },
 
   // --- DeepSeek Models ---
@@ -427,6 +430,8 @@ const staticModels = {
   // --- Other Quality Models ---
   Other: {
     "Jamba 1.5 Mini": nvidiaModels["ai21labs-jamba-1.5-mini-instruct"],
+    "Mimo v2 pro": aiHubMixProvider("mimo-v2-pro-free"),
+    "Mimo v2 omni": aiHubMixProvider("mimo-v2-omni-free"),
     "Falcon 3 7B": nvidiaModels["tiiuae-falcon3-7b-instruct"],
     "Solar 10.7B": nvidiaModels["upstage-solar-10.7b-instruct"],
     "Baichuan 2 13B": nvidiaModels["baichuan-inc-baichuan2-13b-chat"],

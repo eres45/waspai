@@ -13,48 +13,54 @@
  * Models that leak reasoning as regular text (need stripping)
  */
 export const REASONING_LEAKY_MODELS = [
-  // DeepSeek Family (R1 variants are the worst offenders)
-  /deepseek.*r1/i,
-  /deepseek.*v3/i,
-  /deepseek.*coder/i,
+  // DeepSeek Family (Almost all latest DeepSeek variants leak <think> tags)
+  /deepseek/i,
 
-  // Qwen Thinking Models
-  /qwen.*thinking/i,
-  /qwen.*next.*thinking/i,
-  /kimi.*thinking/i,
+  // Qwen Family (QwQ, etc.)
+  /qwen/i,
+  /qwq/i,
+  /kimi/i,
 
-  // GLM Reasoning Models (all GLM-4.x and GLM-5 variants output reasoning)
-  /glm-4/i,
-  /glm-5/i,
-  /glm.*reasoning/i,
-  /glm.*flash/i, // GLM Flash models often leak reasoning
+  // GLM Family
+  /glm/i,
 
-  // Gemini Thinking/Flash variants (AIHubMix free ones often leak)
-  /gemini.*thinking/i,
-  /gemini.*flash.*free/i,
-  /gemini.*preview.*free/i,
+  // Gemini Thinking/Flash variants
+  /gemini/i,
 
-  // GPT-4.x / GPT-4o variants from AIHubMix
+  // GPT-4.x / GPT-4o / GPT-5 variants
   /gpt-4\.[1-9]/i,
-  /gpt-4o.*free/i,
+  /gpt-4o/i,
+  /gpt-5/i,
 
-  // OpenAI O-series (ALL of them use chain-of-thought that leaks)
-  /^o1$/,
-  /^o1-/,
-  /^o3$/,
-  /^o3-/,
-  /^o4$/,
-  /^o4-/,
+  // MiniMax Models
+  /minimax/i,
+
+  // Mimo Models
+  /mimo/i,
+
+  // Perplexity Models (often include reasoning/thought)
+  /sonar/i,
+
+  // OpenAI O-series (o1, o1-mini, o3, etc.)
+  /\bo[1-9]\b/i,
+  /\bo[1-9]-/i,
 
   // Grok Reasoning
-  /grok.*reasoning/i,
-  /grok.*deepsearch/i,
+  /grok/i,
 
-  // Other AIHubMix Free Models that often leak internal thoughts
+  // Microsoft Phi-4 (has CoT)
+  /phi-4/i,
+
+  // General markers for any reasoning-specific model
+  /reasoner/i,
+  /reasoning/i,
+  /thinking/i,
+  /thinking/i,
+  /thought/i,
+  /thought/i,
+
+  // AIHubMix Free Models generic catch-all
   /.*-free$/i,
-  /coding-.*-free/i,
-  /step-.*-free/i,
-  /mimo-.*-free/i,
 ];
 
 /**
