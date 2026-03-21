@@ -669,10 +669,20 @@ export function PresentationGeneratorToolInvocation({
         }
       });
 
-      await prs.writeFile({ fileName: `${data.title}.pptx` });
+      const blob = (await prs.write({ outputType: "blob" })) as Blob;
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `${data.title || "presentation"}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Clean up the URL object
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 100);
 
       setHasDownloaded(true);
-      toast.success("Presentation ready! 🚀");
+      toast.success("Presentation downloaded! 🚀");
     } catch (error) {
       console.error("PPTX Generation Error:", error);
       toast.error("Failed to generate presentation.");
