@@ -1637,7 +1637,7 @@ BEGIN ROLEPLAY NOW.`
               if (useImageTool) {
                 const imageSystemMsg = {
                   role: "system",
-                  content: `You have been requested to generate an image. Please use the 'image-manager' tool to fulfill this request.`,
+                  content: `You have been requested to generate an image. YOU MUST call the 'image-manager' tool IMMEDIATELY to fulfill this request. DO NOT respond with text until the tool has returned a result.`,
                 };
                 return [...finalMessages, imageSystemMsg];
               }
@@ -1648,11 +1648,8 @@ BEGIN ROLEPLAY NOW.`
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 3,
           tools: vercelAITooles as any,
-          stopWhen: stepCountIs(5),
-          toolChoice: (useImageTool &&
-          messages[messages.length - 1].role === "user"
-            ? { type: "tool", toolName: ImageToolName }
-            : "auto") as any,
+          stopWhen: stepCountIs(useImageTool ? 2 : 5),
+          toolChoice: "auto",
           abortSignal: request.signal,
         });
         result.consumeStream();
