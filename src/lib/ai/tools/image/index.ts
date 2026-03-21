@@ -4,8 +4,14 @@ import z from "zod";
 import { ImageToolName } from "..";
 import logger from "logger";
 import {
-  generateImageWithInfip,
   generateImageWithChalkAPI,
+  generateImageWithFlux1Schnell,
+  generateImageWithJuggernautXL,
+  generateImageWithFlux1Dev,
+  generateImageWithRealVisXL,
+  generateImageWithSD35,
+  generateImageWithSeedream45,
+  generateImageWithStableDiffusionXL,
 } from "lib/ai/image/generate-image";
 
 export type ImageToolResult = {
@@ -31,18 +37,17 @@ export const nanoBananaTool = createTool({
       ),
     model: z
       .enum([
-        "img3",
-        "img4",
-        "nano-banana",
-        "flux-schnell",
-        "lucid-origin",
-        "phoenix",
-        "sdxl",
-        "sdxl-lite",
+        "flux-1-schnell",
+        "juggernaut-xl",
+        "flux-1-dev",
+        "realvisxl-v4",
+        "sd-3-5",
+        "seedream-4-5",
+        "sdxl-v1-0",
         "chalk",
       ])
       .describe(
-        "Image generation model to use. MUST match the pre-selected model from the system prompt. Options include: img3, img4, qwen, nano-banana, flux-schnell, lucid-origin, phoenix, sdxl, sdxl-lite, chalk. CRITICAL: Always use the exact model specified in the system prompt - do not substitute or choose a different model.",
+        "Image generation model to use. MUST match the pre-selected model from the system prompt. Options include: flux-1-schnell, juggernaut-xl, flux-1-dev, realvisxl-v4, sd-3-5, seedream-4-5, sdxl-v1-0, chalk. CRITICAL: Always use the exact model specified in the system prompt - do not substitute or choose a different model.",
       ),
   }),
   execute: async ({ prompt, model }, { abortSignal, messages }) => {
@@ -79,18 +84,57 @@ export const nanoBananaTool = createTool({
       let generatedImages;
 
       // Select the appropriate image generation function based on model
-      if (model === "chalk") {
-        generatedImages = await generateImageWithChalkAPI({
-          prompt: finalPrompt,
-          abortSignal,
-        });
-      } else {
-        // Use Infip/GhostAPI for all other models (img3, img4, qwen, nano-banana, flux-schnell, lucid-origin, phoenix, sdxl, sdxl-lite)
-        generatedImages = await generateImageWithInfip({
-          prompt: finalPrompt,
-          model,
-          abortSignal,
-        });
+      switch (model) {
+        case "chalk":
+          generatedImages = await generateImageWithChalkAPI({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "flux-1-schnell":
+          generatedImages = await generateImageWithFlux1Schnell({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "juggernaut-xl":
+          generatedImages = await generateImageWithJuggernautXL({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "flux-1-dev":
+          generatedImages = await generateImageWithFlux1Dev({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "realvisxl-v4":
+          generatedImages = await generateImageWithRealVisXL({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "sd-3-5":
+          generatedImages = await generateImageWithSD35({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "seedream-4-5":
+          generatedImages = await generateImageWithSeedream45({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "sdxl-v1-0":
+          generatedImages = await generateImageWithStableDiffusionXL({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        default:
+          throw new Error(`Unsupported model: ${model}`);
       }
 
       // CRITICAL: Only keep the first image - limit to 1 image per generation

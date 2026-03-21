@@ -9,7 +9,6 @@ import {
   ChartColumn,
   ChevronRight,
   CodeIcon,
-  Edit2,
   FileText,
   Film,
   GlobeIcon,
@@ -94,19 +93,14 @@ interface ToolSelectDropdownProps {
   onSelectAgent?: (agent: AgentSummary) => void;
   onGenerateImage?: (
     model?:
-      | "sdxl"
-      | "chalk"
-      | "img3"
-      | "img4"
-      | "qwen"
-      | "nano-banana"
-      | "flux-schnell"
-      | "lucid-origin"
-      | "phoenix"
-      | "sdxl-lite",
-  ) => void;
-  onEditImage?: (
-    tool: "nano-banana" | "remove-background" | "enhance-image",
+      | "flux-1-schnell"
+      | "juggernaut-xl"
+      | "flux-1-dev"
+      | "realvisxl-v4"
+      | "sd-3-5"
+      | "seedream-4-5"
+      | "sdxl-v1-0"
+      | "chalk",
   ) => void;
   className?: string;
 }
@@ -127,7 +121,6 @@ export function ToolSelectDropdown({
   onSelectWorkflow,
   onSelectAgent,
   onGenerateImage,
-  onEditImage,
   mentions,
   className,
 }: ToolSelectDropdownProps) {
@@ -275,7 +268,6 @@ export function ToolSelectDropdown({
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
-        <ImageEditingSelector onEditImage={onEditImage} />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
@@ -1089,56 +1081,6 @@ function AgentSelector({
   );
 }
 
-function ImageEditingSelector({
-  onEditImage,
-}: {
-  onEditImage?: (
-    tool: "nano-banana" | "remove-background" | "enhance-image",
-  ) => void;
-}) {
-  return (
-    <DropdownMenuGroup>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
-          <Edit2 className="size-3.5" />
-          Image Editing
-        </DropdownMenuSubTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuSubContent>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("nano-banana")}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                ✏️
-              </span>
-              Nano Banana (Edit)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("remove-background")}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                🎨
-              </span>
-              Remove Background
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("enhance-image")}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                ✨
-              </span>
-              Enhance Image
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuPortal>
-      </DropdownMenuSub>
-    </DropdownMenuGroup>
-  );
-}
-
 // ... (skip intermediate code, I should use multi_replace or separate checks, but definitions are far apart.
 // Actually line 89-98 is Props. lines 1073 is Selector. I can do replace of Selector and Props separately or together if allowed.
 // replace_file_content doesn't allow multiple chunks unless allowMultiple=true with generic match. But ToolSelectDropdownProps is unique.
@@ -1272,16 +1214,14 @@ function ImageGeneratorSelector({
 }: {
   onGenerateImage?: (
     model?:
-      | "sdxl"
-      | "chalk"
-      | "img3"
-      | "img4"
-      | "qwen"
-      | "nano-banana"
-      | "flux-schnell"
-      | "lucid-origin"
-      | "phoenix"
-      | "sdxl-lite",
+      | "flux-1-schnell"
+      | "juggernaut-xl"
+      | "flux-1-dev"
+      | "realvisxl-v4"
+      | "sd-3-5"
+      | "seedream-4-5"
+      | "sdxl-v1-0"
+      | "chalk",
   ) => void;
   modelInfo?: { isToolCallUnsupported?: boolean };
 }) {
@@ -1298,68 +1238,59 @@ function ImageGeneratorSelector({
           <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("sdxl")}
+              onClick={() => onGenerateImage?.("sdxl-v1-0")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              Stable Diffusion XL
+              SDXL v1.0
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("sdxl-lite")}
+              onClick={() => onGenerateImage?.("flux-1-schnell")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              SDXL Lite
+              FLUX.1 Schnell
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("img3")}
+              onClick={() => onGenerateImage?.("juggernaut-xl")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              IMG3
+              Juggernaut XL
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("img4")}
+              onClick={() => onGenerateImage?.("flux-1-dev")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              IMG4
+              FLUX.1 Dev
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("flux-schnell")}
+              onClick={() => onGenerateImage?.("realvisxl-v4")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              Flux Schnell
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("nano-banana")}
-              className="cursor-pointer text-xs"
-            >
-              <ImagesIcon className="mr-2 size-4" />
-              Nano Banana
+              RealVisXL v4
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("lucid-origin")}
+              onClick={() => onGenerateImage?.("sd-3-5")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              Lucid Origin
+              Stable Diffusion 3.5
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("phoenix")}
+              onClick={() => onGenerateImage?.("seedream-4-5")}
               className="cursor-pointer text-xs"
             >
               <ImagesIcon className="mr-2 size-4" />
-              Phoenix
+              Seedream 4.5
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}

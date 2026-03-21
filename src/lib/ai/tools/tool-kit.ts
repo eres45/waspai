@@ -23,7 +23,6 @@ import {
 import { videoPlayerTool } from "./web/video-player";
 import { steelBrowserTool } from "./browser/steel-browser";
 import {
-  editImageTool,
   removeBackgroundTool,
   animeConversionTool,
   enhanceImageTool,
@@ -77,7 +76,6 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   },
   [AppDefaultToolkit.Media]: {
     [DefaultToolName.VideoPlayer]: videoPlayerTool,
-    [DefaultToolName.EditImage]: editImageTool,
     [DefaultToolName.RemoveBackground]: removeBackgroundTool,
     [DefaultToolName.AnimeConversion]: animeConversionTool,
     [DefaultToolName.EnhanceImage]: enhanceImageTool,

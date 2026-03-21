@@ -4,7 +4,6 @@ import logger from "logger";
 import { serverFileStorage } from "lib/file-storage";
 import { safe, watchError } from "ts-safe";
 import {
-  editImageWithNanoBanana,
   removeImageBackground,
   convertImageToAnime,
 } from "lib/ai/image/edit-image";
@@ -17,72 +16,6 @@ export type EditImageToolResult = {
   };
   guide?: string;
 };
-
-/**
- * Image editing tool using Nano-Banana Edit API
- */
-export const editImageTool = createTool({
-  name: "edit-image",
-  description:
-    "Edit an existing image based on a text prompt. Provide the image URL and a description of how you want to edit it (e.g., 'make it more colorful', 'add more contrast', 'make it brighter').",
-  inputSchema: z.object({
-    imageUrl: z.string().url().describe("The URL of the image to edit"),
-    prompt: z
-      .string()
-      .describe(
-        "Description of how to edit the image (e.g., 'make it more colorful', 'add more contrast', 'make it brighter')",
-      ),
-  }),
-  execute: async ({ imageUrl, prompt }, { abortSignal }) => {
-    logger.info(`Edit Image tool called with prompt: "${prompt}"`);
-    logger.info(`Edit Image tool called with imageUrl: "${imageUrl}"`);
-
-    try {
-      // Call the edit image API
-      const editedImage = await editImageWithNanoBanana({
-        prompt,
-        imageUrl,
-        abortSignal,
-      });
-
-      logger.info(`Edit Image: Image edited successfully`);
-
-      // Upload edited image to storage
-      const uploadedImage = await safe(editedImage.image)
-        .map(async (image) => {
-          const uploadedResult = await serverFileStorage.upload(
-            Buffer.from(image.url, "base64"),
-            {
-              contentType: image.mimeType || "image/png",
-            },
-          );
-          return {
-            url: uploadedResult.sourceUrl,
-            mimeType: image.mimeType || "image/png",
-          };
-        })
-        .watch(
-          watchError((e) => {
-            logger.error(e);
-            logger.info(`upload edited image failed. using base64`);
-          }),
-        )
-        .ifFail(() => {
-          throw new Error(
-            "Image editing was successful, but file upload failed. Please check your file upload configuration and try again.",
-          );
-        })
-        .unwrap();
-
-      return {
-        image: uploadedImage,
-      };
-    } catch (e) {
-      logger.error(e);
-      throw e;
-    }
-  },
-});
 
 /**
  * Remove background tool using Remove BG API

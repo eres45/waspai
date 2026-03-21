@@ -32,7 +32,6 @@ export enum DefaultToolName {
   VideoPlayer = "video-player",
   SteelBrowser = "steel-browser",
   // Image Editing
-  EditImage = "edit-image",
   RemoveBackground = "remove-background",
   AnimeConversion = "anime-conversion",
   EnhanceImage = "enhance-image",
