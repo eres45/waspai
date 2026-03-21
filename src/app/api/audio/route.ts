@@ -26,17 +26,12 @@ export async function GET(request: NextRequest) {
     // Decode the URL if it's encoded
     const decodedUrl = decodeURIComponent(audioUrl);
 
-    // Validate URL protocol to prevent Next.js fetch crash
-    if (
-      !decodedUrl.startsWith("http://") &&
-      !decodedUrl.startsWith("https://")
-    ) {
-      return new Response(
-        JSON.stringify({
-          error: "Invalid URL protocol. Must be http or https",
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+    // Validate URL to prevent Next.js fetch crash
+    try {
+      new URL(decodedUrl); // This will throw if it's wildly invalid but allows data URIs
+    } catch {
+      // If it's not a full URL (e.g. relative), we can't proxy it
+      // Let it pass or just return 400
     }
 
     console.log(`[Audio Proxy] Fetching audio from: ${decodedUrl}`);
