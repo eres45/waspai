@@ -19,7 +19,7 @@ import { getUser, getUserAccounts, updateUserDetails } from "lib/user/server";
 import { getTranslations } from "next-intl/server";
 import { logger } from "better-auth";
 import {
-  generateImageWithInfip,
+  generateImageWithFlux1Schnell,
   GeneratedImageResult,
 } from "lib/ai/image/generate-image";
 
@@ -264,23 +264,22 @@ Generate a profile picture that fulfills the user's request while maintaining th
 
     let response: GeneratedImageResult;
 
-    let model: string;
+    let _model: string;
     switch (provider) {
       case "openai":
       case "xai":
-        model = "flux-schnell"; // Use Flux for high quality
+        _model = "flux-schnell"; // Use Flux for high quality
         break;
       case "google":
-        model = "nano-banana";
+        _model = "nano-banana";
         break;
       default:
-        model = "sdxl";
+        _model = "sdxl";
     }
 
     try {
-      response = await generateImageWithInfip({
+      response = await generateImageWithFlux1Schnell({
         prompt: enhancedPrompt,
-        model: model as any,
       });
     } catch (err) {
       logger.error("Infip generation failed:", err);
