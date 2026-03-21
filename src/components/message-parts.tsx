@@ -463,9 +463,11 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                           if (!text) return;
                           setIsPlaying(true);
                           const audioUrl = await generateSpeech(text, "nova");
-                          const proxyUrl = audioUrl.startsWith("data:")
-                            ? audioUrl
-                            : `/api/audio?url=${encodeURIComponent(audioUrl)}`;
+                          const proxyUrl =
+                            audioUrl.startsWith("data:") ||
+                            audioUrl.startsWith("blob:")
+                              ? audioUrl
+                              : `/api/audio?url=${encodeURIComponent(audioUrl)}`;
 
                           if (!audioRef.current) {
                             audioRef.current = new Audio();
