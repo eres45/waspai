@@ -1317,6 +1317,12 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           ? `Call the "video-gen" tool with the user's video description. Keep response brief. Use "Meta AI" as the engine name if asked.`
           : "";
 
+        if (isVideoGenRequest) {
+          logger.info(
+            `Video Gen: Triggered for this request. Prompt addition: ${videoGenPrompt}`,
+          );
+        }
+
         const characterPrompt = characterContext
           ? `[CHARACTER ROLEPLAY MODE - IMMERSIVE & EXPRESSIVE]
 

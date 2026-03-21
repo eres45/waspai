@@ -33,7 +33,12 @@ export async function generateVideoWithMeta(
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       try {
-        const apiUrl = `https://metaai-1xpj.onrender.com/generate/video/v2?prompt=${encodeURIComponent(options.prompt)}`;
+        const url = new URL(
+          "https://metaai-1xpj.onrender.com/generate/video/v2",
+        );
+        url.searchParams.set("prompt", options.prompt);
+        const apiUrl = url.toString();
+
         logger.info(`Video Gen (Meta): Fetching from URL: ${apiUrl}`);
 
         const response = await fetch(apiUrl, {
@@ -41,7 +46,6 @@ export async function generateVideoWithMeta(
           headers: {
             "Content-Type": "application/json",
             "x-log-request": "true",
-            "User-Agent": "WaspAI-Bot",
           },
           signal: options.abortSignal || controller.signal,
         });
