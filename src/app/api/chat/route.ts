@@ -738,12 +738,12 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             imageModelPrompt = `You have been requested to generate an image.
 CRITICAL INSTRUCTIONS:
 1. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt.
-2. If the user specified a specific model (e.g., Seedream, Juggernaut, RealVis, etc.) in their request, USE that model in the tool call.
+2. If the user specified a specific model (e.g., Seedream, Juggernaut, RealVis, etc.) in their request, USE that model in the tool call. Options match the "model" enum in the "image-manager" tool.
 3. If no specific model is mentioned, use "${activeGenerationModel}" (FLUX.1 Schnell) as the default.
 4. Use the exact tool name: "image-manager".
 5. Do NOT ask the user to choose a model or ask for clarification.
 6. Do NOT refuse to generate the image - just generate it.
-7. After the tool returns the image, you MAY describe the image or provide a creative caption.
+7. After the tool returns the image successfully, you MUST provide a brief, descriptive summary or creative caption for the image.
 8. CRITICAL: Do NOT output the image URL in your response text.
 9. CRITICAL: Do NOT create markdown links to the image.`;
           }
@@ -1633,22 +1633,13 @@ BEGIN ROLEPLAY NOW.`
                 });
               }
 
-              // Guide the model to use the tool, but don't break its thinking process with negative constraints
-              if (useImageTool) {
-                const imageSystemMsg = {
-                  role: "system",
-                  content: `You have been requested to generate an image. YOU MUST call the 'image-manager' tool IMMEDIATELY to fulfill this request. DO NOT respond with text until the tool has returned a result.`,
-                };
-                return [...finalMessages, imageSystemMsg];
-              }
-
               return finalMessages;
             })(),
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 3,
           tools: vercelAITooles as any,
-          stopWhen: stepCountIs(useImageTool ? 3 : 5),
+          stopWhen: stepCountIs(5),
           toolChoice: "auto",
           abortSignal: request.signal,
         });
