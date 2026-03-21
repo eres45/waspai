@@ -204,13 +204,19 @@ export function ToolSelectDropdown({
           className,
         )}
       >
-        <div className="p-1.5 text-primary bg-input/40 rounded">
-          <WrenchIcon className="size-3.5" />
-        </div>
+        <span className={!bindingTools ? "text-muted-foreground" : ""}>
+          {agentMention
+            ? "Agent"
+            : (mentions?.length ?? 0 > 0)
+              ? "Mention"
+              : "Tools"}
+        </span>
 
         {((!agentMention && bindingTools.length > 0) || isLoading) && (
           <>
-            <div className="h-4 hidden sm:block mx-1" />
+            <div className="h-4 hidden sm:block mx-1">
+              <div className="w-[1px] h-full bg-border" />
+            </div>
 
             <div className="min-w-5 flex justify-center">
               {isLoading ? (
