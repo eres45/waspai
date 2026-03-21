@@ -33,6 +33,7 @@ import {
   textFileTool,
 } from "./document-generator";
 import { pdfGeneratorTool } from "./pdf-generator";
+import { presentationGeneratorTool } from "./presentation-generator";
 import { pptProcessorTool } from "./ppt-processor";
 import { videoGenTool } from "./image/video-gen";
 import { qrCodeGeneratorTool, qrCodeWithLogoTool } from "./qr-code-generator";
@@ -89,6 +90,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.GenerateCSV]: csvGeneratorTool,
     [DefaultToolName.GenerateText]: textFileTool,
     [DefaultToolName.GeneratePDF]: pdfGeneratorTool,
+    [DefaultToolName.GeneratePresentation]: presentationGeneratorTool,
     [DefaultToolName.ProcessPPT]: pptProcessorTool,
   },
   [AppDefaultToolkit.QRCode]: {

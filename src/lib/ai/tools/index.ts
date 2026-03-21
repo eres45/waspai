@@ -40,6 +40,7 @@ export enum DefaultToolName {
   GenerateCSV = "generate-csv",
   GenerateText = "generate-text-file",
   GeneratePDF = "generate-pdf",
+  GeneratePresentation = "generate-presentation",
   ProcessPPT = "process-ppt",
   // Media
   VideoGen = "video-gen",

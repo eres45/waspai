@@ -31,6 +31,33 @@ export default () => {
         },
       ],
     },
+    webpack: (config, { isServer, webpack }) => {
+      if (!isServer) {
+        config.resolve.fallback = {
+          ...config.resolve.fallback,
+          fs: false,
+          path: false,
+          https: false,
+          http: false,
+          url: false,
+          buffer: false,
+          stream: false,
+          os: false,
+          zlib: false,
+        };
+
+        // Handle 'node:' prefixed imports for browser-side libraries like pptxgenjs
+        config.plugins.push(
+          new webpack.NormalModuleReplacementPlugin(
+            /^node:/,
+            (resource: any) => {
+              resource.request = resource.request.replace(/^node:/, "");
+            },
+          ),
+        );
+      }
+      return config;
+    },
   };
   const withNextIntl = createNextIntlPlugin();
   return withNextIntl(nextConfig);

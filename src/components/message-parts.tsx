@@ -65,6 +65,26 @@ import {
 import { WorkflowInvocation } from "./tool-invocation/workflow-invocation";
 import { SteelBrowserPreview } from "./tool-invocation/steel-browser";
 import { DocumentGeneratorToolInvocation } from "./tool-invocation/document-generator";
+const loading = memo(function Loading() {
+  return (
+    <div className="px-6 py-4 flex items-center justify-center">
+      <div className="h-44 w-full rounded-md bg-muted/30 animate-pulse flex items-center justify-center">
+        <Loader className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  );
+});
+
+const PresentationGeneratorToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/presentation-generator").then(
+      (mod) => mod.PresentationGeneratorToolInvocation,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
 import dynamic from "next/dynamic";
 import { notify } from "lib/notify";
 import { ModelProviderIcon } from "ui/model-provider-icon";
@@ -747,15 +767,7 @@ export const ReasoningPart = memo(function ReasoningPart({
 });
 ReasoningPart.displayName = "ReasoningPart";
 
-const loading = memo(function Loading() {
-  return (
-    <div className="px-6 py-4 flex items-center justify-center">
-      <div className="h-44 w-full rounded-md bg-muted/30 animate-pulse flex items-center justify-center">
-        <Loader className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    </div>
-  );
-});
+ReasoningPart.displayName = "ReasoningPart";
 
 const PieChart = dynamic(
   () => import("./tool-invocation/pie-chart").then((mod) => mod.PieChart),
@@ -1059,8 +1071,20 @@ export const ToolMessagePart = memo(
         toolName === "generate-word-document" ||
         toolName === "generate-csv" ||
         toolName === "generate-text-file" ||
-        toolName === "generate-pdf"
+        toolName === "generate-pdf" ||
+        toolName === "generate-presentation"
       ) {
+        if (toolName === "generate-presentation") {
+          return (
+            <PresentationGeneratorToolInvocation
+              result={
+                state === "output-available" || state === "output-error"
+                  ? (result as any)
+                  : null
+              }
+            />
+          );
+        }
         return <DocumentGeneratorToolInvocation part={part} />;
       }
 
