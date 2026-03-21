@@ -27,6 +27,23 @@ function mapQueueResponse(item: any): VideoQueueEntry {
 
 export const videoQueueRepository = {
   /**
+   * Check if there's already a pending or processing job for this exact prompt
+   */
+  async findExistingJob(prompt: string): Promise<VideoQueueEntry | null> {
+    const { data, error } = await supabaseRest
+      .from("video_gen_queue")
+      .select("*")
+      .eq("prompt", prompt)
+      .in("status", ["pending", "processing"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return mapQueueResponse(data);
+  },
+
+  /**
    * Add a new video generation request to the queue
    */
   async enqueue(
