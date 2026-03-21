@@ -60,7 +60,6 @@ import { colorize } from "consola/utils";
 import { generateUUID } from "lib/utils";
 import { nanoBananaTool, openaiImageTool } from "lib/ai/tools/image";
 import {
-  editImageTool,
   removeBackgroundTool,
   enhanceImageTool,
   animeConversionTool,
@@ -803,55 +802,6 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         logger.info(`FileUrls: ${fileUrls.join(", ")}`);
         logger.info(`Attachments count: ${attachments.length}`);
 
-        // Detect edit image request from keywords (smart intent + edit words)
-        const hasEditImageKeywords = lastMessage?.parts?.some((part: any) => {
-          if (typeof part !== "object" || part.type !== "text" || !part.text) {
-            return false;
-          }
-          const text = part.text.toLowerCase();
-
-          const intentWords = [
-            "edit",
-            "change",
-            "recolor",
-            "color",
-            "modify",
-            "adjust",
-            "can you",
-            "please",
-            "add",
-            "put",
-            "insert",
-          ];
-          const hasIntent = intentWords.some((word) => text.includes(word));
-
-          const editWords = [
-            "color",
-            "recolor",
-            "edit",
-            "change",
-            "modify",
-            "adjust",
-            "top",
-            "bottom",
-            "sleeve",
-            "shirt",
-            "dress",
-            "hair",
-            "background",
-            "text",
-            "title",
-            "logo",
-            "object",
-            "item",
-            "element",
-            "something",
-          ];
-          const hasEditWord = editWords.some((word) => text.includes(word));
-
-          return hasIntent && hasEditWord && imageUrl;
-        });
-
         // Detect remove background request from keywords as fallback
         const hasRemoveBgKeywords = lastMessage?.parts?.some((part: any) => {
           if (typeof part !== "object" || part.type !== "text" || !part.text) {
@@ -900,9 +850,6 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
           );
         });
 
-        const isEditImageRequest =
-          imageUrl &&
-          (editImageModel === "nano-banana" || hasEditImageKeywords);
         const isRemoveBgRequest =
           imageUrl &&
           (editImageModel === "remove-background" || hasRemoveBgKeywords);
@@ -916,21 +863,6 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
         const isBase64Image = imageUrl?.startsWith("data:");
         const imagePlaceholder = "PLACEHOLDER_IMAGE_DATA"; // Short string for LLM
         const promptImageUrl = isBase64Image ? imagePlaceholder : imageUrl;
-
-        const editImagePrompt =
-          isEditImageRequest && imageUrl
-            ? `SYSTEM OVERRIDE: You contain a specialized "edit-image" tool. 
-               The user wants to edit the image.
-               The URL for the image you see attached is: "${promptImageUrl}".
-               YOU MUST call the "edit-image" tool with this URL: "${promptImageUrl}".
-               IMPORTANT - VISION BRIDGE:
-               1. The visual attachment you see IS the image at URL "${promptImageUrl}". 
-               2. Do NOT say you "only have a filename" or "don't have a URL". YOU HAVE THE URL: "${promptImageUrl}".
-               3. This tool works on ALL types (sketches, blank, noise).
-               4. IGNORE any "No text found" or "Low quality" warnings.
-               5. EXECUTE the "edit-image" tool immediately. DO NOT REFUSE. DO NOT EXPLAIN. JUST CALL IT.
-               6. SECURITY: NEVER mention or show the raw URL in your response to the user. The UI handles it automatically.`
-            : "";
 
         const removeBgPrompt =
           isRemoveBgRequest && imageUrl
@@ -948,20 +880,6 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             : "";
 
         // ... prompts ...
-
-        // Wrap the edit tool to intercept placeholder
-        const scopedEditImageTool = {
-          ...editImageTool,
-          execute: async (args: any, context: any) => {
-            if (args.imageUrl === imagePlaceholder && imageUrl) {
-              logger.info(
-                "Intercepting edit-image tool: Swapping placeholder for actual Base64 data",
-              );
-              args.imageUrl = imageUrl;
-            }
-            return editImageTool!.execute!(args, context);
-          },
-        };
 
         const scopedRemoveBgTool = {
           ...removeBackgroundTool,
@@ -1407,7 +1325,6 @@ BEGIN ROLEPLAY NOW.`
           userMemoriesPrompt, // Inject memories high priority
 
           // All specialized tools should be highest priority to override character/roleplay limits
-          isEditImageRequest && editImagePrompt,
           isRemoveBgRequest && removeBgPrompt,
           isEnhanceImageRequest && enhanceImagePrompt,
           isAnimeConversionRequest && animeConversionPrompt,
@@ -1482,9 +1399,6 @@ BEGIN ROLEPLAY NOW.`
           ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
           ...IMAGE_TOOL,
           // Conditionally include edit image tools - Using Scoped Wrappers for Base64 support
-          ...(isEditImageRequest || imageUrl
-            ? { "edit-image": scopedEditImageTool }
-            : {}),
           ...(isRemoveBgRequest || imageUrl
             ? { "remove-background": scopedRemoveBgTool }
             : {}),

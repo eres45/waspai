@@ -4,7 +4,6 @@ import z from "zod";
 import { ImageToolName } from "..";
 import logger from "logger";
 import {
-  generateImageWithChalkAPI,
   generateImageWithFlux1Schnell,
   generateImageWithJuggernautXL,
   generateImageWithFlux1Dev,
@@ -44,10 +43,9 @@ export const nanoBananaTool = createTool({
         "sd-3-5",
         "seedream-4-5",
         "sdxl-v1-0",
-        "chalk",
       ])
       .describe(
-        "Image generation model to use. MUST match the pre-selected model from the system prompt. Options include: flux-1-schnell, juggernaut-xl, flux-1-dev, realvisxl-v4, sd-3-5, seedream-4-5, sdxl-v1-0, chalk. CRITICAL: Always use the exact model specified in the system prompt - do not substitute or choose a different model.",
+        "Image generation model to use. MUST match the pre-selected model from the system prompt. Options include: flux-1-schnell, juggernaut-xl, flux-1-dev, realvisxl-v4, sd-3-5, seedream-4-5, sdxl-v1-0. CRITICAL: Always use the exact model specified in the system prompt - do not substitute or choose a different model.",
       ),
   }),
   execute: async ({ prompt, model }, { abortSignal, messages }) => {
@@ -85,12 +83,6 @@ export const nanoBananaTool = createTool({
 
       // Select the appropriate image generation function based on model
       switch (model) {
-        case "chalk":
-          generatedImages = await generateImageWithChalkAPI({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
         case "flux-1-schnell":
           generatedImages = await generateImageWithFlux1Schnell({
             prompt: finalPrompt,

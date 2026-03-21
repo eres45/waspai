@@ -67,61 +67,6 @@ export async function generateImageWithStableDiffusionXL(
   }
 }
 
-export async function generateImageWithChalkAPI(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  try {
-    const payload = {
-      text: options.prompt,
-    };
-
-    logger.info(`Chalk: Sending request with text: "${options.prompt}"...`);
-
-    const response = await fetch("https://vetrex.x10.mx/api/chalk.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: options.abortSignal,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const imageUrl = data.image || data.url;
-
-    if (!imageUrl) {
-      throw new Error("No image URL in response");
-    }
-
-    logger.info(`Chalk: Image generated, downloading from ${imageUrl}...`);
-
-    // Fetch the image and convert to base64
-    const imageResponse = await fetch(imageUrl);
-    const buffer = await imageResponse.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
-
-    logger.info(`Chalk: Image successfully converted to base64`);
-
-    return {
-      images: [
-        {
-          base64,
-          mimeType: "image/png",
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Chalk generation failed:", error);
-    throw new Error(
-      `Failed to generate image with Chalk: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-}
-
 /**
  * Helper to download image from URL and convert to base64
  */

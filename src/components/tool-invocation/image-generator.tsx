@@ -101,7 +101,6 @@ function PureImageGeneratorToolInvocation({
       "imagen-3": "Imagen-3",
       "nano-banana": "Nano-Banana",
       sdxl: "Stable Diffusion XL",
-      chalk: "Chalk Name Style",
       meme: "Meme Generator",
       google: "Gemini",
       openai: "OpenAI",

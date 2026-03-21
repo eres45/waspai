@@ -253,16 +253,13 @@ export default function PromptInput({
   const handleGenerateImage = useCallback(
     (
       model?:
-        | "sdxl"
-        | "chalk"
-        | "img3"
-        | "img4"
-        | "qwen"
-        | "nano-banana"
-        | "flux-schnell"
-        | "lucid-origin"
-        | "phoenix"
-        | "sdxl-lite",
+        | "flux-1-schnell"
+        | "juggernaut-xl"
+        | "flux-1-dev"
+        | "realvisxl-v4"
+        | "sd-3-5"
+        | "seedream-4-5"
+        | "sdxl-v1-0",
     ) => {
       if (!model) {
         appStoreMutate({
@@ -289,24 +286,12 @@ export default function PromptInput({
   );
 
   const handleEditImage = useCallback(
-    (tool: "nano-banana" | "remove-background" | "enhance-image") => {
+    (tool: "remove-background" | "enhance-image" | "anime-conversion") => {
       if (!threadId) return;
 
       setIsUploadDropdownOpen(false);
 
-      if (tool === "nano-banana") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "nano-banana",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info(
-          "Nano-Banana Edit Mode: Upload an image and provide a prompt to edit it.",
-        );
-      } else if (tool === "remove-background") {
-        // Maybe handle these differently or just set state
+      if (tool === "remove-background") {
         appStoreMutate({
           editImageState: {
             isOpen: true,
@@ -324,6 +309,15 @@ export default function PromptInput({
           },
         });
         toast.info("Upload an image to enhance it.");
+      } else if (tool === "anime-conversion") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "anime-conversion",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image to convert it to anime style.");
       }
 
       editorRef.current?.commands.focus();
@@ -735,68 +729,55 @@ export default function PromptInput({
                       <DropdownMenuPortal>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("sdxl")}
+                            onClick={() =>
+                              handleGenerateImage("flux-1-schnell")
+                            }
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            Stable Diffusion XL
+                            FLUX.1 Schnell
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("sdxl-lite")}
+                            onClick={() => handleGenerateImage("juggernaut-xl")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            SDXL Lite
+                            Juggernaut XL
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("img3")}
+                            onClick={() => handleGenerateImage("flux-1-dev")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            IMG3
+                            FLUX.1 Dev
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("img4")}
+                            onClick={() => handleGenerateImage("realvisxl-v4")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            IMG4
+                            RealVisXL v4
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("flux-schnell")}
+                            onClick={() => handleGenerateImage("sd-3-5")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            Flux Schnell
-                          </DropdownMenuItem>
-
-                          <DropdownMenuItem
-                            onClick={() => handleGenerateImage("nano-banana")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            Nano Banana
+                            Stable Diffusion 3.5
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("lucid-origin")}
+                            onClick={() => handleGenerateImage("seedream-4-5")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            Lucid Origin
+                            Seedream 4.5
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleGenerateImage("phoenix")}
+                            onClick={() => handleGenerateImage("sdxl-v1-0")}
                             className="cursor-pointer"
                           >
                             <ImagesIcon className="mr-2 size-4" />
-                            Phoenix
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleGenerateImage("chalk")}
-                            className="cursor-pointer"
-                          >
-                            <ImagesIcon className="mr-2 size-4" />
-                            Chalk Name Style
+                            SDXL v1.0
                           </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
@@ -809,39 +790,6 @@ export default function PromptInput({
                       </DropdownMenuSubTrigger>
                       <DropdownMenuPortal>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              console.log(
-                                "Edit Image clicked. Uploaded files:",
-                                uploadedFiles,
-                              );
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to edit it.",
-                                );
-                              } else {
-                                console.log(
-                                  "Setting edit image state with URL:",
-                                  validFiles[0].url,
-                                );
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "nano-banana",
-                                  },
-                                });
-                              }
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Edit2 className="mr-2 size-4" />
-                            Nano-Banana Edit
-                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
                               setIsUploadDropdownOpen(false);

@@ -5,57 +5,6 @@ import dotenv from "dotenv";
 // Load environment variables
 dotenv.config();
 
-async function testInfip(model: string, prompt: string) {
-  const apiKey = process.env.INFIP_API_KEY;
-  if (!apiKey) return { success: false, error: "API Key missing" };
-
-  try {
-    const response = await fetch(
-      "https://api.infip.pro/v1/images/generations",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          prompt,
-          n: 1,
-          size: "1024x1024",
-        }),
-      },
-    );
-    if (!response.ok) {
-      const text = await response.text();
-      return { success: false, error: `HTTP ${response.status}: ${text}` };
-    }
-    return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
-}
-
-async function testChalk(prompt: string) {
-  try {
-    const response = await fetch("https://vetrex.x10.mx/api/chalk.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: prompt }),
-    });
-    if (!response.ok) {
-      const text = await response.text();
-      return { success: false, error: `HTTP ${response.status}: ${text}` };
-    }
-    const data = await response.json();
-    if (!data.image && !data.url)
-      return { success: false, error: "No image URL in response" };
-    return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
-}
-
 // New Model Tests
 async function testFlux1Schnell(prompt: string) {
   try {
@@ -160,6 +109,33 @@ async function testSeedream45(prompt: string) {
   }
 }
 
+async function testStableDiffusionXL(prompt: string) {
+  try {
+    const apiKey = process.env.STABLE_DIFFUSION_API_KEY || "At41rv-API-Image";
+    const response = await fetch(
+      "https://image-api.at41rvplayzz.workers.dev/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "sdxl-1.0",
+          prompt,
+          size: "1024x1024",
+        }),
+      },
+    );
+    return {
+      success: response.ok,
+      error: response.ok ? undefined : `HTTP ${response.status}`,
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
 const models = [
   { name: "flux-1-schnell", type: "new" },
   { name: "juggernaut-xl", type: "new" },
@@ -167,9 +143,7 @@ const models = [
   { name: "realvisxl-v4", type: "new" },
   { name: "sd-3-5", type: "new" },
   { name: "seedream-4-5", type: "new" },
-  { name: "sdxl-lightning", type: "infip" },
-  { name: "nano-banana", type: "infip" },
-  { name: "chalk", type: "chalk" },
+  { name: "sdxl-v1-0", type: "new" },
 ];
 
 async function runTests() {
@@ -182,23 +156,15 @@ async function runTests() {
     console.log(`Testing ${model.name}...`);
     let res;
 
-    if (model.type === "new") {
-      if (model.name === "flux-1-schnell") res = await testFlux1Schnell(prompt);
-      else if (model.name === "juggernaut-xl")
-        res = await testJuggernautXL(prompt);
-      else if (model.name === "flux-1-dev") res = await testFlux1Dev(prompt);
-      else if (model.name === "realvisxl-v4") res = await testRealVisXL(prompt);
-      else if (model.name === "sd-3-5") res = await testSD35(prompt);
-      else if (model.name === "seedream-4-5")
-        res = await testSeedream45(prompt);
-    } else if (model.type === "infip") {
-      res = await testInfip(
-        model.name === "sdxl-lightning" ? "sdxl-lite" : model.name,
-        prompt,
-      );
-    } else if (model.type === "chalk") {
-      res = await testChalk(prompt);
-    }
+    if (model.name === "flux-1-schnell") res = await testFlux1Schnell(prompt);
+    else if (model.name === "juggernaut-xl")
+      res = await testJuggernautXL(prompt);
+    else if (model.name === "flux-1-dev") res = await testFlux1Dev(prompt);
+    else if (model.name === "realvisxl-v4") res = await testRealVisXL(prompt);
+    else if (model.name === "sd-3-5") res = await testSD35(prompt);
+    else if (model.name === "seedream-4-5") res = await testSeedream45(prompt);
+    else if (model.name === "sdxl-v1-0")
+      res = await testStableDiffusionXL(prompt);
 
     results.push({
       name: model.name,

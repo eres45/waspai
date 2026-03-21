@@ -235,7 +235,7 @@ interface GenerateAvatarResult {
  * Server Action to generate avatar image using AI
  */
 export async function generateAvatarImageAction(
-  provider: ImageProvider,
+  _provider: ImageProvider,
   prompt: string,
 ): Promise<GenerateAvatarResult> {
   try {
@@ -264,28 +264,15 @@ Generate a profile picture that fulfills the user's request while maintaining th
 
     let response: GeneratedImageResult;
 
-    let _model: string;
-    switch (provider) {
-      case "openai":
-      case "xai":
-        _model = "flux-schnell"; // Use Flux for high quality
-        break;
-      case "google":
-        _model = "nano-banana";
-        break;
-      default:
-        _model = "sdxl";
-    }
-
     try {
       response = await generateImageWithFlux1Schnell({
         prompt: enhancedPrompt,
       });
     } catch (err) {
-      logger.error("Infip generation failed:", err);
+      logger.error("Image generation failed:", err);
       return {
         success: false,
-        error: "Failed to generate image via Infip",
+        error: "Failed to generate image",
       };
     }
 

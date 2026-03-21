@@ -99,8 +99,10 @@ interface ToolSelectDropdownProps {
       | "realvisxl-v4"
       | "sd-3-5"
       | "seedream-4-5"
-      | "sdxl-v1-0"
-      | "chalk",
+      | "sdxl-v1-0",
+  ) => void;
+  onEditImage?: (
+    tool: "remove-background" | "enhance-image" | "anime-conversion",
   ) => void;
   className?: string;
 }
@@ -1220,8 +1222,7 @@ function ImageGeneratorSelector({
       | "realvisxl-v4"
       | "sd-3-5"
       | "seedream-4-5"
-      | "sdxl-v1-0"
-      | "chalk",
+      | "sdxl-v1-0",
   ) => void;
   modelInfo?: { isToolCallUnsupported?: boolean };
 }) {
@@ -1291,14 +1292,6 @@ function ImageGeneratorSelector({
             >
               <ImagesIcon className="mr-2 size-4" />
               Seedream 4.5
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={modelInfo?.isToolCallUnsupported}
-              onClick={() => onGenerateImage?.("chalk")}
-              className="cursor-pointer text-xs"
-            >
-              <ImagesIcon className="mr-2 size-4" />
-              Chalk Name Style
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>
