@@ -52,97 +52,142 @@ export const videoGenTool = createTool({
         console.log(`[VIDEO GEN QUEUE] Enqueued NEW job ${job.id}`);
       }
 
-      // Step 3: Trigger background processing queue but DON'T AWAIT IT
-      processVideoQueueInBackground().catch((err) => {
-        logger.error(`[VIDEO GEN QUEUE] Background processor crashed:`, err);
-      });
+      let isOurTurnToGenerate = false;
 
-      // Step 4: Return immediate status to the user
+      // Step 3: Safely wait in queue for up to 5 seconds
+      const maxWaitTime = 5 * 1000;
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < maxWaitTime) {
+        // Did it finish while we were waiting?
+        const currentJob = await videoQueueRepository.getJob(job.id);
+        if (
+          currentJob?.status === "completed" ||
+          currentJob?.status === "failed"
+        ) {
+          job = currentJob;
+          break;
+        }
+
+        if (currentJob?.status === "pending") {
+          const activeJob = await videoQueueRepository.getActiveJob();
+          if (!activeJob) {
+            const claimed = await videoQueueRepository.claimNextJob();
+            if (claimed && claimed.id === job.id) {
+              isOurTurnToGenerate = true;
+              break; // We claimed it!
+            }
+          }
+        } else if (currentJob?.status === "processing") {
+          // It's processing. But if we didn't just claim it, someone else is generating it.
+          // We will wait full 5s to see if they finish.
+          if (isOurTurnToGenerate) break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      // After wait loop, check if another thread finished it
+      if (job.status === "completed" && job.videoUrl) {
+        console.log(
+          `[VIDEO GEN QUEUE] Pre-existing job finished while waiting!`,
+        );
+        return {
+          video: { url: job.videoUrl },
+          guide:
+            "Your video has been generated successfully! You can view it above.",
+        };
+      }
+
       const position = await videoQueueRepository.getQueuePosition(job.id);
       const pendingCount = await videoQueueRepository.getPendingCount();
-      const activeJob = await videoQueueRepository.getActiveJob();
 
-      const isGeneratingNow =
-        position === 0 && (!activeJob || activeJob.id === job.id);
-      const estWait = isGeneratingNow
-        ? ESTIMATED_TIME_PER_VIDEO
-        : (position + 1) * ESTIMATED_TIME_PER_VIDEO;
+      // Step 4: If we claimed it, generate!
+      if (
+        isOurTurnToGenerate ||
+        (!isOurTurnToGenerate && job.status === "pending" && position === 0)
+      ) {
+        // Secondary safety: if it's our turn but we didn't explicitly claim it in the loop
+        if (!isOurTurnToGenerate) {
+          const finalClaim = await videoQueueRepository.claimNextJob();
+          if (finalClaim?.id !== job.id) {
+            // lost the race condition
+            return {
+              video: { url: "" },
+              guide: `Your video request is in the global queue (Position 2). The server is processing other videos right now. Estimated wait: 30 seconds. Please try generating again shortly.`,
+            };
+          }
+        }
 
-      let guideMsg = `Your video request for "${prompt}" is now in the global queue (Position #${position + 1}). `;
-      if (isGeneratingNow) {
-        guideMsg += `Good news: the server is processing your video right now! Estimated wait: ~${estWait} seconds.`;
+        try {
+          console.log(
+            `[VIDEO GEN QUEUE] Generating video for job ${job.id} on Render API...`,
+          );
+          const generatedVideo = await generateVideoWithMeta({ prompt });
+
+          logger.info(
+            `Video Gen: Video generated successfully for job ${job.id}`,
+          );
+          console.log(
+            `[VIDEO GEN QUEUE] SUCCESS! Video generated for job ${job.id}. URL: ${generatedVideo.video.url}`,
+          );
+
+          await videoQueueRepository.completeJob(
+            job.id,
+            generatedVideo.video.url,
+          );
+
+          return {
+            video: generatedVideo.video,
+            guide:
+              generatedVideo.video.url.length > 0
+                ? "Your video has been generated successfully! You can view it above."
+                : "I apologize, but the video generation was not successful.",
+          };
+        } catch (genError: any) {
+          logger.error(
+            `Video Gen: Generation failed for job ${job.id}:`,
+            genError,
+          );
+          console.error(
+            `[VIDEO GEN QUEUE] Render API ERROR for job ${job.id}:`,
+            genError.message || genError,
+          );
+
+          await videoQueueRepository.failJob(
+            job.id,
+            genError.message || "Unknown error",
+          );
+          return {
+            video: { url: "" },
+            guide: `Error generating video: ${genError.message || "Unknown error"}. Please try again later.`,
+          };
+        }
       } else {
-        guideMsg += `The server is processing other videos. Estimated wait: ~${estWait} seconds.`;
-      }
-      guideMsg += `\n\nPlease reply with "check my video status" in a minute to get the result.`;
+        // Step 5: We didn't claim it within 5s because the queue is busy. Leave it pending.
+        const currentPos = position === -1 ? 0 : position;
+        const estWait = (currentPos + 1) * ESTIMATED_TIME_PER_VIDEO;
 
-      return {
-        video: { url: "" },
-        guide: guideMsg,
-        queueInfo: {
-          position: position + 1,
-          estimatedWaitSeconds: estWait,
-          totalInQueue: pendingCount,
-          isGeneratingNow,
-        },
-      };
+        console.log(
+          `[VIDEO GEN QUEUE] Job ${job.id} queue active. Left in queue (Position ${currentPos + 1}).`,
+        );
+
+        return {
+          video: { url: "" },
+          guide: `Your video request is in the global queue (Position #${currentPos + 1}). The server is processing other videos right now. Estimated wait time: ${estWait} seconds. Please ask me to "check my video status" shortly.`,
+          queueInfo: {
+            position: currentPos + 1,
+            estimatedWaitSeconds: estWait,
+            totalInQueue: pendingCount,
+          },
+        };
+      }
     } catch (e: any) {
       console.error("[VIDEO GEN QUEUE] System Error:", e.message || e);
       return {
         video: { url: "" },
-        guide: `Error adding video to queue: ${e.message || "Unknown error"}. Please try again later.`,
+        guide: `Error generating video: ${e.message || "Unknown error"}. Please try again later.`,
       };
     }
   },
 });
-
-/**
- * Background worker that safely drains the global video queue.
- */
-async function processVideoQueueInBackground() {
-  console.log(`[VIDEO GEN BACKGROUND] Waking up background processor...`);
-
-  const maxLifetime = 110 * 1000;
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxLifetime) {
-    const activeJob = await videoQueueRepository.getActiveJob();
-    if (activeJob) {
-      // Wait a bit and check later so we don't spam DB
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      continue;
-    }
-
-    const claimedJob = await videoQueueRepository.claimNextJob();
-    if (!claimedJob) {
-      console.log(`[VIDEO GEN BACKGROUND] Queue empty. Worker shutting down.`);
-      break;
-    }
-
-    console.log(
-      `[VIDEO GEN BACKGROUND] Successfully claimed job ${claimedJob.id}. Generating...`,
-    );
-
-    try {
-      const generatedVideo = await generateVideoWithMeta({
-        prompt: claimedJob.prompt,
-      });
-      console.log(
-        `[VIDEO GEN BACKGROUND] SUCCESS! Video generated for job ${claimedJob.id}. URL: ${generatedVideo.video.url}`,
-      );
-      await videoQueueRepository.completeJob(
-        claimedJob.id,
-        generatedVideo.video.url,
-      );
-    } catch (genError: any) {
-      console.error(
-        `[VIDEO GEN BACKGROUND] ERROR for job ${claimedJob.id}:`,
-        genError.message || genError,
-      );
-      await videoQueueRepository.failJob(
-        claimedJob.id,
-        genError.message || "Unknown error",
-      );
-    }
-  }
-}
