@@ -1649,7 +1649,8 @@ BEGIN ROLEPLAY NOW.`
           maxRetries: 3,
           tools: vercelAITooles as any,
           stopWhen: stepCountIs(5),
-          toolChoice: (useImageTool
+          toolChoice: (useImageTool &&
+          messages[messages.length - 1].role === "user"
             ? { type: "tool", toolName: ImageToolName }
             : "auto") as any,
           abortSignal: request.signal,
