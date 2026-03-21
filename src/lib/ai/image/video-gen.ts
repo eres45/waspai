@@ -38,30 +38,45 @@ export async function generateVideoWithMeta(
       logger.info(`Video Gen (Meta): Attempting fetch to ${apiUrl}`);
       console.log(`[VIDEO GEN RENDER API] Fetching: ${apiUrl}`);
 
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-log-request": "true",
-        },
-        cache: "no-store", // Bypass Next.js fetch patching/deduplication
-        signal: controller.signal, // strictly use our 65s timeout, ignoring AI SDK's premature aborts
-      });
+      // We use the native Node.js 'https' module to absolutely guarantee that
+      // Next.js' aggressive monkeypatched fetch doesn't prematurely abort the stream
+      // if the client UI drops the connection or re-renders.
+      const responseBody = await new Promise<string>(
+        async (resolve, reject) => {
+          const https = await import("https");
+          const req = https.request(
+            apiUrl,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-log-request": "true",
+              },
+              signal: controller.signal, // native support for our strict 85s abort signal
+            },
+            (res: any) => {
+              let data = "";
+              res.on("data", (chunk: Buffer) => {
+                data += chunk.toString();
+              });
+              res.on("end", () => {
+                if (res.statusCode < 200 || res.statusCode >= 300) {
+                  reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+                } else {
+                  resolve(data);
+                }
+              });
+            },
+          );
 
-      logger.info(
-        `Video Gen (Meta): Received response status: ${response.status}`,
+          req.on("error", (err: any) => reject(err));
+          req.end();
+        },
       );
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => "");
-        throw new Error(
-          `HTTP ${response.status}${errorText ? `: ${errorText}` : ""}`,
-        );
-      }
-
-      const data = await response.json();
+      const data = JSON.parse(responseBody);
       // Updated for Meta API response format: { success: true, video_urls: [...], ... }
       const videoUrl = data.video_urls?.[0] || data.video || data.url;
 
