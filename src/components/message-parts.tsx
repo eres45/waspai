@@ -20,7 +20,6 @@ import {
   Volume2,
   MicIcon,
   GlobeIcon,
-  Eye,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -1408,8 +1407,6 @@ export const ToolMessagePart = memo(
 
 ToolMessagePart.displayName = "ToolMessagePart";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "ui/dialog";
-
 // Reusable File Preview component for various file types
 const FilePartPreview = ({
   url,
@@ -1428,8 +1425,6 @@ const FilePartPreview = ({
   const isVideo = mediaType?.startsWith("video/");
   const isAudio = mediaType?.startsWith("audio/");
   const isPdf = mediaType === "application/pdf";
-
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const fileExtension =
     filename?.split(".").pop()?.toUpperCase() ||
@@ -1471,51 +1466,13 @@ const FilePartPreview = ({
     }
     if (isPdf) {
       return (
-        <>
-          <div
-            className="relative overflow-hidden rounded-lg border border-border bg-card mb-2 aspect-[4/3] max-h-[250px] w-full cursor-pointer group flex items-center justify-center hover:bg-muted/50 transition-colors"
-            onClick={() => setIsPreviewOpen(true)}
-          >
-            <iframe
-              src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
-              className="w-full h-[600px] border-0 rounded-lg pointer-events-none scale-50 origin-top"
-              title={filename}
-              tabIndex={-1}
-            />
-            <div className="absolute inset-0 bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-              <span className="bg-background text-foreground px-4 py-2 rounded-full font-medium shadow-sm flex items-center gap-2 border">
-                <Eye className="size-4" /> View PDF
-              </span>
-            </div>
-          </div>
-
-          <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-            <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col bg-slate-900 border-border/50 shadow-2xl">
-              <DialogHeader className="px-4 py-3 border-b border-border/10 flex flex-row items-center justify-between sticky top-0 bg-slate-900 z-10">
-                <DialogTitle className="text-sm font-medium text-slate-200 truncate pr-4">
-                  {filename}
-                </DialogTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-400 hover:text-white"
-                  asChild
-                >
-                  <a href={url} target="_blank" rel="noopener noreferrer">
-                    <Download className="size-4" />
-                  </a>
-                </Button>
-              </DialogHeader>
-              <div className="flex-1 w-full bg-slate-800">
-                <iframe
-                  src={url}
-                  className="w-full h-full border-0"
-                  title={filename}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </>
+        <div className="relative overflow-hidden rounded-lg border border-border bg-card mb-2 aspect-[3/4] max-h-[600px] w-full">
+          <iframe
+            src={`${url}#toolbar=0&navpanes=0&scrollbar=0`}
+            className="w-full h-full border-0 rounded-lg"
+            title={filename}
+          />
+        </div>
       );
     }
     return null;

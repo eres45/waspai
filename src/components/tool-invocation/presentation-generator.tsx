@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "ui/button";
 import {
   Download,
@@ -136,12 +136,11 @@ export function PresentationGeneratorToolInvocation({
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
 
-  if (!result) return null;
-
   const data = result;
-  const theme = THEMES[data.theme] || THEMES.tech;
+  const theme = data ? THEMES[data.theme] || THEMES.tech : THEMES.tech;
 
   const handleExport = async () => {
+    if (!data) return;
     try {
       setIsGenerating(true);
 
@@ -669,20 +668,10 @@ export function PresentationGeneratorToolInvocation({
         }
       });
 
-      const blob = (await prs.write({ outputType: "blob" })) as Blob;
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `${data.title || "presentation"}.pptx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      // Clean up the URL object
-      setTimeout(() => URL.revokeObjectURL(downloadUrl), 100);
+      await prs.writeFile({ fileName: `${data.title}.pptx` });
 
       setHasDownloaded(true);
-      toast.success("Presentation downloaded! 🚀");
+      toast.success("Presentation ready! 🚀");
     } catch (error) {
       console.error("PPTX Generation Error:", error);
       toast.error("Failed to generate presentation.");
@@ -690,6 +679,16 @@ export function PresentationGeneratorToolInvocation({
       setIsGenerating(false);
     }
   };
+
+  // Auto-trigger download (useEffect must come after handleExport is defined)
+  useEffect(() => {
+    if (result?.success && !hasDownloaded && !isGenerating) {
+      handleExport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result?.success]);
+
+  if (!data) return null;
 
   return (
     <div className="flex flex-col gap-4 p-6 bg-card border rounded-2xl shadow-xl max-w-2xl mx-auto overflow-hidden">
