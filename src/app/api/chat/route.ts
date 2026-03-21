@@ -700,6 +700,7 @@ export async function POST(request: Request) {
           .orElse({});
 
         // Determine active tool and mode
+        const isExplicitGenerationModel = Boolean(imageTool?.model);
         const activeGenerationModel = useImageTool
           ? effectiveImageTool?.model
           : undefined;
@@ -719,7 +720,8 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 4. Do NOT refuse to edit.
 5. After the tool returns, you MAY describe the result, but do NOT output the image URL or markdown links.`;
         } else if (activeGenerationModel) {
-          imageModelPrompt = `You are using the image generation tool with the pre-selected model: "${activeGenerationModel}". 
+          if (isExplicitGenerationModel) {
+            imageModelPrompt = `You are using the image generation tool with the pre-selected model: "${activeGenerationModel}". 
 CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 1. The user has selected an image generation model - they want to generate an image
 2. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt
@@ -732,6 +734,19 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 9. After the tool returns the image, you MAY describe the image or provide a creative caption.
 10. CRITICAL: Do NOT output the image URL in your response text. The user can already see the image in the UI.
 11. CRITICAL: Do NOT create markdown links to the image (e.g. [Image](url)).`;
+          } else {
+            imageModelPrompt = `You have been requested to generate an image.
+CRITICAL INSTRUCTIONS:
+1. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt.
+2. If the user specified a specific model (e.g., Seedream, Juggernaut, RealVis, etc.) in their request, USE that model in the tool call.
+3. If no specific model is mentioned, use "${activeGenerationModel}" (FLUX.1 Schnell) as the default.
+4. Use the exact tool name: "image-manager".
+5. Do NOT ask the user to choose a model or ask for clarification.
+6. Do NOT refuse to generate the image - just generate it.
+7. After the tool returns the image, you MAY describe the image or provide a creative caption.
+8. CRITICAL: Do NOT output the image URL in your response text.
+9. CRITICAL: Do NOT create markdown links to the image.`;
+          }
         }
 
         // Detect if this is an edit image request based on selected model
