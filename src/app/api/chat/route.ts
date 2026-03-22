@@ -29,7 +29,7 @@ import {
   buildUserSystemPrompt,
   buildToolCallUnsupportedModelSystemPrompt,
   buildSearchModelSystemPrompt,
-  buildClaudeHaikuCleanupPrompt,
+  buildClaudeProxyCleanupPrompt,
 } from "lib/ai/prompts";
 import {
   chatApiSchemaRequestBodySchema,
@@ -1395,8 +1395,10 @@ BEGIN ROLEPLAY NOW.`
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           modelToUse?.model === "gemini-search" && buildSearchModelSystemPrompt,
-          modelToUse?.model === "claude-haiku-4.5" &&
-            buildClaudeHaikuCleanupPrompt,
+          (modelToUse?.model?.includes("claude") ||
+            modelToUse?.model?.includes("claude-")) &&
+            ["n33", "anthropic"].includes(modelToUse?.provider || "") &&
+            buildClaudeProxyCleanupPrompt,
           useImageTool && imageModelPrompt,
           isVideoGenRequest && videoGenPrompt,
           isQrRequest && qrPrompt,

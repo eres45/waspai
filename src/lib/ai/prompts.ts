@@ -556,7 +556,7 @@ export const buildSearchModelSystemPrompt = `
 - If you have source information, mention the website or publication name.
 `.trim();
 
-export const buildClaudeHaikuCleanupPrompt = `
+export const buildClaudeProxyCleanupPrompt = `
 ### Output Quality Notice
 - If your internal search context is low-quality or contains orphaned citations (e.g., [1], [2]), DO NOT include them in your response. 
 - Ensure all words are fully spelled out and properly spaced; do not repeat truncated or concatenated text from source snippets.

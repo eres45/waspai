@@ -24,13 +24,16 @@ function sanitizeTalkAIOutput(content: string, totalTokens?: number): string {
     }
   }
 
-  // 2. Remove trailing '-1' placeholder if present (often used when token count fails)
+  // 2. Remove trailing '-1' placeholder if present
   if (cleaned.endsWith("-1")) {
     cleaned = cleaned.slice(0, -2);
   }
 
-  // 3. Trim any trailing whitespace that might be left after stripping
-  return cleaned.trim();
+  // 3. Strip orphaned citations like [1], [2], [10] etc.
+  // This matches a number inside brackets that is NOT followed by a legitimate source in the same chunk.
+  cleaned = cleaned.replace(/\[\d+\]/g, "");
+
+  return cleaned;
 }
 
 // NVIDIA NIM API - All models (Pro tier with API key)
@@ -74,9 +77,62 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
       const isJson = contentType?.includes("application/json");
       const isEventStream = contentType?.includes("text/event-stream");
 
-      // If it's already an SSE stream, return it immediately so we don't buffer it
-      if (isEventStream) {
-        return res;
+      // If it's already an SSE stream, intercept it to sanitize chunks
+      if (isEventStream && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        let buffer = "";
+
+        const stream = new ReadableStream({
+          async pull(controller) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              controller.close();
+              return;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const dataStr = line.slice(6).trim();
+                if (dataStr === "[DONE]") {
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                  continue;
+                }
+
+                try {
+                  const data = JSON.parse(dataStr);
+                  if (data.choices?.[0]?.delta?.content) {
+                    data.choices[0].delta.content = sanitizeTalkAIOutput(
+                      data.choices[0].delta.content,
+                    );
+                  }
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
+                  );
+                } catch {
+                  controller.enqueue(encoder.encode(`${line}\n`));
+                }
+              } else if (line.trim()) {
+                controller.enqueue(encoder.encode(`${line}\n`));
+              }
+            }
+          },
+          cancel() {
+            reader.cancel();
+          },
+        });
+
+        return new Response(stream, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: res.headers,
+        });
       }
 
       // If it's JSON but we requested a stream, polyfill it
