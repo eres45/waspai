@@ -15,11 +15,8 @@ import {
   getMemoriesTool,
 } from "./memory-tools";
 import { youtubeTranscriptTool } from "./web/youtube-transcript";
-import {
-  createTempEmailTool,
-  getTempEmailMessagesTool,
-  sendEmailTool,
-} from "./web/social-down";
+import { createTempEmailTool, getTempEmailMessagesTool } from "./web/temp-mail";
+import { sendEmailTool } from "./web/social-down";
 import { videoPlayerTool } from "./web/video-player";
 import { steelBrowserTool } from "./browser/steel-browser";
 import {
