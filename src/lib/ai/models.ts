@@ -62,15 +62,22 @@ function processSseLine(line: string): string {
     try {
       const data = JSON.parse(dataStr);
       // Sanitize content in both chunk (delta) and full (message) formats
-      if (data.choices?.[0]?.delta?.content) {
-        data.choices[0].delta.content = sanitizeTalkAIOutput(
-          data.choices[0].delta.content,
-        );
-      } else if (data.choices?.[0]?.message?.content) {
-        data.choices[0].message.content = sanitizeTalkAIOutput(
-          data.choices[0].message.content,
-          data.usage?.total_tokens,
-        );
+      const delta = data.choices?.[0]?.delta;
+      const message = data.choices?.[0]?.message;
+
+      if (delta) {
+        if (delta.content) {
+          delta.content = sanitizeTalkAIOutput(delta.content);
+        }
+        // Ensure reasoning_content / thought are passed through (no sanitization needed for thoughts)
+      } else if (message) {
+        if (message.content) {
+          message.content = sanitizeTalkAIOutput(
+            message.content,
+            data.usage?.total_tokens,
+          );
+        }
+        // Support reasoning_content in non-streaming responses too if present
       }
       return `data: ${JSON.stringify(data)}`;
     } catch {
@@ -224,6 +231,9 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
                         data.choices[0].message.content,
                         data.usage?.total_tokens,
                       ),
+                      // Pass through reasoning if polyfilling
+                      reasoning_content:
+                        data.choices[0].message.reasoning_content,
                     },
                     finish_reason: null,
                   },
