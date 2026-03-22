@@ -99,12 +99,29 @@ function processSseLine(
         if (delta.content !== undefined) {
           delta.content = sanitizeContentWithBuffer(delta.content, state);
         }
+        // Pass through reasoning fields
+        if (delta.reasoning_content !== undefined) {
+          delta.reasoning_content = sanitizeContentWithBuffer(
+            delta.reasoning_content,
+            state,
+          );
+        }
+        if (delta.thought !== undefined) {
+          delta.thought = sanitizeContentWithBuffer(delta.thought, state);
+        }
       } else if (message) {
         if (message.content !== undefined) {
           message.content = sanitizeContentWithBuffer(
             message.content,
             state,
             data.usage?.total_tokens,
+          );
+        }
+        // Pass through reasoning fields for non-streaming
+        if (message.reasoning_content !== undefined) {
+          message.reasoning_content = sanitizeContentWithBuffer(
+            message.reasoning_content,
+            state,
           );
         }
       }
