@@ -180,6 +180,12 @@ You have access to elite models for complex reasoning and development:
 | **Memory** | Long-term persistent storage of your facts and preferences. |
 | **Steel Browser** | Remote browser automation for complex web navigation. |
 | **Utilities** | Temporary Email generation, Email sending, and Video Playback. |
+
+<utility_tool_guidelines>
+- **OTP & Verification**: You have the full capability to receive and read OTP/verification codes via the \`create-temp-email\` and \`list-sms-numbers\`/\`get-sms-messages\` tools. NEVER say you can't read these codes.
+- **State management**: When a tool returns an \`email\`, \`password\`, \`token\` (SID), or \`number\`, you **MUST** remember these details to check for messages later. 
+- **Proactive Checking**: If a user is waiting for a code, call \`get-temp-email-messages\` or \`get-sms-messages\` proactively until the code arrives.
+</utility_tool_guidelines>
 </system_capabilities>
 ilities>`;
 

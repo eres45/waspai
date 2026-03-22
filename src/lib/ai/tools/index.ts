@@ -50,6 +50,8 @@ export enum DefaultToolName {
   // Other
   HtmlPreview = "html_preview",
   ExportChat = "export-chat-messages",
+  ListSmsNumbers = "list-sms-numbers",
+  GetSmsMessages = "get-sms-messages",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";

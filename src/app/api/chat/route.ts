@@ -74,11 +74,19 @@ import {
 import {
   qrCodeGeneratorTool,
   qrCodeWithLogoTool,
-} from "lib/ai/tools/qr-code-generator";
-import { htmlPreviewTool } from "lib/ai/tools/html-preview";
-import { chatExportTool } from "lib/ai/tools/chat-export";
-import { exaSearchTool as webSearchTool } from "lib/ai/tools/web/web-search";
-import { ImageToolName } from "lib/ai/tools";
+} from "@/lib/ai/tools/qr-code-generator";
+import { htmlPreviewTool } from "@/lib/ai/tools/html-preview";
+import { chatExportTool } from "@/lib/ai/tools/chat-export";
+import { exaSearchTool as webSearchTool } from "@/lib/ai/tools/web/web-search";
+import {
+  listSmsNumbersTool,
+  getSmsMessagesTool,
+} from "@/lib/ai/tools/web/sms-tool";
+import {
+  createTempEmailTool,
+  getTempEmailMessagesTool,
+} from "@/lib/ai/tools/web/temp-mail";
+import { ImageToolName } from "@/lib/ai/tools";
 import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
 import {
   saveMemoryTool,
@@ -1484,6 +1492,12 @@ BEGIN ROLEPLAY NOW.`
           update_memory: updateMemoryTool,
           delete_memory: deleteMemoryTool,
           get_memories: getMemoriesTool,
+          // SMS Verification Tools
+          "list-sms-numbers": listSmsNumbersTool,
+          "get-sms-messages": getSmsMessagesTool,
+          // Temp Mail Tools
+          "create-temp-email": createTempEmailTool,
+          "get-temp-email-messages": getTempEmailMessagesTool,
           // Note: YouTube transcript now handled client-side (bypasses IP blocking)
         };
         metadata.toolCount = Object.keys(vercelAITooles).length;

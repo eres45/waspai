@@ -18,6 +18,7 @@ import { youtubeTranscriptTool } from "./web/youtube-transcript";
 import { createTempEmailTool, getTempEmailMessagesTool } from "./web/temp-mail";
 import { sendEmailTool } from "./web/social-down";
 import { videoPlayerTool } from "./web/video-player";
+import { listSmsNumbersTool, getSmsMessagesTool } from "./web/sms-tool";
 import { steelBrowserTool } from "./browser/steel-browser";
 import {
   removeBackgroundTool,
@@ -71,6 +72,8 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.SendEmail]: sendEmailTool,
     [DefaultToolName.HtmlPreview]: htmlPreviewTool,
     [DefaultToolName.ExportChat]: chatExportTool,
+    [DefaultToolName.ListSmsNumbers]: listSmsNumbersTool,
+    [DefaultToolName.GetSmsMessages]: getSmsMessagesTool,
   },
   [AppDefaultToolkit.Media]: {
     [DefaultToolName.VideoPlayer]: videoPlayerTool,

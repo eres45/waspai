@@ -21,7 +21,7 @@ export const createTempEmailTool = createTool({
 
       return {
         ...account,
-        message: `Temporary email successfully generated: ${account.email}. Use 'get-temp-email-messages' if you need to check for incoming mail.`,
+        message: `Temporary email generated: ${account.email}. Provider: ${account.provider}. SID/Token: ${account.token || "N/A"}. You MUST use this token with 'get-temp-email-messages' to read incoming codes for this provider.`,
       };
     } catch (_error: any) {
       return `Failed to create temporary email: Service temporarily busy. Please try again soon.`;
@@ -43,8 +43,11 @@ export const getTempEmailMessagesTool = createTool({
     password: z
       .string()
       .optional()
-      .describe("Account password (required for mail.tm)"),
-    token: z.string().optional().describe("Account token (if available)"),
+      .describe("Account password (REQUIRED for mail.tm)"),
+    token: z
+      .string()
+      .optional()
+      .describe("Account token/SID (REQUIRED for guerrillamail and mail.tm)"),
   }),
   execute: async ({ email, provider, password, token }) => {
     try {
