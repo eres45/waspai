@@ -11,27 +11,55 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
  * Sanitizes model output by removing proxy-injected metadata suffixes
  * (e.g., trailing total_tokens count or shard IDs like -1).
  */
-function sanitizeTalkAIOutput(content: string, totalTokens?: number): string {
-  if (!content) return content;
+/**
+ * Sanitizes model output by removing proxy-injected metadata suffixes
+ * (e.g., trailing total_tokens count or shard IDs like -1).
+ * Also handles a stateful citation buffer for streaming.
+ */
+function sanitizeContentWithBuffer(
+  content: string,
+  state: { citationBuffer: string },
+  totalTokens?: number,
+): string {
+  if (!content && !state.citationBuffer) return content;
 
-  let cleaned = content;
+  // Append new content to our persistent buffer
+  const fullContent = state.citationBuffer + content;
+  let cleaned = fullContent;
 
-  // 1. Remove trailing total_tokens (like 'Hello!9' -> 'Hello!')
-  if (totalTokens !== undefined && totalTokens > 0) {
-    const tokenStr = totalTokens.toString();
-    if (cleaned.endsWith(tokenStr)) {
-      cleaned = cleaned.slice(0, -tokenStr.length);
+  // 1. Strip all COMPLETE citations like [1], [2], [10:1] etc.
+  // We use a regex that looks for [...]
+  cleaned = cleaned.replace(/\[\d+\]/g, "");
+  cleaned = cleaned.replace(/\[\d+:\d+\]/g, ""); // Support [page:line] style
+
+  // 2. Look for a partial citation at the VERY END of the string
+  // Matches: "[", "[1", "[12", etc.
+  const partialMatch = cleaned.match(/\[\d*$/);
+
+  if (partialMatch) {
+    // Keep the partial part in the buffer for the next chunk
+    state.citationBuffer = partialMatch[0];
+    // Remove it from what we send to the UI now
+    cleaned = cleaned.slice(0, -partialMatch[0].length);
+  } else {
+    // No partial citation at the end, clear the buffer
+    state.citationBuffer = "";
+  }
+
+  // 3. One-time sanitization for non-streaming artifacts (only if no buffer)
+  if (state.citationBuffer === "") {
+    // Remove trailing total_tokens
+    if (totalTokens !== undefined && totalTokens > 0) {
+      const tokenStr = totalTokens.toString();
+      if (cleaned.endsWith(tokenStr)) {
+        cleaned = cleaned.slice(0, -tokenStr.length);
+      }
+    }
+    // Remove trailing '-1' placeholder
+    if (cleaned.endsWith("-1")) {
+      cleaned = cleaned.slice(0, -2);
     }
   }
-
-  // 2. Remove trailing '-1' placeholder if present
-  if (cleaned.endsWith("-1")) {
-    cleaned = cleaned.slice(0, -2);
-  }
-
-  // 3. Strip orphaned citations like [1], [2], [10] etc.
-  // This matches a number inside brackets that is NOT followed by a legitimate source in the same chunk.
-  cleaned = cleaned.replace(/\[\d+\]/g, "");
 
   return cleaned;
 }
@@ -39,7 +67,10 @@ function sanitizeTalkAIOutput(content: string, totalTokens?: number): string {
 /**
  * Processes a single SSE line, sanitizing content if it's a data chunk.
  */
-function processSseLine(line: string): string {
+function processSseLine(
+  line: string,
+  state: { citationBuffer: string },
+): string {
   const trimmedLine = line.trim();
   if (!trimmedLine) return "";
 
@@ -51,7 +82,7 @@ function processSseLine(line: string): string {
     isSse = true;
   } else if (trimmedLine.startsWith("{")) {
     dataStr = trimmedLine;
-    isSse = true; // Treat raw JSON as SSE data chunk
+    isSse = true;
   }
 
   if (isSse) {
@@ -61,27 +92,24 @@ function processSseLine(line: string): string {
 
     try {
       const data = JSON.parse(dataStr);
-      // Sanitize content in both chunk (delta) and full (message) formats
       const delta = data.choices?.[0]?.delta;
       const message = data.choices?.[0]?.message;
 
       if (delta) {
-        if (delta.content) {
-          delta.content = sanitizeTalkAIOutput(delta.content);
+        if (delta.content !== undefined) {
+          delta.content = sanitizeContentWithBuffer(delta.content, state);
         }
-        // Ensure reasoning_content / thought are passed through (no sanitization needed for thoughts)
       } else if (message) {
-        if (message.content) {
-          message.content = sanitizeTalkAIOutput(
+        if (message.content !== undefined) {
+          message.content = sanitizeContentWithBuffer(
             message.content,
+            state,
             data.usage?.total_tokens,
           );
         }
-        // Support reasoning_content in non-streaming responses too if present
       }
       return `data: ${JSON.stringify(data)}`;
     } catch {
-      // If parsing fails, fall back to sending the line with data: prefix if it looks like JSON
       return trimmedLine.startsWith("{") ? `data: ${trimmedLine}` : trimmedLine;
     }
   }
@@ -136,6 +164,7 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
         const decoder = new TextDecoder();
         const encoder = new TextEncoder();
         let buffer = "";
+        const citationState = { citationBuffer: "" };
 
         const stream = new ReadableStream({
           async pull(controller) {
@@ -143,11 +172,11 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
 
             if (done) {
               if (buffer.trim()) {
-                // Process any remaining partial event in buffer
                 const eventLines = buffer.split("\n");
                 let transformedEvent = "";
                 for (const line of eventLines) {
-                  transformedEvent += processSseLine(line) + "\n";
+                  transformedEvent +=
+                    processSseLine(line, citationState) + "\n";
                 }
                 controller.enqueue(encoder.encode(transformedEvent));
               }
@@ -157,19 +186,15 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
 
             buffer += decoder.decode(value, { stream: true });
 
-            // SSE events are separated by double newlines (\n\n)
             const events = buffer.split("\n\n");
-
-            // The last part might be an incomplete event, keep it in buffer
             buffer = events.pop() || "";
 
             for (const event of events) {
               const eventLines = event.split("\n");
               let transformedEvent = "";
               for (const line of eventLines) {
-                transformedEvent += processSseLine(line) + "\n";
+                transformedEvent += processSseLine(line, citationState) + "\n";
               }
-              // End the event with an extra newline
               controller.enqueue(encoder.encode(transformedEvent + "\n"));
             }
           },
@@ -227,8 +252,9 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
                   {
                     index: 0,
                     delta: {
-                      content: sanitizeTalkAIOutput(
+                      content: sanitizeContentWithBuffer(
                         data.choices[0].message.content,
+                        { citationBuffer: "" }, // Non-streaming, fresh buffer
                         data.usage?.total_tokens,
                       ),
                       // Pass through reasoning if polyfilling
@@ -459,6 +485,7 @@ const staticModels = {
     "Qwen 2.5 7B": nvidiaModels["qwen-qwen2.5-7b-instruct"],
     "Qwen 2.5 Coder 7B": nvidiaModels["qwen-qwen2.5-coder-7b-instruct"],
     "Qwen 2.5 Coder 32B": nvidiaModels["qwen-qwen2.5-coder-32b-instruct"],
+    "Qwen 3 Coder 480B": nvidiaModels["qwen-qwen3-coder-480b-a35b-instruct"],
     "Qwen 3 Next 80B": nvidiaModels["qwen-qwen3-next-80b-a3b-instruct"],
     "QwQ 32B": nvidiaModels["qwen-qwq-32b"],
   },
@@ -476,6 +503,8 @@ const staticModels = {
     "Llama 4 Maverick 17B":
       nvidiaModels["meta-llama-4-maverick-17b-128e-instruct"],
     "Llama Guard 4 12B": nvidiaModels["meta-llama-guard-4-12b"],
+    "Llama 3 8B": nvidiaModels["meta-llama3-8b-instruct"],
+    "Llama 3 70B": nvidiaModels["meta-llama3-70b-instruct"],
   },
 
   // --- Microsoft (Phi) Models ---
@@ -487,6 +516,10 @@ const staticModels = {
     "Phi-3 Medium 4K": nvidiaModels["microsoft-phi-3-medium-4k-instruct"],
     "Phi-3 Medium 128K": nvidiaModels["microsoft-phi-3-medium-128k-instruct"],
     "Phi-3.5 Mini": nvidiaModels["microsoft-phi-3.5-mini-instruct"],
+    "Phi-3.5 Vision": nvidiaModels["microsoft-phi-3.5-vision-instruct"],
+    "Phi-4 Mini Reasoning":
+      nvidiaModels["microsoft-phi-4-mini-flash-reasoning"],
+    "Phi-4 Mini": nvidiaModels["microsoft-phi-4-mini-instruct"],
     "Phi-4 Multimodal": nvidiaModels["microsoft-phi-4-multimodal-instruct"],
   },
 
@@ -504,6 +537,11 @@ const staticModels = {
     "Mixtral 8x22B v0.1": nvidiaModels["mistralai-mixtral-8x22b-instruct-v0.1"],
     "Mathstral 7B": nvidiaModels["mistralai-mathstral-7b-v0.1"],
     "Ministral 14B": nvidiaModels["mistralai-ministral-14b-instruct-2512"],
+    "Mistral Devstral 123B":
+      nvidiaModels["mistralai-devstral-2-123b-instruct-2512"],
+    "Mistral Magistral Small": nvidiaModels["mistralai-magistral-small-2506"],
+    "Mistral Mamba Codestral":
+      nvidiaModels["mistralai-mamba-codestral-7b-v0.1"],
   },
 
   // --- Moonshot (Kimi) Models ---
@@ -543,6 +581,11 @@ const staticModels = {
       nvidiaModels["nvidia-llama-3.3-nemotron-super-49b-v1"],
     "Llama 3.3 Nemotron Super 49B v1.5":
       nvidiaModels["nvidia-llama-3.3-nemotron-super-49b-v1.5"],
+    "Nemotron Ultra 253B":
+      nvidiaModels["nvidia-llama-3.1-nemotron-ultra-253b-v1"],
+    "Nemotron Nano 4B": nvidiaModels["nvidia-llama-3.1-nemotron-nano-4b-v1.1"],
+    "Nemotron Nano VL 8B":
+      nvidiaModels["nvidia-llama-3.1-nemotron-nano-vl-8b-v1"],
   },
 
   // --- IBM (Granite) Models ---
@@ -553,12 +596,13 @@ const staticModels = {
   // --- Z-AI (GLM) Models ---
   "Z-AI": {
     "GLM 5": nvidiaModels["z-ai-glm5"],
-    "ChatGLM3 6B": nvidiaModels["thudm-chatglm3-6b"],
+    "ChatGLM3 6B (Worker)": nvidiaModels["thudm-chatglm3-6b"],
     "Coding GLM 5": aiHubMixProvider("coding-glm-5-free"),
     "Coding GLM 5 Turbo": aiHubMixProvider("coding-glm-5-turbo-free"),
     "Coding GLM 4.7": aiHubMixProvider("coding-glm-4.7-free"),
     "Coding GLM 4.6": aiHubMixProvider("coding-glm-4.6-free"),
     "GLM 4.7 Flash": aiHubMixProvider("glm-4.7-flash-free"),
+    "GLM 4.7 (NIM)": nvidiaModels["z-ai-glm4.7"],
   },
 
   // --- StepFun Models ---
@@ -576,9 +620,9 @@ const staticModels = {
     "Jamba 1.5 Mini": nvidiaModels["ai21labs-jamba-1.5-mini-instruct"],
     "Mimo v2 pro": aiHubMixProvider("mimo-v2-pro-free"),
     "Mimo v2 omni": aiHubMixProvider("mimo-v2-omni-free"),
-    "Falcon 3 7B": nvidiaModels["tiiuae-falcon3-7b-instruct"],
-    "Solar 10.7B": nvidiaModels["upstage-solar-10.7b-instruct"],
     "Baichuan 2 13B": nvidiaModels["baichuan-inc-baichuan2-13b-chat"],
+    "IBM Granite 3.3": nvidiaModels["ibm-granite-3.3-8b-instruct"],
+    "Zamba 2 7B": nvidiaModels["zyphra-zamba2-7b-instruct"],
   },
 };
 

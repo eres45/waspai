@@ -556,8 +556,11 @@ export const buildSearchModelSystemPrompt = `
 - If you have source information, mention the website or publication name.
 `.trim();
 
-export const buildClaudeProxyCleanupPrompt = `
-### Output Quality Notice
-- If your internal search context is low-quality or contains orphaned citations (e.g., [1], [2]), DO NOT include them in your response. 
-- Ensure all words are fully spelled out and properly spaced; do not repeat truncated or concatenated text from source snippets.
+export const PROXY_CLEANUP_PROMPT = `
+### Output Quality & Cleanup Instructions
+IMPORTANT: Your internal search context may contain noisy results or orphaned citations.
+- NEVER include citations like [1], [2], [n] in your final response.
+- Ensure all words are fully spelled out (e.g., correct "EY" to "HEY", "Stonia" to "Estonia").
+- Do not repeat truncated or broken text from source snippets.
+- Provide a clean, professional, and natural response as if you performed the research yourself.
 `.trim();
