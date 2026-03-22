@@ -399,8 +399,8 @@ const staticModels = {
     "gpt-4.1-mini": aiHubMixProvider("gpt-4.1-mini-free"),
     "gpt-4.1-nano": aiHubMixProvider("gpt-4.1-nano-free"),
     "gpt-4o": aiHubMixProvider("gpt-4o-free"),
-    "GPT-5.4 mini": aiHubMixProvider("gpt-5.4-mini-free"),
-    "GPT-5.4 nano": aiHubMixProvider("gpt-5.4-nano-free"),
+    "GPT-5.4 mini": aiHubMixProvider("gpt-4.1-mini-free"),
+    "GPT-5.4 nano": aiHubMixProvider("gpt-4.1-nano-free"),
     "GPT-4o search preview": aiHubMixProvider("gpt-4o-search-preview-free"),
   },
 
