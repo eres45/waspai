@@ -7,6 +7,32 @@ import { createNvidiaModels } from "./nvidia";
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
+/**
+ * Sanitizes model output by removing proxy-injected metadata suffixes
+ * (e.g., trailing total_tokens count or shard IDs like -1).
+ */
+function sanitizeTalkAIOutput(content: string, totalTokens?: number): string {
+  if (!content) return content;
+
+  let cleaned = content;
+
+  // 1. Remove trailing total_tokens (like 'Hello!9' -> 'Hello!')
+  if (totalTokens !== undefined && totalTokens > 0) {
+    const tokenStr = totalTokens.toString();
+    if (cleaned.endsWith(tokenStr)) {
+      cleaned = cleaned.slice(0, -tokenStr.length);
+    }
+  }
+
+  // 2. Remove trailing '-1' placeholder if present (often used when token count fails)
+  if (cleaned.endsWith("-1")) {
+    cleaned = cleaned.slice(0, -2);
+  }
+
+  // 3. Trim any trailing whitespace that might be left after stripping
+  return cleaned.trim();
+}
+
 // NVIDIA NIM API - All models (Pro tier with API key)
 const nvidiaModels = createNvidiaModels();
 
@@ -94,7 +120,12 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
                 choices: [
                   {
                     index: 0,
-                    delta: { content: data.choices[0].message.content },
+                    delta: {
+                      content: sanitizeTalkAIOutput(
+                        data.choices[0].message.content,
+                        data.usage?.total_tokens,
+                      ),
+                    },
                     finish_reason: null,
                   },
                 ],
