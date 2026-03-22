@@ -1075,15 +1075,7 @@ export const ToolMessagePart = memo(
         toolName === "generate-presentation"
       ) {
         if (toolName === "generate-presentation") {
-          return (
-            <PresentationGeneratorToolInvocation
-              result={
-                state === "output-available" || state === "output-error"
-                  ? (result as any)
-                  : null
-              }
-            />
-          );
+          return <PresentationGeneratorToolInvocation part={part} />;
         }
         return <DocumentGeneratorToolInvocation part={part} />;
       }

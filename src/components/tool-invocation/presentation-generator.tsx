@@ -125,15 +125,24 @@ const THEMES = {
   },
 };
 
+import { ToolUIPart } from "ai";
+
 export function PresentationGeneratorToolInvocation({
-  result,
+  part,
 }: {
-  result?: PresentationData & { success: boolean };
+  part: ToolUIPart;
 }) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      sessionStorage.getItem(`pptx-downloaded-${part.toolCallId}`) === "true"
+    );
+  });
 
-  const data = result;
+  const result =
+    part.state === "output-available" ? (part.output as any) : null;
+  const data = result as (PresentationData & { success: boolean }) | null;
   const theme = data ? THEMES[data.theme] || THEMES.tech : THEMES.tech;
 
   const handleExport = async () => {
@@ -172,6 +181,7 @@ export function PresentationGeneratorToolInvocation({
       URL.revokeObjectURL(url);
 
       setHasDownloaded(true);
+      sessionStorage.setItem(`pptx-downloaded-${part.toolCallId}`, "true");
       toast.success("Presentation downloaded! 🚀");
     } catch (error: any) {
       console.error("PPTX Generation Error:", error);
