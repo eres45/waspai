@@ -1,5 +1,6 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { LanguageModel } from "ai";
+import { streamingFetch } from "./models";
 
 /**
  * NVIDIA NIM API Integration
@@ -13,6 +14,7 @@ export function createNvidiaModels() {
     name: "nvidia",
     apiKey: apiKey || "",
     baseURL: "https://integrate.api.nvidia.com/v1",
+    fetch: streamingFetch,
   });
 
   // Chat/instruct models organized by provider

@@ -289,7 +289,7 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
   };
 }
 
-const streamingFetch = createStreamingProxyFetch();
+export const streamingFetch = createStreamingProxyFetch();
 
 // Custom Proxies Initialized
 const deepseekProvider = createOpenAICompatible({
