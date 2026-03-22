@@ -36,6 +36,52 @@ function sanitizeTalkAIOutput(content: string, totalTokens?: number): string {
   return cleaned;
 }
 
+/**
+ * Processes a single SSE line, sanitizing content if it's a data chunk.
+ */
+function processSseLine(line: string): string {
+  const trimmedLine = line.trim();
+  if (!trimmedLine) return "";
+
+  let dataStr = "";
+  let isSse = false;
+
+  if (trimmedLine.startsWith("data: ")) {
+    dataStr = trimmedLine.slice(6).trim();
+    isSse = true;
+  } else if (trimmedLine.startsWith("{")) {
+    dataStr = trimmedLine;
+    isSse = true; // Treat raw JSON as SSE data chunk
+  }
+
+  if (isSse) {
+    if (dataStr === "[DONE]") {
+      return "data: [DONE]";
+    }
+
+    try {
+      const data = JSON.parse(dataStr);
+      // Sanitize content in both chunk (delta) and full (message) formats
+      if (data.choices?.[0]?.delta?.content) {
+        data.choices[0].delta.content = sanitizeTalkAIOutput(
+          data.choices[0].delta.content,
+        );
+      } else if (data.choices?.[0]?.message?.content) {
+        data.choices[0].message.content = sanitizeTalkAIOutput(
+          data.choices[0].message.content,
+          data.usage?.total_tokens,
+        );
+      }
+      return `data: ${JSON.stringify(data)}`;
+    } catch {
+      // If parsing fails, fall back to sending the line with data: prefix if it looks like JSON
+      return trimmedLine.startsWith("{") ? `data: ${trimmedLine}` : trimmedLine;
+    }
+  }
+
+  return trimmedLine;
+}
+
 // NVIDIA NIM API - All models (Pro tier with API key)
 const nvidiaModels = createNvidiaModels();
 
@@ -89,62 +135,35 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
             const { done, value } = await reader.read();
 
             if (done) {
+              if (buffer.trim()) {
+                // Process any remaining partial event in buffer
+                const eventLines = buffer.split("\n");
+                let transformedEvent = "";
+                for (const line of eventLines) {
+                  transformedEvent += processSseLine(line) + "\n";
+                }
+                controller.enqueue(encoder.encode(transformedEvent));
+              }
               controller.close();
               return;
             }
 
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (!trimmedLine) continue;
+            // SSE events are separated by double newlines (\n\n)
+            const events = buffer.split("\n\n");
 
-              let dataStr = "";
-              let isSse = false;
+            // The last part might be an incomplete event, keep it in buffer
+            buffer = events.pop() || "";
 
-              if (trimmedLine.startsWith("data: ")) {
-                dataStr = trimmedLine.slice(6).trim();
-                isSse = true;
-              } else if (trimmedLine.startsWith("{")) {
-                dataStr = trimmedLine;
-                isSse = true; // Treat raw JSON as SSE data chunk
+            for (const event of events) {
+              const eventLines = event.split("\n");
+              let transformedEvent = "";
+              for (const line of eventLines) {
+                transformedEvent += processSseLine(line) + "\n";
               }
-
-              if (isSse) {
-                if (dataStr === "[DONE]") {
-                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                  continue;
-                }
-
-                try {
-                  const data = JSON.parse(dataStr);
-                  // Sanitize content in both chunk (delta) and full (message) formats
-                  if (data.choices?.[0]?.delta?.content) {
-                    data.choices[0].delta.content = sanitizeTalkAIOutput(
-                      data.choices[0].delta.content,
-                    );
-                  } else if (data.choices?.[0]?.message?.content) {
-                    data.choices[0].message.content = sanitizeTalkAIOutput(
-                      data.choices[0].message.content,
-                      data.usage?.total_tokens,
-                    );
-                  }
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
-                  );
-                } catch {
-                  // If parsing fails, fall back to sending the line as-is but with data: prefix if it looks like JSON
-                  const output = trimmedLine.startsWith("{")
-                    ? `data: ${trimmedLine}\n\n`
-                    : `${trimmedLine}\n\n`;
-                  controller.enqueue(encoder.encode(output));
-                }
-              } else {
-                // Not SSE or JSON, pass through
-                controller.enqueue(encoder.encode(`${trimmedLine}\n\n`));
-              }
+              // End the event with an extra newline
+              controller.enqueue(encoder.encode(transformedEvent + "\n"));
             }
           },
           cancel() {
