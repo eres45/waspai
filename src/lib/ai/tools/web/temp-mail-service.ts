@@ -253,4 +253,53 @@ export class TempMailService {
       date: m.date,
     }));
   }
+
+  /**
+   * Unified create mailbox with automatic failover
+   */
+  static async createMailbox(
+    preferredProvider?: TempMailProvider,
+  ): Promise<TempMailAccount> {
+    const providers: TempMailProvider[] = [
+      "mail.tm",
+      "guerrillamail",
+      "1secmail",
+      "maildrop.cc",
+    ];
+
+    // Reorder providers if one is preferred
+    if (preferredProvider) {
+      const index = providers.indexOf(preferredProvider);
+      if (index > -1) {
+        providers.splice(index, 1);
+        providers.unshift(preferredProvider);
+      }
+    }
+
+    let lastError = new Error("No providers available");
+
+    for (const provider of providers) {
+      try {
+        switch (provider) {
+          case "mail.tm":
+            return await this.createMailTmAccount();
+          case "guerrillamail":
+            return await this.createGuerrillaMailAccount();
+          case "1secmail":
+            return await this.create1SecMailAccount();
+          case "maildrop.cc":
+            const name = Math.random().toString(36).substring(2, 10);
+            return { email: `${name}@maildrop.cc`, provider: "maildrop.cc" };
+        }
+      } catch (e: any) {
+        lastError = e;
+        // Continue to next provider on failure
+        continue;
+      }
+    }
+
+    throw new Error(
+      `Email service currently busy. Please try again later. (Error: ${lastError.message.substring(0, 30)}...)`,
+    );
+  }
 }

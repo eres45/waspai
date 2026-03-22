@@ -134,9 +134,6 @@ function processSseLine(
   return trimmedLine;
 }
 
-// NVIDIA NIM API - All models (Pro tier with API key)
-const nvidiaModels = createNvidiaModels();
-
 /**
  * Creates a custom fetch wrapper that handles non-streaming proxies.
  * If a stream is requested but the proxy returns JSON, it wraps the JSON into an SSE stream.
@@ -333,6 +330,9 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
 }
 
 export const streamingFetch = createStreamingProxyFetch();
+
+// NVIDIA NIM API - All models (Pro tier with API key)
+const nvidiaModels = createNvidiaModels();
 
 // Custom Proxies Initialized
 const deepseekProvider = createOpenAICompatible({

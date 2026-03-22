@@ -15,34 +15,16 @@ export const createTempEmailTool = createTool({
       .optional()
       .describe("Choose a provider. Default is mail.tm."),
   }),
-  execute: async ({ provider = "mail.tm" }) => {
+  execute: async ({ provider }) => {
     try {
-      let account;
-      switch (provider) {
-        case "mail.tm":
-          account = await TempMailService.createMailTmAccount();
-          break;
-        case "1secmail":
-          account = await TempMailService.create1SecMailAccount();
-          break;
-        case "guerrillamail":
-          account = await TempMailService.createGuerrillaMailAccount();
-          break;
-        case "maildrop.cc":
-          // Maildrop doesn't have a "create" API, just pick a random name
-          const name = Math.random().toString(36).substring(2, 10);
-          account = { email: `${name}@maildrop.cc`, provider: "maildrop.cc" };
-          break;
-        default:
-          throw new Error("Invalid provider");
-      }
+      const account = await TempMailService.createMailbox(provider as any);
 
       return {
         ...account,
-        message: `Created temporary email using ${provider}: ${account.email}. Use 'get-temp-email-messages' to check for mail.`,
+        message: `Temporary email successfully generated: ${account.email}. Use 'get-temp-email-messages' if you need to check for incoming mail.`,
       };
-    } catch (error: any) {
-      return `Failed to create temporary email: ${error.message}`;
+    } catch (_error: any) {
+      return `Failed to create temporary email: Service temporarily busy. Please try again soon.`;
     }
   },
 });
