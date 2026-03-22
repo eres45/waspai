@@ -48,13 +48,18 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
       const isJson = contentType?.includes("application/json");
       const isEventStream = contentType?.includes("text/event-stream");
 
-      if (isEventStream || (isJson && isStreamRequested)) {
+      // If it's already an SSE stream, return it immediately so we don't buffer it
+      if (isEventStream) {
+        return res;
+      }
+
+      // If it's JSON but we requested a stream, polyfill it
+      if (isJson && isStreamRequested) {
         // Read the full body once
         const bodyText = await res.text();
 
-        // Check if it's a valid SSE stream with data: prefixes
+        // Check if it's a valid SSE stream with data: prefixes (fallback in case content-type was wrong)
         if (bodyText.includes("data:")) {
-          // It's already an SSE stream, return a new response from the string
           return new Response(bodyText, {
             status: res.status,
             statusText: res.statusText,
@@ -130,7 +135,6 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
         }
 
         // If we reach here, it's a 200 with JSON but not a recognized completion
-        // It might be an error encoded in a 200 (common in some workers)
         return new Response(bodyText, {
           status: res.status,
           statusText: res.statusText,
