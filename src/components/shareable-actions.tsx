@@ -72,6 +72,7 @@ interface ShareableActionsProps {
   type: "agent" | "workflow" | "mcp";
   visibility?: Visibility;
   isOwner: boolean;
+  canManage?: boolean;
   canChangeVisibility?: boolean;
   isBookmarked?: boolean;
   editHref?: string;
@@ -89,6 +90,7 @@ export function ShareableActions({
   type,
   visibility,
   isOwner,
+  canManage = false,
   canChangeVisibility = true,
   isBookmarked = false,
   editHref,
@@ -112,6 +114,8 @@ export function ShareableActions({
 
   const VisibilityIcon = visibility ? VISIBILITY_ICONS[visibility] : null;
 
+  const isOwnerOrManager = isOwner || canManage;
+
   const visibilityItems = Object.entries(VISIBILITY_CONFIG[type]).map(
     ([value, config]) => {
       const IconComponent =
@@ -128,7 +132,7 @@ export function ShareableActions({
     <div className="flex items-center gap-1">
       {VisibilityIcon && (
         <>
-          {isOwner && onVisibilityChange && canChangeVisibility ? (
+          {isOwnerOrManager && onVisibilityChange && canChangeVisibility ? (
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -227,7 +231,7 @@ export function ShareableActions({
       )}
 
       {/* Edit Action */}
-      {isOwner && editHref && (
+      {isOwnerOrManager && editHref && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -249,10 +253,10 @@ export function ShareableActions({
       )}
 
       {/* Custom Actions */}
-      {isOwner && renderActions && renderActions()}
+      {isOwnerOrManager && renderActions && renderActions()}
 
       {/* Delete Action */}
-      {isOwner && onDelete && (
+      {isOwnerOrManager && onDelete && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

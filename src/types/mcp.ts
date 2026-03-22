@@ -47,6 +47,7 @@ export type MCPServerInfo = {
   error?: unknown;
   enabled: boolean;
   userId: string;
+  canManage?: boolean;
   status: "connected" | "disconnected" | "loading" | "authorizing";
   toolInfo: MCPToolInfo[];
   createdAt?: Date | string;

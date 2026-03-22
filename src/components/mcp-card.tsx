@@ -39,6 +39,11 @@ import { redriectMcpOauth } from "lib/ai/mcp/oauth-redirect";
 import { BasicUser } from "app-types/user";
 import { canChangeVisibilityMCP } from "lib/auth/client-permissions";
 
+type MCPCardProps = MCPServerInfo & {
+  user: BasicUser;
+  canManage?: boolean;
+};
+
 // Main MCPCard component
 export const MCPCard = memo(function MCPCard({
   id,
@@ -53,13 +58,15 @@ export const MCPCard = memo(function MCPCard({
   user,
   userName,
   userAvatar,
-}: MCPServerInfo & { user: BasicUser }) {
+  canManage,
+}: MCPCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [visibilityChangeLoading, setVisibilityChangeLoading] = useState(false);
   const t = useTranslations("MCP");
   const appStoreMutate = appStore((state) => state.mutate);
   const { mutate } = useSWRConfig();
   const isOwner = userId === user?.id;
+  const hasManagementRights = isOwner || canManage;
   const canChangeVisibility = useMemo(
     () => canChangeVisibilityMCP(user?.role),
     [user?.role],
@@ -237,19 +244,22 @@ export const MCPCard = memo(function MCPCard({
             <p>{t("refresh")}</p>
           </TooltipContent>
         </Tooltip>
-        {/* Add sharing actions for owners or visibility indicator for featured servers */}
+        {/* Add sharing actions for owners/admins or visibility indicator for featured servers */}
         <ShareableActions
           type="mcp"
           visibility={visibility === "public" ? "public" : "private"}
           isOwner={isOwner}
+          canManage={hasManagementRights}
           canChangeVisibility={canChangeVisibility}
           editHref={
-            isOwner ? `/mcp/modify/${encodeURIComponent(id)}` : undefined
+            hasManagementRights
+              ? `/mcp/modify/${encodeURIComponent(id)}`
+              : undefined
           }
           onVisibilityChange={
             canChangeVisibility ? handleVisibilityChange : undefined
           }
-          onDelete={isOwner ? handleDelete : undefined}
+          onDelete={hasManagementRights ? handleDelete : undefined}
           isVisibilityChangeLoading={visibilityChangeLoading}
           isDeleteLoading={isProcessing}
           disabled={isLoading}
