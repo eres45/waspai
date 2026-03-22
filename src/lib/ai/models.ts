@@ -98,8 +98,21 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
             buffer = lines.pop() || "";
 
             for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const dataStr = line.slice(6).trim();
+              const trimmedLine = line.trim();
+              if (!trimmedLine) continue;
+
+              let dataStr = "";
+              let isSse = false;
+
+              if (trimmedLine.startsWith("data: ")) {
+                dataStr = trimmedLine.slice(6).trim();
+                isSse = true;
+              } else if (trimmedLine.startsWith("{")) {
+                dataStr = trimmedLine;
+                isSse = true; // Treat raw JSON as SSE data chunk
+              }
+
+              if (isSse) {
                 if (dataStr === "[DONE]") {
                   controller.enqueue(encoder.encode("data: [DONE]\n\n"));
                   continue;
@@ -107,19 +120,30 @@ function createStreamingProxyFetch(options?: { forceNonStreaming?: boolean }) {
 
                 try {
                   const data = JSON.parse(dataStr);
+                  // Sanitize content in both chunk (delta) and full (message) formats
                   if (data.choices?.[0]?.delta?.content) {
                     data.choices[0].delta.content = sanitizeTalkAIOutput(
                       data.choices[0].delta.content,
+                    );
+                  } else if (data.choices?.[0]?.message?.content) {
+                    data.choices[0].message.content = sanitizeTalkAIOutput(
+                      data.choices[0].message.content,
+                      data.usage?.total_tokens,
                     );
                   }
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify(data)}\n\n`),
                   );
                 } catch {
-                  controller.enqueue(encoder.encode(`${line}\n`));
+                  // If parsing fails, fall back to sending the line as-is but with data: prefix if it looks like JSON
+                  const output = trimmedLine.startsWith("{")
+                    ? `data: ${trimmedLine}\n\n`
+                    : `${trimmedLine}\n\n`;
+                  controller.enqueue(encoder.encode(output));
                 }
-              } else if (line.trim()) {
-                controller.enqueue(encoder.encode(`${line}\n`));
+              } else {
+                // Not SSE or JSON, pass through
+                controller.enqueue(encoder.encode(`${trimmedLine}\n\n`));
               }
             }
           },
