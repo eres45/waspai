@@ -48,8 +48,11 @@ export const REASONING_LEAKY_MODELS = [
   // Grok Reasoning
   /grok/i,
 
-  // Microsoft Phi-4 (has CoT)
-  /phi-4/i,
+  // Microsoft Phi Family
+  /phi-/i,
+
+  // NVIDIA Nemotron Family
+  /nemotron/i,
 
   // General markers for any reasoning-specific model
   /reasoner/i,
