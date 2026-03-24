@@ -72,6 +72,7 @@ export default () => {
           stream: false,
           os: false,
           zlib: false,
+          "tesseract.js": false,
         };
 
         // Handle 'node:' prefixed imports for browser-side libraries like pptxgenjs

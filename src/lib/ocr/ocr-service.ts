@@ -10,6 +10,41 @@ import { generateText } from "ai";
 import { customModelProvider } from "../ai/models";
 
 const require = createRequire(import.meta.url);
+
+// Typed dynamic import for Tesseract
+type TesseractWorker = import("tesseract.js").Worker;
+let _tesseractWorker: TesseractWorker | null = null;
+let _requestCount = 0;
+
+/**
+ * Singleton worker management for Tesseract to prevent memory leaks.
+ * Recreates worker after 50 requests.
+ */
+async function getTesseractWorker(): Promise<TesseractWorker> {
+  _requestCount++;
+  if (_tesseractWorker && _requestCount > 50) {
+    console.log("OCR: Terminating Tesseract worker to prevent memory leaks");
+    await _tesseractWorker.terminate();
+    _tesseractWorker = null;
+    _requestCount = 0;
+  }
+  if (!_tesseractWorker) {
+    console.log("OCR: Initializing new Tesseract worker");
+    // Use eslint-disable for @ts-ignore because it might be unecessary locally but needed on Vercel
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - Module might not be resolved during static build phase
+    const { createWorker } = await import("tesseract.js");
+    _tesseractWorker = await createWorker("eng", 1, {
+      cachePath: "/tmp",
+      langPath: "/tmp",
+      workerPath:
+        "https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.3/dist/worker.min.js",
+      corePath:
+        "https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.3/tesseract-core.wasm.js",
+    });
+  }
+  return _tesseractWorker;
+}
 // const pdf = require("pdf-parse"); // Lazy loaded below
 
 /**
@@ -73,21 +108,8 @@ async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
 async function extractTextFromImageViaTesseract(
   imageData: Uint8Array,
 ): Promise<string> {
-  let worker;
   try {
-    console.log(`OCR: Attempting extraction with Tesseract.js (Local)...`);
-    // Use dynamic import to fix Next.js build resolution issues
-    // @ts-ignore - Module might not be resolved during static build phase
-    const { createWorker } = await import("tesseract.js");
-    // Vercel only allows writing to /tmp
-    worker = await createWorker("eng", 1, {
-      cachePath: "/tmp",
-      langPath: "/tmp",
-      workerPath:
-        "https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.3/dist/worker.min.js",
-      corePath:
-        "https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.3/tesseract-core.wasm.js",
-    });
+    const worker = await getTesseractWorker();
     const {
       data: { text },
     } = await worker.recognize(Buffer.from(imageData));
@@ -98,8 +120,11 @@ async function extractTextFromImageViaTesseract(
     }
   } catch (err: any) {
     console.warn(`OCR: Tesseract.js failed: ${err.message || "Unknown error"}`);
-  } finally {
-    if (worker) await worker.terminate();
+    // If it fails, reset the singleton just in case
+    if (_tesseractWorker) {
+      _tesseractWorker.terminate();
+      _tesseractWorker = null;
+    }
   }
   return "";
 }
