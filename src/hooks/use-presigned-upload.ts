@@ -100,67 +100,10 @@ export function useFileUpload() {
 
       setIsUploading(true);
       try {
-        // CASE 1: Vercel Blob direct upload (or staging for Telegram)
-        const isTelegramLargeFile =
-          storageType === "telegram" &&
-          canStageByBlob &&
-          file.size > 3 * 1024 * 1024;
-
-        if (storageType === "vercel-blob" || isTelegramLargeFile) {
-          const blob = await uploadToVercelBlob(filename, file, {
-            access: "public",
-            handleUploadUrl: "/api/storage/upload-url",
-            contentType,
-          });
-
-          if (isTelegramLargeFile) {
-            // Tell the server to ingest this URL into Telegram
-            const serverUploadResponse = await fetch("/api/storage/upload", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                url: blob.url,
-                filename,
-                contentType,
-                size: file.size,
-                stagingType: "vercel-blob",
-              }),
-            });
-
-            if (!serverUploadResponse.ok) {
-              const errorBody = await serverUploadResponse
-                .json()
-                .catch(() => ({}));
-              const errorMessage =
-                errorBody.error || errorBody.message || "Server staging failed";
-              throw new Error(errorMessage);
-            }
-
-            const result = await serverUploadResponse.json();
-            return {
-              pathname: result.key,
-              url: result.url,
-              contentType: result.metadata?.contentType || contentType,
-              size: result.metadata?.size || file.size,
-            };
-          }
-
-          return {
-            pathname: blob.pathname,
-            url: blob.url,
-            contentType: blob.contentType,
-            size: file.size,
-          };
-        }
-
-        // CASE 2: Cloudflare Worker direct upload (for Telegram high-limit)
-        if (
-          storageType === "telegram" &&
-          cloudflareWorkerUrl &&
-          file.size > 4.5 * 1024 * 1024
-        ) {
+        // CASE 0: Cloudflare Worker direct upload (Primary path for Telegram)
+        if (storageType === "telegram" && cloudflareWorkerUrl) {
           console.log(
-            `[Upload] Using Cloudflare Worker for large file: ${file.size} bytes`,
+            `[Upload] Using Cloudflare Worker for ${file.size} byte upload`,
           );
 
           const formData = new FormData();
@@ -223,6 +166,59 @@ export function useFileUpload() {
             pathname: syncData.key,
             url: syncData.url,
             contentType,
+            size: file.size,
+          };
+        }
+
+        // CASE 1: Vercel Blob direct upload (or staging for Telegram)
+        const isTelegramLargeFile =
+          storageType === "telegram" &&
+          canStageByBlob &&
+          file.size > 3 * 1024 * 1024;
+
+        if (storageType === "vercel-blob" || isTelegramLargeFile) {
+          const blob = await uploadToVercelBlob(filename, file, {
+            access: "public",
+            handleUploadUrl: "/api/storage/upload-url",
+            contentType,
+          });
+
+          if (isTelegramLargeFile) {
+            // Tell the server to ingest this URL into Telegram
+            const serverUploadResponse = await fetch("/api/storage/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                url: blob.url,
+                filename,
+                contentType,
+                size: file.size,
+                stagingType: "vercel-blob",
+              }),
+            });
+
+            if (!serverUploadResponse.ok) {
+              const errorBody = await serverUploadResponse
+                .json()
+                .catch(() => ({}));
+              const errorMessage =
+                errorBody.error || errorBody.message || "Server staging failed";
+              throw new Error(errorMessage);
+            }
+
+            const result = await serverUploadResponse.json();
+            return {
+              pathname: result.key,
+              url: result.url,
+              contentType: result.metadata?.contentType || contentType,
+              size: result.metadata?.size || file.size,
+            };
+          }
+
+          return {
+            pathname: blob.pathname,
+            url: blob.url,
+            contentType: blob.contentType,
             size: file.size,
           };
         }
