@@ -105,7 +105,7 @@ async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
 async function extractTextFromImageViaTesseract(
   imageData: Uint8Array,
 ): Promise<string> {
-  let timerId = "OCR-Tesseract-" + Math.random().toString(36).substring(7);
+  const timerId = "OCR-Tesseract-" + Math.random().toString(36).substring(7);
   console.time(timerId);
   try {
     const worker = await getTesseractWorker();
