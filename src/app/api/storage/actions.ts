@@ -2,12 +2,15 @@
 
 import { storageDriver } from "lib/file-storage";
 import { IS_VERCEL_ENV } from "lib/const";
+import { getSession } from "auth/server";
 
 /**
  * Get storage configuration info.
  * Used by clients to determine upload strategy.
  */
 export async function getStorageInfoAction() {
+  const session = await getSession();
+
   return {
     type: storageDriver,
     supportsDirectUpload:
@@ -18,7 +21,8 @@ export async function getStorageInfoAction() {
       storageDriver === "telegram",
     canStageByBlob: !!process.env.BLOB_READ_WRITE_TOKEN,
     cloudflareWorkerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
-    cloudflareAuthToken: process.env.CLOUDFLARE_WORKER_AUTH_TOKEN, // Note: This will be public if sent to client, but it's needed for the demo
+    cloudflareAuthToken: process.env.CLOUDFLARE_WORKER_AUTH_TOKEN,
+    userId: session?.user?.id,
   };
 }
 

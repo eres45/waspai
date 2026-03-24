@@ -35,6 +35,9 @@ export default {
       const formData = await request.formData();
       const tgToken = env.TELEGRAM_BOT_TOKEN;
       const tgChatId = env.TELEGRAM_CHAT_ID;
+      const userId = formData.get("userId") || "anonymous";
+      const filename = formData.get("filename") || "file";
+      const fileSize = formData.get("fileSize") || "0";
 
       if (!tgToken || !tgChatId) {
         return new Response(
@@ -50,6 +53,17 @@ export default {
       if (!formData.has("chat_id")) {
         formData.append("chat_id", tgChatId);
       }
+
+      // Add proper caption
+      const caption = [
+        "📁 File Upload via Cloudflare Bridge",
+        `Name: ${filename}`,
+        `Size: ${Math.round(fileSize / 1024)}KB`,
+        `User: ${userId}`,
+        `Time: ${new Date().toISOString()}`,
+      ].join("\n");
+
+      formData.append("caption", caption);
 
       // Determine endpoint
       const hasPhoto = formData.has("photo");

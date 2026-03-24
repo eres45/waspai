@@ -20,6 +20,7 @@ interface StorageInfo {
   canStageByBlob: boolean;
   cloudflareWorkerUrl?: string;
   cloudflareAuthToken?: string;
+  userId?: string;
 }
 
 interface UploadOptions {
@@ -169,10 +170,9 @@ export function useFileUpload() {
           const fieldName = isPhoto ? "photo" : isVideo ? "video" : "document";
 
           formData.append(fieldName, file);
-          formData.append(
-            "caption",
-            `Uploaded via Cloudflare Bridge\nFile: ${filename}\nSize: ${Math.round(file.size / 1024)}KB`,
-          );
+          formData.append("userId", data?.userId || "anonymous");
+          formData.append("filename", filename);
+          formData.append("fileSize", file.size.toString());
 
           const workerResponse = await fetch(
             `${cloudflareWorkerUrl}${cloudflareWorkerUrl.endsWith("/") ? "" : "/"}upload`,
