@@ -100,8 +100,8 @@ export function useFileUpload() {
 
       setIsUploading(true);
       try {
-        // CASE 0: Cloudflare Worker direct upload (Primary path for Telegram)
-        if (storageType === "telegram" && cloudflareWorkerUrl) {
+        // CASE 0: Cloudflare Worker direct upload (Primary bridge if configured)
+        if (cloudflareWorkerUrl) {
           console.log(
             `[Upload] Using Cloudflare Worker for ${file.size} byte upload to ${cloudflareWorkerUrl}`,
           );

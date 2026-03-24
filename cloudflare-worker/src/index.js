@@ -3,12 +3,11 @@ export default {
     const url = new URL(request.url);
 
     // Simple health check
-    if (url.pathname === "/health" || request.method === "GET") {
+    if (
+      url.pathname === "/health" ||
+      (url.pathname === "/" && request.method === "GET")
+    ) {
       return new Response("OK", { status: 200 });
-    }
-
-    if (url.pathname !== "/upload" || request.method !== "POST") {
-      return new Response("Not Found", { status: 404 });
     }
 
     // CORS Preflight
@@ -18,8 +17,13 @@ export default {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
+          "Access-Control-Max-Age": "86400",
         },
       });
+    }
+
+    if (url.pathname !== "/upload" || request.method !== "POST") {
+      return new Response("Not Found", { status: 404 });
     }
 
     // Auth Check
