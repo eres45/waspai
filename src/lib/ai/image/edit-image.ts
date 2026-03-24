@@ -15,6 +15,20 @@ export interface EditedImage {
 const WORKER_BASE_URL = "https://photogrid-proxy.llamai.workers.dev";
 
 /**
+ * Resolves a relative storage bridge URL to an absolute, publicly reachable URL.
+ */
+function resolveImageUrl(url: string): string {
+  if (url.startsWith("/api/storage/file/")) {
+    const filePath = url.split("/api/storage/file/")[1];
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (filePath && botToken) {
+      return `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+    }
+  }
+  return url;
+}
+
+/**
  * Core function to call the PhotoGrid Worker proxy
  */
 async function callPhotoGridWorker(
@@ -22,6 +36,9 @@ async function callPhotoGridWorker(
   options: EditImageOptions,
   retries: number = 2,
 ): Promise<{ image: EditedImage }> {
+  // Resolve the URL first so the external worker can fetch it
+  options.imageUrl = resolveImageUrl(options.imageUrl);
+
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
