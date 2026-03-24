@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2024-03-24"
 
 [vars]
-# AUTH_TOKEN = "your-secure-auth-token-here"
+AUTH_TOKEN = "waspai-ocr-secret-2025"
 # TELEGRAM_BOT_TOKEN = "your-bot-token"
 # TELEGRAM_CHAT_ID = "your-chat-id"
 
