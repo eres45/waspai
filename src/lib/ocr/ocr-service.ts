@@ -29,7 +29,7 @@ async function getTesseractWorker(): Promise<TesseractWorker> {
     _requestCount = 0;
   }
   if (!_tesseractWorker) {
-    console.log("OCR: Initializing new Tesseract worker");
+    console.log(`OCR: Initializing new Tesseract worker`);
     // Use eslint-disable for @ts-ignore because it might be unecessary locally but needed on Vercel
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - Module might not be resolved during static build phase
@@ -37,10 +37,7 @@ async function getTesseractWorker(): Promise<TesseractWorker> {
     _tesseractWorker = await createWorker("eng", 1, {
       cachePath: "/tmp",
       langPath: "/tmp",
-      workerPath:
-        "https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.3/dist/worker.min.js",
-      corePath:
-        "https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.3/tesseract-core.wasm.js",
+      // Remove explicit CDN URLs to see if local resolution is faster on the server
     });
   }
   return _tesseractWorker;
@@ -108,12 +105,15 @@ async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
 async function extractTextFromImageViaTesseract(
   imageData: Uint8Array,
 ): Promise<string> {
+  let timerId = "OCR-Tesseract-" + Math.random().toString(36).substring(7);
+  console.time(timerId);
   try {
     const worker = await getTesseractWorker();
     const {
       data: { text },
     } = await worker.recognize(Buffer.from(imageData));
 
+    console.timeEnd(timerId);
     if (text && text.trim().length > 0) {
       console.log(`OCR: Successfully extracted text using Tesseract.js`);
       return text.trim();
@@ -294,11 +294,32 @@ export async function extractTextFromDocuments(
               }
             }
 
-            const imageData = await getImageData(link);
+            // Start fetching image data and initializing worker in parallel
+            const imageDataPromise = getImageData(link);
+            const workerPromise = getTesseractWorker().catch(() => null);
+
+            const imageData = await imageDataPromise;
             if (!imageData) return "";
 
             // 1. Try Free Local OCR (Tesseract) first
-            let text = await extractTextFromImageViaTesseract(imageData);
+            let text = "";
+            try {
+              const worker = await workerPromise;
+              if (worker) {
+                // Race Tesseract against a 5s timeout to ensure we have time for AI fallback
+                text = await Promise.race([
+                  extractTextFromImageViaTesseract(imageData),
+                  new Promise<string>((resolve) =>
+                    setTimeout(() => {
+                      console.warn("OCR: Tesseract timed out after 5s");
+                      resolve("");
+                    }, 5000),
+                  ),
+                ]);
+              }
+            } catch (e) {
+              console.warn("OCR: Tesseract fail in doc loop", e);
+            }
 
             // 2. Fallback to AI Vision only if local OCR returned very little or no content
             // and the image is large enough to warrant an AI call
