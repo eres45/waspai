@@ -77,6 +77,7 @@ async function extractTextFromImageViaTesseract(
   try {
     console.log(`OCR: Attempting extraction with Tesseract.js (Local)...`);
     // Use dynamic import to fix Next.js build resolution issues
+    // @ts-ignore - Module might not be resolved during static build phase
     const { createWorker } = await import("tesseract.js");
     // Vercel only allows writing to /tmp
     worker = await createWorker("eng", 1, {
