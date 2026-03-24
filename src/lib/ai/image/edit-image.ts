@@ -18,11 +18,15 @@ const WORKER_BASE_URL = "https://photogrid-proxy.llamai.workers.dev";
  * Resolves a relative storage bridge URL to an absolute, publicly reachable URL.
  */
 function resolveImageUrl(url: string): string {
-  if (url.startsWith("/api/storage/file/")) {
-    const filePath = url.split("/api/storage/file/")[1];
+  const bridgePath = "/api/storage/file/";
+  if (url.includes(bridgePath)) {
+    const parts = url.split(bridgePath);
+    const filePath = parts[parts.length - 1];
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (filePath && botToken) {
-      return `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+      const resolved = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+      logger.info(`Resolved storage URL: ${url} -> ${resolved}`);
+      return resolved;
     }
   }
   return url;
@@ -34,7 +38,7 @@ function resolveImageUrl(url: string): string {
 async function callPhotoGridWorker(
   endpoint: string,
   options: EditImageOptions,
-  retries: number = 2,
+  retries: number = 1, // Reduced for Hobby tier (10s limit)
 ): Promise<{ image: EditedImage }> {
   // Resolve the URL first so the external worker can fetch it
   options.imageUrl = resolveImageUrl(options.imageUrl);
@@ -46,7 +50,6 @@ async function callPhotoGridWorker(
       logger.info(
         `PhotoGrid [${endpoint}]: Starting attempt ${attempt}/${retries}`,
       );
-      logger.info(`Image URL: ${options.imageUrl}`);
 
       const body: Record<string, string> = {
         image_url: options.imageUrl,
@@ -57,7 +60,8 @@ async function callPhotoGridWorker(
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      // Use shorter timeout to stay within Vercel 10s limit (8s for the fetch)
+      const timeoutId = setTimeout(() => controller.abort(), 8000); 
 
       try {
         const response = await fetch(`${WORKER_BASE_URL}${endpoint}`, {
