@@ -13,11 +13,69 @@ const require = createRequire(import.meta.url);
 // const pdf = require("pdf-parse"); // Lazy loaded below
 
 /**
+ * Helper to fetch image data and convert to Uint8Array for the AI SDK.
+ * Handles relative URLs, Telegram proxied URLs, and standard URLs.
+ */
+async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
+  try {
+    // 1. Handle base64 data URLs
+    if (imageUrl.startsWith("data:")) {
+      const base64 = imageUrl.split(",")[1];
+      if (!base64) return null;
+      return Buffer.from(base64, "base64");
+    }
+
+    // 2. Handle internal Telegram proxy URLs (/api/storage/file/...)
+    if (imageUrl.includes("/api/storage/file/")) {
+      const filePath = imageUrl.split("/api/storage/file/")[1];
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (filePath && botToken) {
+        const tgUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+        console.log(`OCR: Fetching direct from Telegram: ${filePath}`);
+        const res = await fetch(tgUrl);
+        if (res.ok) {
+          const arrayBuffer = await res.arrayBuffer();
+          return new Uint8Array(arrayBuffer);
+        }
+      }
+    }
+
+    // 3. Standard fetch (for S3, Vercel Blob, etc.)
+    // If it's a relative URL, try resolving against local host or APP_URL
+    let finalUrl = imageUrl;
+    if (imageUrl.startsWith("/")) {
+      const host = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      finalUrl = `${host}${imageUrl}`;
+    }
+
+    console.log(
+      `OCR: Fetching image bytes from ${finalUrl.substring(0, 50)}...`,
+    );
+    const res = await fetch(finalUrl);
+    if (res.ok) {
+      const arrayBuffer = await res.arrayBuffer();
+      return new Uint8Array(arrayBuffer);
+    }
+  } catch (err) {
+    console.error(`OCR: Failed to fetch image data for AI:`, err);
+  }
+  return null;
+}
+
+/**
  * High-performance OCR using Qwen Vision model
  */
 async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
   try {
     console.log(`OCR: Attempting extraction with Qwen Vision (VL)...`);
+
+    // Fetch image data first so we don't pass a potentially unreachable URL to the AI
+    const imageData = await getImageData(imageUrl);
+    if (!imageData) {
+      console.error(`OCR: Could not retrieve image data for URL: ${imageUrl}`);
+      return "";
+    }
+
     const model = customModelProvider.getModel({
       provider: "Qwen",
       model: "Qwen Vision (VL)",
@@ -33,12 +91,15 @@ async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
               type: "text",
               text: "Act as a high-precision OCR engine. Extract all text from this image exactly as it appears. Maintain formatting and layout. Return ONLY the extracted text without any prefix, suffix, or commentary.",
             },
-            { type: "image", image: imageUrl },
+            {
+              type: "image",
+              image: imageData, // Pass Uint8Array directly
+            },
           ],
         },
       ],
-      maxRetries: 2, // Higher retries for transient Qwen errors
-      abortSignal: AbortSignal.timeout(25000), // 25s timeout for more retries
+      maxRetries: 2,
+      abortSignal: AbortSignal.timeout(25000),
     });
 
     if (text && text.trim().length > 0) {
@@ -47,7 +108,7 @@ async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
     }
   } catch (err: any) {
     console.error(`OCR: Qwen Vision failed: ${err.message || "Unknown error"}`);
-    throw err; // Propagate error for Qwen-only mode
+    throw err;
   }
 
   return "";
