@@ -13,51 +13,55 @@ const require = createRequire(import.meta.url);
 // const pdf = require("pdf-parse"); // Lazy loaded below
 
 /**
- * Helper to fetch image data and convert to Uint8Array for the AI SDK.
+ * Universal helper to fetch file data from internal or external URLs.
  * Handles relative URLs, Telegram proxied URLs, and standard URLs.
  */
-async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
+async function fetchFile(url: string): Promise<Response | null> {
   try {
-    // 1. Handle base64 data URLs
-    if (imageUrl.startsWith("data:")) {
-      const base64 = imageUrl.split(",")[1];
-      if (!base64) return null;
-      return Buffer.from(base64, "base64");
-    }
-
-    // 2. Handle internal Telegram proxy URLs (/api/storage/file/...)
-    if (imageUrl.includes("/api/storage/file/")) {
-      const filePath = imageUrl.split("/api/storage/file/")[1];
+    // 1. Handle internal Telegram proxy URLs (/api/storage/file/...)
+    if (url.includes("/api/storage/file/")) {
+      const filePath = url.split("/api/storage/file/")[1];
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
       if (filePath && botToken) {
         const tgUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
         console.log(`OCR: Fetching direct from Telegram: ${filePath}`);
-        const res = await fetch(tgUrl);
-        if (res.ok) {
-          const arrayBuffer = await res.arrayBuffer();
-          return new Uint8Array(arrayBuffer);
-        }
+        return await fetch(tgUrl);
       }
     }
 
-    // 3. Standard fetch (for S3, Vercel Blob, etc.)
-    // If it's a relative URL, try resolving against local host or APP_URL
-    let finalUrl = imageUrl;
-    if (imageUrl.startsWith("/")) {
+    // 2. Handle standard relative URLs
+    let finalUrl = url;
+    if (url.startsWith("/")) {
       const host = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      finalUrl = `${host}${imageUrl}`;
+      finalUrl = `${host}${url}`;
     }
 
-    console.log(
-      `OCR: Fetching image bytes from ${finalUrl.substring(0, 50)}...`,
-    );
-    const res = await fetch(finalUrl);
-    if (res.ok) {
-      const arrayBuffer = await res.arrayBuffer();
-      return new Uint8Array(arrayBuffer);
-    }
+    return await fetch(finalUrl);
   } catch (err) {
-    console.error(`OCR: Failed to fetch image data for AI:`, err);
+    console.error(`OCR: Fetch failed for ${url}:`, err);
+    return null;
+  }
+}
+
+/**
+ * Helper to fetch image data and convert to Uint8Array for the AI SDK.
+ */
+async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
+  // Handle base64 data URLs
+  if (imageUrl.startsWith("data:")) {
+    try {
+      const base64 = imageUrl.split(",")[1];
+      if (!base64) return null;
+      return Buffer.from(base64, "base64");
+    } catch {
+      return null;
+    }
+  }
+
+  const res = await fetchFile(imageUrl);
+  if (res && res.ok) {
+    const arrayBuffer = await res.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
   }
   return null;
 }
@@ -141,7 +145,7 @@ export async function extractTextFromDocuments(
           lowerLink.endsWith(".csv")
         ) {
           console.log(`OCR: Fetching text content locally from ${link}`);
-          const res = await fetch(link);
+          const res = await fetchFile(link);
           if (res.ok) {
             const content = await res.text();
             extractedContent += `\n\n[File Content: ${link.split("/").pop()}]\n${content}\n`;
@@ -151,7 +155,7 @@ export async function extractTextFromDocuments(
         // Word Documents (.docx)
         else if (lowerLink.endsWith(".docx")) {
           console.log(`OCR: Fetching DOCX content locally from ${link}`);
-          const res = await fetch(link);
+          const res = await fetchFile(link);
           if (res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
@@ -163,7 +167,7 @@ export async function extractTextFromDocuments(
         // PDF Documents (.pdf)
         else if (lowerLink.endsWith(".pdf")) {
           console.log(`OCR: Fetching PDF content locally from ${link}`);
-          const res = await fetch(link);
+          const res = await fetchFile(link);
           if (res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
@@ -181,7 +185,7 @@ export async function extractTextFromDocuments(
           lowerLink.endsWith(".xlsx")
         ) {
           console.log(`OCR: Fetching Office content locally from ${link}`);
-          const res = await fetch(link);
+          const res = await fetchFile(link);
           if (res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
