@@ -8,6 +8,7 @@ import officeparser from "officeparser";
 import { createRequire } from "module";
 import { generateText } from "ai";
 import { customModelProvider } from "../ai/models";
+import { createWorker } from "tesseract.js";
 
 const require = createRequire(import.meta.url);
 // const pdf = require("pdf-parse"); // Lazy loaded below
@@ -67,23 +68,55 @@ async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
 }
 
 /**
+ * Free OCR using Tesseract.js (MIT Licensed)
+ * Runs locally without API keys
+ */
+async function extractTextFromImageViaTesseract(
+  imageData: Uint8Array,
+): Promise<string> {
+  let worker;
+  try {
+    console.log(`OCR: Attempting extraction with Tesseract.js (Local)...`);
+    worker = await createWorker("eng");
+    const {
+      data: { text },
+    } = await worker.recognize(Buffer.from(imageData));
+
+    if (text && text.trim().length > 0) {
+      console.log(`OCR: Successfully extracted text using Tesseract.js`);
+      return text.trim();
+    }
+  } catch (err: any) {
+    console.warn(`OCR: Tesseract.js failed: ${err.message || "Unknown error"}`);
+  } finally {
+    if (worker) await worker.terminate();
+  }
+  return "";
+}
+
+/**
  * High-performance OCR using Qwen Vision model
  */
-async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
+async function extractTextFromImageViaAI(
+  imageUrl: string,
+  imageData: Uint8Array,
+): Promise<string> {
   try {
     console.log(`OCR: Attempting extraction with Qwen Vision (VL)...`);
-
-    // Fetch image data first so we don't pass a potentially unreachable URL to the AI
-    const imageData = await getImageData(imageUrl);
-    if (!imageData) {
-      console.error(`OCR: Could not retrieve image data for URL: ${imageUrl}`);
-      return "";
-    }
 
     const model = customModelProvider.getModel({
       provider: "Qwen",
       model: "Qwen Vision (VL)",
     });
+
+    // Convert Uint8Array to Base64 Data URL for maximum compatibility with custom proxies
+    const base64 = Buffer.from(imageData).toString("base64");
+    let mimeType = "image/jpeg";
+    if (imageUrl.toLowerCase().endsWith(".png")) mimeType = "image/png";
+    else if (imageUrl.toLowerCase().endsWith(".webp")) mimeType = "image/webp";
+    else if (imageUrl.toLowerCase().endsWith(".gif")) mimeType = "image/gif";
+
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
     const { text } = await generateText({
       model,
@@ -97,7 +130,7 @@ async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
             },
             {
               type: "image",
-              image: imageData, // Pass Uint8Array directly
+              image: dataUrl, // Pass as Data URL string
             },
           ],
         },
@@ -224,7 +257,22 @@ export async function extractTextFromDocuments(
               }
             }
 
-            const text = await extractTextFromImageViaAI(link);
+            const imageData = await getImageData(link);
+            if (!imageData) return "";
+
+            // 1. Try Free Local OCR (Tesseract) first
+            let text = await extractTextFromImageViaTesseract(imageData);
+
+            // 2. Fallback to AI Vision only if local OCR returned very little or no content
+            // and the image is large enough to warrant an AI call
+            if (!text || text.length < 10) {
+              console.log(
+                `OCR: Local OCR yielded poor results (${text.length} chars). Falling back to AI...`,
+              );
+              const aiText = await extractTextFromImageViaAI(link, imageData);
+              if (aiText) text = aiText;
+            }
+
             if (text) {
               return `\n\n[Document Content: ${link.split("/").pop()}]\n${text}`;
             }
