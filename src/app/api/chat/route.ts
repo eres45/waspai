@@ -196,14 +196,24 @@ export async function POST(request: Request) {
     logger.info(`Attachments count: ${attachments.length}`);
     logger.info(`File URLs extracted: ${fileUrls.length}`);
 
-    // Process images and PDFs through OCR to extract text + get thread/agent in parallel
-    logger.info(`Starting parallel metadata fetch (OCR, thread, agent)`);
+    // Only run OCR if the user explicitly asked about the text content of the file.
+    // This avoids wasting 4-8s on OCR for image editing, describing, or other tasks.
+    const ocrKeywords = [
+      "read", "extract", "ocr", "what does it say", "what's written",
+      "what is written", "text in", "text from", "transcribe", "translate",
+      "parse", "scan", "recognize", "get text", "copy text", "written on",
+    ];
+    const messageLower = messageText.toLowerCase();
+    const userWantsOcr =
+      fileUrls.length > 0 &&
+      ocrKeywords.some((kw) => messageLower.includes(kw));
+
+    logger.info(`Starting parallel metadata fetch (OCR=${userWantsOcr}, thread, agent)`);
 
     // Define the promises
-    const ocrPromise =
-      fileUrls.length > 0
-        ? processFileURLsForModel(messageText, fileUrls)
-        : Promise.resolve(messageText);
+    const ocrPromise = userWantsOcr
+      ? processFileURLsForModel(messageText, fileUrls)
+      : Promise.resolve(messageText);
 
     const threadPromise = chatRepository.selectThreadDetails(id);
     const agentPromise = rememberAgentAction(agentId, userId);
@@ -214,9 +224,9 @@ export async function POST(request: Request) {
       ocrPromise,
       new Promise<string>((resolve) =>
         setTimeout(() => {
-          logger.warn("OCR timed out after 10s, proceeding with original text");
+          logger.warn("OCR timed out after 8s, proceeding with original text");
           resolve(messageText);
-        }, 10000),
+        }, 8000), // 8s OCR cap (Vercel Hobby = 10s hard limit)
       ),
     ]);
 

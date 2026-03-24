@@ -154,6 +154,7 @@ async function extractTextFromImageViaCloudflare(
         "X-Auth-Token": authToken,
       },
       body: JSON.stringify({ image: base64 }),
+      signal: AbortSignal.timeout(4000), // Hard 4s timeout
     });
 
     if (res.ok) {
