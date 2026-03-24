@@ -103,7 +103,7 @@ export function useFileUpload() {
         // CASE 0: Cloudflare Worker direct upload (Primary path for Telegram)
         if (storageType === "telegram" && cloudflareWorkerUrl) {
           console.log(
-            `[Upload] Using Cloudflare Worker for ${file.size} byte upload`,
+            `[Upload] Using Cloudflare Worker for ${file.size} byte upload to ${cloudflareWorkerUrl}`,
           );
 
           const formData = new FormData();
@@ -271,7 +271,13 @@ export function useFileUpload() {
           };
         }
 
-        // Fallback: Server upload (Local FS)
+        // CASE 1: Fallback: Standard server upload
+        if (storageType === "telegram" && !cloudflareWorkerUrl) {
+          console.warn(
+            "[Upload] Cloudflare Worker URL not found, falling back to server upload. This will fail for files > 4.5MB.",
+          );
+        }
+
         const formData = new FormData();
         formData.append("file", file);
 
