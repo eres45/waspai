@@ -8,7 +8,6 @@ import officeparser from "officeparser";
 import { createRequire } from "module";
 import { generateText } from "ai";
 import { customModelProvider } from "../ai/models";
-import { createWorker } from "tesseract.js";
 
 const require = createRequire(import.meta.url);
 // const pdf = require("pdf-parse"); // Lazy loaded below
@@ -77,7 +76,17 @@ async function extractTextFromImageViaTesseract(
   let worker;
   try {
     console.log(`OCR: Attempting extraction with Tesseract.js (Local)...`);
-    worker = await createWorker("eng");
+    // Use dynamic import to fix Next.js build resolution issues
+    const { createWorker } = await import("tesseract.js");
+    // Vercel only allows writing to /tmp
+    worker = await createWorker("eng", 1, {
+      cachePath: "/tmp",
+      langPath: "/tmp",
+      workerPath:
+        "https://cdn.jsdelivr.net/npm/tesseract.js@v5.0.3/dist/worker.min.js",
+      corePath:
+        "https://cdn.jsdelivr.net/npm/tesseract.js-core@v5.0.3/tesseract-core.wasm.js",
+    });
     const {
       data: { text },
     } = await worker.recognize(Buffer.from(imageData));
@@ -102,11 +111,13 @@ async function extractTextFromImageViaAI(
   imageData: Uint8Array,
 ): Promise<string> {
   try {
-    console.log(`OCR: Attempting extraction with Qwen Vision (VL)...`);
+    console.log(
+      `OCR: Attempting extraction with Llama 3.2 11B Vision (Meta Backup)...`,
+    );
 
     const model = customModelProvider.getModel({
-      provider: "Qwen",
-      model: "Qwen Vision (VL)",
+      provider: "Meta",
+      model: "Llama 3.2 11B Vision",
     });
 
     // Convert Uint8Array to Base64 Data URL for maximum compatibility with custom proxies
@@ -135,8 +146,8 @@ async function extractTextFromImageViaAI(
           ],
         },
       ],
-      maxRetries: 2,
-      abortSignal: AbortSignal.timeout(25000),
+      maxRetries: 1, // Fail fast on hobby tier
+      abortSignal: AbortSignal.timeout(8000), // Vercel Hobby limit is 10s
     });
 
     if (text && text.trim().length > 0) {
