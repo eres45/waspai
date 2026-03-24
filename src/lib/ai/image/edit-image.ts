@@ -60,8 +60,8 @@ async function callPhotoGridWorker(
       }
 
       const controller = new AbortController();
-      // Use shorter timeout to stay within Vercel 10s limit (8s for the fetch)
-      const timeoutId = setTimeout(() => controller.abort(), 8000); 
+      // Use shorter timeout to stay within Vercel 10s limit (6.5s for the fetch)
+      const timeoutId = setTimeout(() => controller.abort(), 6500); 
 
       try {
         const response = await fetch(`${WORKER_BASE_URL}${endpoint}`, {

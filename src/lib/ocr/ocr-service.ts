@@ -219,7 +219,7 @@ async function extractTextFromImageViaAI(
         },
       ],
       maxRetries: 1, // Fail fast on hobby tier
-      abortSignal: AbortSignal.timeout(8000), // Vercel Hobby limit is 10s
+      abortSignal: AbortSignal.timeout(4500), // Strict timeout for fallback
     });
 
     if (text && text.trim().length > 0) {
@@ -357,9 +357,9 @@ export async function extractTextFromDocuments(
                   extractTextFromImageViaTesseract(imageData),
                   new Promise<string>((resolve) =>
                     setTimeout(() => {
-                      console.warn("OCR: Tesseract timed out after 5s");
+                      console.warn("OCR: Tesseract timed out after 4s");
                       resolve("");
-                    }, 5000),
+                    }, 4000), // 4s timeout
                   ),
                 ]);
               }
