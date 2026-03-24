@@ -52,12 +52,13 @@ async function uploadToStorage(
 export const removeBackgroundTool = createTool({
   name: "remove-background",
   description:
-    "Remove the background from an image, leaving only the subject with a transparent background.",
+    "Remove the background from an image. When the user uploads an image or references an image in the conversation, extract its URL from the file attachment and call this tool immediately. Do NOT ask the user to provide a URL — use the URL from the uploaded file attachment directly.",
   inputSchema: z.object({
     imageUrl: z
       .string()
-      .url()
-      .describe("The URL of the image to remove background from"),
+      .describe(
+        "The URL of the image. Extract this from the file attachment URL in the conversation (e.g. https://www.waspai.in/api/storage/file/... or any image URL visible in the context).",
+      ),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Remove Background tool called with imageUrl: "${imageUrl}"`);
@@ -87,12 +88,11 @@ export const removeBackgroundTool = createTool({
  */
 export const animeConversionTool = createTool({
   name: "anime-conversion",
-  description: "Convert an image to anime style using AI style transfer.",
+  description: "Convert an image to anime style. Extract the image URL from file attachments in the conversation and call this tool immediately.",
   inputSchema: z.object({
     imageUrl: z
       .string()
-      .url()
-      .describe("The URL of the image to convert to anime"),
+      .describe("The URL of the image. Extract from the uploaded file attachment in the conversation."),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Anime Conversion tool called with imageUrl: "${imageUrl}"`);
@@ -120,12 +120,11 @@ export const animeConversionTool = createTool({
 // 1. Watermark Removal
 export const removeWatermarkTool = createTool({
   name: "remove-watermark",
-  description: "Remove watermarks, stamps, or specific text from an image.",
+  description: "Remove watermarks from an image. Extract the image URL from file attachments in the conversation and call this tool immediately.",
   inputSchema: z.object({
     imageUrl: z
       .string()
-      .url()
-      .describe("The URL of the image containing a watermark"),
+      .describe("The URL of the image. Extract from the uploaded file attachment in the conversation."),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Remove Watermark tool called with imageUrl: "${imageUrl}"`);
@@ -190,10 +189,9 @@ export const removeObjectTool = createTool({
 // 3. Super Resolution
 export const superResolutionTool = createTool({
   name: "super-resolution",
-  description:
-    "Upscale and increase the resolution of a low-quality or small image.",
+  description: "Upscale and increase the resolution of an image. Extract the image URL from file attachments in the conversation and call this tool immediately.",
   inputSchema: z.object({
-    imageUrl: z.string().url().describe("The URL of the low-resolution image"),
+    imageUrl: z.string().describe("The URL of the image. Extract from the uploaded file attachment in the conversation."),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Super Resolution tool called with imageUrl: "${imageUrl}"`);
