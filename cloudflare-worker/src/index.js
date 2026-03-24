@@ -22,6 +22,49 @@ export default {
       });
     }
 
+    if (url.pathname === "/vision" && request.method === "POST") {
+      const authHeader = request.headers.get("X-Auth-Token");
+      if (authHeader !== env.AUTH_TOKEN) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      const { image } = await request.json();
+      if (!image) return new Response("Missing image", { status: 400 });
+
+      try {
+        // Convert base64 to Uint8Array for Workers AI
+        const binaryString = atob(image);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const response = await env.AI.run(
+          "@cf/meta/llama-3.2-11b-vision-instruct",
+          {
+            image: [...bytes],
+            prompt:
+              "Extract all text from this image exactly as it appears. Maintain formatting. Return ONLY the extracted text.",
+          },
+        );
+
+        return new Response(JSON.stringify(response), {
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+    }
+
     if (url.pathname !== "/upload" || request.method !== "POST") {
       return new Response("Not Found", { status: 404 });
     }

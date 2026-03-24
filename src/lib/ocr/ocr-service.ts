@@ -130,7 +130,53 @@ async function extractTextFromImageViaTesseract(
 }
 
 /**
- * High-performance OCR using Qwen Vision model
+ * Free OCR using Cloudflare Workers AI (Llama 3.2 Vision)
+ */
+async function extractTextFromImageViaCloudflare(
+  imageData: Uint8Array,
+): Promise<string> {
+  const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+  const authToken = process.env.CLOUDFLARE_WORKER_AUTH_TOKEN;
+
+  if (!workerUrl || !authToken) {
+    console.warn("OCR: Cloudflare Worker config missing");
+    return "";
+  }
+
+  try {
+    console.log(`OCR: Attempting extraction with Cloudflare AI Vision...`);
+    const base64 = Buffer.from(imageData).toString("base64");
+
+    const res = await fetch(`${workerUrl}/vision`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Auth-Token": authToken,
+      },
+      body: JSON.stringify({ image: base64 }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.response || data.text || "";
+      if (text.trim()) {
+        console.log(`OCR: Successfully extracted text using Cloudflare Vision`);
+        return text.trim();
+      }
+    } else {
+      console.warn(`OCR: Cloudflare Worker vision failed: ${res.statusText}`);
+    }
+  } catch (err: any) {
+    console.warn(
+      `OCR: Cloudflare Vision failed: ${err.message || "Unknown error"}`,
+    );
+  }
+  return "";
+}
+
+/**
+ * High-performance OCR using AI SDK (Llama 3.2 Vision)
+ * Used as a secondary fallback
  */
 async function extractTextFromImageViaAI(
   imageUrl: string,
@@ -138,7 +184,7 @@ async function extractTextFromImageViaAI(
 ): Promise<string> {
   try {
     console.log(
-      `OCR: Attempting extraction with Llama 3.2 11B Vision (Meta Backup)...`,
+      `OCR: Attempting extraction with Llama 3.2 11B Vision (AI SDK Fallback)...`,
     );
 
     const model = customModelProvider.getModel({
@@ -321,11 +367,19 @@ export async function extractTextFromDocuments(
               console.warn("OCR: Tesseract fail in doc loop", e);
             }
 
-            // 2. Fallback to AI Vision only if local OCR returned very little or no content
-            // and the image is large enough to warrant an AI call
+            // 2. Fallback to Cloudflare AI Vision (Free)
             if (!text || text.length < 10) {
               console.log(
-                `OCR: Local OCR yielded poor results (${text.length} chars). Falling back to AI...`,
+                `OCR: Local OCR yielded poor results (${text.length} chars). Falling back to Cloudflare AI...`,
+              );
+              const cfText = await extractTextFromImageViaCloudflare(imageData);
+              if (cfText) text = cfText;
+            }
+
+            // 3. Last Fallback to AI SDK Vision
+            if (!text || text.length < 10) {
+              console.log(
+                `OCR: Cloudflare Vision poor results. Falling back to AI SDK...`,
               );
               const aiText = await extractTextFromImageViaAI(link, imageData);
               if (aiText) text = aiText;
