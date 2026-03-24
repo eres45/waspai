@@ -63,6 +63,11 @@ import {
   removeBackgroundTool,
   enhanceImageTool,
   animeConversionTool,
+  removeWatermarkTool,
+  removeObjectTool,
+  superResolutionTool,
+  restoreOldPhotoTool,
+  blurBackgroundTool,
 } from "lib/ai/tools/image/edit-image";
 import { videoGenTool } from "lib/ai/tools/image/video-gen";
 import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
@@ -125,6 +130,8 @@ export async function POST(request: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
+    const userId = session.user.id;
+
     let parsedBody;
     try {
       parsedBody = chatApiSchemaRequestBodySchema.parse(json);
@@ -150,6 +157,15 @@ export async function POST(request: Request) {
       editImageModel,
       videoGenModel,
     } = parsedBody;
+
+    // Extract agentId early from mentions or metadata
+    const agentId =
+      (
+        mentions.find((m) => m.type === "agent") as Extract<
+          ChatMention,
+          { type: "agent" }
+        >
+      )?.agentId || (message.metadata as ChatMetadata)?.agentId;
 
     // Convert display names back to backend names
     const { models: modelReverseMapping, providers: providerReverseMapping } =
@@ -179,23 +195,32 @@ export async function POST(request: Request) {
 
     logger.info(`Attachments count: ${attachments.length}`);
     logger.info(`File URLs extracted: ${fileUrls.length}`);
-    if (fileUrls.length > 0) {
-      logger.info(`File URLs:`, fileUrls);
-    }
 
-    // Process images and PDFs through OCR to extract text
-    let enrichedMessageText = messageText;
+    // Process images and PDFs through OCR to extract text + get thread/agent in parallel
+    logger.info(`Starting parallel metadata fetch (OCR, thread, agent)`);
+
+    // Define the promises
+    const ocrPromise =
+      fileUrls.length > 0
+        ? processFileURLsForModel(messageText, fileUrls)
+        : Promise.resolve(messageText);
+
+    const threadPromise = chatRepository.selectThreadDetails(id);
+    const agentPromise = rememberAgentAction(agentId, userId);
+
+    // Await all initial metadata
+    const [enrichedMessageText, rawThread, agent] = await Promise.all([
+      ocrPromise,
+      threadPromise,
+      agentPromise,
+    ]);
+
+    let thread = rawThread;
+
     if (fileUrls.length > 0) {
-      logger.info(`Starting OCR processing for ${fileUrls.length} files`);
-      enrichedMessageText = await processFileURLsForModel(
-        messageText,
-        fileUrls,
-      );
       logger.info(
         `OCR processed ${fileUrls.length} files, enriched message with extracted text`,
       );
-    } else {
-      logger.info(`No file URLs found, skipping OCR`);
     }
 
     logger.info(`Getting model: ${modelToUse?.provider}/${modelToUse?.model}`);
@@ -208,19 +233,17 @@ export async function POST(request: Request) {
       throw modelError;
     }
 
-    let thread = await chatRepository.selectThreadDetails(id);
-
     if (!thread) {
       logger.info(`create chat thread: ${id}`);
       const newThread = await chatRepository.insertThread({
         id,
         title: "",
-        userId: session.user.id,
+        userId: userId,
       });
       thread = await chatRepository.selectThreadDetails(newThread.id);
     }
 
-    if (thread!.userId !== session.user.id) {
+    if (thread!.userId !== userId) {
       return new Response("Forbidden", { status: 403 });
     }
 
@@ -484,15 +507,6 @@ export async function POST(request: Request) {
 
     const supportToolCall = !isToolCallUnsupportedModel(model);
 
-    const agentId = (
-      mentions.find((m) => m.type === "agent") as Extract<
-        ChatMention,
-        { type: "agent" }
-      >
-    )?.agentId;
-
-    const agent = await rememberAgentAction(agentId, session.user.id);
-
     if (agent?.instructions?.mentions) {
       mentions.push(...agent.instructions.mentions);
     }
@@ -699,7 +713,9 @@ export async function POST(request: Request) {
 
         const userPreferences = thread?.userPreferences || undefined;
 
-        const mcpServerCustomizations = await safe()
+        // Start fetching memories and MCP customizations in parallel
+        const memoriesPromise = memoryRepository.list(session.user.id, 50);
+        const mcpPromise = safe()
           .map(() => {
             if (Object.keys(MCP_TOOLS ?? {}).length === 0)
               throw new Error("No tools found");
@@ -886,6 +902,65 @@ CRITICAL INSTRUCTIONS:
           );
         });
 
+        const hasWatermarkKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text)
+            return false;
+          const text = part.text.toLowerCase();
+          return (
+            text.includes("watermark") ||
+            text.includes("stamp") ||
+            text.includes("remove text from image")
+          );
+        });
+
+        const hasObjectRemovalKeywords = lastMessage?.parts?.some(
+          (part: any) => {
+            if (typeof part !== "object" || part.type !== "text" || !part.text)
+              return false;
+            const text = part.text.toLowerCase();
+            return (
+              (text.includes("remove") || text.includes("erase")) &&
+              (text.includes("object") ||
+                text.includes("person") ||
+                text.includes("item"))
+            );
+          },
+        );
+
+        const hasUpscaleKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text)
+            return false;
+          const text = part.text.toLowerCase();
+          return (
+            text.includes("upscale") ||
+            text.includes("resolution") ||
+            text.includes("super resolution") ||
+            text.includes("increase quality")
+          );
+        });
+
+        const hasRestorationKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text)
+            return false;
+          const text = part.text.toLowerCase();
+          return (
+            text.includes("restore") ||
+            text.includes("old photo") ||
+            text.includes("damaged photo") ||
+            text.includes("fix photo")
+          );
+        });
+
+        const hasBlurKeywords = lastMessage?.parts?.some((part: any) => {
+          if (typeof part !== "object" || part.type !== "text" || !part.text)
+            return false;
+          const text = part.text.toLowerCase();
+          return (
+            text.includes("blur") &&
+            (text.includes("background") || text.includes("bokeh"))
+          );
+        });
+
         const isRemoveBgRequest =
           imageUrl &&
           (editImageModel === "remove-background" || hasRemoveBgKeywords);
@@ -895,6 +970,11 @@ CRITICAL INSTRUCTIONS:
         const isAnimeConversionRequest =
           imageUrl &&
           (editImageModel === "anime-conversion" || hasAnimeKeywords);
+        const isRemoveWatermarkRequest = imageUrl && hasWatermarkKeywords;
+        const isRemoveObjectRequest = imageUrl && hasObjectRemovalKeywords;
+        const isSuperResolutionRequest = imageUrl && hasUpscaleKeywords;
+        const isRestoreOldPhotoRequest = imageUrl && hasRestorationKeywords;
+        const isBlurBackgroundRequest = imageUrl && hasBlurKeywords;
 
         const isBase64Image = imageUrl?.startsWith("data:");
         const imagePlaceholder = "PLACEHOLDER_IMAGE_DATA"; // Short string for LLM
@@ -902,17 +982,42 @@ CRITICAL INSTRUCTIONS:
 
         const removeBgPrompt =
           isRemoveBgRequest && imageUrl
-            ? `Call the "remove-background" tool with imageUrl: "${promptImageUrl}". SECURITY: Do NOT show the URL in your text response.`
+            ? `Call the "remove-background" tool with imageUrl: "${promptImageUrl}".`
             : "";
 
         const enhanceImagePrompt =
           isEnhanceImageRequest && imageUrl
-            ? `Call the "enhance-image" tool with imageUrl: "${promptImageUrl}". SECURITY: Do NOT show the URL in your text response.`
+            ? `Call the "enhance-image" tool with imageUrl: "${promptImageUrl}".`
             : "";
 
         const animeConversionPrompt =
           isAnimeConversionRequest && imageUrl
-            ? `Call the "anime-conversion" tool with imageUrl: "${promptImageUrl}". SECURITY: Do NOT show the URL in your text response.`
+            ? `Call the "anime-conversion" tool with imageUrl: "${promptImageUrl}".`
+            : "";
+
+        const removeWatermarkPrompt =
+          isRemoveWatermarkRequest && imageUrl
+            ? `Call the "remove-watermark" tool with imageUrl: "${promptImageUrl}".`
+            : "";
+
+        const removeObjectPrompt =
+          isRemoveObjectRequest && imageUrl
+            ? `Call the "remove-object" tool with imageUrl: "${promptImageUrl}".`
+            : "";
+
+        const superResolutionPrompt =
+          isSuperResolutionRequest && imageUrl
+            ? `Call the "super-resolution" tool with imageUrl: "${promptImageUrl}".`
+            : "";
+
+        const restoreOldPhotoPrompt =
+          isRestoreOldPhotoRequest && imageUrl
+            ? `Call the "restore-old-photo" tool with imageUrl: "${promptImageUrl}".`
+            : "";
+
+        const blurBackgroundPrompt =
+          isBlurBackgroundRequest && imageUrl
+            ? `Call the "blur-background" tool with imageUrl: "${promptImageUrl}".`
             : "";
 
         // ... prompts ...
@@ -944,6 +1049,56 @@ CRITICAL INSTRUCTIONS:
               args.imageUrl = imageUrl;
             }
             return animeConversionTool!.execute!(args, context);
+          },
+        };
+
+        const scopedRemoveWatermarkTool = {
+          ...removeWatermarkTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return removeWatermarkTool!.execute!(args, context);
+          },
+        };
+
+        const scopedRemoveObjectTool = {
+          ...removeObjectTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return removeObjectTool!.execute!(args, context);
+          },
+        };
+
+        const scopedSuperResolutionTool = {
+          ...superResolutionTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return superResolutionTool!.execute!(args, context);
+          },
+        };
+
+        const scopedRestoreOldPhotoTool = {
+          ...restoreOldPhotoTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return restoreOldPhotoTool!.execute!(args, context);
+          },
+        };
+
+        const scopedBlurBackgroundTool = {
+          ...blurBackgroundTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return blurBackgroundTool!.execute!(args, context);
           },
         };
 
@@ -1342,10 +1497,15 @@ BEGIN ROLEPLAY NOW.`
           logger.info(`Using character prompt for: ${characterContext?.name}`);
         }
 
+        // Await the parallelized metadata
+        const [memories, mcpServerCustomizations] = await Promise.all([
+          memoriesPromise,
+          mcpPromise,
+        ]);
+
         // Load User Memories
         let userMemoriesPrompt = "";
         try {
-          const memories = await memoryRepository.list(session.user.id, 50);
           if (memories.length > 0) {
             userMemoriesPrompt = `\n\n[User Long-Term Memory]\nThe following facts are known about the user from previous interactions:\n${memories
               .map((m) => `[ID:${m.id}] ${m.content}`)
@@ -1354,7 +1514,7 @@ BEGIN ROLEPLAY NOW.`
               )}\n\nUse this information to personalize your responses. For updating or deleting, use the provided IDs.`;
           }
         } catch (error) {
-          logger.error("Failed to load user memories", error);
+          logger.error("Failed to process user memories", error);
         }
 
         const systemPrompt = mergeSystemPrompt(
@@ -1364,6 +1524,11 @@ BEGIN ROLEPLAY NOW.`
           isRemoveBgRequest && removeBgPrompt,
           isEnhanceImageRequest && enhanceImagePrompt,
           isAnimeConversionRequest && animeConversionPrompt,
+          isRemoveWatermarkRequest && removeWatermarkPrompt,
+          isRemoveObjectRequest && removeObjectPrompt,
+          isSuperResolutionRequest && superResolutionPrompt,
+          isRestoreOldPhotoRequest && restoreOldPhotoPrompt,
+          isBlurBackgroundRequest && blurBackgroundPrompt,
 
           // Specialized document generation prompts - reinforce knowledge (already conditional)
           pdfPrompt,
@@ -1451,6 +1616,21 @@ BEGIN ROLEPLAY NOW.`
             : {}),
           ...(isAnimeConversionRequest || imageUrl
             ? { "anime-conversion": scopedAnimeConversionTool }
+            : {}),
+          ...(isRemoveWatermarkRequest || imageUrl
+            ? { "remove-watermark": scopedRemoveWatermarkTool }
+            : {}),
+          ...(isRemoveObjectRequest || imageUrl
+            ? { "remove-object": scopedRemoveObjectTool }
+            : {}),
+          ...(isSuperResolutionRequest || imageUrl
+            ? { "super-resolution": scopedSuperResolutionTool }
+            : {}),
+          ...(isRestoreOldPhotoRequest || imageUrl
+            ? { "restore-old-photo": scopedRestoreOldPhotoTool }
+            : {}),
+          ...(isBlurBackgroundRequest || imageUrl
+            ? { "blur-background": scopedBlurBackgroundTool }
             : {}),
           ...(isVideoGenRequest ? { "video-gen": videoGenTool } : {}),
 

@@ -6,6 +6,11 @@ import { safe, watchError } from "ts-safe";
 import {
   removeImageBackground,
   convertImageToAnime,
+  removeImageWatermark,
+  removeImageObject,
+  applySuperResolution,
+  restoreOldPhoto,
+  blurBackground,
 } from "lib/ai/image/edit-image";
 import { enhanceImageTool } from "./enhance-image";
 
@@ -17,13 +22,37 @@ export type EditImageToolResult = {
   guide?: string;
 };
 
+// --- Helper for uploading result ---
+async function uploadToStorage(
+  image: { url: string; mimeType: string },
+  errorMsg: string,
+) {
+  const uploadedImage = await safe(image)
+    .map(async (img) => {
+      const uploadedResult = await serverFileStorage.upload(
+        Buffer.from(img.url, "base64"),
+        { contentType: img.mimeType || "image/png" },
+      );
+      return {
+        url: uploadedResult.sourceUrl,
+        mimeType: img.mimeType || "image/png",
+      };
+    })
+    .watch(watchError((e) => logger.error(`API success but upload failed:`, e)))
+    .ifFail(() => {
+      throw new Error(errorMsg);
+    })
+    .unwrap();
+  return uploadedImage;
+}
+
 /**
- * Remove background tool using Remove BG API
+ * Remove background tool
  */
 export const removeBackgroundTool = createTool({
   name: "remove-background",
   description:
-    "Remove the background from an image, leaving only the subject. The image will have a transparent background.",
+    "Remove the background from an image, leaving only the subject with a transparent background.",
   inputSchema: z.object({
     imageUrl: z
       .string()
@@ -32,50 +61,19 @@ export const removeBackgroundTool = createTool({
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Remove Background tool called with imageUrl: "${imageUrl}"`);
-
     try {
-      // Call the remove background API
       const processedImage = await removeImageBackground({
         prompt: "remove background",
         imageUrl,
         abortSignal,
       });
-
-      logger.info(`Remove Background: Background removed successfully`);
-
-      // Upload processed image to storage
-      const uploadedImage = await safe(processedImage.image)
-        .map(async (image) => {
-          const uploadedResult = await serverFileStorage.upload(
-            Buffer.from(image.url, "base64"),
-            {
-              contentType: image.mimeType || "image/png",
-            },
-          );
-          return {
-            url: uploadedResult.sourceUrl,
-            mimeType: image.mimeType || "image/png",
-          };
-        })
-        .watch(
-          watchError((e) => {
-            logger.error(e);
-            logger.info(`upload processed image failed. using base64`);
-          }),
-        )
-        .ifFail(() => {
-          throw new Error(
-            "Background removal was successful, but file upload failed. Please check your file upload configuration and try again.",
-          );
-        })
-        .unwrap();
-
+      const uploadedImage = await uploadToStorage(
+        processedImage.image,
+        "Background removal successful but upload failed.",
+      );
       return {
         image: uploadedImage,
-        guide:
-          uploadedImage.url.length > 0
-            ? "The background has been successfully removed from your image. The image now has a transparent background."
-            : "I apologize, but the background removal was not successful. Please try again with a different image.",
+        guide: "The background has been successfully removed from your image.",
       };
     } catch (e) {
       logger.error(e);
@@ -85,12 +83,11 @@ export const removeBackgroundTool = createTool({
 });
 
 /**
- * Convert image to anime style tool
+ * Convert image to anime style tool (AI Style Transfer)
  */
 export const animeConversionTool = createTool({
   name: "anime-conversion",
-  description:
-    "Convert an image to anime style. Works best with person images. The image will be transformed into an anime-style illustration.",
+  description: "Convert an image to anime style using AI style transfer.",
   inputSchema: z.object({
     imageUrl: z
       .string()
@@ -99,50 +96,173 @@ export const animeConversionTool = createTool({
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Anime Conversion tool called with imageUrl: "${imageUrl}"`);
-
     try {
-      // Call the anime conversion API
       const processedImage = await convertImageToAnime({
         prompt: "convert to anime",
         imageUrl,
         abortSignal,
       });
-
-      logger.info(`Anime Conversion: Image converted successfully`);
-
-      // Upload converted image to storage
-      const uploadedImage = await safe(processedImage.image)
-        .map(async (image) => {
-          const uploadedResult = await serverFileStorage.upload(
-            Buffer.from(image.url, "base64"),
-            {
-              contentType: image.mimeType || "image/jpeg",
-            },
-          );
-          return {
-            url: uploadedResult.sourceUrl,
-            mimeType: image.mimeType || "image/jpeg",
-          };
-        })
-        .watch(
-          watchError((e) => {
-            logger.error(e);
-            logger.info(`upload converted image failed. using base64`);
-          }),
-        )
-        .ifFail(() => {
-          throw new Error(
-            "Image conversion was successful, but file upload failed. Please check your file upload configuration and try again.",
-          );
-        })
-        .unwrap();
-
+      const uploadedImage = await uploadToStorage(
+        processedImage.image,
+        "Conversion successful but upload failed.",
+      );
       return {
         image: uploadedImage,
+        guide: "Your image has been successfully converted to anime style!",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+// 1. Watermark Removal
+export const removeWatermarkTool = createTool({
+  name: "remove-watermark",
+  description: "Remove watermarks, stamps, or specific text from an image.",
+  inputSchema: z.object({
+    imageUrl: z
+      .string()
+      .url()
+      .describe("The URL of the image containing a watermark"),
+  }),
+  execute: async ({ imageUrl }, { abortSignal }) => {
+    logger.info(`Remove Watermark tool called with imageUrl: "${imageUrl}"`);
+    try {
+      const processed = await removeImageWatermark({ imageUrl, abortSignal });
+      const uploaded = await uploadToStorage(
+        processed.image,
+        "Watermark removal successful but upload failed.",
+      );
+      return {
+        image: uploaded,
+        guide: "The watermark has been successfully removed from your image.",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+// 2. Object Removal
+export const removeObjectTool = createTool({
+  name: "remove-object",
+  description: "Remove unwanted objects or people from an image.",
+  inputSchema: z.object({
+    imageUrl: z
+      .string()
+      .url()
+      .describe("The URL of the image to remove an object from"),
+    maskUrl: z
+      .string()
+      .url()
+      .optional()
+      .describe(
+        "Optional URL of a black-and-white mask image indicating the object to remove",
+      ),
+  }),
+  execute: async ({ imageUrl, maskUrl }, { abortSignal }) => {
+    logger.info(`Remove Object tool called with imageUrl: "${imageUrl}"`);
+    try {
+      const processed = await removeImageObject({
+        imageUrl,
+        maskUrl,
+        abortSignal,
+      });
+      const uploaded = await uploadToStorage(
+        processed.image,
+        "Object removal successful but upload failed.",
+      );
+      return {
+        image: uploaded,
         guide:
-          uploadedImage.url.length > 0
-            ? "Your image has been successfully converted to anime style! The anime version is now displayed above. Note: This works best with person images."
-            : "I apologize, but the anime conversion was not successful. Please try again with a different image, preferably a person image.",
+          "The targeted object has been successfully removed from your image.",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+// 3. Super Resolution
+export const superResolutionTool = createTool({
+  name: "super-resolution",
+  description:
+    "Upscale and increase the resolution of a low-quality or small image.",
+  inputSchema: z.object({
+    imageUrl: z.string().url().describe("The URL of the low-resolution image"),
+  }),
+  execute: async ({ imageUrl }, { abortSignal }) => {
+    logger.info(`Super Resolution tool called with imageUrl: "${imageUrl}"`);
+    try {
+      const processed = await applySuperResolution({ imageUrl, abortSignal });
+      const uploaded = await uploadToStorage(
+        processed.image,
+        "Super resolution successful but upload failed.",
+      );
+      return {
+        image: uploaded,
+        guide:
+          "The image resolution and quality have been significantly increased.",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+// 4. Restore Old Photo
+export const restoreOldPhotoTool = createTool({
+  name: "restore-old-photo",
+  description: "Fix and colorize old, damaged, or blurry vintage photos.",
+  inputSchema: z.object({
+    imageUrl: z.string().url().describe("The URL of the old or damaged photo"),
+  }),
+  execute: async ({ imageUrl }, { abortSignal }) => {
+    logger.info(`Restore Old Photo tool called with imageUrl: "${imageUrl}"`);
+    try {
+      const processed = await restoreOldPhoto({ imageUrl, abortSignal });
+      const uploaded = await uploadToStorage(
+        processed.image,
+        "Restoration successful but upload failed.",
+      );
+      return {
+        image: uploaded,
+        guide: "The old photo has been successfully restored and repaired.",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+// 5. Blur Background
+export const blurBackgroundTool = createTool({
+  name: "blur-background",
+  description:
+    "Blur the background of an image while keeping the main subject in focus (bokeh effect).",
+  inputSchema: z.object({
+    imageUrl: z
+      .string()
+      .url()
+      .describe("The URL of the image to apply background blur to"),
+  }),
+  execute: async ({ imageUrl }, { abortSignal }) => {
+    logger.info(`Blur Background tool called with imageUrl: "${imageUrl}"`);
+    try {
+      const processed = await blurBackground({ imageUrl, abortSignal });
+      const uploaded = await uploadToStorage(
+        processed.image,
+        "Background blur successful but upload failed.",
+      );
+      return {
+        image: uploaded,
+        guide: "The background of the image has been professionally blurred.",
       };
     } catch (e) {
       logger.error(e);

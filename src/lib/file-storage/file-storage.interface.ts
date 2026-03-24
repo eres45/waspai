@@ -19,6 +19,7 @@ export interface UploadOptions {
   filename?: string;
   contentType?: string;
   metadata?: Record<string, any>;
+  url?: string;
 }
 
 export interface UploadResult {

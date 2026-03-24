@@ -31,15 +31,15 @@ const buildKey = (filename: string) => {
 };
 
 export const createSupabaseFileStorage = (): FileStorage => {
-  const supabaseUrl = required(
-    "NEXT_PUBLIC_SUPABASE_URL",
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-  );
-  const supabaseKey = required(
-    "SUPABASE_SERVICE_ROLE_KEY",
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-  );
-  const bucketName = process.env.FILE_STORAGE_SUPABASE_BUCKET || "uploads";
+  const getSupabaseUrl = () =>
+    required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const getSupabaseKey = () =>
+    required(
+      "SUPABASE_SERVICE_ROLE_KEY",
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+  const getBucketName = () =>
+    process.env.FILE_STORAGE_SUPABASE_BUCKET || "uploads";
 
   // Create a custom fetch that handles SSL certificate issues
   const customFetch = async (
@@ -49,7 +49,6 @@ export const createSupabaseFileStorage = (): FileStorage => {
     try {
       return await fetch(input, options);
     } catch (error: any) {
-      // If SSL certificate error, try with verification disabled (development only)
       if (
         error?.cause?.code === "CERT_HAS_EXPIRED" ||
         error?.message?.includes("certificate")
@@ -69,18 +68,21 @@ export const createSupabaseFileStorage = (): FileStorage => {
     }
   };
 
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-    },
-    global: {
-      fetch: customFetch,
-    },
-  });
-  const storage = supabase.storage.from(bucketName);
+  const getStorage = () => {
+    const supabase = createClient(getSupabaseUrl(), getSupabaseKey(), {
+      auth: {
+        persistSession: false,
+      },
+      global: {
+        fetch: customFetch,
+      },
+    });
+    return supabase.storage.from(getBucketName());
+  };
 
   return {
     async upload(content, options: UploadOptions = {}) {
+      const storage = getStorage();
       const buffer = await toBuffer(content);
       const filename = options.filename ?? "file";
       const key = buildKey(filename);
@@ -124,6 +126,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     async createUploadUrl(
       options: UploadUrlOptions,
     ): Promise<UploadUrl | null> {
+      const storage = getStorage();
       const key = buildKey(options.filename);
       const expiresInSeconds = options.expiresInSeconds || 3600;
 
@@ -150,6 +153,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     },
 
     async download(key) {
+      const storage = getStorage();
       const { data, error } = await storage.download(key);
 
       if (error) {
@@ -167,6 +171,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     },
 
     async delete(key) {
+      const storage = getStorage();
       const { error } = await storage.remove([key]);
 
       if (error) {
@@ -175,6 +180,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     },
 
     async exists(key) {
+      const storage = getStorage();
       try {
         const { data, error } = await storage.list(path.posix.dirname(key), {
           limit: 1,
@@ -189,6 +195,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     },
 
     async getMetadata(key) {
+      const storage = getStorage();
       try {
         const { data, error } = await storage.list(path.posix.dirname(key), {
           limit: 1,
@@ -213,6 +220,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     },
 
     async getSourceUrl(key) {
+      const storage = getStorage();
       try {
         const { data } = storage.getPublicUrl(key);
         return data.publicUrl;
@@ -222,6 +230,7 @@ export const createSupabaseFileStorage = (): FileStorage => {
     },
 
     async getDownloadUrl(key) {
+      const storage = getStorage();
       try {
         const { data } = storage.getPublicUrl(key);
         return data.publicUrl;

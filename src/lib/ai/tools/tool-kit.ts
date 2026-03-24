@@ -24,6 +24,11 @@ import {
   removeBackgroundTool,
   animeConversionTool,
   enhanceImageTool,
+  removeWatermarkTool,
+  removeObjectTool,
+  superResolutionTool,
+  restoreOldPhotoTool,
+  blurBackgroundTool,
 } from "./image/edit-image";
 import {
   wordDocumentTool,
@@ -80,6 +85,11 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.RemoveBackground]: removeBackgroundTool,
     [DefaultToolName.AnimeConversion]: animeConversionTool,
     [DefaultToolName.EnhanceImage]: enhanceImageTool,
+    [DefaultToolName.RemoveWatermark]: removeWatermarkTool,
+    [DefaultToolName.RemoveObject]: removeObjectTool,
+    [DefaultToolName.SuperResolution]: superResolutionTool,
+    [DefaultToolName.RestoreOldPhoto]: restoreOldPhotoTool,
+    [DefaultToolName.BlurBackground]: blurBackgroundTool,
     [DefaultToolName.VideoGen]: videoGenTool,
   },
   [AppDefaultToolkit.Browser]: {

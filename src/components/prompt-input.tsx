@@ -286,7 +286,17 @@ export default function PromptInput({
   );
 
   const handleEditImage = useCallback(
-    (tool: "remove-background" | "enhance-image" | "anime-conversion") => {
+    (
+      tool:
+        | "remove-background"
+        | "enhance-image"
+        | "anime-conversion"
+        | "remove-watermark"
+        | "remove-object"
+        | "super-resolution"
+        | "restore-old-photo"
+        | "blur-background",
+    ) => {
       if (!threadId) return;
 
       setIsUploadDropdownOpen(false);
@@ -318,6 +328,51 @@ export default function PromptInput({
           },
         });
         toast.info("Upload an image to convert it to anime style.");
+      } else if (tool === "remove-watermark") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "remove-watermark",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image to remove watermarks.");
+      } else if (tool === "remove-object") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "remove-object",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image to remove objects.");
+      } else if (tool === "super-resolution") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "super-resolution",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image for super resolution upscaling.");
+      } else if (tool === "restore-old-photo") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "restore-old-photo",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an old photo to restore it.");
+      } else if (tool === "blur-background") {
+        appStoreMutate({
+          editImageState: {
+            isOpen: true,
+            model: "blur-background",
+            selectedImageUrl: undefined,
+          },
+        });
+        toast.info("Upload an image to blur the background.");
       }
 
       editorRef.current?.commands.focus();
@@ -859,6 +914,156 @@ export default function PromptInput({
                           >
                             <Edit2 className="mr-2 size-4" />
                             Enhance Image
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to convert it to anime style.",
+                                );
+                              } else {
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "anime-conversion",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Anime Conversion
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to remove watermarks.",
+                                );
+                              } else {
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "remove-watermark",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Remove Watermark
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to remove objects.",
+                                );
+                              } else {
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "remove-object",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Remove Object
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to upscale it.",
+                                );
+                              } else {
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "super-resolution",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Super Resolution
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to restore it.",
+                                );
+                              } else {
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "restore-old-photo",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Restore Old Photo
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              const validFiles = uploadedFiles.filter(
+                                (f) => f.url && !f.isUploading,
+                              );
+                              if (validFiles.length === 0) {
+                                toast.info(
+                                  "Please upload an image first to blur it.",
+                                );
+                              } else {
+                                appStoreMutate({
+                                  editImageState: {
+                                    isOpen: true,
+                                    selectedImageUrl: validFiles[0].url,
+                                    model: "blur-background",
+                                  },
+                                });
+                              }
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            Blur Background
                           </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>

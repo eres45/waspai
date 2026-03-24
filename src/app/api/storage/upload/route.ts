@@ -7,6 +7,8 @@ import {
   recordUploadRest,
 } from "@/lib/upload-limiter.rest";
 
+import { del } from "@vercel/blob";
+
 export async function POST(request: Request) {
   const session = await getSession();
 
@@ -43,33 +45,73 @@ export async function POST(request: Request) {
   }
 
   try {
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const contentType = request.headers.get("content-type") || "";
+    let uploadBuffer: Buffer;
+    let filename: string;
+    let mimeType: string;
+    let stagingUrl: string | undefined;
+    let stagingType: string | undefined;
+    let stagingSize: number | undefined;
 
-    if (!file) {
-      return NextResponse.json(
-        { error: "No file provided. Use 'file' field in FormData." },
-        { status: 400 },
-      );
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      uploadBuffer = Buffer.alloc(0);
+      filename = body.filename || "file";
+      mimeType = body.contentType || "application/octet-stream";
+      stagingUrl = body.url;
+      stagingType = body.stagingType;
+      stagingSize = body.size;
+
+      if (!stagingUrl) {
+        return NextResponse.json(
+          { error: "Staging URL is required for JSON upload" },
+          { status: 400 },
+        );
+      }
+    } else {
+      const formData = await request.formData();
+      const file = formData.get("file") as File;
+
+      if (!file) {
+        return NextResponse.json(
+          { error: "No file provided. Use 'file' field in FormData." },
+          { status: 400 },
+        );
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      uploadBuffer = Buffer.from(arrayBuffer);
+      filename = file.name;
+      mimeType = file.type || "application/octet-stream";
     }
 
-    // Read file content
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const fileSize = stagingUrl ? stagingSize || 0 : uploadBuffer.byteLength;
 
     // Try to upload to storage backend
     try {
-      const result = await serverFileStorage.upload(buffer, {
-        filename: file.name,
-        contentType: file.type || "application/octet-stream",
+      const result = await serverFileStorage.upload(uploadBuffer, {
+        filename,
+        contentType: mimeType,
+        url: stagingUrl,
+        metadata: { size: fileSize },
       });
+
+      // Cleanup staging if successful
+      if (stagingUrl && stagingType === "vercel-blob") {
+        try {
+          await del(stagingUrl);
+          console.log(`[Upload] Deleted staging blob: ${stagingUrl}`);
+        } catch (delError) {
+          console.error(`[Upload] Failed to delete staging blob:`, delError);
+        }
+      }
 
       // Record upload
       await recordUploadRest(
         session.user.id,
-        file.name,
-        buffer.byteLength,
-        file.type || "application/octet-stream",
+        filename,
+        result.metadata.size || fileSize,
+        mimeType,
         result.sourceUrl,
       );
 
@@ -85,16 +127,23 @@ export async function POST(request: Request) {
         storageError,
       );
 
+      if (stagingUrl) {
+        // If we were staging, we can't easily fallback to base64 here
+        // because we don't have the buffer on the server.
+        // Return the staging URL as a temporary source if possible,
+        // or just throw.
+        throw storageError;
+      }
+
       // Fallback: Convert to base64 and return as data URL
-      const base64 = buffer.toString("base64");
-      const mimeType = file.type || "application/octet-stream";
+      const base64 = uploadBuffer.toString("base64");
       const dataUrl = `data:${mimeType};base64,${base64}`;
 
       // Record upload (base64)
       await recordUploadRest(
         session.user.id,
-        file.name,
-        buffer.byteLength,
+        filename,
+        uploadBuffer.byteLength,
         mimeType,
         dataUrl,
       );
@@ -105,9 +154,9 @@ export async function POST(request: Request) {
         url: dataUrl,
         metadata: {
           key: `base64-${Date.now()}`,
-          filename: file.name,
+          filename,
           contentType: mimeType,
-          size: buffer.byteLength,
+          size: uploadBuffer.byteLength,
           uploadedAt: new Date(),
         },
         fallback: true,

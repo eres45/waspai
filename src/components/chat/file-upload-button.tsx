@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { Button } from "ui/button";
 import { toast } from "sonner";
+import { useFileUpload } from "@/hooks/use-presigned-upload";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ interface FileUploadButtonProps {
     name: string;
     type: string;
     size: number;
+    contentType?: string;
   }) => void;
   disabled?: boolean;
 }
@@ -32,9 +34,12 @@ export function FileUploadButton({
     name: string;
     type: string;
     size: number;
+    contentType?: string;
   } | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { upload } = useFileUpload();
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -61,37 +66,17 @@ export function FileUploadButton({
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
       const file = fileInputRef.current?.files?.[0];
       if (!file) return;
 
-      formData.append("file", file);
-
-      const response = await fetch("/api/storage/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        if (error.remaining !== undefined) {
-          toast.error(
-            `Upload limit reached. ${error.remaining} uploads remaining today.`,
-            { duration: 5000 },
-          );
-        } else {
-          toast.error(error.error || "Upload failed");
-        }
-        return;
-      }
-
-      const result = await response.json();
+      const result = await upload(file);
+      if (!result) return; // Hook already handles error toasts
 
       onFileUpload({
         url: result.url,
         name: preview.name,
-        type: preview.type,
-        size: preview.size,
+        type: preview.contentType || preview.type,
+        size: result.size || preview.size,
       });
 
       toast.success("File uploaded successfully!");

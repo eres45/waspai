@@ -65,29 +65,39 @@ const buildPublicUrl = (
 };
 
 export const createS3FileStorage = (): FileStorage => {
-  const bucket = required(
-    "FILE_STORAGE_S3_BUCKET",
-    process.env.FILE_STORAGE_S3_BUCKET,
-  );
-  const region = process.env.FILE_STORAGE_S3_REGION || process.env.AWS_REGION;
-  if (!region)
-    throw new Error(
-      "Missing required env: FILE_STORAGE_S3_REGION or AWS_REGION",
-    );
-  const endpoint = process.env.FILE_STORAGE_S3_ENDPOINT;
-  const forcePathStyle = /^1|true$/i.test(
-    process.env.FILE_STORAGE_S3_FORCE_PATH_STYLE || "",
-  );
-  const publicBaseUrl = process.env.FILE_STORAGE_S3_PUBLIC_BASE_URL;
+  const getBucket = () =>
+    required("FILE_STORAGE_S3_BUCKET", process.env.FILE_STORAGE_S3_BUCKET);
+  const getRegion = () => {
+    const region = process.env.FILE_STORAGE_S3_REGION || process.env.AWS_REGION;
+    if (!region)
+      throw new Error(
+        "Missing required env: FILE_STORAGE_S3_REGION or AWS_REGION",
+      );
+    return region;
+  };
+  const getS3Client = () => {
+    return new S3Client({
+      region: getRegion(),
+      endpoint: process.env.FILE_STORAGE_S3_ENDPOINT,
+      forcePathStyle: /^1|true$/i.test(
+        process.env.FILE_STORAGE_S3_FORCE_PATH_STYLE || "",
+      ),
+    });
+  };
 
-  const s3 = new S3Client({
-    region,
-    endpoint,
-    forcePathStyle,
-  });
+  const getPublicBaseUrl = () => process.env.FILE_STORAGE_S3_PUBLIC_BASE_URL;
 
   return {
     async upload(content, options: UploadOptions = {}) {
+      const bucket = getBucket();
+      const region = getRegion();
+      const s3 = getS3Client();
+      const publicBaseUrl = getPublicBaseUrl();
+      const forcePathStyle = /^1|true$/i.test(
+          process.env.FILE_STORAGE_S3_FORCE_PATH_STYLE || "",
+        ),
+        endpoint = process.env.FILE_STORAGE_S3_ENDPOINT;
+
       const buffer = await toBuffer(content);
       const filename = options.filename ?? "file";
       const key = buildKey(filename);
@@ -125,6 +135,8 @@ export const createS3FileStorage = (): FileStorage => {
     async createUploadUrl(
       options: UploadUrlOptions,
     ): Promise<UploadUrl | null> {
+      const bucket = getBucket();
+      const s3 = getS3Client();
       const key = buildKey(options.filename);
       const command = new PutObjectCommand({
         Bucket: bucket,
@@ -146,6 +158,8 @@ export const createS3FileStorage = (): FileStorage => {
     },
 
     async download(key) {
+      const bucket = getBucket();
+      const s3 = getS3Client();
       try {
         const res = await s3.send(
           new GetObjectCommand({ Bucket: bucket, Key: key }),
@@ -171,10 +185,14 @@ export const createS3FileStorage = (): FileStorage => {
     },
 
     async delete(key) {
+      const bucket = getBucket();
+      const s3 = getS3Client();
       await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     },
 
     async exists(key) {
+      const bucket = getBucket();
+      const s3 = getS3Client();
       try {
         await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
         return true;
@@ -185,6 +203,8 @@ export const createS3FileStorage = (): FileStorage => {
     },
 
     async getMetadata(key) {
+      const bucket = getBucket();
+      const s3 = getS3Client();
       try {
         const res = await s3.send(
           new HeadObjectCommand({ Bucket: bucket, Key: key }),
@@ -203,6 +223,14 @@ export const createS3FileStorage = (): FileStorage => {
     },
 
     async getSourceUrl(key) {
+      const bucket = getBucket();
+      const region = getRegion();
+      const publicBaseUrl = getPublicBaseUrl();
+      const forcePathStyle = /^1|true$/i.test(
+        process.env.FILE_STORAGE_S3_FORCE_PATH_STYLE || "",
+      );
+      const endpoint = process.env.FILE_STORAGE_S3_ENDPOINT;
+
       return buildPublicUrl(
         bucket,
         region,
@@ -214,6 +242,8 @@ export const createS3FileStorage = (): FileStorage => {
     },
 
     async getDownloadUrl(key) {
+      const bucket = getBucket();
+      const s3 = getS3Client();
       const command = new GetObjectCommand({ Bucket: bucket, Key: key });
       const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
       return url;

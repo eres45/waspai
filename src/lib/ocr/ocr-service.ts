@@ -6,16 +6,51 @@
 import mammoth from "mammoth";
 import officeparser from "officeparser";
 import { createRequire } from "module";
+import { generateText } from "ai";
+import { customModelProvider } from "../ai/models";
 
 const require = createRequire(import.meta.url);
 // const pdf = require("pdf-parse"); // Lazy loaded below
 
-const OCR_API_URL = "https://vetrex.x10.mx/api/extract_text.php";
+/**
+ * High-performance OCR using Qwen Vision model
+ */
+async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
+  try {
+    console.log(`OCR: Attempting extraction with Qwen Vision (VL)...`);
+    const model = customModelProvider.getModel({
+      provider: "Qwen",
+      model: "Qwen Vision (VL)",
+    });
 
-interface OCRResponse {
-  success: boolean;
-  text?: string;
-  error?: string;
+    const { text } = await generateText({
+      model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Act as a high-precision OCR engine. Extract all text from this image exactly as it appears. Maintain formatting and layout. Return ONLY the extracted text without any prefix, suffix, or commentary.",
+            },
+            { type: "image", image: imageUrl },
+          ],
+        },
+      ],
+      maxRetries: 2, // Higher retries for transient Qwen errors
+      abortSignal: AbortSignal.timeout(45000), // 45s timeout for more retries
+    });
+
+    if (text && text.trim().length > 0) {
+      console.log(`OCR: Successfully extracted text using Qwen Vision`);
+      return text.trim();
+    }
+  } catch (err: any) {
+    console.error(`OCR: Qwen Vision failed: ${err.message || "Unknown error"}`);
+    throw err; // Propagate error for Qwen-only mode
+  }
+
+  return "";
 }
 
 export async function extractTextFromDocuments(
@@ -103,27 +138,16 @@ export async function extractTextFromDocuments(
       remainingLinks.push(link);
     }
 
-    // 2. Process remaining (PDF/Image/Doc) via External API
+    // 2. Process remaining (PDF/Image/Doc) via Vision AI or Cloud API
     if (remainingLinks.length > 0) {
-      console.log(`OCR: Sending ${remainingLinks.length} files to Vetrex API`);
+      console.log(`OCR: Sending ${remainingLinks.length} files to Vision AI`);
 
       const externalResults = await Promise.all(
         remainingLinks.map(async (link) => {
           try {
-            const response = await fetch(OCR_API_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ image_url: link }),
-            });
-
-            if (!response.ok) {
-              console.error(`OCR API error for ${link}: ${response.status}`);
-              return "";
-            }
-
-            const result = (await response.json()) as OCRResponse;
-            if (result.success && result.text) {
-              return `\n\n[Document Content: ${link.split("/").pop()}]\n${result.text}`;
+            const text = await extractTextFromImageViaAI(link);
+            if (text) {
+              return `\n\n[Document Content: ${link.split("/").pop()}]\n${text}`;
             }
           } catch (err) {
             console.error(`OCR extraction error for ${link}:`, err);

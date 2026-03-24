@@ -35,6 +35,11 @@ export enum DefaultToolName {
   RemoveBackground = "remove-background",
   AnimeConversion = "anime-conversion",
   EnhanceImage = "enhance-image",
+  RemoveWatermark = "remove-watermark",
+  RemoveObject = "remove-object",
+  SuperResolution = "super-resolution",
+  RestoreOldPhoto = "restore-old-photo",
+  BlurBackground = "blur-background",
   // Documents
   GenerateWord = "generate-word-document",
   GenerateCSV = "generate-csv",

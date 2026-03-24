@@ -15,6 +15,7 @@ export async function getStorageInfoAction() {
       storageDriver === "s3" ||
       storageDriver === "supabase" ||
       storageDriver === "hybrid",
+    canStageByBlob: !!process.env.BLOB_READ_WRITE_TOKEN,
   };
 }
 

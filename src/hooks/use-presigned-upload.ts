@@ -17,6 +17,7 @@ interface StorageInfo {
     | "hybrid"
     | string;
   supportsDirectUpload: boolean;
+  canStageByBlob: boolean;
 }
 
 interface UploadOptions {
@@ -32,23 +33,6 @@ interface UploadResult {
 }
 
 // Helpers
-function useStorageInfo() {
-  const { data, isLoading } = useSWR<StorageInfo>(
-    "storage-info",
-    getStorageInfoAction,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000, // Cache for 1 minute
-    },
-  );
-
-  return {
-    storageType: data?.type,
-    supportsDirectUpload: data?.supportsDirectUpload ?? false,
-    isLoading,
-  };
-}
 
 /**
  * Hook for uploading files to storage.
@@ -73,11 +57,19 @@ function useStorageInfo() {
  * ```
  */
 export function useFileUpload() {
-  const {
-    storageType,
-    supportsDirectUpload,
-    isLoading: isLoadingStorageInfo,
-  } = useStorageInfo();
+  const { data, isLoading: isLoadingStorageInfo } = useSWR<StorageInfo>(
+    "storage-info",
+    getStorageInfoAction,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
+  );
+
+  const storageType = data?.type;
+  const supportsDirectUpload = data?.supportsDirectUpload ?? false;
+  const canStageByBlob = data?.canStageByBlob ?? false;
+
   const [isUploading, setIsUploading] = useState(false);
 
   const upload = useCallback(
@@ -102,13 +94,48 @@ export function useFileUpload() {
 
       setIsUploading(true);
       try {
-        // Vercel Blob direct upload
-        if (storageType === "vercel-blob") {
+        // CASE 1: Vercel Blob direct upload (or staging for Telegram)
+        const isTelegramLargeFile =
+          storageType === "telegram" &&
+          canStageByBlob &&
+          file.size > 4 * 1024 * 1024;
+
+        if (storageType === "vercel-blob" || isTelegramLargeFile) {
           const blob = await uploadToVercelBlob(filename, file, {
             access: "public",
             handleUploadUrl: "/api/storage/upload-url",
             contentType,
           });
+
+          if (isTelegramLargeFile) {
+            // Tell the server to ingest this URL into Telegram
+            const serverUploadResponse = await fetch("/api/storage/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                url: blob.url,
+                filename,
+                contentType,
+                size: file.size,
+                stagingType: "vercel-blob",
+              }),
+            });
+
+            if (!serverUploadResponse.ok) {
+              const errorBody = await serverUploadResponse
+                .json()
+                .catch(() => ({}));
+              throw new Error(errorBody.error || "Server staging failed");
+            }
+
+            const result = await serverUploadResponse.json();
+            return {
+              pathname: result.key,
+              url: result.url,
+              contentType: result.metadata?.contentType || contentType,
+              size: result.metadata?.size || file.size,
+            };
+          }
 
           return {
             pathname: blob.pathname,
@@ -120,6 +147,7 @@ export function useFileUpload() {
 
         // S3 or other direct upload (future)
         if (supportsDirectUpload && storageType === "s3") {
+          // ...
           // Request presigned URL
           const uploadUrlResponse = await fetch("/api/storage/upload-url", {
             method: "POST",
