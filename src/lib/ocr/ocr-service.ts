@@ -38,7 +38,7 @@ async function extractTextFromImageViaAI(imageUrl: string): Promise<string> {
         },
       ],
       maxRetries: 2, // Higher retries for transient Qwen errors
-      abortSignal: AbortSignal.timeout(45000), // 45s timeout for more retries
+      abortSignal: AbortSignal.timeout(25000), // 25s timeout for more retries
     });
 
     if (text && text.trim().length > 0) {
@@ -145,6 +145,20 @@ export async function extractTextFromDocuments(
       const externalResults = await Promise.all(
         remainingLinks.map(async (link) => {
           try {
+            // Optimization: Skip OCR for very small files (less than 5KB)
+            // as they are unlikely to contain readable text for the VL model
+            // Check if link is a data URL to get size easily, otherwise skip check
+            if (link.startsWith("data:")) {
+              const base64Length = link.split(",")[1]?.length || 0;
+              const sizeInBytes = (base64Length * 3) / 4;
+              if (sizeInBytes < 5000) {
+                console.log(
+                  `OCR: Skipping very small file (<5KB): ${link.substring(0, 30)}...`,
+                );
+                return "";
+              }
+            }
+
             const text = await extractTextFromImageViaAI(link);
             if (text) {
               return `\n\n[Document Content: ${link.split("/").pop()}]\n${text}`;

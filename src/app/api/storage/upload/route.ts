@@ -127,6 +127,13 @@ export async function POST(request: Request) {
         storageError,
       );
 
+      console.log("[DEBUG] Storage Upload Staging Params:", {
+        stagingUrl,
+        filename,
+        mimeType,
+        stagingSize,
+      });
+
       if (stagingUrl) {
         // If we were staging, we can't easily fallback to base64 here
         // because we don't have the buffer on the server.
@@ -162,10 +169,10 @@ export async function POST(request: Request) {
         fallback: true,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to upload file", error);
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: error?.message || "Failed to upload file" },
       { status: 500 },
     );
   }

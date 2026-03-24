@@ -98,7 +98,7 @@ export function useFileUpload() {
         const isTelegramLargeFile =
           storageType === "telegram" &&
           canStageByBlob &&
-          file.size > 4 * 1024 * 1024;
+          file.size > 3 * 1024 * 1024;
 
         if (storageType === "vercel-blob" || isTelegramLargeFile) {
           const blob = await uploadToVercelBlob(filename, file, {
@@ -125,7 +125,9 @@ export function useFileUpload() {
               const errorBody = await serverUploadResponse
                 .json()
                 .catch(() => ({}));
-              throw new Error(errorBody.error || "Server staging failed");
+              const errorMessage =
+                errorBody.error || errorBody.message || "Server staging failed";
+              throw new Error(errorMessage);
             }
 
             const result = await serverUploadResponse.json();
@@ -204,15 +206,17 @@ export function useFileUpload() {
 
         if (!serverUploadResponse.ok) {
           const errorBody = await serverUploadResponse.json().catch(() => ({}));
+          const errorMessage =
+            errorBody.error || errorBody.message || "Server upload failed";
 
           // Display detailed error with solution if available
           if (errorBody.solution) {
-            toast.error(errorBody.error || "Server upload failed", {
+            toast.error(errorMessage, {
               description: errorBody.solution,
               duration: 10000, // Show for 10 seconds
             });
           } else {
-            toast.error(errorBody.error || "Server upload failed");
+            toast.error(errorMessage);
           }
           return;
         }

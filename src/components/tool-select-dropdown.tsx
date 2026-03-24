@@ -101,7 +101,15 @@ interface ToolSelectDropdownProps {
       | "sdxl-v1-0",
   ) => void;
   onEditImage?: (
-    tool: "remove-background" | "enhance-image" | "anime-conversion",
+    tool:
+      | "remove-background"
+      | "enhance-image"
+      | "anime-conversion"
+      | "remove-watermark"
+      | "remove-object"
+      | "super-resolution"
+      | "restore-old-photo"
+      | "blur-background",
   ) => void;
   className?: string;
 }
@@ -122,6 +130,7 @@ export function ToolSelectDropdown({
   onSelectWorkflow,
   onSelectAgent,
   onGenerateImage,
+  onEditImage,
   mentions,
   className,
 }: ToolSelectDropdownProps) {
@@ -269,6 +278,7 @@ export function ToolSelectDropdown({
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
+        <ImageEditSelector onEditImage={onEditImage} />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
@@ -1291,6 +1301,108 @@ function ImageGeneratorSelector({
             >
               <ImagesIcon className="mr-2 size-4" />
               Seedream 4.5
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuPortal>
+      </DropdownMenuSub>
+    </DropdownMenuGroup>
+  );
+}
+function ImageEditSelector({
+  onEditImage,
+}: {
+  onEditImage?: (
+    tool:
+      | "remove-background"
+      | "enhance-image"
+      | "anime-conversion"
+      | "remove-watermark"
+      | "remove-object"
+      | "super-resolution"
+      | "restore-old-photo"
+      | "blur-background",
+  ) => void;
+}) {
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+          <Wrench className="size-3.5" />
+          Edit Image
+        </DropdownMenuSubTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("remove-background")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                ✨
+              </div>
+              Remove Background
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("enhance-image")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🪄
+              </div>
+              Enhance Image
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("anime-conversion")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🏮
+              </div>
+              Anime Conversion
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("remove-watermark")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🚫
+              </div>
+              Remove Watermark
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("remove-object")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🧹
+              </div>
+              Remove Object
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("super-resolution")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🚀
+              </div>
+              Super Resolution
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("restore-old-photo")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                📜
+              </div>
+              Restore Old Photo
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("blur-background")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🌫️
+              </div>
+              Blur Background
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>

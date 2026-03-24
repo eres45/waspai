@@ -301,78 +301,32 @@ export default function PromptInput({
 
       setIsUploadDropdownOpen(false);
 
-      if (tool === "remove-background") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "remove-background",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image to remove its background.");
-      } else if (tool === "enhance-image") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "enhance-image",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image to enhance it.");
-      } else if (tool === "anime-conversion") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "anime-conversion",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image to convert it to anime style.");
-      } else if (tool === "remove-watermark") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "remove-watermark",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image to remove watermarks.");
-      } else if (tool === "remove-object") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "remove-object",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image to remove objects.");
-      } else if (tool === "super-resolution") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "super-resolution",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image for super resolution upscaling.");
-      } else if (tool === "restore-old-photo") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "restore-old-photo",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an old photo to restore it.");
-      } else if (tool === "blur-background") {
-        appStoreMutate({
-          editImageState: {
-            isOpen: true,
-            model: "blur-background",
-            selectedImageUrl: undefined,
-          },
-        });
-        toast.info("Upload an image to blur the background.");
+      const validFiles = uploadedFiles.filter((f) => f.url && !f.isUploading);
+      const selectedImageUrl = validFiles[0]?.url;
+
+      const toolMessages: Record<string, string> = {
+        "remove-background": "Upload an image to remove its background.",
+        "enhance-image": "Upload an image to enhance it.",
+        "anime-conversion": "Upload an image to convert it to anime style.",
+        "remove-watermark": "Upload an image to remove watermarks.",
+        "remove-object": "Upload an image to remove objects.",
+        "super-resolution": "Upload an image for super resolution upscaling.",
+        "restore-old-photo": "Upload an old photo to restore it.",
+        "blur-background": "Upload an image to blur the background.",
+      };
+
+      appStoreMutate({
+        editImageState: {
+          isOpen: true,
+          model: tool,
+          selectedImageUrl,
+        },
+      });
+
+      if (!selectedImageUrl) {
+        toast.info(toolMessages[tool] || "Upload an image to start editing.");
+      } else {
+        toast.success(`Using uploaded image for ${tool.replace("-", " ")}.`);
       }
 
       editorRef.current?.commands.focus();
@@ -850,216 +804,56 @@ export default function PromptInput({
                       <DropdownMenuPortal>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              console.log(
-                                "Remove Background clicked. Uploaded files:",
-                                uploadedFiles,
-                              );
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to remove background.",
-                                );
-                              } else {
-                                console.log(
-                                  "Setting remove background state with URL:",
-                                  validFiles[0].url,
-                                );
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "remove-background",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("remove-background")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Remove Background
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              console.log(
-                                "Enhance Image clicked. Uploaded files:",
-                                uploadedFiles,
-                              );
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to enhance it.",
-                                );
-                              } else {
-                                console.log(
-                                  "Setting enhance image state with URL:",
-                                  validFiles[0].url,
-                                );
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "enhance-image",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("enhance-image")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Enhance Image
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to convert it to anime style.",
-                                );
-                              } else {
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "anime-conversion",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("anime-conversion")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Anime Conversion
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to remove watermarks.",
-                                );
-                              } else {
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "remove-watermark",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("remove-watermark")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Remove Watermark
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to remove objects.",
-                                );
-                              } else {
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "remove-object",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("remove-object")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Remove Object
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to upscale it.",
-                                );
-                              } else {
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "super-resolution",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("super-resolution")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Super Resolution
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to restore it.",
-                                );
-                              } else {
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "restore-old-photo",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("restore-old-photo")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />
                             Restore Old Photo
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              const validFiles = uploadedFiles.filter(
-                                (f) => f.url && !f.isUploading,
-                              );
-                              if (validFiles.length === 0) {
-                                toast.info(
-                                  "Please upload an image first to blur it.",
-                                );
-                              } else {
-                                appStoreMutate({
-                                  editImageState: {
-                                    isOpen: true,
-                                    selectedImageUrl: validFiles[0].url,
-                                    model: "blur-background",
-                                  },
-                                });
-                              }
-                            }}
+                            onClick={() => handleEditImage("blur-background")}
                             className="cursor-pointer"
                           >
                             <Edit2 className="mr-2 size-4" />

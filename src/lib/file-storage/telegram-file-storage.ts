@@ -53,8 +53,10 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
       const filename = options.filename ?? "file";
       const contentType = options.contentType || "application/octet-stream";
 
-      // If we have a remote URL, we don't need to load the content buffer
+      // If we have a remote URL, we don't need to load the content buffer initially
       const buffer = remoteUrl ? Buffer.alloc(0) : await toBuffer(content);
+      let activeBuffer = buffer;
+      let isUsingUrlMode = !!remoteUrl;
 
       const key = buildKey(filename);
       const fileType = getFileType(contentType);
@@ -71,7 +73,7 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
         let endpoint: string;
         let fieldName: string;
 
-        const PHOTO_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB
+        const PHOTO_SIZE_LIMIT = 5 * 1024 * 1024; // 5MB (Telegram URL limit for photos)
         const isLargeImage =
           fileType === "image" && fileSize > PHOTO_SIZE_LIMIT;
 
@@ -124,11 +126,34 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
             );
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+            // Increase timeout for URL-based uploads as Telegram may take time to fetch
+            const timeoutDuration = isUsingUrlMode ? 60000 : 30000;
+            const timeoutId = setTimeout(
+              () => controller.abort(),
+              timeoutDuration,
+            );
+
+            // Re-build FormData if we switched from URL to Buffer mode
+            const currentFormData = new FormData();
+            currentFormData.append("chat_id", chatId);
+            currentFormData.append("caption", caption);
+
+            if (isUsingUrlMode && remoteUrl) {
+              currentFormData.append(fieldName, remoteUrl);
+            } else {
+              const blob = new Blob([new Uint8Array(activeBuffer)], {
+                type: contentType,
+              });
+              currentFormData.append(
+                fieldName,
+                blob,
+                sanitizeFilename(filename),
+              );
+            }
 
             response = await fetch(endpoint, {
               method: "POST",
-              body: formData,
+              body: currentFormData,
               signal: controller.signal,
             });
 
@@ -140,8 +165,13 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
             } else {
               const errorText = await response.text();
               logger.error(
-                `[Telegram Upload] API Error (${response.status}): ${errorText}`,
+                `[Telegram Upload] API Error (${response.status}) for ${endpoint}: ${errorText}`,
               );
+              console.error(
+                `[DEBUG] Telegram API Full Error Response:`,
+                errorText,
+              );
+              console.error(`[DEBUG] Sent URL:`, remoteUrl);
 
               // If it's a 401, 403, or 400 with certain messages, don't retry
               if (response.status === 401 || response.status === 403) {
@@ -167,6 +197,30 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
             }
 
             if (attempt < maxRetries) {
+              // FALLBACK LOGIC: If we were using URL mode and it failed,
+              // try to download the file to the server and upload directly in the next attempt.
+              if (isUsingUrlMode && remoteUrl) {
+                logger.warn(
+                  `[Telegram Upload] URL ingestion failed. Falling back to direct server upload...`,
+                );
+                try {
+                  const res = await fetch(remoteUrl);
+                  if (res.ok) {
+                    const arrayBuffer = await res.arrayBuffer();
+                    activeBuffer = Buffer.from(arrayBuffer);
+                    isUsingUrlMode = false;
+                    logger.info(
+                      `[Telegram Upload] Successfully downloaded staged file (${activeBuffer.byteLength} bytes) for direct upload.`,
+                    );
+                  }
+                } catch (fetchErr) {
+                  logger.error(
+                    `[Telegram Upload] Failed to download staged file from ${remoteUrl}`,
+                    fetchErr,
+                  );
+                }
+              }
+
               const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
               await new Promise((resolve) => setTimeout(resolve, delay));
             }

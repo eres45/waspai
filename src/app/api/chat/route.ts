@@ -208,9 +208,20 @@ export async function POST(request: Request) {
     const threadPromise = chatRepository.selectThreadDetails(id);
     const agentPromise = rememberAgentAction(agentId, userId);
 
-    // Await all initial metadata
-    const [enrichedMessageText, rawThread, agent] = await Promise.all([
+    // Await all initial metadata with a timeout for OCR to prevent chat hangs
+    // We wait at most 10s for OCR. If it takes longer, we proceed with the original message text.
+    const ocrWithTimeout = Promise.race([
       ocrPromise,
+      new Promise<string>((resolve) =>
+        setTimeout(() => {
+          logger.warn("OCR timed out after 10s, proceeding with original text");
+          resolve(messageText);
+        }, 10000),
+      ),
+    ]);
+
+    const [enrichedMessageText, rawThread, agent] = await Promise.all([
+      ocrWithTimeout,
       threadPromise,
       agentPromise,
     ]);
