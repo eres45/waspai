@@ -15,18 +15,26 @@ export interface EditedImage {
 const WORKER_BASE_URL = "https://photogrid-proxy.llamai.workers.dev";
 
 /**
- * Resolves a relative storage bridge URL to an absolute, publicly reachable URL.
+ * Resolves a relative storage bridge URL to a publicly accessible URL
+ * via our Cloudflare Worker's /serve endpoint (auth-free proxy for Telegram files).
  */
 function resolveImageUrl(url: string): string {
   const bridgePath = "/api/storage/file/";
   if (url.includes(bridgePath)) {
     const parts = url.split(bridgePath);
     const filePath = parts[parts.length - 1];
+    const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+
+    if (filePath && workerUrl) {
+      const resolved = `${workerUrl}/serve?path=${encodeURIComponent(filePath)}`;
+      logger.info(`Resolved storage URL via Worker: ${resolved}`);
+      return resolved;
+    }
+
+    // Fallback: use direct Telegram URL if worker URL is not configured
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (filePath && botToken) {
-      const resolved = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
-      logger.info(`Resolved storage URL: ${url} -> ${resolved}`);
-      return resolved;
+      return `https://api.telegram.org/file/bot${botToken}/${filePath}`;
     }
   }
   return url;

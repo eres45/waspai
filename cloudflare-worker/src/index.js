@@ -65,6 +65,44 @@ export default {
       }
     }
 
+    // Public file serve endpoint — proxies Telegram files without exposing bot token
+    // Usage: GET /serve?path=photos/file_85.jpg
+    if (url.pathname === "/serve" && request.method === "GET") {
+      const filePath = url.searchParams.get("path");
+      if (!filePath) {
+        return new Response("Missing path", { status: 400 });
+      }
+
+      const botToken = env.TELEGRAM_BOT_TOKEN;
+      if (!botToken) {
+        return new Response("Worker not configured", { status: 500 });
+      }
+
+      try {
+        const telegramUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+        const imgRes = await fetch(telegramUrl);
+
+        if (!imgRes.ok) {
+          return new Response(`Failed to fetch file: ${imgRes.status}`, {
+            status: imgRes.status,
+          });
+        }
+
+        const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+        const body = await imgRes.arrayBuffer();
+        return new Response(body, {
+          status: 200,
+          headers: {
+            "Content-Type": contentType,
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (err) {
+        return new Response(`Serve error: ${err.message}`, { status: 500 });
+      }
+    }
+
     if (url.pathname !== "/upload" || request.method !== "POST") {
       return new Response("Not Found", { status: 404 });
     }
