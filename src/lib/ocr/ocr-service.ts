@@ -146,7 +146,7 @@ export async function extractTextFromDocuments(
         ) {
           console.log(`OCR: Fetching text content locally from ${link}`);
           const res = await fetchFile(link);
-          if (res.ok) {
+          if (res && res.ok) {
             const content = await res.text();
             extractedContent += `\n\n[File Content: ${link.split("/").pop()}]\n${content}\n`;
             continue; // Handled locally
@@ -156,7 +156,7 @@ export async function extractTextFromDocuments(
         else if (lowerLink.endsWith(".docx")) {
           console.log(`OCR: Fetching DOCX content locally from ${link}`);
           const res = await fetchFile(link);
-          if (res.ok) {
+          if (res && res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const result = await mammoth.extractRawText({ buffer });
@@ -168,7 +168,7 @@ export async function extractTextFromDocuments(
         else if (lowerLink.endsWith(".pdf")) {
           console.log(`OCR: Fetching PDF content locally from ${link}`);
           const res = await fetchFile(link);
-          if (res.ok) {
+          if (res && res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const pdf = require("pdf-parse-fork");
@@ -186,7 +186,7 @@ export async function extractTextFromDocuments(
         ) {
           console.log(`OCR: Fetching Office content locally from ${link}`);
           const res = await fetchFile(link);
-          if (res.ok) {
+          if (res && res.ok) {
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const result = await officeparser.parseOfficeAsync(buffer);
