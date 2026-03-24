@@ -18,6 +18,8 @@ interface StorageInfo {
     | string;
   supportsDirectUpload: boolean;
   canStageByBlob: boolean;
+  cloudflareWorkerUrl?: string;
+  cloudflareAuthToken?: string;
 }
 
 interface UploadOptions {
@@ -92,6 +94,9 @@ export function useFileUpload() {
         return;
       }
 
+      const cloudflareWorkerUrl = data?.cloudflareWorkerUrl;
+      const cloudflareAuthToken = data?.cloudflareAuthToken;
+
       setIsUploading(true);
       try {
         // CASE 1: Vercel Blob direct upload (or staging for Telegram)
@@ -143,6 +148,81 @@ export function useFileUpload() {
             pathname: blob.pathname,
             url: blob.url,
             contentType: blob.contentType,
+            size: file.size,
+          };
+        }
+
+        // CASE 2: Cloudflare Worker direct upload (for Telegram high-limit)
+        if (
+          storageType === "telegram" &&
+          cloudflareWorkerUrl &&
+          file.size > 4.5 * 1024 * 1024
+        ) {
+          console.log(
+            `[Upload] Using Cloudflare Worker for large file: ${file.size} bytes`,
+          );
+
+          const formData = new FormData();
+          // Determine Telegram field
+          const isPhoto = contentType.startsWith("image/");
+          const isVideo = contentType.startsWith("video/");
+          const fieldName = isPhoto ? "photo" : isVideo ? "video" : "document";
+
+          formData.append(fieldName, file);
+          formData.append(
+            "caption",
+            `Uploaded via Cloudflare Bridge\nFile: ${filename}\nSize: ${Math.round(file.size / 1024)}KB`,
+          );
+
+          const workerResponse = await fetch(
+            `${cloudflareWorkerUrl}${cloudflareWorkerUrl.endsWith("/") ? "" : "/"}upload`,
+            {
+              method: "POST",
+              headers: {
+                "X-Auth-Token": cloudflareAuthToken || "",
+              },
+              body: formData,
+            },
+          );
+
+          if (!workerResponse.ok) {
+            const errorText = await workerResponse.text();
+            throw new Error(
+              `Cloudflare Worker upload failed: ${workerResponse.status} ${errorText}`,
+            );
+          }
+
+          const tgResult = await workerResponse.json();
+          if (!tgResult.ok) {
+            throw new Error(
+              `Telegram API via Worker failed: ${tgResult.description}`,
+            );
+          }
+
+          // Use the proxied URL if provided by the worker
+          const finalUrl =
+            tgResult.proxied_url ||
+            `tg://${fieldName}/${tgResult.result.message_id}`;
+
+          const syncResponse = await fetch("/api/storage/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename,
+              contentType,
+              externalResult: {
+                url: finalUrl,
+                messageId: tgResult.result.message_id,
+                size: file.size,
+              },
+            }),
+          });
+
+          const syncData = await syncResponse.json();
+          return {
+            pathname: syncData.key,
+            url: syncData.url,
+            contentType,
             size: file.size,
           };
         }

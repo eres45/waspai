@@ -1,0 +1,13 @@
+name = "telegram-upload-proxy"
+main = "src/index.js"
+compatibility_date = "2024-03-24"
+
+[vars]
+# AUTH_TOKEN = "your-secure-auth-token-here"
+# TELEGRAM_BOT_TOKEN = "your-bot-token"
+# TELEGRAM_CHAT_ID = "your-chat-id"
+
+# Use 'wrangler secret put' for these in production:
+# wrangler secret put AUTH_TOKEN
+# wrangler secret put TELEGRAM_BOT_TOKEN
+# wrangler secret put TELEGRAM_CHAT_ID

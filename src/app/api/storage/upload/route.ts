@@ -61,10 +61,42 @@ export async function POST(request: Request) {
       stagingUrl = body.url;
       stagingType = body.stagingType;
       stagingSize = body.size;
+      const externalResult = body.externalResult;
 
-      if (!stagingUrl) {
+      // CASE: Metadata-only record for external uploads (e.g. Cloudflare Worker)
+      if (externalResult && externalResult.url) {
+        console.log(
+          "[Upload] Recording external upload result:",
+          externalResult,
+        );
+
+        await recordUploadRest(
+          session.user.id,
+          filename,
+          externalResult.size || stagingSize || 0,
+          mimeType,
+          externalResult.url,
+        );
+
+        return NextResponse.json({
+          success: true,
+          key: externalResult.key || `ext-${Date.now()}`,
+          url: externalResult.url,
+          metadata: {
+            key: externalResult.key || `ext-${Date.now()}`,
+            filename,
+            contentType: mimeType,
+            size: externalResult.size || stagingSize || 0,
+            uploadedAt: new Date(),
+          },
+        });
+      }
+
+      if (!stagingUrl && !externalResult) {
         return NextResponse.json(
-          { error: "Staging URL is required for JSON upload" },
+          {
+            error: "Staging URL or externalResult is required for JSON upload",
+          },
           { status: 400 },
         );
       }
