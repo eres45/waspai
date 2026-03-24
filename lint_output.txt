@@ -1,8 +1,0 @@
-
-> wasp-ai@1.25.0 lint G:\project\better-chatbot
-> next lint && biome lint
-
-Γ£ö No ESLint warnings or errors
-Checked 770 files in 67ms. No fixes applied.
-Found 3 errors.
-ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.

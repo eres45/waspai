@@ -34,7 +34,8 @@ export const createTempEmailTool = createTool({
  */
 export const getTempEmailMessagesTool = createTool({
   name: "get-temp-email-messages",
-  description: "Check for new messages in a temporary email inbox.",
+  description:
+    "Check for new messages in a temporary email inbox. IMPORTANT: You MUST call this tool EVERY TIME the user asks to check messages — never answer from memory or a previous result. If the inbox is empty, tell the user and offer to check again.",
   inputSchema: z.object({
     email: z.string().describe("The temporary email address to check"),
     provider: z
@@ -80,7 +81,11 @@ export const getTempEmailMessagesTool = createTool({
       }
 
       if (messages.length === 0) {
-        return "No messages found in this inbox yet.";
+        return {
+          status: "empty",
+          message:
+            "No messages yet. The inbox is empty. You can check again in a moment by calling this tool again.",
+        };
       }
 
       return {
