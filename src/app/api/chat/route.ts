@@ -199,16 +199,31 @@ export async function POST(request: Request) {
     // Only run OCR if the user explicitly asked about the text content of the file.
     // This avoids wasting 4-8s on OCR for image editing, describing, or other tasks.
     const ocrKeywords = [
-      "read", "extract", "ocr", "what does it say", "what's written",
-      "what is written", "text in", "text from", "transcribe", "translate",
-      "parse", "scan", "recognize", "get text", "copy text", "written on",
+      "read",
+      "extract",
+      "ocr",
+      "what does it say",
+      "what's written",
+      "what is written",
+      "text in",
+      "text from",
+      "transcribe",
+      "translate",
+      "parse",
+      "scan",
+      "recognize",
+      "get text",
+      "copy text",
+      "written on",
     ];
     const messageLower = messageText.toLowerCase();
     const userWantsOcr =
       fileUrls.length > 0 &&
       ocrKeywords.some((kw) => messageLower.includes(kw));
 
-    logger.info(`Starting parallel metadata fetch (OCR=${userWantsOcr}, thread, agent)`);
+    logger.info(
+      `Starting parallel metadata fetch (OCR=${userWantsOcr}, thread, agent)`,
+    );
 
     // Define the promises
     const ocrPromise = userWantsOcr
@@ -222,11 +237,14 @@ export async function POST(request: Request) {
     // We wait at most 10s for OCR. If it takes longer, we proceed with the original message text.
     const ocrWithTimeout = Promise.race([
       ocrPromise,
-      new Promise<string>((resolve) =>
-        setTimeout(() => {
-          logger.warn("OCR timed out after 8s, proceeding with original text");
-          resolve(messageText);
-        }, 8000), // 8s OCR cap (Vercel Hobby = 10s hard limit)
+      new Promise<string>(
+        (resolve) =>
+          setTimeout(() => {
+            logger.warn(
+              "OCR timed out after 8s, proceeding with original text",
+            );
+            resolve(messageText);
+          }, 8000), // 8s OCR cap (Vercel Hobby = 10s hard limit)
       ),
     ]);
 
@@ -788,10 +806,10 @@ CRITICAL INSTRUCTIONS:
 3. If no specific model is mentioned, use "${activeGenerationModel}" (FLUX.1 Schnell) as the default.
 4. Use the exact tool name: "image-manager".
 5. Do NOT ask the user to choose a model or ask for clarification.
-6. Do NOT refuse to generate the image - just generate it.
+6. Do NOT refuse to generate the image - just generate it. Use a creative, high-quality prompt related to the user's intent if their request is brief (e.g., if they say "generate an image", create a stunning, detailed visualization).
 7. After the tool returns the image successfully, you MUST provide a brief, descriptive summary or creative caption for the image.
-8. CRITICAL: Do NOT output the image URL in your response text.
-9. CRITICAL: Do NOT create markdown links to the image.`;
+8. CRITICAL: NEVER output the image URL in your response text.
+9. CRITICAL: NEVER create markdown links to the image (e.g., ![]() is FORBIDDEN). The user can ALREADY see the image in the tool result UI. Just talk about it.`;
           }
         }
 
@@ -1568,7 +1586,7 @@ BEGIN ROLEPLAY NOW.`
           // Tool Calling Format Reinforcement (fixes some models leaking XML)
           `[TOOL USE STANDARD]
            1. Use the standard OpenAI tool calling format (JSON in tool_calls field).
-           2. DO NOT output XML tag <invoke> or <tool_code> or <minimax:tool_call> in your text response.
+           2. DO NOT output XML tags like <invoke>, <tool_code>, <minimax:tool_call>, <tool_call>, <function>, or <parameter> in your text response.
            3. If you want to call a tool, generate the tool call object, do not write code to call it.`,
 
           // NOTE: Visualization, Memory, Browser, and Tool Knowledge blocks

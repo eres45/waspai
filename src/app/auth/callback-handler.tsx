@@ -83,10 +83,15 @@ export function AuthCallbackHandler() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="text-center p-6 bg-card border rounded-2xl shadow-2xl">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Completing sign in...</p>
+        <p className="text-lg font-medium text-foreground">
+          Completing sign in...
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Please wait a moment while we set up your session.
+        </p>
       </div>
     </div>
   );

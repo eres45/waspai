@@ -32,6 +32,25 @@ function sanitizeContentWithBuffer(
   cleaned = cleaned.replace(/\[\d+\]/g, "");
   cleaned = cleaned.replace(/\[\d+:\d+\]/g, ""); // Support [page:line] style
 
+  // 3. Strip all XML tool call tags (e.g., <tool_call>, <function>, <parameter>, <invoke>)
+  // This prevents internal model "thoughts" or manual tool call syntax from leaking into the UI.
+  cleaned = cleaned.replace(
+    /<(tool_call|function|parameter|invoke|tool_code|minimax:tool_call)[^>]*>[\s\S]*?<\/\1>/gi,
+    "",
+  );
+  cleaned = cleaned.replace(
+    /<(tool_call|function|parameter|invoke|tool_code|minimax:tool_call)[^>]*\/>/gi,
+    "",
+  );
+  cleaned = cleaned.replace(
+    /<\/?(tool_call|function|parameter|invoke|tool_code|minimax:tool_call)[^>]*>/gi,
+    "",
+  );
+
+  // 4. Strip all markdown image links (![alt](url)) to prevent duplicates
+  // This is a fail-safe for when the model includes an image link that is already in the UI.
+  cleaned = cleaned.replace(/!\[.*?\]\(.*?\)/gi, "");
+
   // 2. Look for a partial citation at the VERY END of the string
   // Matches: "[", "[1", "[12", etc.
   const partialMatch = cleaned.match(/\[\d*$/);

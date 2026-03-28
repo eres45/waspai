@@ -2,7 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Simple health check
+    // 1. Simple health check
     if (
       url.pathname === "/health" ||
       (url.pathname === "/" && request.method === "GET")
@@ -10,18 +10,19 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
-    // CORS Preflight
+    // 2. CORS Preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
           "Access-Control-Max-Age": "86400",
         },
       });
     }
 
+    // 3. Vision AI Endpoint (POST /vision)
     if (url.pathname === "/vision" && request.method === "POST") {
       const authHeader = request.headers.get("X-Auth-Token");
       if (authHeader !== env.AUTH_TOKEN) {
@@ -32,7 +33,6 @@ export default {
       if (!image) return new Response("Missing image", { status: 400 });
 
       try {
-        // Convert base64 to Uint8Array for Workers AI
         const binaryString = atob(image);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -65,18 +65,14 @@ export default {
       }
     }
 
-    // Public file serve endpoint — proxies Telegram files without exposing bot token
-    // Usage: GET /serve?path=photos/file_85.jpg
+    // 4. File Serve Endpoint (GET /serve?path=...)
     if (url.pathname === "/serve" && request.method === "GET") {
       const filePath = url.searchParams.get("path");
-      if (!filePath) {
-        return new Response("Missing path", { status: 400 });
-      }
+      if (!filePath) return new Response("Missing path", { status: 400 });
 
       const botToken = env.TELEGRAM_BOT_TOKEN;
-      if (!botToken) {
+      if (!botToken)
         return new Response("Worker not configured", { status: 500 });
-      }
 
       try {
         const telegramUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
@@ -103,109 +99,94 @@ export default {
       }
     }
 
-    if (url.pathname !== "/upload" || request.method !== "POST") {
-      return new Response("Not Found", { status: 404 });
-    }
+    // 5. Telegram Upload Bridge (POST /upload)
+    if (url.pathname === "/upload" && request.method === "POST") {
+      const authHeader = request.headers.get("X-Auth-Token");
+      if (authHeader !== env.AUTH_TOKEN) {
+        return new Response("Unauthorized", {
+          status: 401,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
 
-    // Auth Check
-    const authHeader = request.headers.get("X-Auth-Token");
-    if (authHeader !== env.AUTH_TOKEN) {
-      return new Response("Unauthorized", {
-        status: 401,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      });
-    }
+      try {
+        const formData = await request.formData();
+        const tgToken = env.TELEGRAM_BOT_TOKEN;
+        const tgChatId = env.TELEGRAM_CHAT_ID;
+        const userId = formData.get("userId") || "anonymous";
+        const filename = formData.get("filename") || "file";
+        const fileSize = formData.get("fileSize") || "0";
 
-    try {
-      const formData = await request.formData();
-      const tgToken = env.TELEGRAM_BOT_TOKEN;
-      const tgChatId = env.TELEGRAM_CHAT_ID;
-      const userId = formData.get("userId") || "anonymous";
-      const filename = formData.get("filename") || "file";
-      const fileSize = formData.get("fileSize") || "0";
-
-      if (!tgToken || !tgChatId) {
-        return new Response(
-          "Worker configuration missing: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID",
-          {
+        if (!tgToken || !tgChatId) {
+          return new Response("Worker configuration missing", {
             status: 500,
             headers: { "Access-Control-Allow-Origin": "*" },
-          },
-        );
-      }
+          });
+        }
 
-      // Ensure chat_id is present
-      if (!formData.has("chat_id")) {
-        formData.append("chat_id", tgChatId);
-      }
+        if (!formData.has("chat_id")) formData.append("chat_id", tgChatId);
 
-      // Add proper caption
-      const caption = [
-        "📁 File Upload via Cloudflare Bridge",
-        `Name: ${filename}`,
-        `Size: ${Math.round(fileSize / 1024)}KB`,
-        `User: ${userId}`,
-        `Time: ${new Date().toISOString()}`,
-      ].join("\n");
+        const caption = [
+          "📁 File Upload via Cloudflare Bridge",
+          `Name: ${filename}`,
+          `Size: ${Math.round(fileSize / 1024)}KB`,
+          `User: ${userId}`,
+          `Time: ${new Date().toISOString()}`,
+        ].join("\n");
 
-      formData.append("caption", caption);
+        formData.append("caption", caption);
 
-      // Determine endpoint
-      const hasPhoto = formData.has("photo");
-      const hasVideo = formData.has("video");
-      const method = hasPhoto
-        ? "sendPhoto"
-        : hasVideo
-          ? "sendVideo"
-          : "sendDocument";
+        const hasPhoto = formData.has("photo");
+        const hasVideo = formData.has("video");
+        const method = hasPhoto
+          ? "sendPhoto"
+          : hasVideo
+            ? "sendVideo"
+            : "sendDocument";
+        const tgUrl = `https://api.telegram.org/bot${tgToken}/${method}`;
 
-      const tgUrl = `https://api.telegram.org/bot${tgToken}/${method}`;
+        const tgRes = await fetch(tgUrl, { method: "POST", body: formData });
+        const responseData = await tgRes.json();
 
-      const tgRes = await fetch(tgUrl, {
-        method: "POST",
-        body: formData,
-      });
+        if (responseData.ok && responseData.result) {
+          let fileId;
+          const result = responseData.result;
+          if (result.photo)
+            fileId = result.photo[result.photo.length - 1].file_id;
+          else if (result.video) fileId = result.video.file_id;
+          else if (result.document) fileId = result.document.file_id;
 
-      const responseData = await tgRes.json();
-
-      if (responseData.ok && responseData.result) {
-        // Get file_id from the result
-        let fileId;
-        const result = responseData.result;
-        if (result.photo)
-          fileId = result.photo[result.photo.length - 1].file_id;
-        else if (result.video) fileId = result.video.file_id;
-        else if (result.document) fileId = result.document.file_id;
-
-        if (fileId) {
-          // Fetch file path
-          const fileRes = await fetch(
-            `https://api.telegram.org/bot${tgToken}/getFile?file_id=${fileId}`,
-          );
-          const fileData = await fileRes.json();
-          if (fileData.ok && fileData.result.file_path) {
-            responseData.file_path = fileData.result.file_path;
-            // Provide a convenient full URL for our proxy
-            responseData.proxied_url = `/api/storage/file/${fileData.result.file_path}`;
+          if (fileId) {
+            const fileRes = await fetch(
+              `https://api.telegram.org/bot${tgToken}/getFile?file_id=${fileId}`,
+            );
+            const fileData = await fileRes.json();
+            if (fileData.ok && fileData.result.file_path) {
+              responseData.file_path = fileData.result.file_path;
+              responseData.proxied_url = `/api/storage/file/${fileData.result.file_path}`;
+            }
           }
         }
-      }
 
-      return new Response(JSON.stringify(responseData), {
-        status: tgRes.status,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+        return new Response(JSON.stringify(responseData), {
+          status: tgRes.status,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
     }
+
+    // 6. Default Fallback
+    return new Response("Not Found", { status: 404 });
   },
 };

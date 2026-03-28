@@ -180,7 +180,7 @@ export const nanoBananaTool = createTool({
         mode: "create",
         guide:
           successfulImages.length > 0
-            ? "I have generated your image above."
+            ? "SUCCESS: I have generated your image and shown it to the user in the tool result UI. DO NOT include the image URL or any markdown image links (![...](...)) in your text response. The user already sees the image. Just provide a brief, descriptive summary or caption."
             : "I apologize, but the image generation was not successful. Please try again.",
       };
     } catch (e: any) {

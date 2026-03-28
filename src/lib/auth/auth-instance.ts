@@ -50,7 +50,7 @@ const options = {
       enabled: false, // Disable cookie cache to prevent session size limit errors
       maxAge: 60 * 60,
     },
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
     updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
   },
   advanced: {

@@ -25,7 +25,32 @@ export async function middleware(request: NextRequest) {
   if (!sessionCookie) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
-  return NextResponse.next();
+
+  const response = NextResponse.next();
+
+  // Sliding expiration: Refresh the auth-user and session cookies on each request
+  // to ensure the user stays logged in for 30 days from their last activity.
+  const authUser = request.cookies.get("auth-user");
+  if (authUser) {
+    response.cookies.set("auth-user", authUser.value, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  }
+
+  const betterAuthSession = request.cookies.get("better-auth.session_token");
+  if (betterAuthSession) {
+    response.cookies.set("better-auth.session_token", betterAuthSession.value, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+  }
+
+  return response;
 }
 
 export const config = {
