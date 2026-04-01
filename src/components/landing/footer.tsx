@@ -127,7 +127,7 @@ export const Footer = () => {
               WASPAI
             </span>
             <p className="text-[13px] text-white/30 font-medium">
-              © 2024 Better Chatbot Inc. All rights reserved.
+              © 2026 WaspAI Inc. All rights reserved.
             </p>
           </div>
 

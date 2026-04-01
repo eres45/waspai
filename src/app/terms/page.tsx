@@ -3,7 +3,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service | Wasp AI",
   description:
-    "Terms of Service for Wasp AI Solutions. Last updated January 2026.",
+    "Terms of Service for WASPAI. Last updated January 2026.",
 };
 
 export default function TermsPage() {
@@ -20,11 +20,12 @@ export default function TermsPage() {
             1. Acceptance of Terms
           </h2>
           <p>
-            By accessing and using <strong>Wasp AI Solutions</strong>{" "}
-            (&quot;Service&quot;), you accept and agree to be bound by the terms
-            and provision of this agreement. In addition, when using these
-            particular services, you shall be subject to any posted guidelines
-            or rules applicable to such services.
+            By accessing and using <strong>WASPAI</strong> (waspai.in)
+            (&quot;Service&quot;), which is owned and operated by{" "}
+            <strong>Ronit Bhavesh Shrimankar</strong>, you accept and agree to
+            be bound by the terms and provision of this agreement. In addition,
+            when using these particular services, you shall be subject to any
+            posted guidelines or rules applicable to such services.
           </p>
         </section>
 
