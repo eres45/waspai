@@ -33,7 +33,7 @@ export default function AboutPage() {
               Building the future of <span className="text-white/40 italic">AI Autonomy.</span>
             </h1>
             <p className="text-xl text-white/40 leading-relaxed max-w-2xl mx-auto">
-              WASPAI is 2026's leading multi-model AI platform, designed to empower developers and creatives with seamless access to world-class intelligence.
+              WASPAI is 2026&apos;s leading multi-model AI platform, designed to empower developers and creatives with seamless access to world-class intelligence.
             </p>
           </section>
 
@@ -69,7 +69,7 @@ export default function AboutPage() {
             <h2 className="text-2xl font-bold mb-8 text-center uppercase tracking-widest">Legal Ownership & Identity</h2>
             <div className="space-y-6 text-center max-w-2xl mx-auto">
               <p className="text-lg text-white/60 italic leading-relaxed">
-                "WASPAI is more than just a tool; it's a commitment to making advanced intelligence accessible to everyone with minimal friction."
+                &quot;WASPAI is more than just a tool; it&apos;s a commitment to making advanced intelligence accessible to everyone with minimal friction.&quot;
               </p>
               <div className="pt-6 border-t border-white/5">
                 <p className="text-white font-bold text-xl uppercase tracking-widest">Ronit Bhavesh Shrimankar</p>
@@ -93,7 +93,7 @@ export default function AboutPage() {
             <h2 className="text-3xl font-bold mb-8">Our Journey</h2>
             <div className="text-white/50 space-y-6 text-lg leading-relaxed">
               <p>
-                Founded in 2026, WASPAI (formerly known as Better Chatbot) began as a mission to bridge the gap between complex AI models and user-friendly interfaces. We believe that intelligence shouldn't be gated by technical complexity.
+                Founded in 2026, WASPAI (formerly known as Better Chatbot) began as a mission to bridge the gap between complex AI models and user-friendly interfaces. We believe that intelligence shouldn&apos;t be gated by technical complexity.
               </p>
               <p>
                 Today, WASPAI supports dozens of specialized models for coding, image generation, video creation, and high-level reasoning. Our platform is managed with a focus on reliability, performance, and the developer-first aesthetic.
