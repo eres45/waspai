@@ -1,35 +1,38 @@
-import { customModelProvider } from "lib/ai/models";
-import {
-  PROVIDER_ORDER,
-  PROVIDER_DISPLAY_NAMES,
-  MODEL_DISPLAY_NAMES,
-} from "lib/ai/model-display-names";
+import { buildDynamicModelsInfo } from "lib/ai/models";
+
+// Provider display order
+const PROVIDER_ORDER = [
+  "Anthropic",
+  "OpenAI",
+  "Google",
+  "xAI",
+  "DeepSeek",
+  "Moonshot",
+  "MiniMax",
+  "Perplexity",
+  "Qwen",
+  "Meta",
+  "Mistral",
+  "Microsoft",
+  "NVIDIA",
+  "Z-AI",
+  "StepFun",
+  "Xiaomi",
+  "Other",
+];
+
+export const dynamic = "force-dynamic"; // always fetch fresh from worker
 
 export const GET = async () => {
-  return Response.json(
-    customModelProvider.modelsInfo
-      .map((provider) => ({
-        ...provider,
-        provider:
-          PROVIDER_DISPLAY_NAMES[provider.provider] || provider.provider,
-        models: provider.models.map((model) => ({
-          ...model,
-          name: MODEL_DISPLAY_NAMES[model.name] || model.name,
-        })),
-      }))
-      .sort((a, b) => {
-        // First sort by provider order
-        const aIndex = PROVIDER_ORDER.indexOf(a.provider);
-        const bIndex = PROVIDER_ORDER.indexOf(b.provider);
-        const aOrder = aIndex === -1 ? PROVIDER_ORDER.length : aIndex;
-        const bOrder = bIndex === -1 ? PROVIDER_ORDER.length : bIndex;
+  const modelsInfo = await buildDynamicModelsInfo();
 
-        if (aOrder !== bOrder) return aOrder - bOrder;
+  const sorted = modelsInfo.sort((a, b) => {
+    const aIdx = PROVIDER_ORDER.indexOf(a.provider);
+    const bIdx = PROVIDER_ORDER.indexOf(b.provider);
+    const aOrder = aIdx === -1 ? PROVIDER_ORDER.length : aIdx;
+    const bOrder = bIdx === -1 ? PROVIDER_ORDER.length : bIdx;
+    return aOrder - bOrder;
+  });
 
-        // Then sort by API key availability
-        if (a.hasAPIKey && !b.hasAPIKey) return -1;
-        if (!a.hasAPIKey && b.hasAPIKey) return 1;
-        return 0;
-      }),
-  );
+  return Response.json(sorted);
 };

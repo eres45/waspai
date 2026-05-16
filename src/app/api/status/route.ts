@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { customModelProvider, allModels } from "@/lib/ai/models";
+import { customModelProvider, buildDynamicModelsInfo } from "@/lib/ai/models";
 import { supabaseRest } from "@/lib/db/supabase-rest";
 import { streamText } from "ai";
 
@@ -68,42 +68,10 @@ async function testModel(
     const responseTime = Date.now() - startTime;
     const errorMessage = error?.message || String(error);
 
-    // If it's a JSON parse error, perform a diagnostic manual fetch to see the raw body
     if (errorMessage.includes("JSON") || errorMessage.includes("parse")) {
       console.error(
         `[Status Check Fail] ${provider}:${modelId}: ${errorMessage}`,
       );
-
-      try {
-        // Attempt a manual fetch to see what the worker is actually sending
-        // This helps us debug "Invalid JSON response" errors
-        const selectedModel: any = allModels[provider]?.[modelId];
-
-        if (selectedModel && selectedModel.clientOptions) {
-          const { baseURL } = selectedModel.clientOptions;
-          if (baseURL) {
-            const diagRes = await fetch(`${baseURL}/chat/completions`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                model: selectedModel.modelId || modelId,
-                messages: [{ role: "user", content: "Say OK" }],
-                stream: false,
-              }),
-            });
-            const diagBody = await diagRes.text();
-            console.error(
-              `[Diagnostics] ${provider}:${modelId} Raw Body (${diagRes.status}):`,
-              diagBody.slice(0, 500),
-            );
-          }
-        }
-      } catch (diagErr) {
-        console.error(
-          `[Diagnostics] Failed to collect body for ${modelId}:`,
-          diagErr,
-        );
-      }
     }
 
     if (errorMessage.includes("abort") || errorMessage.includes("Timeout")) {
@@ -147,11 +115,10 @@ async function testModel(
 // GET - Retrieve current status
 export async function GET() {
   try {
-    // Get current model IDs from code to filter out removed models
+    // Get current model IDs from worker
+    const modelsInfo = await buildDynamicModelsInfo();
     const currentModelIds = new Set(
-      customModelProvider.modelsInfo.flatMap((p) =>
-        p.models.map((m) => m.name),
-      ),
+      modelsInfo.flatMap((p) => p.models.map((m) => m.name)),
     );
 
     // Get latest status for each model using Supabase REST
@@ -221,9 +188,9 @@ export async function GET() {
       // Find latest status in DB
       const dbStatus = latestStatuses?.find((s: any) => s.model_id === modelId);
 
-      // Find provider from config
+      // Find provider from dynamic list
       const provider =
-        customModelProvider.modelsInfo.find((p) =>
+        modelsInfo.find((p) =>
           p.models.some((m) => m.name === modelId),
         )?.provider || "Unknown";
 
@@ -295,8 +262,8 @@ export async function GET() {
 // POST - Run tests (called manually from UI)
 export async function POST(_request: NextRequest) {
   try {
-    const modelsInfo = customModelProvider.modelsInfo;
-    const allModelsToTest = modelsInfo.flatMap((p) =>
+    const modelsToTest = await buildDynamicModelsInfo();
+    const allModelsToTest = modelsToTest.flatMap((p) =>
       p.models.map((m) => ({ provider: p.provider, modelName: m.name })),
     );
 
