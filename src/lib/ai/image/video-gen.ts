@@ -1,4 +1,5 @@
 import logger from "logger";
+import { UNIFIED_WORKER_URL } from "../models";
 
 export interface VideoGenOptions {
   prompt: string;
@@ -12,101 +13,52 @@ export interface VideoGenResult {
   };
 }
 
+const VIDEO_ENDPOINT = `${UNIFIED_WORKER_URL}/v1/video/generations`;
+
 /**
- * Generate video using Meta AI API
+ * Generate video using the unified AI worker (Swift Sora).
  */
 export async function generateVideoWithMeta(
   options: VideoGenOptions,
 ): Promise<VideoGenResult> {
+  logger.info(`Video Gen: Starting — prompt: "${options.prompt}"`);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 85000);
+
   try {
-    logger.info(`Video Gen (Meta): Starting video generation`);
-    logger.info(`Video Gen (Meta): Prompt: ${options.prompt}`);
+    const response = await fetch(VIDEO_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: options.prompt }),
+      signal: controller.signal,
+    });
 
-    // Use AbortController with 85 second timeout for video generation
-    // (Vercel max is 120s, background queue wait is 5s max before returning to UI)
-    // We use 85s to leave 35s of safety buffer for DB/routing overhead AND the secondary LLM text response
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 85000);
+    clearTimeout(timeoutId);
 
-    try {
-      const renderBaseUrl =
-        process.env.RENDER_URL || "https://metaai-1xpj.onrender.com";
-      const url = new URL(`${renderBaseUrl}/generate/video/v2`);
-      url.searchParams.set("prompt", options.prompt);
-      const apiUrl = url.toString();
-
-      logger.info(`Video Gen (Meta): Attempting fetch to ${apiUrl}`);
-      console.log(`[VIDEO GEN RENDER API] Fetching: ${apiUrl}`);
-
-      // We use the native Node.js 'https' module to absolutely guarantee that
-      // Next.js' aggressive monkeypatched fetch doesn't prematurely abort the stream
-      // if the client UI drops the connection or re-renders.
-      const responseBody = await new Promise<string>(
-        async (resolve, reject) => {
-          const https = await import("https");
-          const req = https.request(
-            apiUrl,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-log-request": "true",
-              },
-              signal: controller.signal, // native support for our strict 85s abort signal
-            },
-            (res: any) => {
-              let data = "";
-              res.on("data", (chunk: Buffer) => {
-                data += chunk.toString();
-              });
-              res.on("end", () => {
-                if (res.statusCode < 200 || res.statusCode >= 300) {
-                  reject(new Error(`HTTP ${res.statusCode}: ${data}`));
-                } else {
-                  resolve(data);
-                }
-              });
-            },
-          );
-
-          req.on("error", (err: any) => reject(err));
-          req.end();
-        },
-      );
-
-      clearTimeout(timeoutId);
-
-      const data = JSON.parse(responseBody);
-      // Updated for Meta API response format: { success: true, video_urls: [...], ... }
-      const videoUrl = data.video_urls?.[0] || data.video || data.url;
-
-      if (!videoUrl) {
-        throw new Error("No video URL in response from Meta API");
-      }
-
-      logger.info(`Video Gen (Meta): Video generated successfully`);
-      logger.info(`Video Gen (Meta): Video URL: ${videoUrl}`);
-
-      return {
-        video: {
-          url: videoUrl,
-          mimeType: "video/mp4",
-        },
-      };
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      logger.error("FATAL FETCH ERROR in Video Gen Tool:", {
-        message: error.message,
-        stack: error.stack,
-        cause: error.cause,
-      });
-      throw error;
+    if (!response.ok) {
+      const errText = await response.text().catch(() => response.statusText);
+      throw new Error(`HTTP ${response.status}: ${errText}`);
     }
+
+    const data = await response.json();
+    const videoUrl =
+      data.url ||
+      data.video_url ||
+      data.video ||
+      data.video_urls?.[0];
+
+    if (!videoUrl) {
+      throw new Error(`No video URL in response: ${JSON.stringify(data)}`);
+    }
+
+    logger.info(`Video Gen: Success — ${videoUrl}`);
+    return { video: { url: videoUrl, mimeType: "video/mp4" } };
   } catch (error) {
-    const lastError = error instanceof Error ? error : new Error(String(error));
-    logger.error("Video Gen failed:", lastError);
+    clearTimeout(timeoutId);
+    logger.error("Video Gen failed:", error);
     throw new Error(
-      `Failed to generate video: ${lastError?.message || "Unknown error"}`,
+      `Failed to generate video: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }

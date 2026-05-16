@@ -1,9 +1,10 @@
 import logger from "logger";
+import { UNIFIED_WORKER_URL } from "../models";
 
 export interface EditImageOptions {
   prompt?: string;
   imageUrl: string;
-  maskUrl?: string; // For object removal
+  maskUrl?: string;
   abortSignal?: AbortSignal;
 }
 
@@ -12,26 +13,20 @@ export interface EditedImage {
   mimeType: string;
 }
 
-const WORKER_BASE_URL = "https://photogrid-proxy.llamai.workers.dev";
+const EDIT_ENDPOINT = `${UNIFIED_WORKER_URL}/v1/images/edits`;
 
 /**
- * Resolves a relative storage bridge URL to a publicly accessible URL
- * via our Cloudflare Worker's /serve endpoint (auth-free proxy for Telegram files).
+ * Resolves internal storage paths to publicly accessible URLs via the
+ * Cloudflare Worker's /serve endpoint (auth-free Telegram proxy).
  */
 function resolveImageUrl(url: string): string {
   const bridgePath = "/api/storage/file/";
   if (url.includes(bridgePath)) {
-    const parts = url.split(bridgePath);
-    const filePath = parts[parts.length - 1];
+    const filePath = url.split(bridgePath).pop();
     const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
-
     if (filePath && workerUrl) {
-      const resolved = `${workerUrl}/serve?path=${encodeURIComponent(filePath)}`;
-      logger.info(`Resolved storage URL via Worker: ${resolved}`);
-      return resolved;
+      return `${workerUrl}/serve?path=${encodeURIComponent(filePath)}`;
     }
-
-    // Fallback: use direct Telegram URL if worker URL is not configured
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (filePath && botToken) {
       return `https://api.telegram.org/file/bot${botToken}/${filePath}`;
@@ -41,168 +36,119 @@ function resolveImageUrl(url: string): string {
 }
 
 /**
- * Core function to call the PhotoGrid Worker proxy
+ * Core image editing function — routes through the unified worker.
+ * The worker uses P-Image Playground for edits.
  */
-async function callPhotoGridWorker(
-  endpoint: string,
+async function callEditEndpoint(
+  operation: string,
   options: EditImageOptions,
-  retries: number = 1, // Reduced for Hobby tier (10s limit)
 ): Promise<{ image: EditedImage }> {
-  // Resolve the URL first so the external worker can fetch it
-  options.imageUrl = resolveImageUrl(options.imageUrl);
+  const resolvedUrl = resolveImageUrl(options.imageUrl);
 
-  let lastError: Error | null = null;
+  logger.info(`Image Edit [${operation}]: ${resolvedUrl}`);
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      logger.info(
-        `PhotoGrid [${endpoint}]: Starting attempt ${attempt}/${retries}`,
-      );
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      const body: Record<string, string> = {
-        image_url: options.imageUrl,
-      };
+  try {
+    const body: Record<string, string> = {
+      image_url: resolvedUrl,
+      operation,
+    };
+    if (options.prompt) body.prompt = options.prompt;
+    if (options.maskUrl) body.mask_url = options.maskUrl;
 
-      if (options.maskUrl) {
-        body.mask_url = options.maskUrl;
-      }
+    const response = await fetch(EDIT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-      const controller = new AbortController();
-      // Use shorter timeout to stay within Vercel 10s limit (6.5s for the fetch)
-      const timeoutId = setTimeout(() => controller.abort(), 6500); 
+    clearTimeout(timeoutId);
 
-      try {
-        const response = await fetch(`${WORKER_BASE_URL}${endpoint}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => "");
-          throw new Error(
-            `HTTP ${response.status}${errorText ? `: ${errorText}` : ""}`,
-          );
-        }
-
-        const contentType = response.headers.get("content-type") || "";
-
-        if (contentType.includes("image")) {
-          // Direct image buffer returned
-          const buffer = await response.arrayBuffer();
-          const base64 = Buffer.from(buffer).toString("base64");
-          return {
-            image: {
-              url: base64,
-              mimeType: contentType || "image/png",
-            },
-          };
-        } else if (contentType.includes("json")) {
-          // Sometimes it returns JSON with a URL or base64
-          const data = await response.json();
-          const outputStr =
-            data.url || data.image_url || data.image || data.result;
-
-          if (!outputStr) {
-            throw new Error(
-              `No image data in JSON response: ${JSON.stringify(data)}`,
-            );
-          }
-
-          if (outputStr.startsWith("http")) {
-            // Fetch the image from the URL returned
-            const imgRes = await fetch(outputStr);
-            if (!imgRes.ok)
-              throw new Error("Failed to fetch generated image URL");
-            const buf = await imgRes.arrayBuffer();
-            return {
-              image: {
-                url: Buffer.from(buf).toString("base64"),
-                mimeType: imgRes.headers.get("content-type") || "image/png",
-              },
-            };
-          } else {
-            // Assume it's base64
-            const cleanBase64 = outputStr.replace(
-              /^data:image\/\w+;base64,/,
-              "",
-            );
-            return {
-              image: {
-                url: cleanBase64,
-                mimeType: "image/png",
-              },
-            };
-          }
-        } else {
-          throw new Error(`Unexpected content type: ${contentType}`);
-        }
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      logger.warn(
-        `PhotoGrid [${endpoint}] attempt ${attempt} failed: ${lastError.message}`,
-      );
-
-      if (attempt < retries) {
-        const waitTime = Math.pow(2, attempt - 1) * 2000;
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
-      }
+    if (!response.ok) {
+      const errText = await response.text().catch(() => response.statusText);
+      throw new Error(`HTTP ${response.status}: ${errText}`);
     }
+
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (contentType.includes("image/")) {
+      const buffer = await response.arrayBuffer();
+      return {
+        image: {
+          url: Buffer.from(buffer).toString("base64"),
+          mimeType: contentType.split(";")[0].trim(),
+        },
+      };
+    }
+
+    const data = await response.json();
+    const outputStr =
+      data.url ||
+      data.image_url ||
+      data.image ||
+      data.result ||
+      (data.data?.[0]?.url) ||
+      (data.data?.[0]?.b64_json);
+
+    if (!outputStr) {
+      throw new Error(`No image in response: ${JSON.stringify(data)}`);
+    }
+
+    if (outputStr.startsWith("http")) {
+      const imgRes = await fetch(outputStr);
+      if (!imgRes.ok) throw new Error("Failed to fetch result image URL");
+      const buf = await imgRes.arrayBuffer();
+      return {
+        image: {
+          url: Buffer.from(buf).toString("base64"),
+          mimeType: imgRes.headers.get("content-type") ?? "image/png",
+        },
+      };
+    }
+
+    return {
+      image: {
+        url: outputStr.replace(/^data:image\/\w+;base64,/, ""),
+        mimeType: "image/png",
+      },
+    };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    logger.error(`Image Edit [${operation}] failed:`, error);
+    throw new Error(
+      `Failed to edit image (${operation}): ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
-
-  logger.error(`PhotoGrid [${endpoint}] failed completely:`, lastError);
-  throw new Error(
-    `Failed to process image after ${retries} attempts: ${lastError?.message || "Unknown error"}`,
-  );
 }
 
-// ----------------------------------------------------------------------
-// FEATURE EXPORTS
-// ----------------------------------------------------------------------
+// ─── Feature exports ─────────────────────────────────────────────────────────
 
-export async function removeImageBackground(options: EditImageOptions) {
-  return callPhotoGridWorker("/api/ai/remove/background", options);
-}
+export const removeImageBackground = (o: EditImageOptions) =>
+  callEditEndpoint("remove-background", o);
 
-export const removeImageWatermark = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/remove/watermark", options);
-};
+export const removeImageWatermark = (o: EditImageOptions) =>
+  callEditEndpoint("remove-watermark", o);
 
-export const removeImageObject = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/remove/object", options);
-};
+export const removeImageObject = (o: EditImageOptions) =>
+  callEditEndpoint("remove-object", o);
 
-export const enhanceImageQuality = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/enhance/quality", options);
-};
+export const enhanceImageQuality = (o: EditImageOptions) =>
+  callEditEndpoint("enhance-quality", o);
 
-export const applyAiStyleTransfer = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/style/transfer", options);
-};
+export const applyAiStyleTransfer = (o: EditImageOptions) =>
+  callEditEndpoint("style-transfer", o);
 
-export const applySuperResolution = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/enhance/resolution", options);
-};
+export const applySuperResolution = (o: EditImageOptions) =>
+  callEditEndpoint("super-resolution", o);
 
-export const restoreOldPhoto = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/restore/old-photo", options);
-};
+export const restoreOldPhoto = (o: EditImageOptions) =>
+  callEditEndpoint("restore-photo", o);
 
-export const blurBackground = async (options: EditImageOptions) => {
-  return callPhotoGridWorker("/api/ai/blur/background", options);
-};
+export const blurBackground = (o: EditImageOptions) =>
+  callEditEndpoint("blur-background", o);
 
-// Aliased for legacy compatibility with anime-conversion tool
-export async function convertImageToAnime(options: EditImageOptions) {
-  // Use AI style transfer as a drop-in replacement
-  return callPhotoGridWorker("/api/ai/style/transfer", options);
-}
+export const convertImageToAnime = (o: EditImageOptions) =>
+  callEditEndpoint("style-transfer", o);
