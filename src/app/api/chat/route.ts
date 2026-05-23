@@ -127,7 +127,10 @@ export async function POST(request: Request) {
     const session = await getSession();
 
     if (!session?.user.id) {
-      return new Response("Unauthorized", { status: 401 });
+      return new Response("Unauthorized", {
+        status: 401,
+        headers: corsHeaders,
+      });
     }
 
     const userId = session.user.id;
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
       console.error("[DEBUG] Chat API Schema Parse Error:", parseError);
       return new Response(
         `Schema validation failed: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -283,7 +286,7 @@ export async function POST(request: Request) {
     }
 
     if (thread!.userId !== userId) {
-      return new Response("Forbidden", { status: 403 });
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
     }
 
     const messages: UIMessage[] = (thread?.messages ?? []).map((m) => {
@@ -2002,9 +2005,15 @@ BEGIN ROLEPLAY NOW.`
       originalMessages: messages,
     });
 
-    return createUIMessageStreamResponse({
+    const response = createUIMessageStreamResponse({
       stream,
     });
+
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error: any) {
     const errorMessage = error?.message || "Internal server error";
     const errorStack = error?.stack;
@@ -2026,7 +2035,7 @@ BEGIN ROLEPLAY NOW.`
         error:
           process.env.NODE_ENV === "development" ? String(error) : undefined,
       },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }
@@ -2035,10 +2044,23 @@ export async function HEAD() {
   try {
     const session = await getSession();
     if (!session?.user.id) {
-      return new Response(null, { status: 401 });
+      return new Response(null, { status: 401, headers: corsHeaders });
     }
-    return new Response(null, { status: 200 });
+    return new Response(null, { status: 200, headers: corsHeaders });
   } catch (_error) {
-    return new Response(null, { status: 500 });
+    return new Response(null, { status: 500, headers: corsHeaders });
   }
+}
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, HEAD, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Voice-Chat",
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
 }

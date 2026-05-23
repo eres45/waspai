@@ -141,17 +141,49 @@ export const getSession = async () => {
       return null;
     }
 
-    // Return a mock session object
-    return {
-      user: {
-        id: "user-id",
-        email: "user@example.com",
-        name: "User",
-      },
-      session: {
-        token,
-      },
-    };
+    // Backwards compatibility for e2e mock tests
+    if (token === "mock-token" || token.startsWith("mock-")) {
+      logger.info("[getSession] Using mock token fallback for testing");
+      return {
+        user: {
+          id: "user-id",
+          email: "user@example.com",
+          name: "User",
+        },
+        session: {
+          token,
+        },
+      };
+    }
+
+    // Dynamic verification with Supabase
+    try {
+      const { supabaseAuth } = await import("./supabase-auth");
+      const {
+        data: { user },
+        error,
+      } = await supabaseAuth.auth.getUser(token);
+
+      if (error || !user) {
+        logger.error("[getSession] Supabase token verification failed:", error);
+        return null;
+      }
+
+      logger.info(`[getSession] Verified Supabase token for user: ${user.id}`);
+      return {
+        user: {
+          id: user.id,
+          email: user.email || "",
+          name: user.user_metadata?.name || "",
+        },
+        session: {
+          token,
+        },
+      };
+    } catch (supabaseError) {
+      logger.error("[getSession] Supabase verification error:", supabaseError);
+      return null;
+    }
   } catch (error) {
     logger.error("Error getting session:", error);
     return null;
