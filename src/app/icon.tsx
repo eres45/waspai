@@ -16,7 +16,7 @@ export default function Icon() {
     const imagePath = join(process.cwd(), "public", "wasp-ai-logo.png");
     const imageBuffer = readFileSync(imagePath);
     const imageBase64 = imageBuffer.toString("base64");
-    const imageSrc = `data:image/jpeg;base64,${imageBase64}`;
+    const imageSrc = `data:image/png;base64,${imageBase64}`;
 
     return new ImageResponse(
       <div
