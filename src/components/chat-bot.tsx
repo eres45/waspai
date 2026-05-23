@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
-import { cn, createDebounce, generateUUID, truncateString } from "lib/utils";
+import { cn, generateUUID, truncateString } from "lib/utils";
 import { ErrorMessage, PreviewMessage } from "./message";
 import { ChatGreeting } from "./chat-greeting";
 
@@ -45,7 +45,7 @@ import { Think } from "ui/think";
 import { useGenerateThreadTitle } from "@/hooks/queries/use-generate-thread-title";
 import dynamic from "next/dynamic";
 import { useMounted } from "@/hooks/use-mounted";
-import { getStorageManager } from "lib/browser-stroage";
+
 import { AnimatePresence, motion } from "framer-motion";
 import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
 import { useFileDragOverlay } from "@/hooks/use-file-drag-overlay";
@@ -65,11 +65,7 @@ const Particles = dynamic(() => import("ui/particles"), {
   ssr: false,
 });
 
-const debounce = createDebounce();
-
-const firstTimeStorage = getStorageManager("IS_FIRST");
-const isFirstTime = firstTimeStorage.get() ?? true;
-firstTimeStorage.set(false);
+// Particle effect is always enabled
 
 export default function ChatBot({ threadId, initialMessages }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -116,7 +112,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     threadId,
   });
 
-  const [showParticles, setShowParticles] = useState(isFirstTime);
+  const [showParticles] = useState(true);
 
   const onFinish = useCallback(() => {
     // Ensure URL is correct after message is finished
@@ -401,8 +397,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
   }, [showParticles]);
 
   const handleFocus = useCallback(() => {
-    setShowParticles(false);
-    debounce(() => setShowParticles(true), 60000);
+    // particles always stay on
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -575,7 +570,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             setInputAction={setInput}
             isLoading={isLoading || isPendingToolCall}
             onStopAction={stop}
-            onFocus={isFirstTime ? undefined : handleFocus}
+            onFocus={handleFocus}
             isVoiceActive={isVoiceActive}
             isVoiceListening={isVoiceListening}
             onStartVoice={startVoiceListening}
