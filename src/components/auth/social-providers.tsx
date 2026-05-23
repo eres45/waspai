@@ -1,9 +1,8 @@
 import { Button } from "../ui/button";
 import { SocialAuthenticationProvider } from "app-types/authentication";
-import { GoogleIcon } from "ui/google-icon";
 import { MicrosoftIcon } from "ui/microsoft-icon";
 import { cn } from "lib/utils";
-import { GitHubOAuthButton } from "./supabase-oauth-button";
+import { GitHubOAuthButton, GoogleOAuthButton } from "./supabase-oauth-button";
 
 export default function SocialProviders({
   socialAuthenticationProviders,
@@ -16,16 +15,9 @@ export default function SocialProviders({
 }) {
   return (
     <div className={cn("flex flex-col gap-2 w-full", className)}>
+      {/* Google OAuth via Supabase */}
       {socialAuthenticationProviders.includes("google") && (
-        <Button
-          variant="outline"
-          onClick={() => onSocialProviderClick("google")}
-          className="flex-1 w-full"
-          data-testid="google-signup-button"
-        >
-          <GoogleIcon className="size-4 fill-foreground" />
-          Google
-        </Button>
+        <GoogleOAuthButton />
       )}
       {/* GitHub OAuth via Supabase */}
       <GitHubOAuthButton />

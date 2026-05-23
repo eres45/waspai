@@ -151,3 +151,61 @@ export async function signInWithGitHubAction() {
     };
   }
 }
+
+export async function signInWithGoogleAction() {
+  try {
+    const headersList = await headers();
+    const host = headersList.get("host");
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+
+    // Dynamically build base URL from current host to handle www vs root domain
+    const baseUrl = host
+      ? `${protocol}://${host}`
+      : process.env.NODE_ENV === "production"
+        ? "https://waspai.in"
+        : "http://localhost:3007";
+
+    logger.info(`Initiating Google OAuth with baseUrl: ${baseUrl}`);
+
+    const { data, error } = await supabaseAuth.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${baseUrl}/auth/callback`,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    });
+
+    if (error) {
+      logger.error("Google OAuth error:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to sign in with Google",
+      };
+    }
+
+    // Return the OAuth URL for client to redirect to
+    if (data?.url) {
+      return {
+        success: true,
+        url: data.url,
+      };
+    }
+
+    return {
+      success: false,
+      error: "No OAuth URL returned from Supabase",
+    };
+  } catch (error) {
+    logger.error("Google OAuth error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in with Google",
+    };
+  }
+}

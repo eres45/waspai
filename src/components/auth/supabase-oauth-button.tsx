@@ -2,10 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "ui/github-icon";
+import { GoogleIcon } from "ui/google-icon";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader } from "lucide-react";
-import { signInWithGitHubAction } from "@/app/api/auth/actions";
+import {
+  signInWithGitHubAction,
+  signInWithGoogleAction,
+} from "@/app/api/auth/actions";
 
 export function GitHubOAuthButton() {
   const [loading, setLoading] = useState(false);
@@ -49,6 +53,52 @@ export function GitHubOAuthButton() {
         <GithubIcon className="size-4 fill-foreground" />
       )}
       GitHub
+    </Button>
+  );
+}
+
+export function GoogleOAuthButton() {
+  const [loading, setLoading] = useState(false);
+  console.log("[DEBUG] Rendering GoogleOAuthButton");
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const result = await signInWithGoogleAction();
+
+      if (result.error) {
+        toast.error(result.error);
+        setLoading(false);
+        return;
+      }
+
+      // Redirect to Google OAuth URL
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in with Google",
+      );
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      onClick={handleGoogleSignIn}
+      className="flex-1 w-full"
+      disabled={loading}
+    >
+      {loading ? (
+        <Loader className="size-4 animate-spin mr-2" />
+      ) : (
+        <GoogleIcon className="size-4 fill-foreground" />
+      )}
+      Google
     </Button>
   );
 }
