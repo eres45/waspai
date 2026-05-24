@@ -141,7 +141,7 @@ export async function buildDynamicModelsInfo() {
 
   return Array.from(grouped.entries()).map(([provider, models]) => ({
     provider,
-    hasAPIKey: false,
+    hasAPIKey: true,
     models: models
       .map((m) => ({
         name: m.id,
