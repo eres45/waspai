@@ -15,7 +15,7 @@ export default async function ChatPage() {
     redirect("/sign-in");
   }
 
-  console.log("[DEBUG CHAT] Session found, rendering chat");
+  console.log("[DEBUG CHAT] Session found, redirecting to stable new thread");
   const id = generateUUID();
-  return <ChatBot initialMessages={[]} threadId={id} key={id} />;
+  redirect(`/chat/${id}`);
 }
