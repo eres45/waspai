@@ -13,7 +13,7 @@ import {
   generateExampleToolSchemaPrompt,
 } from "lib/ai/prompts";
 
-import type { ChatModel, ChatThread } from "app-types/chat";
+import type { ChatModel, ChatThread, ChatMessage } from "app-types/chat";
 
 import {
   agentRepository,
@@ -121,6 +121,13 @@ export async function selectThreadWithMessagesAction(threadId: string) {
 
 export async function deleteMessageAction(messageId: string) {
   await chatRepository.deleteChatMessage(messageId);
+}
+
+export async function upsertMessageAction(
+  message: Omit<ChatMessage, "createdAt">,
+) {
+  "use server";
+  return await chatRepository.upsertMessage(message);
 }
 
 export async function deleteThreadAction(threadId: string) {

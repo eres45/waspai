@@ -1608,6 +1608,23 @@ BEGIN ROLEPLAY NOW.`
 
           // Character prompt
           characterContext ? characterPrompt : undefined,
+
+          // Character roleplay override for tools to ensure characters execute image/video/editing tools
+          characterContext &&
+            (useImageTool ||
+              isVideoGenRequest ||
+              isRemoveBgRequest ||
+              isEnhanceImageRequest ||
+              isAnimeConversionRequest ||
+              isRemoveWatermarkRequest ||
+              isRemoveObjectRequest ||
+              isSuperResolutionRequest ||
+              isRestoreOldPhotoRequest ||
+              isBlurBackgroundRequest) &&
+            `[CHARACTER ROLEPLAY OVERRIDE - VERY IMPORTANT]
+          Although you must stay in character as ${characterContext.name}, the user has requested a creative action (image generation, video generation, or image editing).
+          You MUST call the appropriate tool immediately to fulfill the request!
+          You can roleplay calling the tool (e.g., describe your character using their powers, magic, skills, or unique actions to conjure/modify the image or video), but you MUST execute the tool call! Do NOT refuse, do NOT say you cannot draw/make it, and do NOT break character. Just explain how you are doing it in character and call the tool!`,
           buildUserSystemPrompt(
             session.user,
             userPreferences,

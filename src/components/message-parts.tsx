@@ -95,12 +95,13 @@ type AssistMessagePartType = Extract<MessagePart, { type: "text" }>;
 interface UserMessagePartProps {
   part: TextMessagePart;
   isLast: boolean;
+  status?: UseChatHelpers<UIMessage>["status"];
   message: UIMessage;
   setMessages?: UseChatHelpers<UIMessage>["setMessages"];
   sendMessage?: UseChatHelpers<UIMessage>["sendMessage"];
-  status?: UseChatHelpers<UIMessage>["status"];
-  isError?: boolean;
   readonly?: boolean;
+  isError?: boolean;
+  threadId?: string;
 }
 
 interface AssistMessagePartProps {
@@ -140,6 +141,7 @@ export const UserMessagePart = memo(
     sendMessage,
     readonly,
     isError,
+    threadId,
   }: UserMessagePartProps) {
     const { copied, copy } = useCopy();
     const t = useTranslations();
@@ -194,6 +196,7 @@ export const UserMessagePart = memo(
             setMode={setMode}
             setMessages={setMessages}
             sendMessage={sendMessage}
+            threadId={threadId}
           />
         </div>
       );

@@ -56,8 +56,8 @@ const PurePreviewMessage = ({
 
   // Debug logging for GLM reasoning detection
   useEffect(() => {
-    if (message.role === 'assistant' && modelId) {
-      console.log('[Reasoning Debug] Message metadata:', {
+    if (message.role === "assistant" && modelId) {
+      console.log("[Reasoning Debug] Message metadata:", {
         modelId,
         hasMetadata: !!message.metadata,
         chatModel: (message.metadata as ChatMetadata)?.chatModel,
@@ -167,6 +167,7 @@ const PurePreviewMessage = ({
                   message={message}
                   setMessages={setMessages}
                   sendMessage={sendMessage}
+                  threadId={threadId}
                 />
               );
             }

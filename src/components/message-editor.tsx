@@ -13,19 +13,22 @@ import { Textarea } from "./ui/textarea";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useTranslations } from "next-intl";
 import { Loader } from "lucide-react";
+import { upsertMessageAction } from "@/app/api/chat/actions";
 
 export type MessageEditorProps = {
   message: UIMessage;
   setMode: Dispatch<SetStateAction<"view" | "edit">>;
   setMessages: UseChatHelpers<UIMessage>["setMessages"];
   sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
+  threadId?: string;
 };
 
 export function MessageEditor({
   message,
   setMode,
   setMessages,
-  sendMessage,
+  sendMessage: _sendMessage,
+  threadId,
 }: MessageEditorProps) {
   const t = useTranslations();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -69,16 +72,32 @@ export function MessageEditor({
       parts: updatedParts,
     };
 
+    // Save the edited message directly in the database
+    if (threadId) {
+      await upsertMessageAction({
+        id: message.id,
+        threadId,
+        role: message.role,
+        parts: updatedParts,
+        metadata: message.metadata as any,
+      });
+    }
+
     setMessages((messages) => {
       const index = messages.findIndex((m) => m.id === message.id);
       if (index !== -1) {
-        return [...messages.slice(0, index), updatedMessage];
+        // Keep all subsequent messages intact and just update this message in-place
+        return [
+          ...messages.slice(0, index),
+          updatedMessage,
+          ...messages.slice(index + 1),
+        ];
       }
       return messages;
     });
 
     setMode("view");
-    sendMessage(updatedMessage);
+    setIsSubmitting(false);
   };
   useEffect(() => {
     if (!canEdit) {
