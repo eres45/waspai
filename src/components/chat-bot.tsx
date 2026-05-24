@@ -370,12 +370,12 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
         {showParticles && (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: 0.35 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 5 }}
           >
             <div className="absolute top-0 left-0 w-full h-full z-10">
-              <LightRays />
+              <LightRays raysSpeed={0.5} lightSpread={1.2} />
             </div>
             <div className="absolute top-0 left-0 w-full h-full z-10">
               <Particles particleCount={400} particleBaseSize={10} />
