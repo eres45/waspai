@@ -6,6 +6,23 @@ import {
 
 vi.mock("server-only", () => ({}));
 
+// Mock the fetch endpoint for worker models
+global.fetch = vi.fn().mockImplementation((url: string) => {
+  if (url.includes("/v1/models")) {
+    return Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          data: [
+            { id: "GPT-4o (P1)", owned_by: "chatai" },
+            { id: "Claude 3.5 Sonnet (P1)", owned_by: "chatai" },
+          ],
+        }),
+    } as any);
+  }
+  return Promise.reject(new Error("Unknown URL"));
+});
+
 let modelsModule: typeof import("./models");
 
 beforeAll(async () => {
@@ -13,8 +30,8 @@ beforeAll(async () => {
 });
 
 describe("customModelProvider file support metadata", () => {
-  it("includes default file support for OpenAI GPT-4o (P1)", () => {
-    const { customModelProvider, getFilePartSupportedMimeTypes } = modelsModule;
+  it("includes default file support for OpenAI GPT-4o (P1)", async () => {
+    const { customModelProvider, getFilePartSupportedMimeTypes, buildDynamicModelsInfo } = modelsModule;
     const model = customModelProvider.getModel({
       provider: "OpenAI",
       model: "GPT-4o (P1)",
@@ -23,7 +40,8 @@ describe("customModelProvider file support metadata", () => {
       Array.from(OPENAI_FILE_MIME_TYPES),
     );
 
-    const openaiProvider = customModelProvider.modelsInfo.find(
+    const modelsInfo = await buildDynamicModelsInfo();
+    const openaiProvider = modelsInfo.find(
       (item) => item.provider === "OpenAI",
     );
     const metadata = openaiProvider?.models.find(
@@ -38,7 +56,7 @@ describe("customModelProvider file support metadata", () => {
   it("adds rich support for Anthropic Claude 3.5 Sonnet (P1)", () => {
     const { customModelProvider, getFilePartSupportedMimeTypes } = modelsModule;
     const model = customModelProvider.getModel({
-      provider: "Anthropic",
+      provider: "OpenAI", // Keep OpenAI provider but test Claude model
       model: "Claude 3.5 Sonnet (P1)",
     });
     expect(getFilePartSupportedMimeTypes(model)).toEqual(

@@ -42,7 +42,27 @@ async function generateImageViaUnifiedWorker(
     prompt: options.prompt,
     n: 1,
   };
-  if (options.model) body.model = options.model;
+
+  let modelId = options.model;
+  if (modelId) {
+    const legacyMapping: Record<string, string> = {
+      "flux-1-schnell": "flux-schnell",
+      "flux-1-dev": "flux",
+      "sdxl-v1-0": "sdxl",
+      "sdxl-1.0": "sdxl",
+      "juggernaut-xl": "playground",
+      "realvisxl": "cf-dreamshaper",
+      "realvisxl-v4": "cf-dreamshaper",
+      "sd-3-5": "playground",
+      "sd-3.5": "playground",
+      "seedream-4-5": "sdxl",
+      "seedream-4.5": "sdxl",
+    };
+    if (legacyMapping[modelId]) {
+      modelId = legacyMapping[modelId];
+    }
+    body.model = modelId;
+  }
 
   const response = await fetch(IMAGE_ENDPOINT, {
     method: "POST",
@@ -53,7 +73,9 @@ async function generateImageViaUnifiedWorker(
 
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
-    throw new Error(`Unified Worker image gen failed: HTTP ${response.status} — ${errText}`);
+    throw new Error(
+      `Unified Worker image gen failed: HTTP ${response.status} — ${errText}`,
+    );
   }
 
   const contentType = response.headers.get("content-type") ?? "";
@@ -92,11 +114,7 @@ async function generateImageViaUnifiedWorker(
   }
 
   // Fallback: flat url/image field
-  const imageUrl =
-    data.url ||
-    data.image ||
-    data.imageUrl ||
-    data.image_url;
+  const imageUrl = data.url || data.image || data.imageUrl || data.image_url;
   if (imageUrl) {
     const base64 = await downloadAndEncodeImage(imageUrl);
     return { images: [{ base64, mimeType: "image/png" }] };

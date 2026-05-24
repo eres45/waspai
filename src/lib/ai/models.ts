@@ -6,8 +6,7 @@ import {
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export const UNIFIED_WORKER_URL =
-  "https://unified-ai-worker.rutv.workers.dev";
+export const UNIFIED_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
 
 // Single unified provider — every model routes through the worker
 const unifiedProvider = createOpenAICompatible({
@@ -39,7 +38,12 @@ function isVisionModel(modelId: string): boolean {
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
 function getMimeTypes(modelId: string): string[] {
   const id = modelId.toLowerCase();
-  if (id.includes("gpt") || id.includes("openai") || id.includes("o1") || id.includes("o3")) {
+  if (
+    id.includes("gpt") ||
+    id.includes("openai") ||
+    id.includes("o1") ||
+    id.includes("o3")
+  ) {
     return Array.from(OPENAI_FILE_MIME_TYPES);
   }
   if (id.includes("claude") || id.includes("anthropic")) {
@@ -87,10 +91,50 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
 export async function buildDynamicModelsInfo() {
   const workerModels = await fetchModelsFromWorker();
 
-  // Group by provider (owned_by)
+  // Filter out image, video, and audio models
+  const chatModels = workerModels.filter((m) => {
+    const ownedBy = (m.owned_by ?? "").toLowerCase();
+    const id = m.id.toLowerCase();
+
+    const imageVideoProviders = [
+      "pimage",
+      "cfimg",
+      "pollinations",
+      "genmyart",
+      "magicstudio",
+      "aiimages",
+      "imageworldking",
+      "runware",
+      "aitubo",
+      "raphaelai",
+      "swiftsora",
+    ];
+
+    if (imageVideoProviders.includes(ownedBy)) return false;
+
+    // Exclude image/video keywords in ID
+    if (
+      id.includes("flux") ||
+      id.includes("sdxl") ||
+      id.includes("sora") ||
+      id.includes("dreamshaper") ||
+      id.startsWith("gma-") ||
+      id.startsWith("ms-") ||
+      id.startsWith("ra-")
+    ) {
+      return false;
+    }
+
+    // Exclude speech/whisper models
+    if (id.includes("whisper")) return false;
+
+    return true;
+  });
+
+  // Group by provider determined dynamically
   const grouped = new Map<string, WorkerModel[]>();
-  for (const m of workerModels) {
-    const provider = normalizeProvider(m.owned_by ?? "Other");
+  for (const m of chatModels) {
+    const provider = getModelProvider(m.id, m.owned_by);
     if (!grouped.has(provider)) grouped.set(provider, []);
     grouped.get(provider)!.push(m);
   }
@@ -108,32 +152,100 @@ export async function buildDynamicModelsInfo() {
   }));
 }
 
-function normalizeProvider(raw: string): string {
-  const p = raw.toLowerCase();
-  if (p.includes("anthropic") || p.includes("claude")) return "Anthropic";
-  if (p.includes("openai") || p.includes("gpt")) return "OpenAI";
-  if (p.includes("google") || p.includes("gemini")) return "Google";
-  if (p.includes("deepseek")) return "DeepSeek";
-  if (p.includes("meta") || p.includes("llama")) return "Meta";
-  if (p.includes("qwen") || p.includes("alibaba")) return "Qwen";
-  if (p.includes("mistral") || p.includes("mixtral")) return "Mistral";
-  if (p.includes("xai") || p.includes("grok")) return "xAI";
-  if (p.includes("nvidia") || p.includes("nemotron")) return "NVIDIA";
-  if (p.includes("microsoft") || p.includes("phi")) return "Microsoft";
-  if (p.includes("moonshot") || p.includes("kimi")) return "Moonshot";
-  if (p.includes("minimax")) return "MiniMax";
-  if (p.includes("perplexity") || p.includes("sonar")) return "Perplexity";
-  if (p.includes("z-ai") || p.includes("glm") || p.includes("zhipu")) return "Z-AI";
-  if (p.includes("stepfun")) return "StepFun";
-  if (p.includes("xiaomi") || p.includes("mimo")) return "Xiaomi";
-  return raw; // keep as-is if unknown
+function getModelProvider(modelId: string, ownedBy?: string): string {
+  const id = modelId.toLowerCase();
+  const raw = (ownedBy || "").toLowerCase();
+
+  if (
+    id.includes("claude") ||
+    id.includes("anthropic") ||
+    raw.includes("anthropic") ||
+    raw.includes("claude")
+  )
+    return "Anthropic";
+  if (
+    id.includes("gpt-") ||
+    id.includes("o1-") ||
+    id.includes("o3-") ||
+    id.includes("chatgpt") ||
+    raw.includes("openai") ||
+    raw.includes("gpt")
+  )
+    return "OpenAI";
+  if (
+    id.includes("gemini") ||
+    id.includes("gemma") ||
+    raw.includes("google") ||
+    raw.includes("gemini")
+  )
+    return "Google";
+  if (id.includes("deepseek") || raw.includes("deepseek")) return "DeepSeek";
+  if (id.includes("llama") || raw.includes("meta") || raw.includes("llama"))
+    return "Meta";
+  if (id.includes("qwen") || raw.includes("qwen") || raw.includes("alibaba"))
+    return "Qwen";
+  if (
+    id.includes("mistral") ||
+    id.includes("mixtral") ||
+    raw.includes("mistral") ||
+    raw.includes("mixtral")
+  )
+    return "Mistral";
+  if (id.includes("grok") || raw.includes("xai") || raw.includes("grok"))
+    return "xAI";
+  if (
+    id.includes("nvidia") ||
+    id.includes("nemotron") ||
+    raw.includes("nvidia") ||
+    raw.includes("nemotron")
+  )
+    return "NVIDIA";
+  if (
+    id.includes("phi-") ||
+    id.includes("wizardlm") ||
+    raw.includes("microsoft") ||
+    raw.includes("phi")
+  )
+    return "Microsoft";
+  if (
+    id.includes("kimi") ||
+    id.includes("moonshot") ||
+    raw.includes("moonshot") ||
+    raw.includes("kimi")
+  )
+    return "Moonshot";
+  if (id.includes("minimax") || raw.includes("minimax")) return "MiniMax";
+  if (
+    id.includes("sonar") ||
+    id.includes("perplexity") ||
+    raw.includes("perplexity") ||
+    raw.includes("sonar")
+  )
+    return "Perplexity";
+  if (
+    id.includes("glm") ||
+    id.includes("zhipu") ||
+    raw.includes("z-ai") ||
+    raw.includes("zhipu") ||
+    raw.includes("glm")
+  )
+    return "Z-AI";
+  if (id.includes("step-") || raw.includes("stepfun")) return "StepFun";
+  if (id.includes("mimo") || raw.includes("xiaomi") || raw.includes("mimo"))
+    return "Xiaomi";
+  if (id.includes("command-") || raw.includes("cohere")) return "Cohere";
+
+  if (ownedBy) {
+    return ownedBy.charAt(0).toUpperCase() + ownedBy.slice(1);
+  }
+  return "Other";
 }
 
 // ─── Synchronous helpers ─────────────────────────────────────────────────────
 
 export const isToolCallUnsupportedModel = (_model: LanguageModel) => false;
 
-export const isImageInputUnsupportedModel = (model: LanguageModel) => {
+export const isImageInputUnsupportedModel = (_model: LanguageModel) => {
   // We can't do a lookup anymore since there's no static catalog.
   // Instead use the model's specificationVersion or modelId if accessible.
   // For safety, allow all models through (vision check happens at tool level).
@@ -141,8 +253,10 @@ export const isImageInputUnsupportedModel = (model: LanguageModel) => {
 };
 
 export const getFilePartSupportedMimeTypes = (_model: LanguageModel) => {
-  // Without a static catalog we can't determine MIME types per model synchronously.
-  // Return a generous set that works for most models.
+  const modelId = (_model as any).modelId || "";
+  const specificMimes = getMimeTypes(modelId);
+  if (specificMimes.length > 0) return specificMimes;
+
   return [
     ...Array.from(OPENAI_FILE_MIME_TYPES),
     ...Array.from(ANTHROPIC_FILE_MIME_TYPES),
