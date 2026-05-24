@@ -142,13 +142,15 @@ export async function buildDynamicModelsInfo() {
   return Array.from(grouped.entries()).map(([provider, models]) => ({
     provider,
     hasAPIKey: false,
-    models: models.map((m) => ({
-      name: m.id,
-      isToolCallUnsupported: false,
-      isImageInputUnsupported: !isVisionModel(m.id),
-      supportedFileMimeTypes: getMimeTypes(m.id),
-      tier: "Free",
-    })),
+    models: models
+      .map((m) => ({
+        name: m.id,
+        isToolCallUnsupported: false,
+        isImageInputUnsupported: !isVisionModel(m.id),
+        supportedFileMimeTypes: getMimeTypes(m.id),
+        tier: "Free",
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
   }));
 }
 
