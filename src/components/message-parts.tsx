@@ -34,10 +34,7 @@ import { useCopy } from "@/hooks/use-copy";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { SelectModel } from "./select-model";
-import {
-  deleteMessageAction,
-  deleteMessagesByChatIdAfterTimestampAction,
-} from "@/app/api/chat/actions";
+import { deleteMessageAction } from "@/app/api/chat/actions";
 
 import { toast } from "sonner";
 import { safe } from "ts-safe";
@@ -333,7 +330,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   message,
   prevMessage,
   isError,
-  threadId,
   setMessages,
   readonly,
   sendMessage,
@@ -377,11 +373,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   const handleModelChange = (model: ChatModel) => {
     if (!setMessages || !sendMessage || !prevMessage) return;
     safe(() => setIsLoading(true))
-      .ifOk(() =>
-        threadId
-          ? deleteMessagesByChatIdAfterTimestampAction(message.id)
-          : Promise.resolve(),
-      )
       .ifOk(() =>
         setMessages((messages) => {
           const index = messages.findIndex((m) => m.id === prevMessage.id);

@@ -10,7 +10,6 @@ import {
   useEffect,
 } from "react";
 import { Textarea } from "./ui/textarea";
-import { deleteMessagesByChatIdAfterTimestampAction } from "@/app/api/chat/actions";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useTranslations } from "next-intl";
 import { Loader } from "lucide-react";
@@ -54,36 +53,32 @@ export function MessageEditor({
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
-    await deleteMessagesByChatIdAfterTimestampAction(message.id);
+    const updatedParts = [...message.parts];
+    const lastPartIndex = updatedParts.length - 1;
+    const lastPart = updatedParts[lastPartIndex];
+
+    if (lastPart && lastPart.type === "text") {
+      updatedParts[lastPartIndex] = {
+        ...lastPart,
+        text: draftText,
+      };
+    }
+
+    const updatedMessage: UIMessage = {
+      ...message,
+      parts: updatedParts,
+    };
 
     setMessages((messages) => {
       const index = messages.findIndex((m) => m.id === message.id);
-
       if (index !== -1) {
-        const updatedParts = [...message.parts];
-        const lastPartIndex = updatedParts.length - 1;
-        const lastPart = updatedParts[lastPartIndex];
-
-        if (lastPart && lastPart.type === "text") {
-          updatedParts[lastPartIndex] = {
-            ...lastPart,
-            text: draftText,
-          };
-        }
-
-        const updatedMessage: UIMessage = {
-          ...message,
-          parts: updatedParts,
-        };
-
         return [...messages.slice(0, index), updatedMessage];
       }
-
       return messages;
     });
 
     setMode("view");
-    sendMessage();
+    sendMessage(updatedMessage);
   };
   useEffect(() => {
     if (!canEdit) {

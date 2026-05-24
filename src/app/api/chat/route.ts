@@ -161,6 +161,15 @@ export async function POST(request: Request) {
       videoGenModel,
     } = parsedBody;
 
+    // Sync backend message history cleanup: if editing or regenerating a message,
+    // delete all subsequent messages in the database synchronous to prevent Next.js client-side revalidation glitches.
+    if (message?.id) {
+      logger.info(
+        `Cleaning up database messages after and including message: ${message.id}`,
+      );
+      await chatRepository.deleteMessagesByChatIdAfterTimestamp(message.id);
+    }
+
     // Extract agentId early from mentions or metadata
     const agentId =
       (
