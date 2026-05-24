@@ -1900,6 +1900,7 @@ BEGIN ROLEPLAY NOW.`
             })(),
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
+          maxTokens: 4096,
           maxSteps: 15,
           maxRetries: 3,
           tools: vercelAITooles as any,

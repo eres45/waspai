@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       experimental_transform: smoothStream({ chunking: "word" }),
       prompt: message,
       abortSignal: request.signal,
+      maxTokens: 60,
       onFinish: (ctx) => {
         chatRepository
           .upsertThread({
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
           })
           .catch((err) => logger.error(err));
       },
-    });
+    } as any);
 
     return result.toUIMessageStreamResponse();
   } catch (err: any) {

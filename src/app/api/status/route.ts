@@ -34,7 +34,8 @@ async function testModel(
         },
       ],
       abortSignal: controller.signal,
-    });
+      maxTokens: 20,
+    } as any);
 
     // Read first chunk to verify it works
     const reader = result.textStream.getReader();
@@ -190,9 +191,8 @@ export async function GET() {
 
       // Find provider from dynamic list
       const provider =
-        modelsInfo.find((p) =>
-          p.models.some((m) => m.name === modelId),
-        )?.provider || "Unknown";
+        modelsInfo.find((p) => p.models.some((m) => m.name === modelId))
+          ?.provider || "Unknown";
 
       return {
         modelId,
