@@ -79,7 +79,9 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
         } else {
           // Upload raw bytes
           const buffer = await toBuffer(content);
-          const blob = new Blob([new Uint8Array(buffer)], { type: contentType });
+          const blob = new Blob([new Uint8Array(buffer)], {
+            type: contentType,
+          });
           formData.append(fieldName, blob, sanitizeFilename(filename));
           formData.append("fileSize", String(buffer.byteLength));
         }
@@ -88,6 +90,8 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
           method: "POST",
           headers: {
             "X-Auth-Token": authToken,
+            "X-User-ID": userId || "anonymous",
+            "X-File-Name": sanitizeFilename(filename),
           },
           body: formData,
         });
