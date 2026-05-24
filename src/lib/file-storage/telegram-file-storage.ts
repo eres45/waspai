@@ -13,15 +13,9 @@ import {
   toBuffer,
 } from "./storage-utils";
 import { generateUUID } from "lib/utils";
-import { supabaseRest } from "../db/supabase-rest";
 import logger from "@/lib/logger";
 
 const STORAGE_PREFIX = resolveStoragePrefix();
-
-const required = (name: string, value: string | undefined) => {
-  if (!value) throw new Error(`Missing required env: ${name}`);
-  return value;
-};
 
 const buildKey = (filename: string) => {
   const safeName = sanitizeFilename(filename || "file");
@@ -30,253 +24,86 @@ const buildKey = (filename: string) => {
   return path.posix.join(prefix, `${id}-${safeName}`);
 };
 
-// Determine file type from content type
-const getFileType = (
-  contentType: string,
-): "image" | "video" | "pdf" | "document" => {
-  if (contentType.startsWith("image/")) return "image";
-  if (contentType.startsWith("video/")) return "video";
-  if (contentType === "application/pdf") return "pdf";
-  return "document";
+const getWorkerUrl = () => {
+  const url = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+  if (!url)
+    throw new Error("Missing required env: NEXT_PUBLIC_CLOUDFLARE_WORKER_URL");
+  return url.replace(/\/$/, ""); // strip trailing slash
 };
 
-export const createTelegramFileStorage = (userId?: string): FileStorage => {
-  const getBotToken = () =>
-    required("TELEGRAM_BOT_TOKEN", process.env.TELEGRAM_BOT_TOKEN);
-  const getChatId = () =>
-    required("TELEGRAM_CHANNEL_ID", process.env.TELEGRAM_CHANNEL_ID);
+const getAuthToken = () => {
+  const token = process.env.CLOUDFLARE_WORKER_AUTH_TOKEN;
+  if (!token)
+    throw new Error("Missing required env: CLOUDFLARE_WORKER_AUTH_TOKEN");
+  return token;
+};
 
+/**
+ * File storage that routes all uploads through the Cloudflare Worker proxy.
+ * The worker securely holds the Telegram Bot Token + Chat ID internally —
+ * the Next.js server never touches those credentials directly.
+ *
+ * Upload:  POST {WORKER}/upload  (multipart/form-data, X-Auth-Token header)
+ * Serve:   GET  {WORKER}/serve?path={file_path}
+ */
+export const createTelegramFileStorage = (userId?: string): FileStorage => {
   return {
     async upload(content, options: UploadOptions = {}) {
-      const chatId = getChatId();
+      const workerUrl = getWorkerUrl();
+      const authToken = getAuthToken();
       const remoteUrl = options.url;
       const filename = options.filename ?? "file";
       const contentType = options.contentType || "application/octet-stream";
 
-      // If we have a remote URL, we don't need to load the content buffer initially
-      const buffer = remoteUrl ? Buffer.alloc(0) : await toBuffer(content);
-      let activeBuffer = buffer;
-      let isUsingUrlMode = !!remoteUrl;
-
       const key = buildKey(filename);
-      const fileType = getFileType(contentType);
-      const fileSize = remoteUrl
-        ? options.metadata?.size || 0
-        : buffer.byteLength;
+
+      logger.info(
+        `[CloudflareStorage] Uploading via worker: ${filename} (${contentType})`,
+      );
 
       try {
-        // Create FormData for Telegram API
         const formData = new FormData();
-        formData.append("chat_id", chatId);
+        formData.append("userId", userId || "anonymous");
+        formData.append("filename", sanitizeFilename(filename));
+        formData.append("contentType", contentType);
 
-        // Choose appropriate Telegram API endpoint based on file type
-        let endpoint: string;
-        let fieldName: string;
-
-        const PHOTO_SIZE_LIMIT = 5 * 1024 * 1024; // 5MB (Telegram URL limit for photos)
-        const isLargeImage =
-          fileType === "image" && fileSize > PHOTO_SIZE_LIMIT;
-
-        if (fileType === "image" && !isLargeImage) {
-          endpoint = `https://api.telegram.org/bot${getBotToken()}/sendPhoto`;
-          fieldName = "photo";
-        } else if (fileType === "video") {
-          endpoint = `https://api.telegram.org/bot${getBotToken()}/sendVideo`;
-          fieldName = "video";
-        } else {
-          // PDF and other documents
-          endpoint = `https://api.telegram.org/bot${getBotToken()}/sendDocument`;
-          fieldName = "document";
-        }
+        // Determine field name for Telegram routing in the worker
+        let fieldName = "document";
+        if (contentType.startsWith("image/")) fieldName = "photo";
+        else if (contentType.startsWith("video/")) fieldName = "video";
 
         if (remoteUrl) {
-          // If we have an external URL, Telegram can fetch it directly
+          // Pass the remote URL as a string — worker fetches it directly
           formData.append(fieldName, remoteUrl);
+          formData.append("fileSize", String(options.metadata?.size || 0));
         } else {
-          // Otherwise upload the file content directly
-          const blob = new Blob([new Uint8Array(buffer)], {
-            type: contentType,
-          });
+          // Upload raw bytes
+          const buffer = await toBuffer(content);
+          const blob = new Blob([new Uint8Array(buffer)], { type: contentType });
           formData.append(fieldName, blob, sanitizeFilename(filename));
+          formData.append("fileSize", String(buffer.byteLength));
         }
 
-        // Add caption with metadata for tracking
-        const caption = [
-          `📁 File Upload${remoteUrl ? " (via URL)" : ""}`,
-          `Type: ${fileType}`,
-          `Size: ${Math.round(fileSize / 1024)}KB`,
-          `User: ${userId || "anonymous"}`,
-          `Time: ${new Date().toISOString()}`,
-        ].join("\n");
+        const response = await fetch(`${workerUrl}/upload`, {
+          method: "POST",
+          headers: {
+            "X-Auth-Token": authToken,
+          },
+          body: formData,
+        });
 
-        formData.append("caption", caption);
-
-        logger.info(
-          `[Telegram Upload] Uploading ${fileType} to Telegram: ${filename}`,
-        );
-
-        const maxRetries = 3;
-        let lastError: Error | null = null;
-        let response: Response | undefined;
-
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            logger.info(
-              `[Telegram Upload] Attempt ${attempt}/${maxRetries} uploading ${fileType}: ${filename}`,
-            );
-
-            const controller = new AbortController();
-            // Increase timeout for URL-based uploads as Telegram may take time to fetch
-            const timeoutDuration = isUsingUrlMode ? 60000 : 30000;
-            const timeoutId = setTimeout(
-              () => controller.abort(),
-              timeoutDuration,
-            );
-
-            // Re-build FormData if we switched from URL to Buffer mode
-            const currentFormData = new FormData();
-            currentFormData.append("chat_id", chatId);
-            currentFormData.append("caption", caption);
-
-            if (isUsingUrlMode && remoteUrl) {
-              currentFormData.append(fieldName, remoteUrl);
-            } else {
-              const blob = new Blob([new Uint8Array(activeBuffer)], {
-                type: contentType,
-              });
-              currentFormData.append(
-                fieldName,
-                blob,
-                sanitizeFilename(filename),
-              );
-            }
-
-            response = await fetch(endpoint, {
-              method: "POST",
-              body: currentFormData,
-              signal: controller.signal,
-            });
-
-            clearTimeout(timeoutId);
-
-            if (response.ok) {
-              logger.info(`[Telegram Upload] Attempt ${attempt} succeeded.`);
-              break;
-            } else {
-              const errorText = await response.text();
-              logger.error(
-                `[Telegram Upload] API Error (${response.status}) for ${endpoint}: ${errorText}`,
-              );
-              console.error(
-                `[DEBUG] Telegram API Full Error Response:`,
-                errorText,
-              );
-              console.error(`[DEBUG] Sent URL:`, remoteUrl);
-
-              // If it's a 401, 403, or 400 with certain messages, don't retry
-              if (response.status === 401 || response.status === 403) {
-                throw new Error(`Telegram Auth Error: ${response.status}`);
-              }
-
-              throw new Error(
-                `Telegram API Error: ${response.status} ${errorText}`,
-              );
-            }
-          } catch (err) {
-            lastError = err instanceof Error ? err : new Error(String(err));
-            logger.warn(
-              `[Telegram Upload] Attempt ${attempt} failed: ${lastError.message}`,
-            );
-
-            // Critical fail: If bot token is unauthorized, stop immediately
-            if (
-              lastError.message.includes("401") ||
-              lastError.message.includes("403")
-            ) {
-              break;
-            }
-
-            if (attempt < maxRetries) {
-              // FALLBACK LOGIC: If we were using URL mode and it failed,
-              // try to download the file to the server and upload directly in the next attempt.
-              if (isUsingUrlMode && remoteUrl) {
-                logger.warn(
-                  `[Telegram Upload] URL ingestion failed. Falling back to direct server upload...`,
-                );
-                try {
-                  const res = await fetch(remoteUrl);
-                  if (res.ok) {
-                    const arrayBuffer = await res.arrayBuffer();
-                    activeBuffer = Buffer.from(arrayBuffer);
-                    isUsingUrlMode = false;
-                    logger.info(
-                      `[Telegram Upload] Successfully downloaded staged file (${activeBuffer.byteLength} bytes) for direct upload.`,
-                    );
-                  }
-                } catch (fetchErr) {
-                  logger.error(
-                    `[Telegram Upload] Failed to download staged file from ${remoteUrl}`,
-                    fetchErr,
-                  );
-                }
-              }
-
-              const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-              await new Promise((resolve) => setTimeout(resolve, delay));
-            }
-          }
-        }
-
-        if (!response || !response.ok) {
-          if (remoteUrl) {
-            logger.warn(
-              `[Telegram Upload] All attempts failed for URL upload. Returning staging URL.`,
-            );
-            return {
-              key,
-              sourceUrl: remoteUrl,
-              metadata: {
-                key,
-                filename,
-                contentType,
-                size: fileSize,
-                uploadedAt: new Date(),
-              },
-            };
-          }
-
-          logger.warn(
-            `[Telegram Upload] All ${maxRetries} attempts failed. Falling back to local Base64 URL.`,
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(
+            `Worker upload failed (${response.status}): ${errText}`,
           );
-          const base64 = Buffer.from(buffer).toString("base64");
-          const sourceUrl = `data:${contentType};base64,${base64}`;
-
-          return {
-            key,
-            sourceUrl,
-            metadata: {
-              key,
-              filename: path.posix.basename(key),
-              contentType,
-              size: buffer.byteLength,
-              uploadedAt: new Date(),
-            },
-          };
         }
-
-        // Response is consumed in previous block if not ok (response.text())
-        // If ok, we need to clone? No, the 'response.text()' was in the else block.
-        // But we need 'data' below.
-        // We shouldn't consume it in the loop if success.
-
-        // Let's refine the loop to NOT consume if success.
-        // The above code verifies response.ok.
-        // If response.ok, we break. And we can use response.json() below.
 
         const data = (await response.json()) as {
           ok: boolean;
-          result: {
-            message_id: number;
+          file_path?: string;
+          proxied_url?: string;
+          result?: {
             photo?: Array<{ file_id: string; file_size: number }>;
             video?: { file_id: string; file_size: number };
             document?: { file_id: string; file_size: number };
@@ -284,151 +111,43 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
         };
 
         if (!data.ok) {
-          throw new Error("Telegram API returned ok: false");
+          throw new Error("Worker returned ok: false");
         }
 
-        // Extract file_id based on file type
-        let fileId: string;
-        let finalFileSize: number = fileSize;
-
-        if (data.result.photo && data.result.photo.length > 0) {
-          // For photos, Telegram returns an array, take the largest
-          const largest = data.result.photo[data.result.photo.length - 1];
-          fileId = largest.file_id;
-          finalFileSize = largest.file_size || finalFileSize;
-        } else if (data.result.video) {
-          fileId = data.result.video.file_id;
-          finalFileSize = data.result.video.file_size || finalFileSize;
-        } else if (data.result.document) {
-          fileId = data.result.document.file_id;
-          finalFileSize = data.result.document.file_size || finalFileSize;
+        // Build the permanent serve URL via the worker's /serve endpoint
+        let sourceUrl: string;
+        if (data.file_path) {
+          // Construct the permanent CDN URL through the worker
+          sourceUrl = `${workerUrl}/serve?path=${encodeURIComponent(data.file_path)}`;
+        } else if (remoteUrl) {
+          // Fallback: the remote URL itself (e.g. AI-generated image URL)
+          sourceUrl = remoteUrl;
         } else {
-          throw new Error("No file_id found in Telegram response");
+          throw new Error("Worker did not return a file_path or proxied_url");
         }
 
-        const messageId = data.result.message_id;
+        logger.info(`[CloudflareStorage] Upload success → ${sourceUrl}`);
 
-        // Get the actual file URL from Telegram using getFile API
-        // This allows direct image preview instead of just a channel link
-        let actualFileUrl: string;
-
-        try {
-          const getFileResponse = await fetch(
-            `https://api.telegram.org/bot${getBotToken()}/getFile?file_id=${fileId}`,
-          );
-
-          if (getFileResponse.ok) {
-            const fileData = (await getFileResponse.json()) as {
-              ok: boolean;
-              result: { file_path: string };
-            };
-
-            if (fileData.ok && fileData.result.file_path) {
-              // Construct the proxied download URL to hide bot token
-              actualFileUrl = `/api/storage/file/${fileData.result.file_path}`;
-              logger.info(
-                `[Telegram Upload] Proxied file URL generated: ${actualFileUrl}`,
-              );
-            } else {
-              // Fallback to Base64 or remoteUrl if getFile fails
-              logger.warn(
-                `[Telegram Upload] Could not get file path, falling back.`,
-              );
-              if (remoteUrl) {
-                actualFileUrl = remoteUrl;
-              } else {
-                const base64 = Buffer.from(buffer).toString("base64");
-                actualFileUrl = `data:${contentType};base64,${base64}`;
-              }
-            }
-          } else {
-            // Fallback
-            logger.warn(
-              `[Telegram Upload] getFile API failed (status ${getFileResponse.status}), using fallback`,
-            );
-            if (remoteUrl) {
-              actualFileUrl = remoteUrl;
-            } else {
-              const base64 = Buffer.from(buffer).toString("base64");
-              actualFileUrl = `data:${contentType};base64,${base64}`;
-            }
-          }
-        } catch (getFileError) {
-          // Fallback
-          logger.error(`[Telegram Upload] getFile exception:`, getFileError);
-          if (remoteUrl) {
-            actualFileUrl = remoteUrl;
-          } else {
-            const base64 = Buffer.from(buffer).toString("base64");
-            actualFileUrl = `data:${contentType};base64,${base64}`;
-          }
-        }
-
-        // We still want to log the Channel URL for admin purposes or metadata?
-        // The return object 'metadata' has the key.
-        // We could add 'telegram_channel_url' to metadata?
-        // But 'sourceUrl' is used by frontend for 'src'. So Base64 is correct for UI.
-        // The DB record (inserted below) SHOULD store the CHANNEL URL if available, or Base64?
-        // DB column 'telegram_url'.
-        // If we store Base64 in DB, it bloats DB.
-        // Ideally DB stores Channel URL, but Frontend gets Base64.
-        // But 'upload' returns 'sourceUrl'. Route uses it for BOTH DB (via recordUploadRest) and Response.
-
-        // Let's settle for: Return Base64 to ensure UI works.
-        // DB will store Base64 (not ideal but safe).
-        // Actually, for >20MB, storing 20MB text in Text column might fail PG limits (1GB usually ok but slow).
-        // But usage is rare. Prioritize UX.
-
-        logger.info(
-          `[Telegram Upload] Success - file_id: ${fileId}, message_id: ${messageId}`,
-        );
-
-        // Save to database if userId is provided
-        if (userId) {
-          try {
-            const { error: dbError } = await supabaseRest
-              .from("telegram_uploads")
-              .insert({
-                file_id: fileId,
-                message_id: messageId,
-                file_type: fileType,
-                user_id: userId,
-                filename,
-                content_type: contentType,
-                size_bytes: finalFileSize,
-                telegram_url: actualFileUrl,
-              });
-
-            if (dbError) {
-              logger.error("[Telegram Upload] Database error:", dbError);
-              // Don't throw - file is uploaded, just log the DB error
-            } else {
-              logger.info(
-                `[Telegram Upload] Database record created for file_id: ${fileId}`,
-              );
-            }
-          } catch (dbErr) {
-            logger.error("[Telegram Upload] Database exception:", dbErr);
-          }
-        }
+        const fileSize =
+          data.result?.photo?.at(-1)?.file_size ||
+          data.result?.video?.file_size ||
+          data.result?.document?.file_size ||
+          options.metadata?.size ||
+          0;
 
         const metadata: FileMetadata = {
           key,
-          filename: path.posix.basename(key),
+          filename: sanitizeFilename(filename),
           contentType,
-          size: finalFileSize,
+          size: fileSize,
           uploadedAt: new Date(),
         };
 
-        return {
-          key,
-          sourceUrl: actualFileUrl,
-          metadata,
-        };
+        return { key, sourceUrl, metadata };
       } catch (err) {
-        logger.error("[Telegram Upload] Exception:", err);
+        logger.error("[CloudflareStorage] Upload exception:", err);
         throw new Error(
-          `Failed to upload to Telegram: ${err instanceof Error ? err.message : String(err)}`,
+          `Failed to upload via Cloudflare Worker: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     },
@@ -436,42 +155,36 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
     async createUploadUrl(
       _options: UploadUrlOptions,
     ): Promise<UploadUrl | null> {
-      // Telegram doesn't support presigned URLs
+      // Presigned URLs not supported — all uploads go through the worker
       return null;
     },
 
     async download(key) {
-      // Telegram files are accessible via their URLs
+      // Files are served via worker /serve endpoint, not downloaded server-side
       throw new FileNotFoundError(
         key,
-        new Error(
-          "Download not supported for Telegram - use sourceUrl directly",
-        ),
+        new Error("Download not supported — use sourceUrl directly"),
       );
     },
 
     async delete(key) {
-      // Telegram doesn't provide delete API for channel messages
-      logger.warn(`[Telegram] Delete not supported for key: ${key}`);
+      // Telegram does not expose a public delete API
+      logger.warn(`[CloudflareStorage] Delete not supported for key: ${key}`);
     },
 
     async exists(_key) {
-      // Can't check existence without direct access
       return false;
     },
 
     async getMetadata(_key) {
-      // Can't get metadata from Telegram without file_id
       return null;
     },
 
     async getSourceUrl(_key) {
-      // Telegram URLs are already public
       return null;
     },
 
     async getDownloadUrl(_key) {
-      // Telegram URLs are already public
       return null;
     },
   } satisfies FileStorage;
