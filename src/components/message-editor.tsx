@@ -13,10 +13,6 @@ import { Textarea } from "./ui/textarea";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useTranslations } from "next-intl";
 import { Loader } from "lucide-react";
-import {
-  upsertMessageAction,
-  deleteMessagesByChatIdAfterTimestampAction,
-} from "@/app/api/chat/actions";
 
 export type MessageEditorProps = {
   message: UIMessage;
@@ -31,7 +27,6 @@ export function MessageEditor({
   setMode,
   setMessages,
   sendMessage: _sendMessage,
-  threadId,
 }: MessageEditorProps) {
   const t = useTranslations();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -71,41 +66,25 @@ export function MessageEditor({
       };
     }
 
-    // Truncate client-side messages history to instantly update UI and prevent duplication/blinks
+    const updatedMsg = {
+      ...message,
+      parts: updatedParts,
+    };
+
+    // Remove the message and all subsequent messages from client state
     setMessages((prevMessages) => {
       const idx = prevMessages.findIndex((m) => m.id === message.id);
       if (idx !== -1) {
-        const updatedMsg = {
-          ...prevMessages[idx],
-          parts: updatedParts,
-        };
-        return [...prevMessages.slice(0, idx), updatedMsg];
+        return [...prevMessages.slice(0, idx)];
       }
       return prevMessages;
     });
 
-    // Save the edited message in the database & delete subsequent responses
-    if (threadId) {
-      await upsertMessageAction({
-        id: message.id,
-        threadId,
-        role: message.role,
-        parts: updatedParts,
-        metadata: message.metadata as any,
-      });
-      await deleteMessagesByChatIdAfterTimestampAction(message.id);
-    }
-
     setMode("view");
     setIsSubmitting(false);
 
-    // Re-submit the edited message to get a fresh AI response in-place
-    _sendMessage({
-      messageId: message.id,
-      role: "user",
-      parts: updatedParts,
-      metadata: message.metadata as any,
-    } as any);
+    // Re-submit the edited message using sendMessage (which will append it back to state and call API)
+    _sendMessage(updatedMsg);
   };
   useEffect(() => {
     if (!canEdit) {
