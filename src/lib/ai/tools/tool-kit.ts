@@ -43,6 +43,7 @@ import { qrCodeGeneratorTool, qrCodeWithLogoTool } from "./qr-code-generator";
 import { htmlPreviewTool } from "./html-preview";
 import { chatExportTool } from "./chat-export";
 import { createSkillTool } from "./skill-tools";
+import { deploySiteTool } from "./deploy-site";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -81,6 +82,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.ListSmsNumbers]: listSmsNumbersTool,
     [DefaultToolName.GetSmsMessages]: getSmsMessagesTool,
     [DefaultToolName.CreateSkill]: createSkillTool,
+    [DefaultToolName.DeploySite]: deploySiteTool,
   },
   [AppDefaultToolkit.Media]: {
     [DefaultToolName.VideoPlayer]: videoPlayerTool,

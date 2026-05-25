@@ -58,6 +58,7 @@ export enum DefaultToolName {
   ListSmsNumbers = "list-sms-numbers",
   GetSmsMessages = "get-sms-messages",
   CreateSkill = "create_skill",
+  DeploySite = "deploy_site",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";

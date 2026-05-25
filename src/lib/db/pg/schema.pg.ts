@@ -651,3 +651,20 @@ export const SkillRatingTable = pgTable(
 export type SkillEntity = typeof SkillTable.$inferSelect;
 export type UserSkillEntity = typeof UserSkillTable.$inferSelect;
 export type SkillRatingEntity = typeof SkillRatingTable.$inferSelect;
+
+export const DeployedSiteTable = pgTable("deployed_site", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  slug: text("slug").unique().notNull(), // URL slug: "bakery-a3f2"
+  title: text("title").notNull(),
+  description: text("description"),
+  htmlContent: text("html_content").notNull(), // Full HTML (inline CSS+JS)
+  authorId: uuid("author_id").references(() => UserTable.id, {
+    onDelete: "cascade",
+  }),
+  isPublic: boolean("is_public").notNull().default(true),
+  viewCount: integer("view_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type DeployedSiteEntity = typeof DeployedSiteTable.$inferSelect;

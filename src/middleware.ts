@@ -4,6 +4,34 @@ import { getSessionCookie } from "better-auth/cookies";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Detect subdomain routing
+  const host = request.headers.get("host") ?? "";
+  const allowedDomains = ["waspai.in", "localhost:3000"];
+  let subdomain: string | null = null;
+
+  for (const domain of allowedDomains) {
+    if (host.endsWith(`.${domain}`)) {
+      subdomain = host.slice(0, -domain.length - 1);
+      break;
+    }
+  }
+
+  const isInternalOrStatic =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/static") ||
+    pathname.startsWith("/site") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/icon" ||
+    pathname === "/wasp-ai-logo.png" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt";
+
+  if (subdomain && subdomain !== "www" && !isInternalOrStatic) {
+    const rewriteUrl = new URL(`/site/${subdomain}`, request.url);
+    return NextResponse.rewrite(rewriteUrl);
+  }
+
   /*
    * Playwright starts the dev server and requires a 200 status to
    * begin the tests, so this ensures that the tests can start
