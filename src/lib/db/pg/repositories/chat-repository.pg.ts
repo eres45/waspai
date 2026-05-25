@@ -8,7 +8,10 @@ import {
   ArchiveItemTable,
 } from "../schema.pg";
 
-import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ne, placeholder, sql } from "drizzle-orm";
+
+let selectThreadPrepared: any = null;
+let selectMessagesPrepared: any = null;
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
@@ -30,11 +33,15 @@ export const pgChatRepository: ChatRepository = {
   },
 
   selectThread: async (id: string): Promise<ChatThread | null> => {
-    const [result] = await db
-      .select()
-      .from(ChatThreadTable)
-      .where(eq(ChatThreadTable.id, id));
-    return result;
+    if (!selectThreadPrepared) {
+      selectThreadPrepared = db
+        .select()
+        .from(ChatThreadTable)
+        .where(eq(ChatThreadTable.id, placeholder("id")))
+        .prepare("select_thread_by_id");
+    }
+    const [result] = await selectThreadPrepared.execute({ id });
+    return result || null;
   },
 
   selectThreadDetails: async (id: string) => {
@@ -65,11 +72,15 @@ export const pgChatRepository: ChatRepository = {
   selectMessagesByThreadId: async (
     threadId: string,
   ): Promise<ChatMessage[]> => {
-    const result = await db
-      .select()
-      .from(ChatMessageTable)
-      .where(eq(ChatMessageTable.threadId, threadId))
-      .orderBy(ChatMessageTable.createdAt);
+    if (!selectMessagesPrepared) {
+      selectMessagesPrepared = db
+        .select()
+        .from(ChatMessageTable)
+        .where(eq(ChatMessageTable.threadId, placeholder("threadId")))
+        .orderBy(ChatMessageTable.createdAt)
+        .prepare("select_messages_by_thread_id");
+    }
+    const result = await selectMessagesPrepared.execute({ threadId });
     return result as ChatMessage[];
   },
 

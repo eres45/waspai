@@ -40,6 +40,9 @@ export const pgDb = new Proxy({} as ReturnType<typeof drizzlePg>, {
           connectionString: process.env.POSTGRES_URL,
           // Force SSL if it's supposed to be required (Supabase usually needs it)
           ssl: { rejectUnauthorized: false },
+          max: 5, // Limit maximum database connections per serverless function instance
+          idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+          connectionTimeoutMillis: 5000, // Timeout after 5 seconds if connection fails
         });
 
         pgDbInstance = drizzlePg(pool, {

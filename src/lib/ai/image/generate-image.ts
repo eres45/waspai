@@ -31,6 +31,44 @@ async function downloadAndEncodeImage(url: string): Promise<string> {
 }
 
 /**
+ * Dynamic fetch wrapper with exponential backoff retries.
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 3,
+  delay = 1000,
+): Promise<Response> {
+  let currentDelay = delay;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) return response;
+
+      // If server error, retry
+      if (response.status >= 500 && i < retries - 1) {
+        console.warn(
+          `[API Retry] HTTP ${response.status} on attempt ${i + 1}. Retrying in ${currentDelay}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, currentDelay));
+        currentDelay *= 2; // exponential backoff
+        continue;
+      }
+      return response;
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      console.warn(
+        `[API Retry] Fetch failed on attempt ${i + 1}. Retrying in ${currentDelay}ms... Error:`,
+        err,
+      );
+      await new Promise((resolve) => setTimeout(resolve, currentDelay));
+      currentDelay *= 2; // exponential backoff
+    }
+  }
+  throw new Error(`Fetch failed after ${retries} attempts`);
+}
+
+/**
  * Core image generation function — routes through the unified worker.
  * The worker supports 10 providers. Pass `model` to select one, or omit for default.
  */
@@ -94,7 +132,7 @@ async function generateImageViaUnifiedWorker(
     body.model = modelId;
   }
 
-  const response = await fetch(IMAGE_ENDPOINT, {
+  const response = await fetchWithRetry(IMAGE_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
