@@ -62,6 +62,9 @@ export const REASONING_LEAKY_MODELS = [
   /thought/i,
   /thought/i,
 
+  // NVIDIA NIM reasoning models (gpt-oss sends reasoning_content)
+  /gpt-oss/i,
+
   // AIHubMix Free Models generic catch-all
   /.*-free$/i,
 ];

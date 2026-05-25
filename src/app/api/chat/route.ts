@@ -814,14 +814,14 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
             imageModelPrompt = `You have been requested to generate an image.
 CRITICAL INSTRUCTIONS:
 1. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt.
-2. If the user specified a specific model (e.g., Seedream, Juggernaut, RealVis, etc.) in their request, USE that model in the tool call. Options match the "model" enum in the "image-manager" tool.
-3. If no specific model is mentioned, use "${activeGenerationModel}" (FLUX.1 Schnell) as the default.
+2. ALWAYS use model="${activeGenerationModel}" as the model parameter — this is the EXACT model ID to pass to the tool. Do NOT use display names or any other value.
+3. Valid model IDs you may use: "flux-1-schnell", "flux-1-dev", "flux-pro", "sdxl-v1-0", "juggernaut-xl", "realvisxl-v4", "sd-3-5", "seedream-4-5". Always use these exact strings.
 4. Use the exact tool name: "image-manager".
 5. Do NOT ask the user to choose a model or ask for clarification.
-6. Do NOT refuse to generate the image - just generate it. Use a creative, high-quality prompt related to the user's intent if their request is brief (e.g., if they say "generate an image", create a stunning, detailed visualization).
-7. After the tool returns the image successfully, you MUST provide a brief, descriptive summary or creative caption for the image.
+6. Do NOT refuse to generate the image - just generate it.
+7. After the tool returns the image successfully, provide a brief descriptive caption.
 8. CRITICAL: NEVER output the image URL in your response text.
-9. CRITICAL: NEVER create markdown links to the image (e.g., ![]() is FORBIDDEN). The user can ALREADY see the image in the tool result UI. Just talk about it.`;
+9. CRITICAL: NEVER create markdown image links (![]()). The user already sees the image in the UI.`;
           }
         }
 
