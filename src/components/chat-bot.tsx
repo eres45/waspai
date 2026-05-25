@@ -149,35 +149,22 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
         mutate("/api/thread");
       }
 
-      // Auto-continue logic for long reasoning/interrupted responses
+      // Auto-continue: only fire when the SDK signals the model was cut off at the token limit.
+      // We deliberately avoid heuristic text-length checks — they cause false positives
+      // which send "Continue..." when the AI is done, resulting in empty-output errors.
       const finishReason = options?.finishReason || message?.finishReason;
       const isLengthFinished = finishReason === "length";
-      const textPart =
-        message?.parts?.find((p: any) => p.type === "text")?.text ||
-        message?.text ||
-        "";
-      const seemsTruncated =
-        textPart &&
-        textPart.length > 3500 &&
-        !/[.!?]"?`*$\s]?$/.test(textPart.trim()) &&
-        !textPart.trim().endsWith("}") &&
-        !textPart.trim().endsWith("]");
 
-      if (
-        (isLengthFinished || seemsTruncated) &&
-        autoContinueCountRef.current < 3
-      ) {
+      if (isLengthFinished && autoContinueCountRef.current < 3) {
         autoContinueCountRef.current += 1;
-        toast.info("Auto-continuing response generation...", {
-          duration: 2000,
-        });
+        toast.info("Auto-continuing response...", { duration: 2000 });
         setTimeout(() => {
           latestRef.current.sendMessage?.({
             role: "user",
             parts: [
               {
                 type: "text",
-                text: "Continue generating from your previous message.",
+                text: "Continue generating from where you left off.",
               },
             ],
           });

@@ -1599,6 +1599,37 @@ CRITICAL INSTRUCTIONS:
           }
         }
 
+        // Auto-inject skill-creator guidelines when user asks to create/edit a skill
+        const lastMessageText =
+          lastMessage?.parts
+            ?.filter((p: any) => p.type === "text")
+            .map((p: any) => p.text)
+            .join(" ")
+            .toLowerCase() ?? "";
+        const isSkillCreationRequest =
+          /\b(create|make|build|write|add|new|edit|update|improve|modify)\b/.test(
+            lastMessageText,
+          ) && /\bskill\b/.test(lastMessageText);
+        if (isSkillCreationRequest) {
+          try {
+            const skillCreatorSkill = await skillRepository
+              .getSkillByName("skill-creator")
+              .catch(() => null);
+            if (
+              skillCreatorSkill?.content &&
+              !combinedSkillContents.includes(skillCreatorSkill.content)
+            ) {
+              // Prepend so it appears first — highest priority context
+              combinedSkillContents.unshift(skillCreatorSkill.content);
+              logger.info(
+                "Auto-injected skill-creator guidelines for skill creation request",
+              );
+            }
+          } catch (e) {
+            logger.warn("Failed to auto-inject skill-creator:", e);
+          }
+        }
+
         // Build skill instructions prompt block
         let skillsSystemPrompt = "";
         if (combinedSkillContents.length > 0) {
