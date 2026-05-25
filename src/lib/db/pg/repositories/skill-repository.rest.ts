@@ -58,6 +58,7 @@ export const skillRepositoryRest: SkillRepository = {
       .from("skill")
       .select("*")
       .eq("is_public", true)
+      .neq("name", "skill-creator") // internal meta-skill, not for users
       .order("is_featured", { ascending: false })
       .order("install_count", { ascending: false })
       .range(offset, offset + limit - 1);
