@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       messages: convertToModelMessages(messages),
       experimental_transform: smoothStream({ chunking: "word" }),
       experimental_continueOnLimit: true,
-      maxTokens: 4096,
+      maxTokens: 8192,
     } as any).toUIMessageStreamResponse();
   } catch (error: any) {
     logger.error(error);

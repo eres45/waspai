@@ -1944,7 +1944,7 @@ CRITICAL INSTRUCTIONS:
           ),
           experimental_transform: smoothStream({ chunking: "word" }),
           experimental_continueOnLimit: true,
-          maxTokens: 4096,
+          maxTokens: 8192,
           maxSteps: 15,
           maxRetries: 3,
           tools: vercelAITooles as any,

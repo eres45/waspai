@@ -71,7 +71,7 @@ If a query is outside Wasp AI's capability, pivot to how our tools might still h
       messages: convertToModelMessages(messages),
       system: systemPrompt,
       experimental_continueOnLimit: true,
-      maxTokens: 4096,
+      maxTokens: 8192,
     } as any);
 
     return result.toUIMessageStreamResponse();
