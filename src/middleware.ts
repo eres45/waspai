@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/robots.txt";
 
   if (subdomain && subdomain !== "www" && !isInternalOrStatic) {
-    const rewriteUrl = new URL(`/site/${subdomain}`, request.url);
+    const rewriteUrl = new URL(`/site/${subdomain}${pathname}`, request.url);
     return NextResponse.rewrite(rewriteUrl);
   }
 

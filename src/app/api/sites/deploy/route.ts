@@ -25,13 +25,22 @@ const RESERVED_SLUGS = new Set([
 const DeploySchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),
   description: z.string().max(300, "Description is too long").optional(),
-  html: z.string().min(1, "HTML content is required"),
+  html: z.string().optional(),
   slug: z
     .string()
     .max(50, "Slug is too long")
     .regex(
       /^[a-z0-9-]+$/,
       "Slug can only contain lowercase letters, numbers, and hyphens",
+    )
+    .optional(),
+  projectId: z.string().uuid().optional(),
+  files: z
+    .array(
+      z.object({
+        path: z.string().min(1),
+        content: z.string(),
+      }),
     )
     .optional(),
 });
@@ -55,9 +64,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Check site size limit (2MB)
+    // Check site size limit (2MB for rawHtml or combined file content)
     const rawHtml = body.html || "";
-    if (Buffer.byteLength(rawHtml, "utf-8") > 2 * 1024 * 1024) {
+    let totalBytes = Buffer.byteLength(rawHtml, "utf-8");
+    if (body.files && Array.isArray(body.files)) {
+      totalBytes = body.files.reduce((acc: number, f: any) => {
+        return acc + Buffer.byteLength(f.content || "", "utf-8");
+      }, 0);
+    }
+
+    if (totalBytes > 2 * 1024 * 1024) {
       return NextResponse.json(
         { error: "Site payload exceeds the 2MB limit" },
         { status: 400 },
@@ -106,14 +122,32 @@ export async function POST(request: Request) {
       slug = `${slug}-${nanoid(4).toLowerCase()}`;
     }
 
-    // Deploy
+    const defaultHtml =
+      data.html ||
+      data.files?.find(
+        (f) => f.path === "index.html" || f.path === "/index.html",
+      )?.content ||
+      "";
+
+    // Deploy main site record
     const deployedSite = await siteRepository.createSite({
       slug,
       title: data.title,
       description: data.description,
-      htmlContent: data.html,
+      htmlContent: defaultHtml,
       authorId: session.user.id,
+      projectId: data.projectId,
     });
+
+    // Deploy associated site files
+    if (data.files && data.files.length > 0) {
+      await siteRepository.upsertSiteFiles(deployedSite.id, data.files);
+    } else {
+      // Default fallback
+      await siteRepository.upsertSiteFiles(deployedSite.id, [
+        { path: "index.html", content: defaultHtml },
+      ]);
+    }
 
     const host = request.headers.get("host") ?? "waspai.in";
     // Construct the live URL. If we are running in dev, use the localhost suffix.

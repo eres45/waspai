@@ -661,10 +661,34 @@ export const DeployedSiteTable = pgTable("deployed_site", {
   authorId: uuid("author_id").references(() => UserTable.id, {
     onDelete: "cascade",
   }),
+  projectId: uuid("project_id").references(() => ArchiveTable.id, {
+    onDelete: "cascade",
+  }),
   isPublic: boolean("is_public").notNull().default(true),
   viewCount: integer("view_count").notNull().default(0),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const DeployedSiteFileTable = pgTable(
+  "deployed_site_file",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    siteId: uuid("site_id")
+      .notNull()
+      .references(() => DeployedSiteTable.id, { onDelete: "cascade" }),
+    path: text("path").notNull(), // e.g. "index.html", "css/style.css"
+    content: text("content").notNull(),
+    mimeType: text("mime_type").notNull(), // e.g. "text/html", "text/css"
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [unique().on(table.siteId, table.path)],
+);
+
 export type DeployedSiteEntity = typeof DeployedSiteTable.$inferSelect;
+export type DeployedSiteFileEntity = typeof DeployedSiteFileTable.$inferSelect;

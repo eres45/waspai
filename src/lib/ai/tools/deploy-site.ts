@@ -1,7 +1,7 @@
 import { tool as createTool } from "ai";
 import { z } from "zod";
 import { getSession } from "auth/server";
-import { siteRepository } from "lib/db/repository";
+import { siteRepository, archiveRepository } from "lib/db/repository";
 import { nanoid } from "nanoid";
 
 const RESERVED_SLUGS = new Set([
@@ -33,16 +33,17 @@ function generateSlug(title: string): string {
 }
 
 export const deploySiteTool = createTool({
-  description: `Deploy a generated HTML website/app to a live public URL at *.waspai.in.
-Use this whenever you finish building a website, landing page, app, or any HTML content.
-The site will be instantly live and shareable. Always use self-contained HTML with all
-CSS and JS inline — no external frameworks or CDN dependencies that might break.`,
+  description: `Deploy a website/app (single-file or multi-file project) to a live public URL at *.waspai.in.
+Use this whenever you finish building a website, landing page, app, or any HTML/CSS/JS content.
+For multi-file sites, pass the optional "files" parameter with relative file paths (e.g. index.html, css/style.css) and their code contents.
+Ensure that the entrypoint HTML page is located at "index.html".`,
   inputSchema: z.object({
     title: z.string().describe("Human-readable site title"),
     html: z
       .string()
+      .optional()
       .describe(
-        "Complete self-contained HTML document (inline all CSS and JS)",
+        "Complete HTML content (only required for single-file deployments)",
       ),
     description: z.string().optional().describe("Brief site description"),
     slug: z
@@ -51,8 +52,40 @@ CSS and JS inline — no external frameworks or CDN dependencies that might brea
       .describe(
         "Custom URL slug (lowercase, hyphens only). Auto-generated if omitted.",
       ),
+    projectId: z
+      .string()
+      .uuid()
+      .optional()
+      .describe("Optional project folder UUID to link this deployment to."),
+    threadId: z
+      .string()
+      .optional()
+      .describe(
+        "Optional chat thread UUID. If provided, we automatically link this deployment to the project containing this thread.",
+      ),
+    files: z
+      .array(
+        z.object({
+          path: z
+            .string()
+            .describe(
+              "Relative file path, e.g. 'index.html' or 'css/styles.css'",
+            ),
+          content: z.string().describe("Raw text content of the file"),
+        }),
+      )
+      .optional()
+      .describe("Optional list of files for multi-file deployments."),
   }),
-  execute: async ({ title, html, description, slug }) => {
+  execute: async ({
+    title,
+    html,
+    description,
+    slug,
+    projectId,
+    threadId,
+    files,
+  }) => {
     const session = await getSession();
     if (!session?.user?.id) {
       return {
@@ -62,8 +95,23 @@ CSS and JS inline — no external frameworks or CDN dependencies that might brea
     }
 
     try {
+      // Calculate total payload size
+      const defaultHtml =
+        html ||
+        files?.find((f) => f.path === "index.html" || f.path === "/index.html")
+          ?.content ||
+        "";
+
+      let totalBytes = Buffer.byteLength(defaultHtml, "utf-8");
+      if (files && files.length > 0) {
+        totalBytes = files.reduce(
+          (acc, f) => acc + Buffer.byteLength(f.content, "utf-8"),
+          0,
+        );
+      }
+
       // Check size limit (2MB)
-      if (Buffer.byteLength(html, "utf-8") > 2 * 1024 * 1024) {
+      if (totalBytes > 2 * 1024 * 1024) {
         return { success: false, error: "Payload exceeds 2MB limit." };
       }
 
@@ -101,13 +149,35 @@ CSS and JS inline — no external frameworks or CDN dependencies that might brea
         finalSlug = `${finalSlug}-${nanoid(4).toLowerCase()}`;
       }
 
+      // Resolve projectId using threadId if not explicitly provided
+      let finalProjectId = projectId;
+      if (!finalProjectId && threadId) {
+        const folders = await archiveRepository.getItemArchives(
+          threadId,
+          session.user.id,
+        );
+        if (folders && folders.length > 0) {
+          finalProjectId = folders[0].id;
+        }
+      }
+
       const deployedSite = await siteRepository.createSite({
         slug: finalSlug,
         title,
         description,
-        htmlContent: html,
+        htmlContent: defaultHtml,
         authorId: session.user.id,
+        projectId: finalProjectId,
       });
+
+      // Save files to the database
+      if (files && files.length > 0) {
+        await siteRepository.upsertSiteFiles(deployedSite.id, files);
+      } else {
+        await siteRepository.upsertSiteFiles(deployedSite.id, [
+          { path: "index.html", content: defaultHtml },
+        ]);
+      }
 
       const isDev = process.env.NODE_ENV === "development";
       const baseDomain = isDev ? "localhost:3000" : "waspai.in";

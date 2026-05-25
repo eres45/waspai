@@ -1,11 +1,17 @@
-import { archiveRepository, chatRepository } from "lib/db/repository";
+import {
+  archiveRepository,
+  chatRepository,
+  siteRepository,
+} from "lib/db/repository";
 import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "ui/card";
-import { MessageCircleXIcon } from "lucide-react";
+import { MessageCircleXIcon, Code, MessageSquare } from "lucide-react";
 import { ArchiveActionsClient } from "@/app/(chat)/projects/[id]/archive-actions-client";
 import { Separator } from "ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "ui/tabs";
+import { ProjectCodeBrowser } from "@/components/project/project-code-browser";
 
 import LightRays from "ui/light-rays";
 import Particles from "ui/particles";
@@ -85,6 +91,51 @@ export default async function ArchivePage({
     redirect("/chat");
   }
 
+  // Fetch associated deployed site & files
+  const site = await siteRepository.getSiteByProjectId(id);
+  const files = site ? await siteRepository.getSiteFiles(site.id) : [];
+
+  const renderThreadsList = () => (
+    <div className="space-y-3">
+      {archive.threads.length === 0 ? (
+        <Card className="bg-transparent border-none">
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <MessageCircleXIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                No threads in this folder
+              </h3>
+              <p className="text-muted-foreground">
+                Add some chat threads to this folder to see them here.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        archive.threads.map((thread) => (
+          <Link key={thread.id} href={`/chat/${thread.id}`}>
+            <Card className="hover:bg-accent/30 transition-all duration-200 cursor-pointer">
+              <CardHeader className="py-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-base truncate mb-1">
+                      {thread.title || "Untitled Chat"}
+                    </h3>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {formatTimeAgo(
+                      new Date(thread.lastMessageAt || thread.createdAt),
+                    )}
+                  </span>
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))
+      )}
+    </div>
+  );
+
   return (
     <>
       <>
@@ -108,7 +159,7 @@ export default async function ArchivePage({
           <div className="w-full h-full bg-gradient-to-r from-background to-20% to-transparent z-20" />
         </div>
       </>
-      <div className="container mx-auto p-6 max-w-4xl z-40">
+      <div className="container mx-auto p-6 max-w-5xl z-40">
         {/* Archive Header */}
         <div className="mb-8 z-50">
           <div className="flex items-center gap-3 mb-2">
@@ -138,43 +189,45 @@ export default async function ArchivePage({
           )}
         </div>
 
-        {/* Threads List */}
-        <div className="space-y-3">
-          {archive.threads.length === 0 ? (
-            <Card className="bg-transparent  border-none">
-              <CardContent className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <MessageCircleXIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    No threads in this folder
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Add some chat threads to this folder to see them here.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Content Area: If site exists, render Tabs for Code Browser & Threads */}
+        <div className="relative z-40">
+          {site ? (
+            <Tabs defaultValue="code" className="w-full space-y-6">
+              <div className="flex justify-start">
+                <TabsList className="bg-zinc-900/60 border border-zinc-800/60 p-[3px] rounded-lg">
+                  <TabsTrigger
+                    value="code"
+                    className="text-xs gap-1.5 transition-all"
+                  >
+                    <Code className="h-3.5 w-3.5" />
+                    <span>Editor & Preview</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="threads"
+                    className="text-xs gap-1.5 transition-all"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span>Chat Threads</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent
+                value="code"
+                className="outline-none focus:outline-none"
+              >
+                <ProjectCodeBrowser site={site} initialFiles={files} />
+              </TabsContent>
+
+              <TabsContent
+                value="threads"
+                className="outline-none focus:outline-none"
+              >
+                {renderThreadsList()}
+              </TabsContent>
+            </Tabs>
           ) : (
-            archive.threads.map((thread) => (
-              <Link key={thread.id} href={`/chat/${thread.id}`}>
-                <Card className="hover:bg-accent/30 transition-all duration-200 cursor-pointer">
-                  <CardHeader className="py-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-medium text-base truncate mb-1">
-                          {thread.title || "Untitled Chat"}
-                        </h3>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimeAgo(
-                          new Date(thread.lastMessageAt || thread.createdAt),
-                        )}
-                      </span>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
-            ))
+            renderThreadsList()
           )}
         </div>
       </div>
