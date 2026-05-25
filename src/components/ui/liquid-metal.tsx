@@ -121,9 +121,7 @@ export const LiquidMetalButton = forwardRef<
                   iconSizes[size],
                 )}
               >
-                <span className="text-neutral-300">
-                  {icon}
-                </span>
+                <span className="text-neutral-300">{icon}</span>
               </div>
             )}
             <span className="font-medium tracking-tight text-white">

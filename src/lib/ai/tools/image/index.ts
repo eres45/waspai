@@ -5,6 +5,7 @@ import { ImageToolName } from "..";
 import logger from "logger";
 import {
   generateImageWithFlux1Schnell,
+  generateImageWithFlux1Pro,
   generateImageWithJuggernautXL,
   generateImageWithFlux1Dev,
   generateImageWithRealVisXL,
@@ -39,6 +40,7 @@ export const nanoBananaTool = createTool({
         "flux-1-schnell",
         "juggernaut-xl",
         "flux-1-dev",
+        "flux-pro",
         "realvisxl-v4",
         "sd-3-5",
         "seedream-4-5",
@@ -85,6 +87,12 @@ export const nanoBananaTool = createTool({
       switch (model) {
         case "flux-1-schnell":
           generatedImages = await generateImageWithFlux1Schnell({
+            prompt: finalPrompt,
+            abortSignal,
+          });
+          break;
+        case "flux-pro":
+          generatedImages = await generateImageWithFlux1Pro({
             prompt: finalPrompt,
             abortSignal,
           });

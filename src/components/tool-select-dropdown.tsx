@@ -95,6 +95,7 @@ interface ToolSelectDropdownProps {
       | "flux-1-schnell"
       | "juggernaut-xl"
       | "flux-1-dev"
+      | "flux-pro"
       | "realvisxl-v4"
       | "sd-3-5"
       | "seedream-4-5"
@@ -1228,6 +1229,7 @@ function ImageGeneratorSelector({
       | "flux-1-schnell"
       | "juggernaut-xl"
       | "flux-1-dev"
+      | "flux-pro"
       | "realvisxl-v4"
       | "sd-3-5"
       | "seedream-4-5"
@@ -1261,6 +1263,14 @@ function ImageGeneratorSelector({
             >
               <ImagesIcon className="mr-2 size-4" />
               FLUX.1 Schnell
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={modelInfo?.isToolCallUnsupported}
+              onClick={() => onGenerateImage?.("flux-pro")}
+              className="cursor-pointer text-xs"
+            >
+              <ImagesIcon className="mr-2 size-4" />
+              FLUX.1 Pro
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={modelInfo?.isToolCallUnsupported}

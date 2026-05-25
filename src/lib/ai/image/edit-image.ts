@@ -1,5 +1,5 @@
 import logger from "logger";
-import { UNIFIED_WORKER_URL } from "../models";
+import { CREATIVE_WORKER_URL } from "../models";
 
 export interface EditImageOptions {
   prompt?: string;
@@ -13,7 +13,7 @@ export interface EditedImage {
   mimeType: string;
 }
 
-const EDIT_ENDPOINT = `${UNIFIED_WORKER_URL}/v1/images/edits`;
+const EDIT_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/images/edits`;
 
 /**
  * Resolves internal storage paths to publicly accessible URLs via the
@@ -48,7 +48,7 @@ async function callEditEndpoint(
   logger.info(`Image Edit [${operation}]: ${resolvedUrl}`);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   try {
     const body: Record<string, string> = {
@@ -90,8 +90,8 @@ async function callEditEndpoint(
       data.image_url ||
       data.image ||
       data.result ||
-      (data.data?.[0]?.url) ||
-      (data.data?.[0]?.b64_json);
+      data.data?.[0]?.url ||
+      data.data?.[0]?.b64_json;
 
     if (!outputStr) {
       throw new Error(`No image in response: ${JSON.stringify(data)}`);

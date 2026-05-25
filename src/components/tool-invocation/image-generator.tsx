@@ -97,6 +97,7 @@ function PureImageGeneratorToolInvocation({
     const modelLabels: Record<string, string> = {
       "flux-1-schnell": "FLUX.1 Schnell",
       "flux-1-dev": "FLUX.1 Dev",
+      "flux-pro": "FLUX.1 Pro",
       "juggernaut-xl": "Juggernaut XL",
       "realvisxl-v4": "RealVisXL v4",
       "sd-3-5": "Stable Diffusion 3.5",

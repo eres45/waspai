@@ -1021,11 +1021,20 @@ CRITICAL INSTRUCTIONS:
         const isAnimeConversionRequest =
           imageUrl &&
           (editImageModel === "anime-conversion" || hasAnimeKeywords);
-        const isRemoveWatermarkRequest = imageUrl && hasWatermarkKeywords;
-        const isRemoveObjectRequest = imageUrl && hasObjectRemovalKeywords;
-        const isSuperResolutionRequest = imageUrl && hasUpscaleKeywords;
-        const isRestoreOldPhotoRequest = imageUrl && hasRestorationKeywords;
-        const isBlurBackgroundRequest = imageUrl && hasBlurKeywords;
+        const isRemoveWatermarkRequest =
+          imageUrl &&
+          (editImageModel === "remove-watermark" || hasWatermarkKeywords);
+        const isRemoveObjectRequest =
+          imageUrl &&
+          (editImageModel === "remove-object" || hasObjectRemovalKeywords);
+        const isSuperResolutionRequest =
+          imageUrl &&
+          (editImageModel === "super-resolution" || hasUpscaleKeywords);
+        const isRestoreOldPhotoRequest =
+          imageUrl &&
+          (editImageModel === "restore-old-photo" || hasRestorationKeywords);
+        const isBlurBackgroundRequest =
+          imageUrl && (editImageModel === "blur-background" || hasBlurKeywords);
 
         const isBase64Image = imageUrl?.startsWith("data:");
         const imagePlaceholder = "PLACEHOLDER_IMAGE_DATA"; // Short string for LLM

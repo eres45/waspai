@@ -2,8 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Service | Wasp AI",
-  description:
-    "Terms of Service for WASPAI. Last updated January 2026.",
+  description: "Terms of Service for WASPAI. Last updated January 2026.",
 };
 
 export default function TermsPage() {

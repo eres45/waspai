@@ -1,5 +1,5 @@
 import logger from "logger";
-import { UNIFIED_WORKER_URL } from "../models";
+import { CREATIVE_WORKER_URL } from "../models";
 
 export interface VideoGenOptions {
   prompt: string;
@@ -13,7 +13,7 @@ export interface VideoGenResult {
   };
 }
 
-const VIDEO_ENDPOINT = `${UNIFIED_WORKER_URL}/v1/video/generations`;
+const VIDEO_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/video/generations`;
 
 /**
  * Generate video using the unified AI worker (Swift Sora).
@@ -43,10 +43,7 @@ export async function generateVideoWithMeta(
 
     const data = await response.json();
     const videoUrl =
-      data.url ||
-      data.video_url ||
-      data.video ||
-      data.video_urls?.[0];
+      data.url || data.video_url || data.video || data.video_urls?.[0];
 
     if (!videoUrl) {
       throw new Error(`No video URL in response: ${JSON.stringify(data)}`);

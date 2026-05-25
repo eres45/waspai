@@ -88,11 +88,14 @@ export const removeBackgroundTool = createTool({
  */
 export const animeConversionTool = createTool({
   name: "anime-conversion",
-  description: "Convert an image to anime style. Extract the image URL from file attachments in the conversation and call this tool immediately.",
+  description:
+    "Convert an image to anime style. Extract the image URL from file attachments in the conversation and call this tool immediately.",
   inputSchema: z.object({
     imageUrl: z
       .string()
-      .describe("The URL of the image. Extract from the uploaded file attachment in the conversation."),
+      .describe(
+        "The URL of the image. Extract from the uploaded file attachment in the conversation.",
+      ),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Anime Conversion tool called with imageUrl: "${imageUrl}"`);
@@ -120,11 +123,14 @@ export const animeConversionTool = createTool({
 // 1. Watermark Removal
 export const removeWatermarkTool = createTool({
   name: "remove-watermark",
-  description: "Remove watermarks from an image. Extract the image URL from file attachments in the conversation and call this tool immediately.",
+  description:
+    "Remove watermarks from an image. Extract the image URL from file attachments in the conversation and call this tool immediately.",
   inputSchema: z.object({
     imageUrl: z
       .string()
-      .describe("The URL of the image. Extract from the uploaded file attachment in the conversation."),
+      .describe(
+        "The URL of the image. Extract from the uploaded file attachment in the conversation.",
+      ),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Remove Watermark tool called with imageUrl: "${imageUrl}"`);
@@ -189,9 +195,14 @@ export const removeObjectTool = createTool({
 // 3. Super Resolution
 export const superResolutionTool = createTool({
   name: "super-resolution",
-  description: "Upscale and increase the resolution of an image. Extract the image URL from file attachments in the conversation and call this tool immediately.",
+  description:
+    "Upscale and increase the resolution of an image. Extract the image URL from file attachments in the conversation and call this tool immediately.",
   inputSchema: z.object({
-    imageUrl: z.string().describe("The URL of the image. Extract from the uploaded file attachment in the conversation."),
+    imageUrl: z
+      .string()
+      .describe(
+        "The URL of the image. Extract from the uploaded file attachment in the conversation.",
+      ),
   }),
   execute: async ({ imageUrl }, { abortSignal }) => {
     logger.info(`Super Resolution tool called with imageUrl: "${imageUrl}"`);

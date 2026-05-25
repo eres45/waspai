@@ -141,7 +141,10 @@ export const FeaturesSection = () => {
   });
 
   return (
-    <div ref={containerRef} className="relative w-full h-[400vh] lg:h-[500vh] bg-[#161618]">
+    <div
+      ref={containerRef}
+      className="relative w-full h-[400vh] lg:h-[500vh] bg-[#161618]"
+    >
       <section className="sticky top-0 min-h-screen w-full flex items-center py-16 lg:py-32 px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto w-full">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
@@ -197,7 +200,9 @@ export const FeaturesSection = () => {
                             {feature.subtitle}
                           </div>
                         )}
-                        <h3 className="text-xl lg:text-3xl font-bold">{feature.title}</h3>
+                        <h3 className="text-xl lg:text-3xl font-bold">
+                          {feature.title}
+                        </h3>
                       </div>
 
                       <AnimatePresence mode="wait">
@@ -257,7 +262,7 @@ export const FeaturesSection = () => {
             {/* Mobile/Tablet Preview: Shown below the active feature */}
             {isMobile && (
               <div className="mt-8 block lg:hidden w-full aspect-[4/3] rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
-                 <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait">
                   <motion.div
                     key={features[activeIdx].id}
                     initial={{ opacity: 0, scale: 0.95 }}

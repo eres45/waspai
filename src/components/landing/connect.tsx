@@ -128,7 +128,8 @@ export function Connect() {
                     <div className="flex flex-col items-start text-left">
                       <h3 className="pb-1 font-bold text-white">
                         <span className="text-2xl md:text-4xl tracking-tight leading-tight">
-                          Don&apos;t settle for average. Switch to Wasp AI today.
+                          Don&apos;t settle for average. Switch to Wasp AI
+                          today.
                         </span>
                       </h3>
                     </div>

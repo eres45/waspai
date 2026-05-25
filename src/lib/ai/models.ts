@@ -6,7 +6,8 @@ import {
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export const UNIFIED_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
+export const UNIFIED_WORKER_URL = "https://nvidia-worker.revai.workers.dev";
+export const CREATIVE_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
 
 // Single unified provider — every model routes through the worker
 const unifiedProvider = createOpenAICompatible({

@@ -356,11 +356,12 @@ export async function extractTextFromDocuments(
                 // Race Tesseract against a 5s timeout to ensure we have time for AI fallback
                 text = await Promise.race([
                   extractTextFromImageViaTesseract(imageData),
-                  new Promise<string>((resolve) =>
-                    setTimeout(() => {
-                      console.warn("OCR: Tesseract timed out after 4s");
-                      resolve("");
-                    }, 4000), // 4s timeout
+                  new Promise<string>(
+                    (resolve) =>
+                      setTimeout(() => {
+                        console.warn("OCR: Tesseract timed out after 4s");
+                        resolve("");
+                      }, 4000), // 4s timeout
                   ),
                 ]);
               }

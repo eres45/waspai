@@ -2,8 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Wasp AI",
-  description:
-    "Privacy Policy for WASPAI. Last updated January 2026.",
+  description: "Privacy Policy for WASPAI. Last updated January 2026.",
 };
 
 export default function PrivacyPage() {

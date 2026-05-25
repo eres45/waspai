@@ -256,6 +256,7 @@ export default function PromptInput({
         | "flux-1-schnell"
         | "juggernaut-xl"
         | "flux-1-dev"
+        | "flux-pro"
         | "realvisxl-v4"
         | "sd-3-5"
         | "seedream-4-5"
@@ -749,6 +750,13 @@ export default function PromptInput({
                           >
                             <ImagesIcon className="mr-2 size-4" />
                             FLUX.1 Schnell
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleGenerateImage("flux-pro")}
+                            className="cursor-pointer"
+                          >
+                            <ImagesIcon className="mr-2 size-4" />
+                            FLUX.1 Pro
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleGenerateImage("juggernaut-xl")}

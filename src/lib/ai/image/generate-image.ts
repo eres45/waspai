@@ -1,7 +1,7 @@
 "use server";
 
 import logger from "logger";
-import { UNIFIED_WORKER_URL } from "../models";
+import { CREATIVE_WORKER_URL } from "../models";
 
 type GenerateImageOptions = {
   prompt: string;
@@ -18,7 +18,7 @@ export type GeneratedImageResult = {
   images: GeneratedImage[];
 };
 
-const IMAGE_ENDPOINT = `${UNIFIED_WORKER_URL}/v1/images/generations`;
+const IMAGE_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/images/generations`;
 
 /**
  * Helper to download an image URL and convert to base64
@@ -48,10 +48,12 @@ async function generateImageViaUnifiedWorker(
     const legacyMapping: Record<string, string> = {
       "flux-1-schnell": "flux-schnell",
       "flux-1-dev": "flux",
+      "flux-1-pro": "flux-pro",
+      "flux-pro": "flux-pro",
       "sdxl-v1-0": "sdxl",
       "sdxl-1.0": "sdxl",
       "juggernaut-xl": "playground",
-      "realvisxl": "cf-dreamshaper",
+      realvisxl: "cf-dreamshaper",
       "realvisxl-v4": "cf-dreamshaper",
       "sd-3-5": "playground",
       "sd-3.5": "playground",
@@ -139,6 +141,16 @@ export async function generateImageWithFlux1Schnell(
   return generateImageViaUnifiedWorker({
     ...options,
     model: "flux-1-schnell",
+  });
+}
+
+export async function generateImageWithFlux1Pro(
+  options: GenerateImageOptions,
+): Promise<GeneratedImageResult> {
+  logger.info("Image Gen: flux-pro via unified worker");
+  return generateImageViaUnifiedWorker({
+    ...options,
+    model: "flux-1-pro",
   });
 }
 
