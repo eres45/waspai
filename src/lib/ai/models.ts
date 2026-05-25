@@ -6,7 +6,7 @@ import {
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export const UNIFIED_WORKER_URL = "https://nvidia-worker.revai.workers.dev";
+export const UNIFIED_WORKER_URL = "https://nvidia-nim-worker.rutv.workers.dev";
 export const CREATIVE_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
 
 // Single unified provider — every model routes through the worker
@@ -14,6 +14,13 @@ const unifiedProvider = createOpenAICompatible({
   name: "Unified AI Worker",
   apiKey: "dummy",
   baseURL: `${UNIFIED_WORKER_URL}/v1`,
+});
+
+// Creative AI worker provider for open-source / fallback models
+const creativeProvider = createOpenAICompatible({
+  name: "Creative AI Worker",
+  apiKey: "dummy",
+  baseURL: `${CREATIVE_WORKER_URL}/v1`,
 });
 
 // ─── Vision / image-input heuristic ──────────────────────────────────────────
@@ -292,7 +299,25 @@ export const customModelProvider = {
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
     // model.model is the model ID as shown in the UI / stored in DB
-    return unifiedProvider(model.model) as unknown as LanguageModel;
+    const modelId = model.model;
+    const lowerId = modelId.toLowerCase();
+
+    // Route open-source fallback models through the creative worker provider
+    const creativeKeywords = [
+      "gpt-oss",
+      "chatai",
+      "chatbotai",
+      "botnation",
+      "quillbot",
+      "kimi-k2",
+      "aimirror",
+    ];
+
+    if (creativeKeywords.some((kw) => lowerId.includes(kw))) {
+      return creativeProvider(modelId) as unknown as LanguageModel;
+    }
+
+    return unifiedProvider(modelId) as unknown as LanguageModel;
   },
 };
 

@@ -306,17 +306,7 @@ export default function PromptInput({
   );
 
   const handleEditImage = useCallback(
-    (
-      tool:
-        | "remove-background"
-        | "enhance-image"
-        | "anime-conversion"
-        | "remove-watermark"
-        | "remove-object"
-        | "super-resolution"
-        | "restore-old-photo"
-        | "blur-background",
-    ) => {
+    (tool: string) => {
       if (!threadId) return;
 
       setIsUploadDropdownOpen(false);
@@ -328,6 +318,7 @@ export default function PromptInput({
         "remove-background": "Upload an image to remove its background.",
         "enhance-image": "Upload an image to enhance it.",
         "anime-conversion": "Upload an image to convert it to anime style.",
+        "style-transfer": "Upload an image to apply style transfer.",
         "remove-watermark": "Upload an image to remove watermarks.",
         "remove-object": "Upload an image to remove objects.",
         "super-resolution": "Upload an image for super resolution upscaling.",
@@ -850,6 +841,13 @@ export default function PromptInput({
                           >
                             <Edit2 className="mr-2 size-4" />
                             Anime Conversion
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleEditImage("style-transfer")}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            AI Style Transfer
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleEditImage("remove-watermark")}

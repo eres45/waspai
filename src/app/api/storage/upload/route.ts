@@ -79,16 +79,23 @@ export async function POST(request: Request) {
         );
 
         // Save to shared wasp_user_files index (same table used by mobile app)
-        await supabaseRest.from("wasp_user_files").insert({
-          user_id: session.user.id,
-          file_name: filename,
-          file_type: mimeType,
-          file_size: externalResult.size || stagingSize || 0,
-          telegram_file_id: externalResult.key || `ext-${Date.now()}`,
-          worker_url: externalResult.url,
-        }).then(({ error }) => {
-          if (error) console.warn("[Upload] wasp_user_files insert skipped:", error.message);
-        });
+        await supabaseRest
+          .from("wasp_user_files")
+          .insert({
+            user_id: session.user.id,
+            file_name: filename,
+            file_type: mimeType,
+            file_size: externalResult.size || stagingSize || 0,
+            telegram_file_id: externalResult.key || `ext-${Date.now()}`,
+            worker_url: externalResult.url,
+          })
+          .then(({ error }) => {
+            if (error)
+              console.warn(
+                "[Upload] wasp_user_files insert skipped:",
+                error.message,
+              );
+          });
 
         return NextResponse.json({
           success: true,
@@ -160,16 +167,23 @@ export async function POST(request: Request) {
       );
 
       // Save to shared wasp_user_files index (same table used by mobile app)
-      await supabaseRest.from("wasp_user_files").insert({
-        user_id: session.user.id,
-        file_name: filename,
-        file_type: mimeType,
-        file_size: result.metadata.size || fileSize,
-        telegram_file_id: result.key,
-        worker_url: result.sourceUrl,
-      }).then(({ error }) => {
-        if (error) console.warn("[Upload] wasp_user_files insert skipped:", error.message);
-      });
+      await supabaseRest
+        .from("wasp_user_files")
+        .insert({
+          user_id: session.user.id,
+          file_name: filename,
+          file_type: mimeType,
+          file_size: result.metadata.size || fileSize,
+          telegram_file_id: result.key,
+          worker_url: result.sourceUrl,
+        })
+        .then(({ error }) => {
+          if (error)
+            console.warn(
+              "[Upload] wasp_user_files insert skipped:",
+              error.message,
+            );
+        });
 
       return NextResponse.json({
         success: true,

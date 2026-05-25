@@ -92,17 +92,7 @@ interface ToolSelectDropdownProps {
   onSelectAgent?: (agent: AgentSummary) => void;
   onGenerateImage?: (model?: string) => void;
   onGenerateVideo?: (model?: string) => void;
-  onEditImage?: (
-    tool:
-      | "remove-background"
-      | "enhance-image"
-      | "anime-conversion"
-      | "remove-watermark"
-      | "remove-object"
-      | "super-resolution"
-      | "restore-old-photo"
-      | "blur-background",
-  ) => void;
+  onEditImage?: (tool: string) => void;
   className?: string;
 }
 
@@ -1453,17 +1443,7 @@ function ImageGeneratorSelector({
 function ImageEditSelector({
   onEditImage,
 }: {
-  onEditImage?: (
-    tool:
-      | "remove-background"
-      | "enhance-image"
-      | "anime-conversion"
-      | "remove-watermark"
-      | "remove-object"
-      | "super-resolution"
-      | "restore-old-photo"
-      | "blur-background",
-  ) => void;
+  onEditImage?: (tool: string) => void;
 }) {
   return (
     <DropdownMenuGroup>
@@ -1500,6 +1480,15 @@ function ImageEditSelector({
                 🏮
               </div>
               Anime Conversion
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditImage?.("style-transfer")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                🎨
+              </div>
+              AI Style Transfer
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onEditImage?.("remove-watermark")}

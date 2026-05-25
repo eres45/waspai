@@ -31,7 +31,11 @@ beforeAll(async () => {
 
 describe("customModelProvider file support metadata", () => {
   it("includes default file support for OpenAI GPT-4o (P1)", async () => {
-    const { customModelProvider, getFilePartSupportedMimeTypes, buildDynamicModelsInfo } = modelsModule;
+    const {
+      customModelProvider,
+      getFilePartSupportedMimeTypes,
+      buildDynamicModelsInfo,
+    } = modelsModule;
     const model = customModelProvider.getModel({
       provider: "OpenAI",
       model: "GPT-4o (P1)",

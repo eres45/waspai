@@ -115,8 +115,14 @@ export default {
         const tgChatId = env.TELEGRAM_CHAT_ID;
 
         // Read user context from request headers (sent by Next.js server)
-        const userId = request.headers.get("X-User-ID") || formData.get("userId") || "anonymous";
-        const filename = request.headers.get("X-File-Name") || formData.get("filename") || "file";
+        const userId =
+          request.headers.get("X-User-ID") ||
+          formData.get("userId") ||
+          "anonymous";
+        const filename =
+          request.headers.get("X-File-Name") ||
+          formData.get("filename") ||
+          "file";
         const fileSize = formData.get("fileSize") || "0";
 
         if (!tgToken || !tgChatId) {
