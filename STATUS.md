@@ -13,19 +13,20 @@
 
 ---
 
-## 2. Dev Session: May 25, 2026 (Performance & Reliability Upgrades)
+## 2. Dev Session: May 25, 2026 (Image Editing Tool Bindings)
 
 ### Completed Work
 - **Database Connection Pooling Constraints:** Added database client `pg.Pool` connection constraints (`max: 5`, timeouts) to prevent Lambda instance scale-outs from exhausting Supabase connection pools.
 - **Drizzle ORM Prepared Statements:** Designed and implemented a lazy-loading prepared statement pattern inside `chat-repository.pg.ts` for database operations (`selectThread`, `selectMessagesByThreadId`).
 - **Resilient AI Worker Fetch Pipeline:** Created a custom `fetchWithRetry` helper featuring exponential backoff retries (3 attempts) to shield creative image generation workflows from temporary network rate limits or worker cold starts.
-- **Vercel Edge Runtime Audit:** Verified database-connected API routes (like `Title API` or the `Chat stream route`) must remain on standard Serverless Node.js, because the `pg` (node-postgres) driver requires Node's native `net` socket APIs, which are absent in Edge runtime environments.
+- **Image Editing Tool Integration:** Fixed issue where AI model was unaware of active image editing capabilities (background removal, anime convert, watermark removal, etc.) by integrating the conditional image editing prompts (`removeBgPrompt`, `enhanceImagePrompt`, etc.) directly into the `mergeSystemPrompt` array inside [route.ts (Chat API)](file:///g:/project/better-chatbot/src/app/api/chat/route.ts). The LLM is now actively instructed on how and when to call image editing tools when requested by users.
 - **Zustand State Audit:** Audited global store selectors and verified atomic slicing and proper usage of Zustand `useShallow` hooks to completely prevent redundant UI re-renders.
 
 ### Files Modified
 - `[MODIFY]` [db.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/db.pg.ts) — Limited pg connection pool sizes and specified idle timeouts for serverless.
 - `[MODIFY]` [chat-repository.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/repositories/chat-repository.pg.ts) — Implemented lazy prepared statements for `selectThread` and `selectMessagesByThreadId`.
 - `[MODIFY]` [generate-image.ts](file:///g:/project/better-chatbot/src/lib/ai/image/generate-image.ts) — Added resilient `fetchWithRetry` exponential backoff pipeline wrapper.
+- `[MODIFY]` [route.ts (Chat API)](file:///g:/project/better-chatbot/src/app/api/chat/route.ts) — Connected image editing prompts (`removeBgPrompt`, etc.) to standard system instructions compilation context.
 - `[MODIFY]` [STATUS.md](file:///g:/project/better-chatbot/STATUS.md) — Updated development memory ledger.
 
 ---
@@ -44,15 +45,11 @@
 - **The Final Fix:** Implemented a robust case-insensitive normalizer that strips out all non-alphanumeric characters from the lookup key (e.g. `"FLUX.1 Schnell"` $\rightarrow$ `"flux1schnell"`), and maps these normalized keys to their exact backend IDs (`"flux-schnell"`).
 - **Prevention Note:** Avoid relying on exact string matches for LLM-provided parameters. Always apply normalization (case-insensitivity, alphanumeric sanitization) before looking up mappings or sending them to internal backend APIs.
 
-### Issue C: Supabase Connection Pool Exhaustion Risk
-- **The Problem:** Standard direct connections without boundaries on high-frequency serverless endpoints could saturate pg connections under heavy concurrent user sessions.
-- **Root Cause:** Next.js lambdas create a new pool instances on different server instances, scaling up connection socket counts rapidly without bound.
-- **The Final Fix:** Capped active pooled connections per serverless function instance to `max: 5` in `db.pg.ts` and set short idle/connection timeouts to release resources back to PgBouncer immediately.
-
-### Issue D: Unified Image Worker Cold Starts & Hiccups
-- **The Problem:** The creative/unified Cloudflare workers occasionally timed out on cold starts or returned 502/504 errors on transient networks.
-- **Root Cause:** The API fetch pipeline made raw direct calls without retry safeguards.
-- **The Final Fix:** Implemented a robust `fetchWithRetry` wrapper inside `generate-image.ts` which automatically detects transient status errors (HTTP 500+) and retries with progressive delay intervals (`1s -> 2s -> 4s`), guaranteeing maximum uptime.
+### Issue C: AI Model Bypassing Image Editing Tools
+- **The Problem:** When users asked to edit generated images (e.g. `"can you make him wear a hat?"`), the AI would ignore the image editing tools (like `remove-background`, `anime-conversion`, `enhance-image`, etc.) and attempt to generate a completely new image from scratch instead of modifying the source.
+- **Root Cause:** While the route parsed the `editImageModel` state and compiled custom execution prompts (like `removeBgPrompt`), these prompts were completely omitted from the final system prompt compiler (`mergeSystemPrompt`). The LLM remained completely unaware of the image editing mode instruction block.
+- **The Final Fix:** Integrated `removeBgPrompt`, `enhanceImagePrompt`, `animeConversionPrompt`, `removeWatermarkPrompt`, `removeObjectPrompt`, `superResolutionPrompt`, `restoreOldPhotoPrompt`, and `blurBackgroundPrompt` into the final system prompt compilation array inside `route.ts`.
+- **Prevention Note:** Ensure all dynamically evaluated prompt context strings are explicitly pushed to the final LLM compilation context.
 
 ---
 
