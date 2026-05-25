@@ -293,7 +293,7 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
       "gi",
     );
 
-    const matches = text.match(regex);
+    const matches = cleanText.match(regex);
     if (matches) {
       hasReasoning = true;
       matches.forEach((match) => {
@@ -350,6 +350,24 @@ function extractDelimitedReasoning(text: string): ReasoningExtraction {
         // Remove from clean text
         cleanText = cleanText.replace(match, "").trim();
       });
+    }
+
+    // Check for open but unclosed reasoning tags (streaming)
+    const startMatch = cleanText.match(pattern.start);
+    const endMatch = cleanText.match(pattern.end);
+    if (startMatch && !endMatch) {
+      hasReasoning = true;
+      const startIndex = cleanText.search(pattern.start);
+      if (startIndex !== -1) {
+        const tagMatch = cleanText.slice(startIndex).match(pattern.start);
+        const tagLength = tagMatch?.[0]?.length ?? 0;
+        const content = cleanText.slice(startIndex + tagLength).trim();
+
+        if (content) {
+          reasoning += (reasoning ? "\n\n" : "") + content;
+        }
+        cleanText = cleanText.slice(0, startIndex).trim();
+      }
     }
   }
 
