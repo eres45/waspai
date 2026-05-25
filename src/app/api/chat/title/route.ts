@@ -10,6 +10,8 @@ import { colorize } from "consola/utils";
 import { handleError } from "../shared.chat";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
 
+import { isLeakyReasoningModel } from "lib/ai/reasoning-detector";
+
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Title API: `),
 });
@@ -55,7 +57,8 @@ export async function POST(request: Request) {
     // Override reasoning models to avoid slow execution and leaked <think> blocks
     const isReasoningModel =
       modelToUse &&
-      (/r1/i.test(modelToUse.model) ||
+      (isLeakyReasoningModel(modelToUse.model) ||
+        /r1/i.test(modelToUse.model) ||
         /thinking/i.test(modelToUse.model) ||
         /reasoning/i.test(modelToUse.model) ||
         /grok-3/i.test(modelToUse.model) ||

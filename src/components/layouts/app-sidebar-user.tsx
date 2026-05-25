@@ -124,7 +124,11 @@ export function AppSidebarUserInner(props: {
 
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() => appStoreMutate({ openChatPreferences: true })}
+              onClick={() => {
+                setTimeout(() => {
+                  appStoreMutate({ openChatPreferences: true });
+                }, 150);
+              }}
             >
               <Settings2 className="size-4 text-foreground" />
               <span>{t("chatPreferences")}</span>
@@ -141,7 +145,11 @@ export function AppSidebarUserInner(props: {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() => appStoreMutate({ openShortcutsPopup: true })}
+              onClick={() => {
+                setTimeout(() => {
+                  appStoreMutate({ openShortcutsPopup: true });
+                }, 150);
+              }}
             >
               <Command className="size-4 text-foreground" />
               <span>{t("keyboardShortcuts")}</span>
@@ -157,7 +165,11 @@ export function AppSidebarUserInner(props: {
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={() => appStoreMutate({ openUserSettings: true })}
+              onClick={() => {
+                setTimeout(() => {
+                  appStoreMutate({ openUserSettings: true });
+                }, 150);
+              }}
               className="cursor-pointer"
               data-testid="user-settings-menu-item"
             >

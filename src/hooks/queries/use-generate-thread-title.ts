@@ -73,9 +73,18 @@ export function useGenerateThreadTitle(option: {
   );
 
   useEffect(() => {
-    const title = completion.trim();
+    let title = completion.trim();
     if (title) {
-      updateTitle(title);
+      if (title.includes("<think>")) {
+        title = title.replace(/<think>[\s\S]*?<\/think>/gi, "");
+        title = title.replace(/<think>[\s\S]*/gi, ""); // Handle unclosed tag
+      }
+      title = title.replace(/<\/think>/gi, "");
+      title = title.trim();
+
+      if (title) {
+        updateTitle(title);
+      }
     }
   }, [completion, updateTitle]);
 

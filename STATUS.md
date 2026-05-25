@@ -13,7 +13,7 @@
 
 ---
 
-## 2. Dev Session: May 25, 2026 (Image Editing Tool Bindings)
+## 2. Dev Session: May 25, 2026 (Image Editing, Title Streaming & User Settings Fixes)
 
 ### Completed Work
 - **Database Connection Pooling Constraints:** Added database client `pg.Pool` connection constraints (`max: 5`, timeouts) to prevent Lambda instance scale-outs from exhausting Supabase connection pools.
@@ -21,12 +21,17 @@
 - **Resilient AI Worker Fetch Pipeline:** Created a custom `fetchWithRetry` helper featuring exponential backoff retries (3 attempts) to shield creative image generation workflows from temporary network rate limits or worker cold starts.
 - **Image Editing Tool Integration:** Fixed issue where AI model was unaware of active image editing capabilities (background removal, anime convert, watermark removal, etc.) by integrating the conditional image editing prompts (`removeBgPrompt`, `enhanceImagePrompt`, etc.) directly into the `mergeSystemPrompt` array inside [route.ts (Chat API)](file:///g:/project/better-chatbot/src/app/api/chat/route.ts). The LLM is now actively instructed on how and when to call image editing tools when requested by users.
 - **Zustand State Audit:** Audited global store selectors and verified atomic slicing and proper usage of Zustand `useShallow` hooks to completely prevent redundant UI re-renders.
+- **Thread Title `<think>` Reasoning Leak Fix:** Fixed model chain-of-thought leaking during real-time thread title generation. Added client-side real-time regex sanitization in `use-generate-thread-title.ts` and set a backend model override in the Title API (`src/app/api/chat/title/route.ts`) to immediately map leaky reasoning models to standard high-performance ones like `google-gemma-2-9b-it`.
+- **User Settings Menu Blinking/Dismissal Fix:** Solved a classic Radix UI focus-trap and focus-restoration race condition between the closing user DropdownMenu and the opening Drawer. Wrapped the open triggers (User Settings, Chat Preferences, Keyboard Shortcuts) in a 150ms `setTimeout` within `app-sidebar-user.tsx`, allowing the dropdown menu to cleanly finalize closing and restore focus before drawers/dialogs mount.
 
 ### Files Modified
 - `[MODIFY]` [db.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/db.pg.ts) — Limited pg connection pool sizes and specified idle timeouts for serverless.
 - `[MODIFY]` [chat-repository.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/repositories/chat-repository.pg.ts) — Implemented lazy prepared statements for `selectThread` and `selectMessagesByThreadId`.
 - `[MODIFY]` [generate-image.ts](file:///g:/project/better-chatbot/src/lib/ai/image/generate-image.ts) — Added resilient `fetchWithRetry` exponential backoff pipeline wrapper.
 - `[MODIFY]` [route.ts (Chat API)](file:///g:/project/better-chatbot/src/app/api/chat/route.ts) — Connected image editing prompts (`removeBgPrompt`, etc.) to standard system instructions compilation context.
+- `[MODIFY]` [route.ts (Title API)](file:///g:/project/better-chatbot/src/app/api/chat/title/route.ts) — Mapped leaky reasoning models to high-performance leak-free models for thread titles.
+- `[MODIFY]` [use-generate-thread-title.ts](file:///g:/project/better-chatbot/src/hooks/queries/use-generate-thread-title.ts) — Implemented client-side regex-based real-time XML tag tag/thinking block stripping.
+- `[MODIFY]` [app-sidebar-user.tsx](file:///g:/project/better-chatbot/src/components/layouts/app-sidebar-user.tsx) — Deferred opening user preference/settings popups to eliminate focus race conditions.
 - `[MODIFY]` [STATUS.md](file:///g:/project/better-chatbot/STATUS.md) — Updated development memory ledger.
 
 ---
@@ -51,6 +56,18 @@
 - **The Final Fix:** Integrated `removeBgPrompt`, `enhanceImagePrompt`, `animeConversionPrompt`, `removeWatermarkPrompt`, `removeObjectPrompt`, `superResolutionPrompt`, `restoreOldPhotoPrompt`, and `blurBackgroundPrompt` into the final system prompt compilation array inside `route.ts`.
 - **Prevention Note:** Ensure all dynamically evaluated prompt context strings are explicitly pushed to the final LLM compilation context.
 
+### Issue D: Thread Title `<think>` Reasoning Leak
+- **The Problem:** When generating titles for new threads, some models (e.g., `openai/gpt-oss-120b`) would stream their raw internal chain-of-thought enclosed in `<think>...</think>` tags directly into the sidebar title in real-time, looking highly unpolished.
+- **Root Cause:** Title generation uses LLM streaming without a dedicated system instruction to hide reasoning tags, and client-side streaming directly set the partial chunk onto the thread title state.
+- **The Final Fix:** Created a backend override ensuring only leak-free models compile titles, and backed it up with a client-side regex filter (`/<think>[\s\S]*?(?:<\/think>|$)/gi`) to actively strip any thinking tags from the title stream in real-time.
+- **Prevention Note:** Always sanitize streaming content destined for raw UI text blocks (titles, buttons) to avoid leaking system reasoning formats.
+
+### Issue E: User Settings Menu Blinking and Instantly Closing
+- **The Problem:** Clicking "User Settings" (or Chat Preferences) in the sidebar user menu dropdown caused the popup to open, blink/flicker for a frame, and immediately close itself.
+- **Root Cause:** A focus restoration race condition. Radix DropdownMenu closes on select and returns focus to the sidebar button, while the opening Drawer tries to trap focus. Radix/Vaul detects focus shifting outside the Drawer and immediately triggers `onOpenChange(false)` to close it.
+- **The Final Fix:** Wrapped the Zustand store `open` triggers inside a 150ms `setTimeout` in the `app-sidebar-user.tsx` click handlers. This gives the dropdown menu enough time to close and restore focus cleanly before the drawer mounts and traps focus.
+- **Prevention Note:** Avoid triggering modals, dialogs, or drawers synchronously inside unmounting DropdownMenu select events. Always introduce a brief deferral or prevent default focus behaviors to isolate state transitions.
+
 ---
 
 ## 4. Architectural & Development Decisions
@@ -74,4 +91,6 @@
 ## 7. Next Session Instructions
 1. Run `pnpm dev` to start the local Next.js dev server.
 2. Verify image generation retries and dynamic model lookups by requesting an image locally.
-3. Review the database query metrics under Supabase studio to verify pooled connection socket release parameters.
+3. Test sidebar thread title generation streams cleanly without any `<think>` blocks showing.
+4. Open the User Settings, Chat Preferences, and Keyboard Shortcuts modals from the sidebar user menu dropdown to ensure they open seamlessly without flickering or instantly closing.
+
