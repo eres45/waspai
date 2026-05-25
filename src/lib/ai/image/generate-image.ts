@@ -44,6 +44,9 @@ async function generateImageViaUnifiedWorker(
 
   let modelId = options.model;
   if (modelId) {
+    const rawModelLower = modelId.toLowerCase();
+
+    // Direct mappings
     const legacyMapping: Record<string, string> = {
       // Flux variants
       "flux-1-schnell": "flux-schnell",
@@ -57,9 +60,37 @@ async function generateImageViaUnifiedWorker(
       "seedream-4-5": "seedream-4.5",
       "sdxl-v1-0": "sdxl-1.0",
     };
+
+    // Robust normalized mappings (lowercase, alphanumeric characters only)
+    const normalizedMapping: Record<string, string> = {
+      flux1schnell: "flux-schnell",
+      fluxschnell: "flux-schnell",
+      flux1dev: "flux",
+      fluxdev: "flux",
+      flux1pro: "flux-pro",
+      fluxpro: "flux-pro",
+      sd35: "sd-3.5",
+      stablediffusion35: "sd-3.5",
+      realvisxlv4: "realvisxl-v4",
+      realvisxl: "realvisxl-v4",
+      juggernautxl: "juggernaut-xl",
+      juggernaut: "juggernaut-xl",
+      seedream45: "seedream-4.5",
+      seedream: "seedream-4.5",
+      sdxlv10: "sdxl-1.0",
+      sdxl: "sdxl-1.0",
+    };
+
+    const normKey = rawModelLower.replace(/[^a-z0-9]/g, "");
+
     if (legacyMapping[modelId]) {
       modelId = legacyMapping[modelId];
+    } else if (legacyMapping[rawModelLower]) {
+      modelId = legacyMapping[rawModelLower];
+    } else if (normalizedMapping[normKey]) {
+      modelId = normalizedMapping[normKey];
     }
+
     body.model = modelId;
   }
 
