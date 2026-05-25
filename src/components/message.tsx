@@ -1,6 +1,6 @@
 "use client";
 
-import { isToolUIPart, type UIMessage } from "ai";
+import { isToolUIPart, getToolName, type UIMessage } from "ai";
 import { memo, useEffect, useMemo } from "react";
 import equal from "lib/equal";
 
@@ -13,6 +13,7 @@ import {
   ReasoningPart,
   FileMessagePart,
   SourceUrlMessagePart,
+  GroupedWebSearchToolInvocation,
 } from "./message-parts";
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -37,6 +38,44 @@ interface Props {
   readonly?: boolean;
 }
 
+function groupWebSearchParts(parts: any[]) {
+  const grouped: any[] = [];
+  let currentGroup: any[] = [];
+
+  for (const part of parts) {
+    const isSearch =
+      isToolUIPart(part) &&
+      (getToolName(part) === "web-search" ||
+        getToolName(part) === "web-content" ||
+        getToolName(part) === "webSearch" ||
+        getToolName(part) === "webContent");
+
+    if (isSearch) {
+      currentGroup.push(part);
+    } else {
+      if (currentGroup.length > 0) {
+        grouped.push({
+          type: "grouped-web-search",
+          parts: currentGroup,
+          id: currentGroup.map((p) => p.toolCallId).join("-"),
+        });
+        currentGroup = [];
+      }
+      grouped.push(part);
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    grouped.push({
+      type: "grouped-web-search",
+      parts: currentGroup,
+      id: currentGroup.map((p) => p.toolCallId).join("-"),
+    });
+  }
+
+  return grouped;
+}
+
 const PurePreviewMessage = ({
   message,
   prevMessage,
@@ -57,12 +96,9 @@ const PurePreviewMessage = ({
   // Debug logging for GLM reasoning detection
   useEffect(() => {
     if (message.role === "assistant" && modelId) {
-      console.log("[Reasoning Debug] Message metadata:", {
-        modelId,
-        hasMetadata: !!message.metadata,
-        chatModel: (message.metadata as ChatMetadata)?.chatModel,
-        isLeaky: isLeakyReasoningModel(modelId),
-      });
+      console.log(
+        `[Reasoning Debug] Message ID: ${message.id}, Model ID: ${modelId}, Parts count: ${message.parts?.length}`,
+      );
     }
   }, [modelId, message.role, message.metadata]);
 
@@ -78,62 +114,65 @@ const PurePreviewMessage = ({
     );
     const isLeaky = isLeakyReasoningModel(modelId) || hasExplicitTags;
 
+    let displayParts: typeof message.parts;
+
     // Only process assistant messages from leaky models or those with explicit reasoning tags
     if (message.role !== "assistant" || !isLeaky) {
-      return partsList.filter(
+      displayParts = partsList.filter(
         (part) => !(part.type === "text" && (part as any).ingestionPreview),
       );
-    }
+    } else {
+      console.log(
+        "[Reasoning Debug] Processing leaky model:",
+        modelId,
+        "isLeaky:",
+        isLeaky,
+      );
 
-    console.log(
-      "[Reasoning Debug] Processing leaky model:",
-      modelId,
-      "isLeaky:",
-      isLeaky,
-    );
+      const processedParts: typeof message.parts = [];
 
-    const processedParts: typeof message.parts = [];
-
-    for (const part of partsList) {
-      // Only process text parts
-      if (part.type === "text" && typeof part.text === "string") {
-        // Filter out ingestionPreview parts even if processing for reasoning
-        if ((part as any).ingestionPreview) {
-          continue;
-        }
-
-        const { reasoning, cleanText, hasReasoning } = stripReasoning(
-          part.text,
-          modelId,
-        );
-
-        if (hasReasoning) {
-          // Add reasoning part first (if extracted)
-          if (reasoning) {
-            processedParts.push({
-              type: "reasoning",
-              text: reasoning,
-            } as any);
+      for (const part of partsList) {
+        // Only process text parts
+        if (part.type === "text" && typeof part.text === "string") {
+          // Filter out ingestionPreview parts even if processing for reasoning
+          if ((part as any).ingestionPreview) {
+            continue;
           }
 
-          // Always prefer the cleaned text when reasoning markers were detected
-          if (cleanText.trim()) {
-            processedParts.push({
-              ...part,
-              text: cleanText,
-            });
+          const { reasoning, cleanText, hasReasoning } = stripReasoning(
+            part.text,
+            modelId,
+          );
+
+          if (hasReasoning) {
+            // Add reasoning part first (if extracted)
+            if (reasoning) {
+              processedParts.push({
+                type: "reasoning",
+                text: reasoning,
+              } as any);
+            }
+
+            // Always prefer the cleaned text when reasoning markers were detected
+            if (cleanText.trim()) {
+              processedParts.push({
+                ...part,
+                text: cleanText,
+              });
+            }
+          } else {
+            // No reasoning detected, keep as-is
+            processedParts.push(part);
           }
         } else {
-          // No reasoning detected, keep as-is
+          // Non-text parts (tool calls, reasoning parts from backend, etc.)
           processedParts.push(part);
         }
-      } else {
-        // Non-text parts (tool calls, reasoning parts from backend, etc.)
-        processedParts.push(part);
       }
+      displayParts = processedParts;
     }
 
-    return processedParts;
+    return groupWebSearchParts(displayParts);
   }, [message.parts, modelId, message.role]);
 
   if (message.role == "system") {
@@ -198,6 +237,12 @@ const PurePreviewMessage = ({
                   setMessages={setMessages}
                   sendMessage={sendMessage}
                 />
+              );
+            }
+
+            if (part.type === "grouped-web-search") {
+              return (
+                <GroupedWebSearchToolInvocation key={key} parts={part.parts} />
               );
             }
 

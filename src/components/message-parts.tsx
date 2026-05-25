@@ -809,6 +809,17 @@ const WebSearchToolInvocation = dynamic(
   },
 );
 
+export const GroupedWebSearchToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/web-search").then(
+      (mod) => mod.GroupedWebSearchToolInvocation,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 const CodeExecutor = dynamic(
   () =>
     import("./tool-invocation/code-executor").then((mod) => mod.CodeExecutor),
