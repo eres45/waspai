@@ -1563,25 +1563,70 @@ CRITICAL INSTRUCTIONS:
         // Character prompt build disabled - characterContext is always undefined.
         // const characterPrompt = characterContext ? `[CHARACTER ROLEPLAY MODE ...]` : "";
 
+        // Extract mentioned skill IDs
+        const mentionedSkillIds = (mentions || [])
+          .filter((m) => m.type === "skill")
+          .map((m: any) => m.skillId);
+
         // Await the parallelized metadata
-        const [memories, mcpServerCustomizations, activeSkillContents] =
-          await Promise.all([
-            memoriesPromise,
-            mcpPromise,
-            skillRepository
-              .getActiveSkillContents(userId)
-              .catch(() => [] as string[]),
-          ]);
+        const [
+          memories,
+          mcpServerCustomizations,
+          activeSkillContents,
+          installedSkillsList,
+          mentionedSkillsList,
+        ] = await Promise.all([
+          memoriesPromise,
+          mcpPromise,
+          skillRepository
+            .getActiveSkillContents(userId)
+            .catch(() => [] as string[]),
+          skillRepository.getInstalledSkills(userId).catch(() => [] as any[]),
+          mentionedSkillIds.length > 0
+            ? Promise.all(
+                mentionedSkillIds.map((id) =>
+                  skillRepository.getSkillById(id).catch(() => null),
+                ),
+              ).then((skills) => skills.filter(Boolean))
+            : Promise.resolve([] as any[]),
+        ]);
+
+        // Combine active skill contents and mentioned skill contents uniquely
+        const combinedSkillContents = [...activeSkillContents];
+        for (const skill of mentionedSkillsList) {
+          if (skill.content && !combinedSkillContents.includes(skill.content)) {
+            combinedSkillContents.push(skill.content);
+          }
+        }
 
         // Build skill instructions prompt block
         let skillsSystemPrompt = "";
-        if (activeSkillContents.length > 0) {
-          skillsSystemPrompt = activeSkillContents
+        if (combinedSkillContents.length > 0) {
+          skillsSystemPrompt = combinedSkillContents
             .map(
               (content) =>
                 `<skill_instructions>\n${content}\n</skill_instructions>`,
             )
             .join("\n\n");
+        }
+
+        // Add a block to let the AI know about the user's Skill Library
+        let skillLibraryOverviewPrompt = "";
+        if (installedSkillsList.length > 0) {
+          skillLibraryOverviewPrompt = `\n\n[User's Skill Library Overview]
+You have access to the user's Skill Library. The user currently has the following ${
+            installedSkillsList.length
+          } skill(s) installed:
+${installedSkillsList
+  .map(
+    (item) =>
+      `- **${item.skill.title}** (Slug: \`${item.skill.name}\`, Category: ${
+        item.skill.category
+      }) - ${item.isActive ? "Active" : "Inactive"}: ${item.skill.description}`,
+  )
+  .join("\n")}
+
+Always be aware of these installed skills. If a user asks "how many skills do we have/installed?", answer accurately based on this list. If the user mentions one of these skills (or wants you to use it), tell them they can activate it or mention it, or if it is already Active, follow its guidelines to help them.`;
         }
 
         // Load User Memories
@@ -1600,6 +1645,7 @@ CRITICAL INSTRUCTIONS:
 
         const systemPrompt = mergeSystemPrompt(
           skillsSystemPrompt || undefined, // Inject active skills first
+          skillLibraryOverviewPrompt || undefined, // Inject skill library overview
           userMemoriesPrompt, // Inject memories high priority
 
           // All specialized tools should be highest priority to override character/roleplay limits

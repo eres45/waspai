@@ -115,6 +115,13 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
       })
       .optional(),
   }),
+  z.object({
+    type: z.literal("skill"),
+    name: z.string(),
+    skillId: z.string(),
+    description: z.string().optional(),
+    icon: z.string().optional(),
+  }),
 ]);
 
 export type ChatMention = z.infer<typeof ChatMentionSchema>;

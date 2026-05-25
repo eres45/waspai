@@ -28,6 +28,7 @@ import { DefaultToolIcon } from "./default-tool-icon";
 import equal from "lib/equal";
 import { EMOJI_DATA } from "lib/const";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useInstalledSkills } from "@/hooks/queries/use-installed-skills";
 
 type MentionItemType = {
   id: string;
@@ -168,7 +169,48 @@ export function ChatMentionInputSuggestion({
   const [searchValue, setSearchValue] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const { installedSkills } = useInstalledSkills();
   const isMobile = useIsMobile();
+
+  const skillMentions = useMemo(() => {
+    if (disabledType?.includes("skill" as any)) return [];
+    if (!installedSkills.length) return [];
+
+    return installedSkills
+      .filter(
+        (item) =>
+          !searchValue ||
+          item.skill.title.toLowerCase().includes(searchValue.toLowerCase()) ||
+          item.skill.name.toLowerCase().includes(searchValue.toLowerCase()),
+      )
+      .map((item) => {
+        const id = JSON.stringify({
+          type: "skill",
+          name: item.skill.name,
+          skillId: item.skill.id,
+          description: item.skill.description,
+          icon: item.skill.icon,
+        });
+        return {
+          id: item.skill.id,
+          type: "skill",
+          label: item.skill.title,
+          onSelect: () =>
+            onSelectMention({
+              label: `skill("${item.skill.title}")`,
+              id,
+            }),
+          icon: (
+            <span className="text-sm select-none">
+              {item.skill.icon || "✨"}
+            </span>
+          ),
+          suffix: selectedIds?.includes(id) && (
+            <CheckIcon className="size-3 ml-auto" />
+          ),
+        };
+      });
+  }, [installedSkills, selectedIds, disabledType, searchValue]);
 
   const mcpMentions = useMemo(() => {
     if (disabledType?.includes("mcp")) return [];
@@ -449,6 +491,7 @@ export function ChatMentionInputSuggestion({
       // ...characterMentions, // [CHARACTER MODE - TEMPORARILY HIDDEN]
       ...workflowMentions,
       ...defaultToolMentions,
+      ...skillMentions,
       ...mcpMentions,
     ];
   }, [
@@ -456,6 +499,7 @@ export function ChatMentionInputSuggestion({
     // characterMentions, // [CHARACTER MODE - TEMPORARILY HIDDEN]
     workflowMentions,
     defaultToolMentions,
+    skillMentions,
     mcpMentions,
   ]);
 
@@ -481,6 +525,7 @@ export function ChatMentionInputSuggestion({
       agent: { title: "Agents", items: [] as MentionItemType[] },
       character: { title: "Characters", items: [] as MentionItemType[] },
       workflow: { title: "Workflows", items: [] as MentionItemType[] },
+      skill: { title: "Skills", items: [] as MentionItemType[] },
       defaultTool: { title: "App Tools", items: [] as MentionItemType[] },
       mcp: { title: "MCP Tools", items: [] as MentionItemType[] },
       mcpTool: { title: "MCP Tools", items: [] as MentionItemType[] },
@@ -513,8 +558,8 @@ export function ChatMentionInputSuggestion({
         style={{
           ...style,
           width: style?.width || (isMobile ? "100%" : "auto"),
-          minWidth: isMobile ? undefined : "600px",
-          maxWidth: isMobile ? undefined : "800px",
+          minWidth: isMobile ? undefined : "800px",
+          maxWidth: isMobile ? undefined : "1000px",
         }}
       >
         <div className="flex flex-col">
@@ -554,7 +599,13 @@ export function ChatMentionInputSuggestion({
                   const currentItem = allMentions[selectedIndex];
                   const currentType =
                     currentItem.type === "mcpTool" ? "mcp" : currentItem.type;
-                  const typeOrder = ["agent", "workflow", "mcp", "defaultTool"];
+                  const typeOrder = [
+                    "agent",
+                    "workflow",
+                    "skill",
+                    "mcp",
+                    "defaultTool",
+                  ];
                   const currentTypeIndex = typeOrder.indexOf(currentType);
 
                   if (e.key === "ArrowLeft" && currentTypeIndex > 0) {
@@ -639,6 +690,27 @@ export function ChatMentionInputSuggestion({
                     </div>
                     <div className="space-y-1">
                       {groupedMentions.workflow.items.map((item) => (
+                        <MentionItem
+                          key={item.id}
+                          item={item}
+                          isSelected={
+                            allMentions[selectedIndex]?.id === item.id
+                          }
+                          ref={(el) => {
+                            itemRefs.current[item.id] = el;
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {groupedMentions.skill.items.length > 0 && (
+                  <div className="p-2 border-t">
+                    <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+                      {groupedMentions.skill.title}
+                    </div>
+                    <div className="space-y-1">
+                      {groupedMentions.skill.items.map((item) => (
                         <MentionItem
                           key={item.id}
                           item={item}
@@ -803,6 +875,35 @@ export function ChatMentionInputSuggestion({
                       ) : (
                         <div className="px-2 py-3 text-xs text-muted-foreground text-center">
                           No MCP tools found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Skills Column */}
+                <div className="flex-1 border-r overflow-y-auto">
+                  <div className="p-2">
+                    <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+                      {groupedMentions.skill.title}
+                    </div>
+                    <div className="space-y-1">
+                      {groupedMentions.skill.items.length > 0 ? (
+                        groupedMentions.skill.items.map((item) => (
+                          <MentionItem
+                            key={item.id}
+                            item={item}
+                            isSelected={
+                              allMentions[selectedIndex]?.id === item.id
+                            }
+                            ref={(el) => {
+                              itemRefs.current[item.id] = el;
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                          No skills found
                         </div>
                       )}
                     </div>
