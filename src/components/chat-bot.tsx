@@ -114,38 +114,80 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
 
   const [showParticles] = useState(true);
 
-  const onFinish = useCallback(() => {
-    // Ensure URL is correct after message is finished
-    if (window.location.pathname !== `/chat/${threadId}`) {
-      window.history.replaceState({}, "", `/chat/${threadId}`);
-    }
+  const autoContinueCountRef = useRef(0);
 
-    const messages = latestRef.current.messages;
-    const prevThread = latestRef.current.threadList.find(
-      (v) => v.id === threadId,
-    );
-    const isNewThread =
-      !prevThread?.title &&
-      messages.filter((v) => v.role === "user" || v.role === "assistant")
-        .length < 3;
-    if (isNewThread) {
-      const part = messages
-        .slice(0, 2)
-        .flatMap((m) =>
-          m.parts
-            .filter((v) => v.type === "text")
-            .map(
-              (p) =>
-                `${m.role}: ${truncateString((p as TextUIPart).text, 500)}`,
-            ),
-        );
-      if (part.length > 0) {
-        generateTitle(part.join("\n\n"));
+  const onFinish = useCallback(
+    (message?: any, options?: any) => {
+      // Ensure URL is correct after message is finished
+      if (window.location.pathname !== `/chat/${threadId}`) {
+        window.history.replaceState({}, "", `/chat/${threadId}`);
       }
-    } else if (latestRef.current.threadList[0]?.id !== threadId) {
-      mutate("/api/thread");
-    }
-  }, [threadId]);
+
+      const messages = latestRef.current.messages;
+      const prevThread = latestRef.current.threadList.find(
+        (v) => v.id === threadId,
+      );
+      const isNewThread =
+        !prevThread?.title &&
+        messages.filter((v) => v.role === "user" || v.role === "assistant")
+          .length < 3;
+      if (isNewThread) {
+        const part = messages
+          .slice(0, 2)
+          .flatMap((m) =>
+            m.parts
+              .filter((v) => v.type === "text")
+              .map(
+                (p) =>
+                  `${m.role}: ${truncateString((p as TextUIPart).text, 500)}`,
+              ),
+          );
+        if (part.length > 0) {
+          generateTitle(part.join("\n\n"));
+        }
+      } else if (latestRef.current.threadList[0]?.id !== threadId) {
+        mutate("/api/thread");
+      }
+
+      // Auto-continue logic for long reasoning/interrupted responses
+      const finishReason = options?.finishReason || message?.finishReason;
+      const isLengthFinished = finishReason === "length";
+      const textPart =
+        message?.parts?.find((p: any) => p.type === "text")?.text ||
+        message?.text ||
+        "";
+      const seemsTruncated =
+        textPart &&
+        textPart.length > 3500 &&
+        !/[.!?]"?`*$\s]?$/.test(textPart.trim()) &&
+        !textPart.trim().endsWith("}") &&
+        !textPart.trim().endsWith("]");
+
+      if (
+        (isLengthFinished || seemsTruncated) &&
+        autoContinueCountRef.current < 3
+      ) {
+        autoContinueCountRef.current += 1;
+        toast.info("Auto-continuing response generation...", {
+          duration: 2000,
+        });
+        setTimeout(() => {
+          latestRef.current.sendMessage?.({
+            role: "user",
+            parts: [
+              {
+                type: "text",
+                text: "Continue generating from your previous message.",
+              },
+            ],
+          });
+        }, 500);
+      } else {
+        autoContinueCountRef.current = 0;
+      }
+    },
+    [threadId],
+  );
 
   const [input, setInput] = useState("");
 
@@ -155,7 +197,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     setMessages,
     addToolResult: _addToolResult,
     error,
-    sendMessage,
+    sendMessage: rawSendMessage,
     stop,
   } = useChat({
     id: threadId,
@@ -254,6 +296,23 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     experimental_throttle: 100,
     onFinish,
   });
+
+  const sendMessage = useCallback(
+    (...args: any[]) => {
+      const arg = args[0];
+      const isAutoContinue =
+        arg &&
+        typeof arg === "object" &&
+        arg.parts?.[0]?.text ===
+          "Continue generating from your previous message.";
+      if (!isAutoContinue) {
+        autoContinueCountRef.current = 0;
+      }
+      return rawSendMessage(...args);
+    },
+    [rawSendMessage],
+  );
+
   const [isDeleteThreadPopupOpen, setIsDeleteThreadPopupOpen] = useState(false);
 
   const addToolResult = useCallback(
@@ -276,6 +335,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     threadId,
     mentions: threadMentions[threadId],
     threadImageToolModel,
+    sendMessage,
   });
 
   // Store editImageModel in a ref so it persists when editImageState is cleared

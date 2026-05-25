@@ -20,7 +20,6 @@ import {
   Volume2,
   MicIcon,
   GlobeIcon,
-  Play,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -337,8 +336,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   setMessages,
   readonly,
   sendMessage,
-  isLast,
-  isLoading: isChatLoading,
 }: AssistMessagePartProps) {
   const { copied, copy } = useCopy();
   const [isLoading, setIsLoading] = useState(false);
@@ -348,19 +345,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const metadata = message.metadata as ChatMetadata | undefined;
-
-  const handleContinue = useCallback(() => {
-    if (!sendMessage) return;
-    sendMessage({
-      role: "user",
-      parts: [
-        {
-          type: "text",
-          text: "Continue generating from your previous message.",
-        },
-      ],
-    });
-  }, [sendMessage]);
 
   const agent = useMemo(() => {
     return agentList.find((a) => a.id === metadata?.agentId);
@@ -457,22 +441,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           </Tooltip>
           {!readonly && (
             <>
-              {isLast && !isChatLoading && sendMessage && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 gap-1.5 px-2.5 ml-1 text-xs font-semibold text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all duration-300 active:scale-95"
-                      onClick={handleContinue}
-                    >
-                      <Play className="size-3.5 fill-current text-blue-500 animate-pulse" />
-                      <span>Continue</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Continue generating</TooltipContent>
-                </Tooltip>
-              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div>
