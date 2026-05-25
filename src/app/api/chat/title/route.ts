@@ -52,6 +52,25 @@ export async function POST(request: Request) {
       };
     }
 
+    // Override reasoning models to avoid slow execution and leaked <think> blocks
+    const isReasoningModel =
+      modelToUse &&
+      (/r1/i.test(modelToUse.model) ||
+        /thinking/i.test(modelToUse.model) ||
+        /reasoning/i.test(modelToUse.model) ||
+        /grok-3/i.test(modelToUse.model) ||
+        /\bo[1-3]/i.test(modelToUse.model));
+
+    if (isReasoningModel) {
+      logger.info(
+        `Reasoning model detected for title generation. Overriding to google-gemma-2-9b-it.`,
+      );
+      modelToUse = {
+        provider: "google",
+        model: "google-gemma-2-9b-it",
+      };
+    }
+
     let model;
     try {
       model = customModelProvider.getModel(modelToUse);
@@ -71,10 +90,19 @@ export async function POST(request: Request) {
       abortSignal: request.signal,
       maxTokens: 60,
       onFinish: (ctx) => {
+        // Strip any <think>...</think> block or think tags that might have slipped through
+        let cleanTitle = ctx.text;
+        if (cleanTitle.includes("<think>")) {
+          cleanTitle = cleanTitle.replace(/<think>[\s\S]*?<\/think>/gi, "");
+          cleanTitle = cleanTitle.replace(/<think>[\s\S]*/gi, ""); // Handle unclosed tag
+        }
+        cleanTitle = cleanTitle.replace(/<\/think>/gi, "");
+        cleanTitle = cleanTitle.trim();
+
         chatRepository
           .upsertThread({
             id: threadId,
-            title: ctx.text,
+            title: cleanTitle || "New Chat",
             userId: session.user.id,
           })
           .catch((err) => logger.error(err));
