@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       }`.trim(),
       messages: convertToModelMessages(messages),
       experimental_transform: smoothStream({ chunking: "word" }),
+      experimental_continueOnLimit: true,
       maxTokens: 4096,
     } as any).toUIMessageStreamResponse();
   } catch (error: any) {

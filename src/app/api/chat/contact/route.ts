@@ -70,6 +70,7 @@ If a query is outside Wasp AI's capability, pivot to how our tools might still h
       model: groq("openai/gpt-oss-120b"),
       messages: convertToModelMessages(messages),
       system: systemPrompt,
+      experimental_continueOnLimit: true,
       maxTokens: 4096,
     } as any);
 
