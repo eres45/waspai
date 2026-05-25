@@ -56,7 +56,7 @@ export const skillRepositoryRest: SkillRepository = {
   }) {
     let query = supabaseRest
       .from("skill")
-      .select(`*, author:author_id(name, image)`)
+      .select("*")
       .eq("is_public", true)
       .order("is_featured", { ascending: false })
       .order("install_count", { ascending: false })
@@ -99,9 +99,9 @@ export const skillRepositoryRest: SkillRepository = {
   async getSkillById(id, userId) {
     const { data, error } = await supabaseRest
       .from("skill")
-      .select(`*, author:author_id(name, image)`)
+      .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) return null;
 
@@ -138,9 +138,9 @@ export const skillRepositoryRest: SkillRepository = {
   async getSkillByName(name, userId) {
     const { data, error } = await supabaseRest
       .from("skill")
-      .select(`*, author:author_id(name, image)`)
+      .select("*")
       .eq("name", name)
-      .single();
+      .maybeSingle();
 
     if (error || !data) return null;
     return this.getSkillById(data.id, userId);
@@ -170,7 +170,7 @@ export const skillRepositoryRest: SkillRepository = {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select(`*, author:author_id(name, image)`)
+      .select("*")
       .single();
 
     if (error) throw error;
@@ -200,7 +200,7 @@ export const skillRepositoryRest: SkillRepository = {
       .update(updateBody)
       .eq("id", id)
       .eq("author_id", userId)
-      .select(`*, author:author_id(name, image)`)
+      .select("*")
       .single();
 
     if (error || !updated) return null;
@@ -256,35 +256,57 @@ export const skillRepositoryRest: SkillRepository = {
   },
 
   async getInstalledSkills(userId) {
-    const { data, error } = await supabaseRest
+    // Step 1: get the user_skill rows
+    const { data: userSkills, error } = await supabaseRest
       .from("user_skill")
-      .select(`*, skill:skill_id(*, author:author_id(name, image))`)
+      .select("*")
       .eq("user_id", userId)
       .eq("is_active", true)
       .order("installed_at", { ascending: false });
 
     if (error) throw error;
+    if (!userSkills || userSkills.length === 0) return [];
 
-    return (data || []).map((item: any) => ({
+    // Step 2: fetch the skill data for each installed skill
+    const skillIds = userSkills.map((us: any) => us.skill_id);
+    const { data: skills } = await supabaseRest
+      .from("skill")
+      .select("*")
+      .in("id", skillIds);
+
+    const skillMap = new Map((skills || []).map((s: any) => [s.id, s]));
+
+    return userSkills.map((item: any) => ({
       id: item.id,
       userId: item.user_id,
       skillId: item.skill_id,
       isActive: item.is_active,
       installedAt: new Date(item.installed_at),
-      skill: item.skill ? (mapSkill(item.skill, true) as Skill) : undefined,
+      skill: skillMap.has(item.skill_id)
+        ? (mapSkill(skillMap.get(item.skill_id), true) as Skill)
+        : undefined,
     })) as (UserSkill & { skill: Skill })[];
   },
 
   async getActiveSkillContents(userId) {
-    const { data, error } = await supabaseRest
+    // Step 1: get active skill IDs
+    const { data: userSkills, error } = await supabaseRest
       .from("user_skill")
-      .select("skill:skill_id(content)")
+      .select("skill_id")
       .eq("user_id", userId)
       .eq("is_active", true);
 
-    if (error || !data) return [];
-    return (data || [])
-      .map((item: any) => item.skill?.content)
+    if (error || !userSkills || userSkills.length === 0) return [];
+
+    // Step 2: fetch skill content for those IDs
+    const skillIds = userSkills.map((us: any) => us.skill_id);
+    const { data: skills } = await supabaseRest
+      .from("skill")
+      .select("content")
+      .in("id", skillIds);
+
+    return (skills || [])
+      .map((s: any) => s.content)
       .filter(Boolean) as string[];
   },
 
@@ -332,7 +354,7 @@ export const skillRepositoryRest: SkillRepository = {
   async getSkillRatings(skillId) {
     const { data, error } = await supabaseRest
       .from("skill_rating")
-      .select(`*, author:user_id(name, image)`)
+      .select("*")
       .eq("skill_id", skillId)
       .order("created_at", { ascending: false });
 
@@ -346,8 +368,8 @@ export const skillRepositoryRest: SkillRepository = {
         rating: item.rating,
         review: item.review ?? undefined,
         createdAt: new Date(item.created_at),
-        authorName: item.author?.name,
-        authorAvatar: item.author?.image,
+        authorName: undefined,
+        authorAvatar: undefined,
       }),
     );
   },

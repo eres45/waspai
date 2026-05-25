@@ -39,6 +39,12 @@ export function SkillCreatedCard({ part }: SkillCreatedCardProps) {
       }
     | undefined;
 
+  // Soft failure: tool ran but returned { success: false }
+  const isSoftError =
+    !isLoading && !isError && result !== undefined && result.success === false;
+  const isSuccess =
+    !isLoading && !isError && !isSoftError && result?.success === true;
+
   const skillInput = input as {
     name?: string;
     title?: string;
@@ -81,7 +87,7 @@ export function SkillCreatedCard({ part }: SkillCreatedCardProps) {
       <div
         className={cn(
           "rounded-2xl border overflow-hidden bg-gradient-to-br from-background via-background to-accent/10",
-          isError
+          isError || isSoftError
             ? "border-destructive/40"
             : isLoading
               ? "border-border/60"
@@ -94,7 +100,7 @@ export function SkillCreatedCard({ part }: SkillCreatedCardProps) {
             "flex items-center gap-3 px-5 py-4 border-b",
             isLoading
               ? "border-border/40 bg-muted/30"
-              : isError
+              : isError || isSoftError
                 ? "border-destructive/20 bg-destructive/5"
                 : "border-primary/20 bg-gradient-to-r from-primary/10 to-transparent",
           )}
@@ -111,7 +117,7 @@ export function SkillCreatedCard({ part }: SkillCreatedCardProps) {
           >
             {isLoading ? (
               <Loader className="size-4 animate-spin text-muted-foreground" />
-            ) : isError ? (
+            ) : isError || isSoftError ? (
               <XCircle className="size-4 text-destructive" />
             ) : (
               <Sparkles className="size-4 text-primary" />
@@ -123,16 +129,18 @@ export function SkillCreatedCard({ part }: SkillCreatedCardProps) {
               <span
                 className={cn(
                   "font-semibold text-sm truncate",
-                  isError ? "text-destructive" : "text-foreground",
+                  isError || isSoftError
+                    ? "text-destructive"
+                    : "text-foreground",
                 )}
               >
                 {isLoading
                   ? "Creating Skill…"
-                  : isError
+                  : isError || isSoftError
                     ? "Skill Creation Failed"
                     : `${catEmoji} ${result?.title || skillInput?.title || "Skill Created"}`}
               </span>
-              {!isLoading && !isError && result?.success && (
+              {!isLoading && !isError && !isSoftError && result?.success && (
                 <Badge
                   variant="outline"
                   className="text-xs bg-green-500/10 text-green-600 border-green-500/30 dark:text-green-400 shrink-0"
@@ -146,14 +154,17 @@ export function SkillCreatedCard({ part }: SkillCreatedCardProps) {
               {isLoading
                 ? "Generating skill instructions and registering…"
                 : isError
-                  ? result?.error || "An error occurred"
-                  : skillInput?.description || "Skill saved to your library"}
+                  ? "An unexpected error occurred. Please try again."
+                  : isSoftError
+                    ? result?.error ||
+                      "Failed to create skill. It may already exist or the input is invalid."
+                    : skillInput?.description || "Skill saved to your library"}
             </p>
           </div>
         </div>
 
         <AnimatePresence>
-          {!isLoading && !isError && result?.success && (
+          {isSuccess && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

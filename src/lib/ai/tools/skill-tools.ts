@@ -58,10 +58,40 @@ export const createSkillTool = tool({
       return { success: false, error: "Unauthorized" };
     }
 
+    // Sanitize slug: lowercase alphanumeric + hyphens only
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 64);
+
     try {
+      // Check if a skill with this slug already exists for this user
+      // (handles duplicate tool calls from the AI)
+      const existing = await skillRepository.getSkillByName(
+        slug,
+        session.user.id,
+      );
+      if (existing) {
+        // Ensure it's installed
+        try {
+          await skillRepository.installSkill(session.user.id, existing.id);
+        } catch {
+          // Already installed, ignore
+        }
+        return {
+          success: true,
+          skillId: existing.id,
+          name: existing.name,
+          title: existing.title,
+          message: `The "${existing.title}" skill is already registered and active in your library!`,
+        };
+      }
+
       // 1. Create the skill
       const saved = await skillRepository.createSkill({
-        name,
+        name: slug,
         title,
         description,
         content,
@@ -86,6 +116,29 @@ export const createSkillTool = tool({
         message: `Successfully created and automatically installed the "${saved.title}" skill!`,
       };
     } catch (error: any) {
+      // Handle unique constraint violation (race condition fallback)
+      if (error.message?.includes("unique") || error.code === "23505") {
+        try {
+          const existing = await skillRepository.getSkillByName(
+            slug,
+            session.user.id,
+          );
+          if (existing) {
+            await skillRepository
+              .installSkill(session.user.id, existing.id)
+              .catch(() => {});
+            return {
+              success: true,
+              skillId: existing.id,
+              name: existing.name,
+              title: existing.title,
+              message: `The "${existing.title}" skill was already created and is now active!`,
+            };
+          }
+        } catch {
+          // fall through
+        }
+      }
       return { success: false, error: error.message };
     }
   },
