@@ -250,6 +250,35 @@ export function DocumentGeneratorToolInvocation({
     if (!result) return;
 
     setIsExporting(true);
+
+    // Helper to sanitize oklch styles to prevent html2canvas parsing crash
+    const sanitizeOklchStyles = () => {
+      const styleElements = Array.from(document.querySelectorAll("style"));
+      const restoredStyles: {
+        element: HTMLStyleElement;
+        originalText: string;
+      }[] = [];
+
+      for (const el of styleElements) {
+        const text = el.textContent || "";
+        if (text.includes("oklch(")) {
+          restoredStyles.push({ element: el, originalText: text });
+          // Replace oklch(...) color values with standard slate color fallback
+          const sanitizedText = text.replace(
+            /oklch\([^)]+\)/g,
+            "rgb(100, 116, 139)",
+          );
+          el.textContent = sanitizedText;
+        }
+      }
+
+      return () => {
+        for (const { element, originalText } of restoredStyles) {
+          element.textContent = originalText;
+        }
+      };
+    };
+
     try {
       // Dynamic import with more robust error handling
       let html2pdfModule;
@@ -285,8 +314,14 @@ export function DocumentGeneratorToolInvocation({
         pagebreak: { mode: ["avoid-all", "css", "legacy"] },
       };
 
-      await html2pdf().set(opt).from(element).save();
-      toast.success("PDF generated successfully!");
+      // Temporarily sanitize styles, print PDF, then immediately restore styles
+      const restoreStyles = sanitizeOklchStyles();
+      try {
+        await html2pdf().set(opt).from(element).save();
+        toast.success("PDF generated successfully!");
+      } finally {
+        restoreStyles();
+      }
     } catch (error: any) {
       console.error("PDF Export Details:", error);
       toast.error(`Export failed: ${error.message || "Unknown error"}`);
