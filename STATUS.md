@@ -13,7 +13,7 @@
 
 ---
 
-## 2. Dev Session: May 25, 2026 (Image Editing, Title Streaming & User Settings Fixes)
+## 2. Dev Session: May 25, 2026 (Image Editing, Title Streaming, User Settings & Video Gen Fixes)
 
 ### Completed Work
 - **Database Connection Pooling Constraints:** Added database client `pg.Pool` connection constraints (`max: 5`, timeouts) to prevent Lambda instance scale-outs from exhausting Supabase connection pools.
@@ -23,11 +23,13 @@
 - **Zustand State Audit:** Audited global store selectors and verified atomic slicing and proper usage of Zustand `useShallow` hooks to completely prevent redundant UI re-renders.
 - **Thread Title `<think>` Reasoning Leak Fix:** Fixed model chain-of-thought leaking during real-time thread title generation. Added client-side real-time regex sanitization in `use-generate-thread-title.ts` and set a backend model override in the Title API (`src/app/api/chat/title/route.ts`) to immediately map leaky reasoning models to standard high-performance ones like `google-gemma-2-9b-it`.
 - **User Settings Menu Blinking/Dismissal Fix:** Solved a classic Radix UI focus-trap and focus-restoration race condition between the closing user DropdownMenu and the opening Drawer. Wrapped the open triggers (User Settings, Chat Preferences, Keyboard Shortcuts) in a 150ms `setTimeout` within `app-sidebar-user.tsx`, allowing the dropdown menu to cleanly finalize closing and restore focus before drawers/dialogs mount.
+- **Resilient Video Generation Output Parsing Fix:** Resolved critical video generation crashes caused by the creative AI worker returning an OpenAI-compatible `{"data": [{"url": "..."}]}` payload. Updated the parsing helper inside `video-gen.ts` to cleanly extract the URL from `data.data?.[0]?.url` as a safe fallback and integrated a robust `fetchWithRetry` exponential backoff query wrapper.
 
 ### Files Modified
 - `[MODIFY]` [db.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/db.pg.ts) — Limited pg connection pool sizes and specified idle timeouts for serverless.
 - `[MODIFY]` [chat-repository.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/repositories/chat-repository.pg.ts) — Implemented lazy prepared statements for `selectThread` and `selectMessagesByThreadId`.
 - `[MODIFY]` [generate-image.ts](file:///g:/project/better-chatbot/src/lib/ai/image/generate-image.ts) — Added resilient `fetchWithRetry` exponential backoff pipeline wrapper.
+- `[MODIFY]` [video-gen.ts](file:///g:/project/better-chatbot/src/lib/ai/image/video-gen.ts) — Added fallback parsing of `data.data?.[0]?.url` and added resilient exponential backoff retries.
 - `[MODIFY]` [route.ts (Chat API)](file:///g:/project/better-chatbot/src/app/api/chat/route.ts) — Connected image editing prompts (`removeBgPrompt`, etc.) to standard system instructions compilation context.
 - `[MODIFY]` [route.ts (Title API)](file:///g:/project/better-chatbot/src/app/api/chat/title/route.ts) — Mapped leaky reasoning models to high-performance leak-free models for thread titles.
 - `[MODIFY]` [use-generate-thread-title.ts](file:///g:/project/better-chatbot/src/hooks/queries/use-generate-thread-title.ts) — Implemented client-side regex-based real-time XML tag tag/thinking block stripping.
@@ -68,6 +70,12 @@
 - **The Final Fix:** Wrapped the Zustand store `open` triggers inside a 150ms `setTimeout` in the `app-sidebar-user.tsx` click handlers. This gives the dropdown menu enough time to close and restore focus cleanly before the drawer mounts and traps focus.
 - **Prevention Note:** Avoid triggering modals, dialogs, or drawers synchronously inside unmounting DropdownMenu select events. Always introduce a brief deferral or prevent default focus behaviors to isolate state transitions.
 
+### Issue F: Video Generation Tool Crash ("No video URL in response")
+- **The Problem:** The `video-gen` tool failed immediately upon query, returning a "Video generation failed" UI response block.
+- **Root Cause:** The creative AI worker video generation endpoint (`/v1/video/generations`) returns an OpenAI-compatible JSON payload containing `{"data": [{"url": "..."}]}`. The local extraction helper (`generateVideoWithMeta`) only parsed flat keys like `data.url` and `data.video`, missing the nested array and triggering a validation exception.
+- **The Final Fix:** Updated the parser inside `video-gen.ts` to include `data.data?.[0]?.url` as a primary fallback, and wrapped the endpoint call in a resilient `fetchWithRetry` wrapper to protect against rate limits.
+- **Prevention Note:** Image and video endpoints frequently return array wrappers containing resource links rather than flat keys. Always parse both shapes defensively.
+
 ---
 
 ## 4. Architectural & Development Decisions
@@ -93,4 +101,4 @@
 2. Verify image generation retries and dynamic model lookups by requesting an image locally.
 3. Test sidebar thread title generation streams cleanly without any `<think>` blocks showing.
 4. Open the User Settings, Chat Preferences, and Keyboard Shortcuts modals from the sidebar user menu dropdown to ensure they open seamlessly without flickering or instantly closing.
-
+5. Verify that video generation (e.g. asking for "a cat playing with a ball") completes successfully and renders the video player.
