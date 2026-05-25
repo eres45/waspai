@@ -13,6 +13,7 @@ import {
   varchar,
   index,
   bigint,
+  integer,
 } from "drizzle-orm/pg-core";
 import { isNotNull } from "drizzle-orm";
 import { DBWorkflow, DBEdge, DBNode } from "app-types/workflow";
@@ -547,3 +548,106 @@ export const VideoGenQueueTable = pgTable(
 );
 
 export type VideoGenQueueEntity = typeof VideoGenQueueTable.$inferSelect;
+
+// ─── Skill Library Tables ────────────────────────────────────────────────────
+
+export const SkillTable = pgTable(
+  "skill",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    name: text("name").notNull().unique(), // slug e.g. "pdf-creator"
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    content: text("content").notNull(), // full SKILL.md markdown
+    category: varchar("category", {
+      enum: [
+        "productivity",
+        "coding",
+        "media",
+        "writing",
+        "research",
+        "automation",
+        "other",
+      ],
+    })
+      .notNull()
+      .default("other"),
+    tags: json("tags").$type<string[]>().default([]),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    isPublic: boolean("is_public").notNull().default(true),
+    isVerified: boolean("is_verified").notNull().default(false),
+    isFeatured: boolean("is_featured").notNull().default(false),
+    installCount: integer("install_count").notNull().default(0),
+    icon: text("icon").notNull().default("🔧"),
+    toolsRequired: json("tools_required").$type<string[]>().default([]),
+    tierRequired: varchar("tier_required", {
+      enum: ["free", "pro", "max"],
+    })
+      .notNull()
+      .default("free"),
+    version: text("version").notNull().default("1.0.0"),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("skill_category_idx").on(table.category),
+    index("skill_author_id_idx").on(table.authorId),
+    index("skill_is_public_idx").on(table.isPublic),
+    index("skill_is_featured_idx").on(table.isFeatured),
+    index("skill_tier_required_idx").on(table.tierRequired),
+  ],
+);
+
+export const UserSkillTable = pgTable(
+  "user_skill",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    skillId: uuid("skill_id")
+      .notNull()
+      .references(() => SkillTable.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").notNull().default(true),
+    installedAt: timestamp("installed_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    unique().on(table.userId, table.skillId),
+    index("user_skill_user_id_idx").on(table.userId),
+    index("user_skill_skill_id_idx").on(table.skillId),
+  ],
+);
+
+export const SkillRatingTable = pgTable(
+  "skill_rating",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    skillId: uuid("skill_id")
+      .notNull()
+      .references(() => SkillTable.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(), // 1-5
+    review: text("review"),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    unique().on(table.userId, table.skillId),
+    index("skill_rating_skill_id_idx").on(table.skillId),
+  ],
+);
+
+export type SkillEntity = typeof SkillTable.$inferSelect;
+export type UserSkillEntity = typeof UserSkillTable.$inferSelect;
+export type SkillRatingEntity = typeof SkillRatingTable.$inferSelect;

@@ -22,6 +22,7 @@ import {
   agentRepository,
   chatRepository,
   memoryRepository,
+  skillRepository,
 } from "lib/db/repository";
 import globalLogger from "logger";
 import {
@@ -1563,10 +1564,25 @@ CRITICAL INSTRUCTIONS:
         // const characterPrompt = characterContext ? `[CHARACTER ROLEPLAY MODE ...]` : "";
 
         // Await the parallelized metadata
-        const [memories, mcpServerCustomizations] = await Promise.all([
-          memoriesPromise,
-          mcpPromise,
-        ]);
+        const [memories, mcpServerCustomizations, activeSkillContents] =
+          await Promise.all([
+            memoriesPromise,
+            mcpPromise,
+            skillRepository
+              .getActiveSkillContents(userId)
+              .catch(() => [] as string[]),
+          ]);
+
+        // Build skill instructions prompt block
+        let skillsSystemPrompt = "";
+        if (activeSkillContents.length > 0) {
+          skillsSystemPrompt = activeSkillContents
+            .map(
+              (content) =>
+                `<skill_instructions>\n${content}\n</skill_instructions>`,
+            )
+            .join("\n\n");
+        }
 
         // Load User Memories
         let userMemoriesPrompt = "";
@@ -1583,6 +1599,7 @@ CRITICAL INSTRUCTIONS:
         }
 
         const systemPrompt = mergeSystemPrompt(
+          skillsSystemPrompt || undefined, // Inject active skills first
           userMemoriesPrompt, // Inject memories high priority
 
           // All specialized tools should be highest priority to override character/roleplay limits
