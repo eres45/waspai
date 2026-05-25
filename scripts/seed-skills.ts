@@ -1042,17 +1042,50 @@ Always implement SEO best practices automatically for every page:
 
 ---
 
+## Visual Design & Premium Aesthetics (CRITICAL)
+Your web applications and landing pages must look incredibly premium, state-of-the-art, and highly professional. Simple, generic, flat, or basic designs are completely UNACCEPTABLE. Make the user say "WOW" at first glance.
+
+### 1. Color Palettes & Dark Themes
+- Use modern dark-mode palettes by default (e.g., pitch black \`#030303\`, dark graphite \`#080710\`, or deep navy \`#0A0E1A\`) instead of standard flat grays.
+- Enhance page sections with rich color gradients (\`bg-gradient-to-r\`, \`from-purple-600\`, \`via-pink-500\`, \`to-blue-500\`).
+- Use glowing border effects, cards with transparent borders, and subtle glassmorphic elements (\`backdrop-blur-md bg-white/5 border border-white/10\`).
+
+### 2. Spotlight & Background Patterns
+- Implement grid or dot background patterns using inline SVGs or CSS mask-image:
+  \`\`\`html
+  <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+  \`\`\`
+- Use large glowing radial lights in the background (\`radial-gradient\` or absolute blur circles) to give a modern "spotlight" aesthetic.
+
+### 3. Typography & Text Styling
+- Always import modern Google Fonts in the \`<head>\` (e.g., Plus Jakarta Sans, Outfit, Inter, or Syne) instead of standard browser fonts:
+  \`<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">\`
+- Set font-family globally: \`font-family: 'Plus Jakarta Sans', sans-serif;\`.
+- Use gradient text for hero headings: \`bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent\`.
+
+### 4. Interactive Micro-Animations & Glows
+- Add subtle shadow-glow effects on hover for primary CTA buttons (\`hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]\`).
+- Apply smooth transitions on all interactive elements (\`transition-all duration-300 ease-out\`).
+- Implement beautiful card hovers that lift and brighten slightly (\`hover:-translate-y-1 hover:border-white/20\`).
+
+### 5. High-Quality Media Assets (No Placeholders)
+- Never use boring gray image placeholders.
+- Use high-quality realistic images from Unsplash via URL (e.g., stock images for business, avatars for testimonial stacks).
+- Embed clean SVG illustrations or Lucide icons for feature cards.
+
+---
+
 ## Required Workflow (Follow This Order)
 
 1. **Think & Plan**:
    - Restate what the user is actually asking for.
-   - Define exactly what sections and features the site will have.
+   - Define exactly what sections, components, animations, and color scheme the site will have.
    - Plan a minimal but CORRECT approach.
 2. **Implementation**:
    - Write beautiful, highly styled, and fully responsive designs.
    - Inject the Tailwind CDN script in the \`<head>\` of the document.
-   - Use Google Fonts to import modern typography (Inter, Outfit, Playfair, etc.) instead of standard browser defaults.
-   - Add hover effects, responsive layouts (flex/grid), glassmorphism, and micro-animations to make the design feel premium.
+   - Use Google Fonts to import modern typography.
+   - Add hover effects, responsive layouts, glassmorphism, background grids, and micro-animations to make the design feel premium.
 3. **Preview & Deploy**:
    - First, run the \`html_preview\` tool to show the preview.
    - Then, call the \`deploy_site\` tool to deploy the website live to a subdomain like \`https://[slug].waspai.in\`.
