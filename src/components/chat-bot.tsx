@@ -332,13 +332,13 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     if (!isLoading || error) return false;
     const lastMessage = messages.at(-1);
     if (lastMessage?.role == "user") return "think";
-    const lastPart = lastMessage?.parts.at(-1);
+    const lastPart = lastMessage?.parts?.at(-1);
     if (!lastPart) return "think";
-    const secondPart = lastMessage?.parts[1];
-    if (secondPart?.type == "text" && secondPart.text.length == 0)
+    const secondPart = lastMessage?.parts?.[1];
+    if (secondPart?.type == "text" && (secondPart.text?.length ?? 0) == 0)
       return "think";
     if (lastPart?.type == "step-start") {
-      return lastMessage?.parts.length == 1 ? "think" : "space";
+      return (lastMessage?.parts?.length ?? 0) == 1 ? "think" : "space";
     }
     return false;
   }, [isLoading, messages.at(-1)]);
@@ -505,7 +505,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
                       isLastMessage &&
                       message.role != "user" &&
                       !space &&
-                      message.parts.length > 1
+                      (message.parts?.length ?? 0) > 1
                         ? "min-h-[calc(55dvh-40px)]"
                         : ""
                     }

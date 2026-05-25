@@ -68,7 +68,8 @@ const PurePreviewMessage = ({
 
   // Process message parts to extract reasoning from leaky models
   const partsForDisplay = useMemo(() => {
-    const hasExplicitTags = message.parts.some(
+    const partsList = message.parts || [];
+    const hasExplicitTags = partsList.some(
       (part) =>
         part.type === "text" &&
         typeof part.text === "string" &&
@@ -79,7 +80,7 @@ const PurePreviewMessage = ({
 
     // Only process assistant messages from leaky models or those with explicit reasoning tags
     if (message.role !== "assistant" || !isLeaky) {
-      return message.parts.filter(
+      return partsList.filter(
         (part) => !(part.type === "text" && (part as any).ingestionPreview),
       );
     }
@@ -93,7 +94,7 @@ const PurePreviewMessage = ({
 
     const processedParts: typeof message.parts = [];
 
-    for (const part of message.parts) {
+    for (const part of partsList) {
       // Only process text parts
       if (part.type === "text" && typeof part.text === "string") {
         // Filter out ingestionPreview parts even if processing for reasoning
@@ -269,10 +270,13 @@ export const PreviewMessage = memo(
     if (!equal(prevProps.message.metadata, nextProps.message.metadata))
       return false;
 
-    if (prevProps.message.parts.length !== nextProps.message.parts.length) {
+    if (
+      (prevProps.message.parts?.length ?? 0) !==
+      (nextProps.message.parts?.length ?? 0)
+    ) {
       return false;
     }
-    if (!equal(prevProps.message.parts, nextProps.message.parts)) {
+    if (!equal(prevProps.message.parts || [], nextProps.message.parts || [])) {
       return false;
     }
 
