@@ -107,6 +107,7 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
           ok: boolean;
           file_path?: string;
           proxied_url?: string;
+          url?: string;
           result?: {
             photo?: Array<{ file_id: string; file_size: number }>;
             video?: { file_id: string; file_size: number };
@@ -118,16 +119,21 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
           throw new Error("Worker returned ok: false");
         }
 
-        // Build the permanent serve URL via the worker's /serve endpoint
+        // Build the permanent serve URL
         let sourceUrl: string;
-        if (data.file_path) {
-          // Construct the permanent CDN URL through the worker
+        if (data.url) {
+          // Direct CDN URL from the new R2 storage worker
+          sourceUrl = data.url;
+        } else if (data.file_path) {
+          // Construct the permanent CDN URL through the worker (Telegram style)
           sourceUrl = `${workerUrl}/serve?path=${encodeURIComponent(data.file_path)}`;
         } else if (remoteUrl) {
           // Fallback: the remote URL itself (e.g. AI-generated image URL)
           sourceUrl = remoteUrl;
         } else {
-          throw new Error("Worker did not return a file_path or proxied_url");
+          throw new Error(
+            "Worker did not return a url, file_path, or proxied_url",
+          );
         }
 
         logger.info(`[CloudflareStorage] Upload success → ${sourceUrl}`);
