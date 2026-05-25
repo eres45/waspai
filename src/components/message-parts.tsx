@@ -889,6 +889,17 @@ const VideoPlayer = dynamic(
   },
 );
 
+const SkillCreatedCard = dynamic(
+  () =>
+    import("./tool-invocation/skill-created-card").then(
+      (mod) => mod.SkillCreatedCard,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -1113,6 +1124,10 @@ export const ToolMessagePart = memo(
 
       if (toolName === DefaultToolName.SteelBrowser) {
         return <SteelBrowserPreview part={part} />;
+      }
+
+      if (toolName === DefaultToolName.CreateSkill) {
+        return <SkillCreatedCard part={part} />;
       }
 
       if (state === "output-available") {

@@ -57,6 +57,7 @@ export enum DefaultToolName {
   ExportChat = "export-chat-messages",
   ListSmsNumbers = "list-sms-numbers",
   GetSmsMessages = "get-sms-messages",
+  CreateSkill = "create_skill",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";

@@ -100,6 +100,15 @@ export async function POST(request: Request) {
       authorId: session.user.id,
     });
 
+    try {
+      await skillRepository.installSkill(session.user.id, skill.id);
+    } catch (installErr) {
+      console.error(
+        "[Skills API] Failed to auto-install created skill:",
+        installErr,
+      );
+    }
+
     return NextResponse.json(skill, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

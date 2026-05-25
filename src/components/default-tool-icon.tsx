@@ -10,6 +10,7 @@ import {
   CodeIcon,
   HammerIcon,
   TableOfContents,
+  Sparkles,
 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -18,6 +19,9 @@ export function DefaultToolIcon({
   className,
 }: { name: DefaultToolName; className?: string }) {
   return useMemo(() => {
+    if (name === DefaultToolName.CreateSkill) {
+      return <Sparkles className={cn("size-3.5 text-purple-500", className)} />;
+    }
     if (name === DefaultToolName.CreatePieChart) {
       return (
         <ChartPieIcon className={cn("size-3.5 text-blue-500", className)} />
