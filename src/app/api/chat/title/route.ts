@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       },
     } as any);
 
-    return result.toUIMessageStreamResponse();
+    return result.toTextStreamResponse();
   } catch (err: any) {
     logger.error("Title API Error:", err?.message || err);
     if (err?.statusCode === 403) {
