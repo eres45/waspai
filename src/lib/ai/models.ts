@@ -97,7 +97,15 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
  * Groups models by their `owned_by` field (provider).
  */
 export async function buildDynamicModelsInfo() {
-  const workerModels = await fetchModelsFromWorker();
+  const rawWorkerModels = await fetchModelsFromWorker();
+
+  // Deduplicate models by ID (some workers return the same model multiple times)
+  const seen = new Set<string>();
+  const workerModels = rawWorkerModels.filter((m) => {
+    if (seen.has(m.id)) return false;
+    seen.add(m.id);
+    return true;
+  });
 
   // Filter out image, video, and audio models
   const chatModels = workerModels.filter((m) => {
@@ -302,14 +310,14 @@ export const customModelProvider = {
     const modelId = model.model;
     const lowerId = modelId.toLowerCase();
 
-    // Route open-source fallback models through the creative worker provider
+    // Route open-source fallback models through the creative worker provider.
+    // NOTE: gpt-oss is intentionally NOT here — it is fully supported by our
+    // NVIDIA worker (real API keys), so it routes through unifiedProvider.
     const creativeKeywords = [
-      "gpt-oss",
       "chatai",
       "chatbotai",
       "botnation",
       "quillbot",
-      "kimi-k2",
       "aimirror",
     ];
 
