@@ -1479,14 +1479,13 @@ CRITICAL INSTRUCTIONS:
         });
 
         // Enable video generation if either explicitly provided or auto-detected
-        const isVideoGenRequest =
-          videoGenModel === "meta-ai" || hasVideoGenKeywords;
+        const isVideoGenRequest = Boolean(videoGenModel) || hasVideoGenKeywords;
         logger.info(
           `Video Gen Model: ${videoGenModel}, Auto-detected: ${hasVideoGenKeywords}`,
         );
 
         const videoGenPrompt = isVideoGenRequest
-          ? `Call the "video-gen" tool with the user's video description. Keep response brief. Use "Meta AI" as the engine name if asked.`
+          ? `Call the "video-gen" tool with the user's video description. Keep response brief. Crucial: Pass "${videoGenModel || "sora"}" as the "model" parameter to the tool call.`
           : "";
 
         if (isVideoGenRequest) {

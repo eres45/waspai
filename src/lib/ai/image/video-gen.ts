@@ -3,6 +3,7 @@ import { CREATIVE_WORKER_URL } from "../models";
 
 export interface VideoGenOptions {
   prompt: string;
+  model?: string;
   abortSignal?: AbortSignal;
 }
 
@@ -21,7 +22,9 @@ const VIDEO_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/video/generations`;
 export async function generateVideoWithMeta(
   options: VideoGenOptions,
 ): Promise<VideoGenResult> {
-  logger.info(`Video Gen: Starting — prompt: "${options.prompt}"`);
+  logger.info(
+    `Video Gen: Starting — prompt: "${options.prompt}", model: "${options.model || "default"}"`,
+  );
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 85000);
@@ -30,7 +33,10 @@ export async function generateVideoWithMeta(
     const response = await fetch(VIDEO_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: options.prompt }),
+      body: JSON.stringify({
+        prompt: options.prompt,
+        ...(options.model ? { model: options.model } : {}),
+      }),
       signal: controller.signal,
     });
 

@@ -12,6 +12,7 @@ import {
   generateImageWithSD35,
   generateImageWithSeedream45,
   generateImageWithStableDiffusionXL,
+  generateImage,
 } from "lib/ai/image/generate-image";
 
 export type ImageToolResult = {
@@ -36,18 +37,9 @@ export const nanoBananaTool = createTool({
         "The image generation prompt (optional, will use user's message if not provided)",
       ),
     model: z
-      .enum([
-        "flux-1-schnell",
-        "juggernaut-xl",
-        "flux-1-dev",
-        "flux-pro",
-        "realvisxl-v4",
-        "sd-3-5",
-        "seedream-4-5",
-        "sdxl-v1-0",
-      ])
+      .string()
       .describe(
-        "Image generation model to use. MUST match the pre-selected model from the system prompt. Options include: flux-1-schnell, juggernaut-xl, flux-1-dev, realvisxl-v4, sd-3-5, seedream-4-5, sdxl-v1-0. CRITICAL: Always use the exact model specified in the system prompt - do not substitute or choose a different model.",
+        "Image generation model to use. MUST match the pre-selected model from the system prompt. CRITICAL: Always use the exact model specified in the system prompt.",
       ),
   }),
   execute: async ({ prompt, model }, { abortSignal, messages }) => {
@@ -134,7 +126,13 @@ export const nanoBananaTool = createTool({
           });
           break;
         default:
-          throw new Error(`Unsupported model: ${model}`);
+          // Dynamic routing fallback to the creative worker directly
+          generatedImages = await generateImage({
+            prompt: finalPrompt,
+            model,
+            abortSignal,
+          });
+          break;
       }
 
       // CRITICAL: Only keep the first image - limit to 1 image per generation

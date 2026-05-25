@@ -28,11 +28,21 @@ export const videoGenTool = createTool({
     prompt: z
       .string()
       .describe("Detailed description of the video to generate"),
+    model: z
+      .string()
+      .optional()
+      .describe(
+        "Video generation model to use. Options: sora, sora-cinematic, sora-anime. Fallback to sora if not specified.",
+      ),
   }),
-  execute: async ({ prompt }) => {
+  execute: async ({ prompt, model }) => {
     try {
-      logger.info(`Video Gen tool called with prompt: "${prompt}"`);
-      console.log(`[VIDEO GEN QUEUE] Received request for prompt: "${prompt}"`);
+      logger.info(
+        `Video Gen tool called with prompt: "${prompt}", model: "${model || "default"}"`,
+      );
+      console.log(
+        `[VIDEO GEN QUEUE] Received request for prompt: "${prompt}", model: "${model || "default"}"`,
+      );
 
       // Step 1: Cleanup any stale jobs
       const staleCount = await videoQueueRepository.cleanupStaleJobs();
@@ -123,7 +133,7 @@ export const videoGenTool = createTool({
           console.log(
             `[VIDEO GEN QUEUE] Generating video for job ${job.id} on Render API...`,
           );
-          const generatedVideo = await generateVideoWithMeta({ prompt });
+          const generatedVideo = await generateVideoWithMeta({ prompt, model });
 
           logger.info(
             `Video Gen: Video generated successfully for job ${job.id}`,

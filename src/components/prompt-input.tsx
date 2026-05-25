@@ -251,17 +251,7 @@ export default function PromptInput({
   );
 
   const handleGenerateImage = useCallback(
-    (
-      model?:
-        | "flux-1-schnell"
-        | "juggernaut-xl"
-        | "flux-1-dev"
-        | "flux-pro"
-        | "realvisxl-v4"
-        | "sd-3-5"
-        | "seedream-4-5"
-        | "sdxl-v1-0",
-    ) => {
+    (model?: string) => {
       if (!model) {
         appStoreMutate({
           threadImageToolModel: {},
@@ -279,6 +269,35 @@ export default function PromptInput({
           [threadId]: model,
         },
       }));
+
+      // Focus on the input
+      editorRef.current?.commands.focus();
+    },
+    [threadId, appStoreMutate],
+  );
+
+  const handleGenerateVideo = useCallback(
+    (model?: string) => {
+      if (!model) {
+        appStoreMutate({
+          videoGenState: {
+            isOpen: false,
+            model: undefined,
+          },
+        });
+        return;
+      }
+      if (!threadId) return;
+
+      setIsUploadDropdownOpen(false);
+
+      // Store the model and focus on input for user to type prompt
+      appStoreMutate({
+        videoGenState: {
+          isOpen: false,
+          model,
+        },
+      });
 
       // Focus on the input
       editorRef.current?.commands.focus();
@@ -881,21 +900,56 @@ export default function PromptInput({
                           <DropdownMenuItem
                             onClick={() => {
                               setIsUploadDropdownOpen(false);
-                              console.log("Video Gen (SORA) clicked");
-                              // Store the video model and focus on input for user to type prompt
                               appStoreMutate({
                                 videoGenState: {
                                   isOpen: false,
-                                  model: "meta-ai",
+                                  model: "sora",
                                 },
                               });
-                              // Focus on the input
                               editorRef.current?.commands.focus();
                             }}
-                            className="cursor-pointer"
+                            className="cursor-pointer text-xs"
                           >
-                            <Film className="mr-2 size-4" />
-                            Meta AI
+                            <span className="mr-2 size-4 flex items-center justify-center">
+                              🎬
+                            </span>
+                            SORA Standard
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              appStoreMutate({
+                                videoGenState: {
+                                  isOpen: false,
+                                  model: "sora-cinematic",
+                                },
+                              });
+                              editorRef.current?.commands.focus();
+                            }}
+                            className="cursor-pointer text-xs"
+                          >
+                            <span className="mr-2 size-4 flex items-center justify-center">
+                              🎥
+                            </span>
+                            SORA Cinematic
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setIsUploadDropdownOpen(false);
+                              appStoreMutate({
+                                videoGenState: {
+                                  isOpen: false,
+                                  model: "sora-anime",
+                                },
+                              });
+                              editorRef.current?.commands.focus();
+                            }}
+                            className="cursor-pointer text-xs"
+                          >
+                            <span className="mr-2 size-4 flex items-center justify-center">
+                              🌸
+                            </span>
+                            SORA Anime
                           </DropdownMenuItem>
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
@@ -913,6 +967,7 @@ export default function PromptInput({
                       onSelectWorkflow={onSelectWorkflow}
                       onSelectAgent={onSelectAgent}
                       onGenerateImage={handleGenerateImage}
+                      onGenerateVideo={handleGenerateVideo}
                       onEditImage={handleEditImage}
                       mentions={mentions}
                     />
