@@ -54,6 +54,7 @@ export function MessageEditor({
   };
 
   const handleSubmit = async () => {
+    if (!draftText.trim()) return;
     setIsSubmitting(true);
 
     const updatedParts = [...message.parts];
@@ -72,7 +73,7 @@ export function MessageEditor({
       parts: updatedParts,
     };
 
-    // Save the edited message directly in the database
+    // Save the edited message in the database
     if (threadId) {
       await upsertMessageAction({
         id: message.id,
@@ -83,21 +84,25 @@ export function MessageEditor({
       });
     }
 
+    // Trim all messages from this message onwards, then re-submit
+    // This removes the old AI response and generates a fresh one
     setMessages((messages) => {
       const index = messages.findIndex((m) => m.id === message.id);
       if (index !== -1) {
-        // Keep all subsequent messages intact and just update this message in-place
-        return [
-          ...messages.slice(0, index),
-          updatedMessage,
-          ...messages.slice(index + 1),
-        ];
+        // Keep only messages before this one, plus the updated message
+        return [...messages.slice(0, index), updatedMessage];
       }
       return messages;
     });
 
     setMode("view");
     setIsSubmitting(false);
+
+    // Re-submit the edited message to get a fresh AI response
+    _sendMessage({
+      role: "user",
+      parts: updatedParts,
+    });
   };
   useEffect(() => {
     if (!canEdit) {
