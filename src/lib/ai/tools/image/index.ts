@@ -3,17 +3,7 @@ import { serverFileStorage } from "lib/file-storage";
 import z from "zod";
 import { ImageToolName } from "..";
 import logger from "logger";
-import {
-  generateImageWithFlux1Schnell,
-  generateImageWithFlux1Pro,
-  generateImageWithJuggernautXL,
-  generateImageWithFlux1Dev,
-  generateImageWithRealVisXL,
-  generateImageWithSD35,
-  generateImageWithSeedream45,
-  generateImageWithStableDiffusionXL,
-  generateImage,
-} from "lib/ai/image/generate-image";
+import { generateImage } from "lib/ai/image/generate-image";
 
 export type ImageToolResult = {
   images: {
@@ -75,67 +65,11 @@ export const nanoBananaTool = createTool({
       throw new Error("No prompt provided for image generation");
     }
     try {
-      let generatedImages;
-
-      // Select the appropriate image generation function based on model
-      switch (model) {
-        case "flux-1-schnell":
-          generatedImages = await generateImageWithFlux1Schnell({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "flux-pro":
-          generatedImages = await generateImageWithFlux1Pro({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "juggernaut-xl":
-          generatedImages = await generateImageWithJuggernautXL({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "flux-1-dev":
-          generatedImages = await generateImageWithFlux1Dev({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "realvisxl-v4":
-          generatedImages = await generateImageWithRealVisXL({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "sd-3-5":
-          generatedImages = await generateImageWithSD35({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "seedream-4-5":
-          generatedImages = await generateImageWithSeedream45({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        case "sdxl-v1-0":
-          generatedImages = await generateImageWithStableDiffusionXL({
-            prompt: finalPrompt,
-            abortSignal,
-          });
-          break;
-        default:
-          // Dynamic routing fallback to the creative worker directly
-          generatedImages = await generateImage({
-            prompt: finalPrompt,
-            model,
-            abortSignal,
-          });
-          break;
-      }
+      const generatedImages = await generateImage({
+        prompt: finalPrompt,
+        model,
+        abortSignal,
+      });
 
       // CRITICAL: Only keep the first image - limit to 1 image per generation
       const imagesToUpload = generatedImages.images.slice(0, 1);

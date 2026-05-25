@@ -19,7 +19,7 @@ import { getUser, getUserAccounts, updateUserDetails } from "lib/user/server";
 import { getTranslations } from "next-intl/server";
 import { logger } from "better-auth";
 import {
-  generateImageWithFlux1Schnell,
+  generateImage,
   GeneratedImageResult,
 } from "lib/ai/image/generate-image";
 
@@ -265,8 +265,9 @@ Generate a profile picture that fulfills the user's request while maintaining th
     let response: GeneratedImageResult;
 
     try {
-      response = await generateImageWithFlux1Schnell({
+      response = await generateImage({
         prompt: enhancedPrompt,
+        model: "flux-schnell",
       });
     } catch (err) {
       logger.error("Image generation failed:", err);

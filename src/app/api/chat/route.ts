@@ -697,7 +697,7 @@ export async function POST(request: Request) {
       Boolean(imageTool?.model) || hasImageGenerationKeywords;
 
     // If auto-detected but no model specified, try to detect model from text, otherwise use a default
-    let detectedModel = "flux-1-schnell";
+    let detectedModel = "seedream-4-5";
     if (hasImageGenerationKeywords) {
       const text = messageText.toLowerCase();
 

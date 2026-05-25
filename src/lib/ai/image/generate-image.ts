@@ -1,6 +1,5 @@
 "use server";
 
-import logger from "logger";
 import { CREATIVE_WORKER_URL } from "../models";
 
 type GenerateImageOptions = {
@@ -46,13 +45,17 @@ async function generateImageViaUnifiedWorker(
   let modelId = options.model;
   if (modelId) {
     const legacyMapping: Record<string, string> = {
-      // Flux variants — map to real IDs the creative worker supports
+      // Flux variants
       "flux-1-schnell": "flux-schnell",
       "flux-1-dev": "flux",
       "flux-1-pro": "flux-pro",
       "flux-pro": "flux-pro",
-      // Seedream 4.5
+      // Other models mapping proxy name to real worker ID
+      "sd-3-5": "sd-3.5",
+      "realvisxl-v4": "realvisxl-v4",
+      "juggernaut-xl": "juggernaut-xl",
       "seedream-4-5": "seedream-4.5",
+      "sdxl-v1-0": "sdxl-1.0",
     };
     if (legacyMapping[modelId]) {
       modelId = legacyMapping[modelId];
@@ -119,75 +122,8 @@ async function generateImageViaUnifiedWorker(
   throw new Error("Unified Worker: No image in response");
 }
 
-// ─── Named exports kept for backward compatibility with tool files ────────────
-
-export async function generateImageWithStableDiffusionXL(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: sdxl via unified worker");
-  return generateImageViaUnifiedWorker({ ...options, model: "sdxl-1.0" });
-}
-
-export async function generateImageWithFlux1Schnell(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: flux-schnell via unified worker");
-  return generateImageViaUnifiedWorker({
-    ...options,
-    model: "flux-1-schnell",
-  });
-}
-
-export async function generateImageWithFlux1Pro(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: flux-pro via unified worker");
-  return generateImageViaUnifiedWorker({
-    ...options,
-    model: "flux-1-pro",
-  });
-}
-
-export async function generateImageWithJuggernautXL(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: juggernaut-xl via unified worker");
-  return generateImageViaUnifiedWorker({
-    ...options,
-    model: "juggernaut-xl",
-  });
-}
-
-export async function generateImageWithFlux1Dev(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: flux-1-dev via unified worker");
-  return generateImageViaUnifiedWorker({ ...options, model: "flux-1-dev" });
-}
-
-export async function generateImageWithRealVisXL(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: realvisxl via unified worker");
-  return generateImageViaUnifiedWorker({ ...options, model: "realvisxl" });
-}
-
-export async function generateImageWithSD35(
-  options: GenerateImageOptions,
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: sd-3.5 via unified worker");
-  return generateImageViaUnifiedWorker({ ...options, model: "sd-3.5" });
-}
-
-export async function generateImageWithSeedream45(
-  options: GenerateImageOptions & { style?: string },
-): Promise<GeneratedImageResult> {
-  logger.info("Image Gen: seedream-4.5 via unified worker");
-  return generateImageViaUnifiedWorker({ ...options, model: "seedream-4.5" });
-}
-
 /**
- * Generic entry point — picks whatever default the worker provides
+ * Generic entry point — routes through the unified worker
  */
 export async function generateImage(
   options: GenerateImageOptions,
