@@ -46,19 +46,23 @@ async function generateImageViaUnifiedWorker(
   let modelId = options.model;
   if (modelId) {
     const legacyMapping: Record<string, string> = {
+      // Flux variants — map to real IDs the creative worker supports
       "flux-1-schnell": "flux-schnell",
       "flux-1-dev": "flux",
       "flux-1-pro": "flux-pro",
       "flux-pro": "flux-pro",
+      // SDXL variants
       "sdxl-v1-0": "sdxl",
       "sdxl-1.0": "sdxl",
-      "juggernaut-xl": "playground",
+      // Juggernaut / SD / RealVis all fall back to flux-schnell (fast & reliable)
+      "juggernaut-xl": "flux-schnell",
       realvisxl: "cf-dreamshaper",
       "realvisxl-v4": "cf-dreamshaper",
-      "sd-3-5": "playground",
-      "sd-3.5": "playground",
-      "seedream-4-5": "sdxl",
-      "seedream-4.5": "sdxl",
+      "sd-3-5": "flux",
+      "sd-3.5": "flux",
+      // Seedream 4.5 — use flux-schnell (fast, high quality fallback)
+      "seedream-4-5": "flux-schnell",
+      "seedream-4.5": "flux-schnell",
     };
     if (legacyMapping[modelId]) {
       modelId = legacyMapping[modelId];

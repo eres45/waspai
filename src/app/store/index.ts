@@ -131,8 +131,8 @@ const initialState: AppState = {
   ],
   toolPresets: [],
   chatModel: {
-    provider: "Qwen",
-    model: "Qwen 2.5 Coder (Plus)",
+    provider: "OpenAI",
+    model: "openai/gpt-oss-120b",
   },
   openShortcutsPopup: false,
   openChatPreferences: false,
@@ -160,7 +160,7 @@ export const appStore = create<AppState & AppDispatch>()(
       mutate: set,
     }),
     {
-      name: "mc-app-store-v2.0.2",
+      name: "mc-app-store-v2.0.3",
       partialize: (state) => ({
         chatModel: state.chatModel || initialState.chatModel,
         toolChoice: state.toolChoice || initialState.toolChoice,
