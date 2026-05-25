@@ -37,11 +37,19 @@ describe("stripReasoning", () => {
     expect(result.cleanText).toBe("Some intermediate text");
   });
 
-  it("should do nothing for non-leaky models", () => {
-    const input = "<think>some text</think>hello";
+  it("should do nothing for non-leaky models without explicit tags", () => {
+    const input = "hello world";
     const result = stripReasoning(input, "some-other-model");
     expect(result.hasReasoning).toBe(false);
     expect(result.reasoning).toBe("");
     expect(result.cleanText).toBe(input);
+  });
+
+  it("should still strip reasoning for non-leaky models if explicit tags are present", () => {
+    const input = "<think>some text</think>hello";
+    const result = stripReasoning(input, "some-other-model");
+    expect(result.hasReasoning).toBe(true);
+    expect(result.reasoning).toBe("some text");
+    expect(result.cleanText).toBe("hello");
   });
 });

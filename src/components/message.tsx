@@ -68,8 +68,16 @@ const PurePreviewMessage = ({
 
   // Process message parts to extract reasoning from leaky models
   const partsForDisplay = useMemo(() => {
-    // Only process assistant messages from leaky models
-    const isLeaky = isLeakyReasoningModel(modelId);
+    const hasExplicitTags = message.parts.some(
+      (part) =>
+        part.type === "text" &&
+        typeof part.text === "string" &&
+        (/<think>|<thinking>|<reasoning>|```thinking/i.test(part.text) ||
+          part.text.startsWith("<")),
+    );
+    const isLeaky = isLeakyReasoningModel(modelId) || hasExplicitTags;
+
+    // Only process assistant messages from leaky models or those with explicit reasoning tags
     if (message.role !== "assistant" || !isLeaky) {
       return message.parts.filter(
         (part) => !(part.type === "text" && (part as any).ingestionPreview),

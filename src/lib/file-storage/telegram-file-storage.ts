@@ -69,8 +69,13 @@ export const createTelegramFileStorage = (userId?: string): FileStorage => {
 
         // Determine field name for Telegram routing in the worker
         let fieldName = "document";
-        if (contentType.startsWith("image/")) fieldName = "photo";
-        else if (contentType.startsWith("video/")) fieldName = "video";
+        if (workerUrl.includes("wasp-storage-worker")) {
+          fieldName = "file";
+        } else if (contentType.startsWith("image/")) {
+          fieldName = "photo";
+        } else if (contentType.startsWith("video/")) {
+          fieldName = "video";
+        }
 
         if (remoteUrl) {
           // Pass the remote URL as a string — worker fetches it directly
