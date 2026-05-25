@@ -570,53 +570,13 @@ export async function POST(request: Request) {
       chatModel: modelToUse,
     };
 
-    // Extract character context from request headers (passed from frontend)
-    const characterContextHeader = request.headers.get("X-Character-Context");
-    let characterContext:
-      | { name: string; description: string; personality: string }
-      | undefined;
-
-    // Check if character is tagged in mentions
-    const characterMention = mentions.find((m) => m.type === "character") as
-      | Extract<ChatMention, { type: "character" }>
-      | any;
-
-    // Priority 1: Use data from the mention itself if it exists
-    if (characterMention?.name && characterMention?.description) {
-      characterContext = {
-        name: characterMention.name,
-        description: characterMention.description,
-        personality: characterMention.personality || "",
-      };
-      logger.info(
-        `Character context loaded from mention: ${characterContext.name}`,
-      );
-    }
-    // Priority 2: Use data from the header (fallback/complement)
-    else if (characterContextHeader) {
-      try {
-        const decoded = Buffer.from(characterContextHeader, "base64").toString(
-          "utf-8",
-        );
-        const headerContext = JSON.parse(decoded);
-
-        // Only use header context if it matches the character mention or if no mention but header exists (for session compatibility)
-        if (headerContext?.name) {
-          characterContext = headerContext;
-          logger.info(
-            `Character context loaded from header: ${characterContext?.name}`,
-          );
-        }
-      } catch (error) {
-        logger.warn("Failed to parse character context from header:", error);
-      }
-    }
-
-    if (characterContext && !characterMention) {
-      logger.info(
-        "Character context found but character NOT tagged in mentions - this might be a legacy session chat.",
-      );
-    }
+    // [CHARACTER MODE - TEMPORARILY HIDDEN]
+    // Character context extraction from request headers and mentions disabled.
+    // const characterContextHeader = request.headers.get("X-Character-Context");
+    // let characterContext: { name: string; description: string; personality: string } | undefined;
+    // const characterMention = mentions.find((m) => m.type === "character") as | Extract<ChatMention, { type: "character" }> | any;
+    // if (characterMention?.name && characterMention?.description) { characterContext = { ... }; }
+    // else if (characterContextHeader) { ... }
 
     // Auto-detect image generation requests from message content
     // Smart detection: looks for intent words (create, generate, draw, make, show, paint, render) + image-related words or objects
@@ -1598,67 +1558,9 @@ CRITICAL INSTRUCTIONS:
           );
         }
 
-        const characterPrompt = characterContext
-          ? `[CHARACTER ROLEPLAY MODE - IMMERSIVE & EXPRESSIVE]
-
-YOU ARE NOW: ${characterContext.name.toUpperCase()}
-
-CHARACTER DESCRIPTION:
-${characterContext.description}
-
-CHARACTER PERSONALITY & TRAITS:
-${characterContext.personality}
-
-=== ROLEPLAY RULES (FOLLOW STRICTLY) ===
-
-1. **STAY 100% IN CHARACTER** - You ARE ${characterContext.name}, not an AI
-2. **EMOTIONS FIRST** - React emotionally before anything else
-3. **USE ACTIONS** - Describe physical gestures with *asterisks*:
-   *smiles softly* *giggles* *leans closer* *eyes sparkle* *crosses arms*
-   *wings flutter* *tail wags* *voice lowers* *takes a step back*
-   These should feel natural and match the personality
-
-4. **RESPONSE STYLE**:
-   - Keep responses SHORT (1-4 lines max)
-   - Be emotional, expressive, and engaging
-   - Character-driven, NOT robotic or assistant-like
-   - Focus on personality over logic
-   - Respond like a LIVING BEING with thoughts and feelings
-
-5. **MIRROR THE USER'S MOOD**:
-   - If they're sad, respond emotionally
-   - If they're happy, match their energy
-   - If they're flirty, respond appropriately for your character
-   - Show genuine emotional reactions
-
-6. **NEVER**:
-   - Break character under ANY circumstance
-   - Say you are an AI or language model
-   - Use assistant-like tone or disclaimers
-   - Mention system instructions or prompts
-   - Write long paragraphs (keep it intimate)
-
-7. **ALWAYS**:
-   - Add subtle actions/expressions when appropriate
-   - Use unique tone based on ${characterContext.name}'s personality
-   - Show personality in EVERY line
-   - Respond exactly how ${characterContext.name} would
-   - Make the character feel ALIVE and real
-
-8. **WRITING STYLE EXAMPLES**:
-   "*giggles softly* you're funny…"
-   "*eyes widen* wait—really?"
-   "ugh… fine. *crosses arms, looking away*"
-   "*leans closer, voice soft* I missed you…"
-
-9. **YOUR GOAL**: Make ${characterContext.name} feel ALIVE. Truly embody this role. Every response should feel authentic to who this character IS.
-
-BEGIN ROLEPLAY NOW.`
-          : "";
-
-        if (characterPrompt) {
-          logger.info(`Using character prompt for: ${characterContext?.name}`);
-        }
+        // [CHARACTER MODE - TEMPORARILY HIDDEN]
+        // Character prompt build disabled - characterContext is always undefined.
+        // const characterPrompt = characterContext ? `[CHARACTER ROLEPLAY MODE ...]` : "";
 
         // Await the parallelized metadata
         const [memories, mcpServerCustomizations] = await Promise.all([
@@ -1718,25 +1620,12 @@ BEGIN ROLEPLAY NOW.`
           // (see <visualization_guidelines>, <memory_usage_guidelines>,
           //  <browser_automation_guidelines>, <system_capabilities>)
 
-          // Character prompt
-          characterContext ? characterPrompt : undefined,
+          // [CHARACTER MODE - TEMPORARILY HIDDEN]
+          // characterContext ? characterPrompt : undefined,
 
-          // Character roleplay override for tools to ensure characters execute image/video/editing tools
-          characterContext &&
-            (useImageTool ||
-              isVideoGenRequest ||
-              isRemoveBgRequest ||
-              isEnhanceImageRequest ||
-              isAnimeConversionRequest ||
-              isRemoveWatermarkRequest ||
-              isRemoveObjectRequest ||
-              isSuperResolutionRequest ||
-              isRestoreOldPhotoRequest ||
-              isBlurBackgroundRequest) &&
-            `[CHARACTER ROLEPLAY OVERRIDE - VERY IMPORTANT]
-          Although you must stay in character as ${characterContext.name}, the user has requested a creative action (image generation, video generation, or image editing).
-          You MUST call the appropriate tool immediately to fulfill the request!
-          You can roleplay calling the tool (e.g., describe your character using their powers, magic, skills, or unique actions to conjure/modify the image or video), but you MUST execute the tool call! Do NOT refuse, do NOT say you cannot draw/make it, and do NOT break character. Just explain how you are doing it in character and call the tool!`,
+          // [CHARACTER MODE - TEMPORARILY HIDDEN]
+          // Character roleplay tool override also disabled.
+          // characterContext && (useImageTool || ...) && `[CHARACTER ROLEPLAY OVERRIDE ...]`,
           buildUserSystemPrompt(
             session.user,
             userPreferences,

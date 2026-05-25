@@ -156,12 +156,13 @@ export function ChatMentionInputSuggestion({
   disabledType?: ("mcp" | "workflow" | "defaultTool" | "agent")[];
 }) {
   const t = useTranslations("Common");
-  const [mcpList, workflowList, agentList, characterList] = appStore(
+  // [CHARACTER MODE - TEMPORARILY HIDDEN] characterList removed from store read
+  const [mcpList, workflowList, agentList] = appStore(
     useShallow((state) => [
       state.mcpList,
       state.workflowToolList,
       state.agentList,
-      state.characterList || [],
+      // state.characterList || [], // CHARACTER MODE - HIDDEN
     ]),
   );
   const [searchValue, setSearchValue] = useState("");
@@ -301,54 +302,7 @@ export function ChatMentionInputSuggestion({
       });
   }, [agentList, selectedIds, disabledType, searchValue]);
 
-  const characterMentions = useMemo(() => {
-    if (!characterList.length) return [];
-
-    return characterList
-      .filter(
-        (character) =>
-          !searchValue ||
-          character.name.toLowerCase().includes(searchValue.toLowerCase()),
-      )
-      .map((character, i) => {
-        const id = JSON.stringify({
-          type: "character",
-          name: character.name,
-          characterId: character.id,
-          description: character.description,
-          personality: character.personality,
-          icon: character.icon,
-        });
-        return {
-          id: character.id,
-          type: "character",
-          label: character.name,
-          onSelect: () =>
-            onSelectMention({
-              label: `character("${character.name}")`,
-              id,
-            }),
-          icon: (
-            <Avatar
-              style={character.icon?.style}
-              className="size-3.5 ring-[1px] ring-input rounded-full"
-            >
-              <AvatarImage
-                src={
-                  character.icon?.type === "image"
-                    ? character.icon.value
-                    : character.icon?.value || EMOJI_DATA[i % EMOJI_DATA.length]
-                }
-              />
-              <AvatarFallback>{character.name.slice(0, 1)}</AvatarFallback>
-            </Avatar>
-          ),
-          suffix: selectedIds?.includes(id) && (
-            <CheckIcon className="size-3 ml-auto" />
-          ),
-        };
-      });
-  }, [characterList, selectedIds, searchValue]);
+  // [CHARACTER MODE - TEMPORARILY HIDDEN] characterMentions disabled — see commented-out useMemo above
 
   const workflowMentions = useMemo(() => {
     if (disabledType?.includes("workflow")) return [];
@@ -492,14 +446,14 @@ export function ChatMentionInputSuggestion({
   const allMentions = useMemo(() => {
     return [
       ...agentMentions,
-      ...characterMentions,
+      // ...characterMentions, // [CHARACTER MODE - TEMPORARILY HIDDEN]
       ...workflowMentions,
       ...defaultToolMentions,
       ...mcpMentions,
     ];
   }, [
     agentMentions,
-    characterMentions,
+    // characterMentions, // [CHARACTER MODE - TEMPORARILY HIDDEN]
     workflowMentions,
     defaultToolMentions,
     mcpMentions,
@@ -772,6 +726,7 @@ export function ChatMentionInputSuggestion({
                       )}
                     </div>
                   </div>
+                  {/* [CHARACTER MODE - TEMPORARILY HIDDEN]
                   <div className="p-2 border-t">
                     <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
                       {groupedMentions.character.title}
@@ -797,6 +752,7 @@ export function ChatMentionInputSuggestion({
                       )}
                     </div>
                   </div>
+                  */}
                   <div className="p-2 border-t">
                     <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
                       {groupedMentions.workflow.title}

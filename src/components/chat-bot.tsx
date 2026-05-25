@@ -227,45 +227,24 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
         // Clear the ref after using it
         editImageModelRef.current = undefined;
 
-        // Check if character is tagged in current mentions
-        const characterMention = requestBody.mentions?.find(
-          (mention: any) => mention.type === "character",
-        ) as any;
-
-        // Get character context from sessionStorage if available
-        const sessionContextStr =
-          typeof window !== "undefined"
-            ? sessionStorage.getItem(`character_${id}`)
-            : null;
-
-        let characterContextToEncode: string | null = null;
-
-        if (characterMention) {
-          // Prioritize mention data for the persona
-          characterContextToEncode = JSON.stringify({
-            name: characterMention.name,
-            description: characterMention.description,
-            personality: characterMention.personality,
-          });
-        } else if (sessionContextStr) {
-          // Fallback to session storage if mention exists but maybe missing data
-          // (though characterMention should have it if it's a character type)
-          characterContextToEncode = sessionContextStr;
-        }
+        // [CHARACTER MODE - TEMPORARILY HIDDEN]
+        // Character context detection and X-Character-Context header sending disabled.
+        // const characterMention = requestBody.mentions?.find(
+        //   (mention: any) => mention.type === "character",
+        // ) as any;
+        // const sessionContextStr =
+        //   typeof window !== "undefined"
+        //     ? sessionStorage.getItem(`character_${id}`)
+        //     : null;
+        // let characterContextToEncode: string | null = null;
+        // if (characterMention) {
+        //   characterContextToEncode = JSON.stringify({ name: characterMention.name, description: characterMention.description, personality: characterMention.personality });
+        // } else if (sessionContextStr) {
+        //   characterContextToEncode = sessionContextStr;
+        // }
 
         const headers: Record<string, string> = {};
-        // Only send character context if we have a character mention OR session context
-        if (characterContextToEncode && characterMention) {
-          // Encode as base64 to avoid header encoding issues with special characters
-          try {
-            const encoded = btoa(
-              unescape(encodeURIComponent(characterContextToEncode)),
-            );
-            headers["X-Character-Context"] = encoded;
-          } catch (error) {
-            console.warn("Failed to encode character context:", error);
-          }
-        }
+        // [CHARACTER MODE - HIDDEN] if (characterContextToEncode && characterMention) { ... }
 
         return { body: requestBody, headers };
       },
