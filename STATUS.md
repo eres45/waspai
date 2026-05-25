@@ -11,9 +11,7 @@
   - Drizzle ORM: Upgraded with lazy-loaded **Prepared Statements** for high-frequency thread and message queries.
   - AI Pipeline: Built-in resilient fetch wrapper with **Exponential Backoff** retries for worker integrations.
 
----
-
-## 2. Dev Session: May 25, 2026 (Image Editing, Title Streaming, User Settings & Video Gen Fixes)
+---## 2. Dev Session: May 25, 2026 (Image Editing, Title Streaming, User Settings, Video Gen & Scroll/Context Fixes)
 
 ### Completed Work
 - **Database Connection Pooling Constraints:** Added database client `pg.Pool` connection constraints (`max: 5`, timeouts) to prevent Lambda instance scale-outs from exhausting Supabase connection pools.
@@ -24,12 +22,16 @@
 - **Thread Title `<think>` Reasoning Leak Fix:** Fixed model chain-of-thought leaking during real-time thread title generation. Added client-side real-time regex sanitization in `use-generate-thread-title.ts` and set a backend model override in the Title API (`src/app/api/chat/title/route.ts`) to immediately map leaky reasoning models to standard high-performance ones like `google-gemma-2-9b-it`.
 - **User Settings Menu Blinking/Dismissal Fix:** Solved a classic Radix UI focus-trap and focus-restoration race condition between the closing user DropdownMenu and the opening Drawer. Wrapped the open triggers (User Settings, Chat Preferences, Keyboard Shortcuts) in a 150ms `setTimeout` within `app-sidebar-user.tsx`, allowing the dropdown menu to cleanly finalize closing and restore focus before drawers/dialogs mount.
 - **Resilient Video Generation Output Parsing Fix:** Resolved critical video generation crashes caused by the creative AI worker returning an OpenAI-compatible `{"data": [{"url": "..."}]}` payload. Updated the parsing helper inside `video-gen.ts` to cleanly extract the URL from `data.data?.[0]?.url` as a safe fallback and integrated a robust `fetchWithRetry` exponential backoff query wrapper.
+- **Defensive useSidebar Context Fallback:** Modified `useSidebar` in `sidebar.tsx` to return a safe collapsed state fallback instead of throwing a hard uncaught exception when rendered outside a `SidebarProvider` layout context. This immunizes the entire client-side component tree against layout/context crashes that cause page reloads.
+- **SWR Cache Modal Open Optimization:** Optimized the SWR configuration in `user-settings-popup.tsx` by setting `revalidateOnMount: false` and `revalidateIfStale: false`. This allows the popup to instantly pull from the cached user details without flashing a loading spinner or shifting the layout grid on mount.
 
 ### Files Modified
 - `[MODIFY]` [db.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/db.pg.ts) — Limited pg connection pool sizes and specified idle timeouts for serverless.
 - `[MODIFY]` [chat-repository.pg.ts](file:///g:/project/better-chatbot/src/lib/db/pg/repositories/chat-repository.pg.ts) — Implemented lazy prepared statements for `selectThread` and `selectMessagesByThreadId`.
 - `[MODIFY]` [generate-image.ts](file:///g:/project/better-chatbot/src/lib/ai/image/generate-image.ts) — Added resilient `fetchWithRetry` exponential backoff pipeline wrapper.
 - `[MODIFY]` [video-gen.ts](file:///g:/project/better-chatbot/src/lib/ai/image/video-gen.ts) — Added fallback parsing of `data.data?.[0]?.url` and added resilient exponential backoff retries.
+- `[MODIFY]` [sidebar.tsx](file:///g:/project/better-chatbot/src/components/ui/sidebar.tsx) — Made useSidebar robust against missing provider context.
+- `[MODIFY]` [user-settings-popup.tsx](file:///g:/project/better-chatbot/src/components/user/user-detail/user-settings-popup.tsx) — Optimized SWR cache options to prevent loader flashes and layout shifting.
 - `[MODIFY]` [route.ts (Chat API)](file:///g:/project/better-chatbot/src/app/api/chat/route.ts) — Connected image editing prompts (`removeBgPrompt`, etc.) to standard system instructions compilation context.
 - `[MODIFY]` [route.ts (Title API)](file:///g:/project/better-chatbot/src/app/api/chat/title/route.ts) — Mapped leaky reasoning models to high-performance leak-free models for thread titles.
 - `[MODIFY]` [use-generate-thread-title.ts](file:///g:/project/better-chatbot/src/hooks/queries/use-generate-thread-title.ts) — Implemented client-side regex-based real-time XML tag tag/thinking block stripping.
@@ -75,6 +77,16 @@
 - **Root Cause:** The creative AI worker video generation endpoint (`/v1/video/generations`) returns an OpenAI-compatible JSON payload containing `{"data": [{"url": "..."}]}`. The local extraction helper (`generateVideoWithMeta`) only parsed flat keys like `data.url` and `data.video`, missing the nested array and triggering a validation exception.
 - **The Final Fix:** Updated the parser inside `video-gen.ts` to include `data.data?.[0]?.url` as a primary fallback, and wrapped the endpoint call in a resilient `fetchWithRetry` wrapper to protect against rate limits.
 - **Prevention Note:** Image and video endpoints frequently return array wrappers containing resource links rather than flat keys. Always parse both shapes defensively.
+
+### Issue G: Sidebar Menu Modal Causing Sudden Page Glitch and Reload
+- **The Problem:** Opening the User Settings or preference menus could cause the entire website page to flicker/glitch and execute a hard browser reload, losing session state representation.
+- **Root Causes:**
+  1. **Uncaught Context Exception:** Under certain route variations or edge rendering branches, the `UserDetail` component (invoked by `UserSettingsPopup`) would call `useSidebar()`. If the surrounding layout hierarchy had mismatched provider initializations, `useSidebar` threw an unhandled React exception. In Next.js, uncaught client rendering exceptions crash the React render loop, prompting Next.js to trigger a full-page browser recovery reload.
+  2. **Aggressive SWR Fetching Layout Flash:** The SWR fetch inside `UserSettingsPopupContent` had `revalidateOnMount: true` without caching parameters, forcing a transition to `isLoading: true` and rendering a loading spinner before swapping into the complex profile grid. This massive, instant layout reflow looked like a UI "glitch."
+- **The Final Fixes:**
+  1. **Robust Context Fallback:** Updated `useSidebar()` inside `sidebar.tsx` to return a default collapsed state object instead of throwing an error when its context is missing.
+  2. **Instant Cache Resolution:** Set SWR parameter `revalidateOnMount` to `false` and `revalidateIfStale` to `false` in `user-settings-popup.tsx`. This allows the Drawer to mount instantly using the cached user details already available from the sidebar, completely bypassing the loading spinner and reflow shift.
+- **Prevention Note:** Never allow core layout hooks to throw hard uncaught errors. Always provide safe fallbacks. Keep SWR cached routes optimized in modal popups to prevent loading-reflow layout shifts.
 
 ---
 
