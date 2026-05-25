@@ -54,7 +54,9 @@ export const nanoBananaTool = createTool({
     // Extract prompt from user's last message if not provided
     let finalPrompt = prompt;
     if (!finalPrompt) {
-      const lastUserMessage = messages.reverse().find((m) => m.role === "user");
+      const lastUserMessage = [...messages]
+        .reverse()
+        .find((m) => m.role === "user");
 
       if (lastUserMessage && lastUserMessage.content) {
         if (typeof lastUserMessage.content === "string") {

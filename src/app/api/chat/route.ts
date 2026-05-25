@@ -619,12 +619,17 @@ export async function POST(request: Request) {
     }
 
     // Auto-detect image generation requests from message content
-    // Smart detection: looks for intent words (create, generate, draw, make, show) + image-related words
+    // Smart detection: looks for intent words (create, generate, draw, make, show, paint, render) + image-related words or objects
     const hasImageGenerationKeywords = message.parts?.some((part: any) => {
       if (typeof part !== "object" || part.type !== "text" || !part.text) {
         return false;
       }
       const text = part.text.toLowerCase();
+
+      // Direct drawing command (e.g. "draw ...", "paint ...")
+      if (/^\s*(draw|paint)\b/i.test(text)) {
+        return true;
+      }
 
       // Intent words: what the user wants to do
       const intentWords = [
@@ -633,6 +638,8 @@ export async function POST(request: Request) {
         "draw",
         "make",
         "show",
+        "paint",
+        "render",
         "can you",
         "please",
         "i want",
@@ -662,6 +669,11 @@ export async function POST(request: Request) {
         "imagen",
         "gpt-imager",
         "img-cv",
+        "portrait",
+        "landscape",
+        "sketch",
+        "avatar",
+        "logo",
       ];
       const hasImageWord = imageWords.some((word) => text.includes(word));
 
@@ -670,10 +682,10 @@ export async function POST(request: Request) {
         return true;
       }
 
-      // Also check for specific patterns like "a dog", "a cat", "a person", etc. with intent
+      // Also check for specific patterns like "draw a dog", "generate a cat", etc.
       const objectPatterns =
-        /can you (create|generate|draw|make|show).*\b(a|an|the)\s+\w+/i;
-      if (hasIntent && objectPatterns.test(text)) {
+        /\b(create|generate|draw|make|show|paint|render)\b.*\b(a|an|the)\s+\w+/i;
+      if (objectPatterns.test(text)) {
         return true;
       }
 

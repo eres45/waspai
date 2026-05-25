@@ -13,7 +13,10 @@ import { Textarea } from "./ui/textarea";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useTranslations } from "next-intl";
 import { Loader } from "lucide-react";
-import { upsertMessageAction } from "@/app/api/chat/actions";
+import {
+  upsertMessageAction,
+  deleteMessagesByChatIdAfterTimestampAction,
+} from "@/app/api/chat/actions";
 
 export type MessageEditorProps = {
   message: UIMessage;
@@ -26,7 +29,6 @@ export type MessageEditorProps = {
 export function MessageEditor({
   message,
   setMode,
-  setMessages,
   sendMessage: _sendMessage,
   threadId,
 }: MessageEditorProps) {
@@ -68,12 +70,7 @@ export function MessageEditor({
       };
     }
 
-    const updatedMessage: UIMessage = {
-      ...message,
-      parts: updatedParts,
-    };
-
-    // Save the edited message in the database
+    // Save the edited message in the database & delete subsequent responses
     if (threadId) {
       await upsertMessageAction({
         id: message.id,
@@ -82,27 +79,19 @@ export function MessageEditor({
         parts: updatedParts,
         metadata: message.metadata as any,
       });
+      await deleteMessagesByChatIdAfterTimestampAction(message.id);
     }
-
-    // Trim all messages from this message onwards, then re-submit
-    // This removes the old AI response and generates a fresh one
-    setMessages((messages) => {
-      const index = messages.findIndex((m) => m.id === message.id);
-      if (index !== -1) {
-        // Keep only messages before this one, plus the updated message
-        return [...messages.slice(0, index), updatedMessage];
-      }
-      return messages;
-    });
 
     setMode("view");
     setIsSubmitting(false);
 
-    // Re-submit the edited message to get a fresh AI response
+    // Re-submit the edited message to get a fresh AI response in-place
     _sendMessage({
+      messageId: message.id,
       role: "user",
       parts: updatedParts,
-    });
+      metadata: message.metadata as any,
+    } as any);
   };
   useEffect(() => {
     if (!canEdit) {
