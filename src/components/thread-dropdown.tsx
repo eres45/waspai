@@ -121,7 +121,7 @@ export function ThreadDropdown({
       .watch(({ isOk, error }) => {
         if (isOk) {
           toast.success(t("Archive.itemAddedToArchive"));
-          if (location.pathname.startsWith(`/archive/${archiveId}`)) {
+          if (location.pathname.startsWith(`/projects/${archiveId}`)) {
             router.refresh();
           }
         } else {

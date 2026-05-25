@@ -48,6 +48,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/site")) {
+    return NextResponse.next();
+  }
+
   const sessionCookie = getSessionCookie(request);
 
   if (!sessionCookie) {
@@ -83,6 +87,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icon|wasp-ai-logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing|$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon|wasp-ai-logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing).*)",
   ],
 };

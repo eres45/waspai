@@ -36,7 +36,7 @@ export function ArchiveActionsClient({ archive }: ArchiveActionsClientProps) {
     try {
       await deleteArchiveAction(archive.id);
       toast.success(t("Archive.archiveDeleted"));
-      router.push("/");
+      router.push("/projects");
     } catch (error) {
       console.error("Failed to delete archive:", error);
       toast.error(t("Archive.failedToDeleteArchive"));

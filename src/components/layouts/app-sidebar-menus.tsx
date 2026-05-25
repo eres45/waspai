@@ -115,22 +115,25 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
           </Tooltip>
         </SidebarMenu>
         {getIsUserAdmin(user) && <AppSidebarAdmin />}
-        <SidebarMenu className="group/archive">
+        <SidebarMenu className="group/projects">
           <Tooltip>
             <SidebarMenuItem>
               <SidebarMenuButton
-                onClick={toggleArchive}
+                onClick={() => {
+                  toggleArchive();
+                  router.push("/projects");
+                }}
                 className="font-semibold"
               >
                 {expandedArchive ? (
-                  <FolderOpenIcon className="size-4" />
+                  <FolderOpenIcon className="size-4 text-accent-foreground" />
                 ) : (
                   <FolderSearchIcon className="size-4" />
                 )}
-                {t("Archive.title")}
+                Projects
               </SidebarMenuButton>
               <SidebarMenuAction
-                className="group-hover/archive:opacity-100 opacity-0 transition-opacity"
+                className="group-hover/projects:opacity-100 opacity-0 transition-opacity"
                 onClick={() => setAddArchiveDialogOpen(true)}
               >
                 <Tooltip>
@@ -138,7 +141,7 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
                     <PlusIcon className="size-4" />
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center">
-                    {t("Archive.addArchive")}
+                    Create Folder
                   </TooltipContent>
                 </Tooltip>
               </SidebarMenuAction>
@@ -156,14 +159,14 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
                 ) : archives!.length === 0 ? (
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton className="text-muted-foreground">
-                      {t("Archive.noArchives")}
+                      No project folders
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 ) : (
                   archives!.map((archive) => (
                     <SidebarMenuSubItem
                       onClick={() => {
-                        router.push(`/archive/${archive.id}`);
+                        router.push(`/projects/${archive.id}`);
                       }}
                       key={archive.id}
                       className="cursor-pointer"

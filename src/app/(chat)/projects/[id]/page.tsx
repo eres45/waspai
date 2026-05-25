@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "ui/card";
 import { MessageCircleXIcon } from "lucide-react";
-import { ArchiveActionsClient } from "@/app/(chat)/archive/[id]/archive-actions-client";
+import { ArchiveActionsClient } from "@/app/(chat)/projects/[id]/archive-actions-client";
 import { Separator } from "ui/separator";
 
 import LightRays from "ui/light-rays";
@@ -146,10 +146,10 @@ export default async function ArchivePage({
                 <div className="text-center">
                   <MessageCircleXIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">
-                    No threads in this archive
+                    No threads in this folder
                   </h3>
                   <p className="text-muted-foreground">
-                    Add some chat threads to this archive to see them here.
+                    Add some chat threads to this folder to see them here.
                   </p>
                 </div>
               </CardContent>
