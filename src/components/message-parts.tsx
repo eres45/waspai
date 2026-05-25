@@ -911,6 +911,17 @@ const SkillCreatedCard = dynamic(
   },
 );
 
+const DeploySiteCard = dynamic(
+  () =>
+    import("./tool-invocation/deploy-site-card").then(
+      (mod) => mod.DeploySiteCard,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -1139,6 +1150,10 @@ export const ToolMessagePart = memo(
 
       if (toolName === DefaultToolName.CreateSkill) {
         return <SkillCreatedCard part={part} />;
+      }
+
+      if (toolName === DefaultToolName.DeploySite) {
+        return <DeploySiteCard part={part} />;
       }
 
       if (state === "output-available") {

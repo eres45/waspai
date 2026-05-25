@@ -83,6 +83,8 @@ import {
 } from "@/lib/ai/tools/qr-code-generator";
 import { htmlPreviewTool } from "@/lib/ai/tools/html-preview";
 import { chatExportTool } from "@/lib/ai/tools/chat-export";
+import { deploySiteTool } from "@/lib/ai/tools/deploy-site";
+import { createSkillTool } from "@/lib/ai/tools/skill-tools";
 import { exaSearchTool as webSearchTool } from "@/lib/ai/tools/web/web-search";
 import {
   listSmsNumbersTool,
@@ -1843,6 +1845,9 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
           html_preview: htmlPreviewTool,
+          // ALWAYS include site deployment and skill creation tools
+          deploy_site: deploySiteTool,
+          create_skill: createSkillTool,
 
           // Conditionally include export tool
           ...(isChatExportRequest
