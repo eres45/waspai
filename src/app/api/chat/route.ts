@@ -1630,6 +1630,34 @@ CRITICAL INSTRUCTIONS:
           }
         }
 
+        // Auto-inject site-creator guidelines when user asks to create/edit a website or app
+        const isSiteCreationRequest =
+          /\b(create|make|build|write|add|new|edit|update|improve|modify|deploy|host|publish)\b/.test(
+            lastMessageText,
+          ) &&
+          /\b(website|webpage|page|site|web-app|web app|landing-page|landing page|app)\b/.test(
+            lastMessageText,
+          );
+        if (isSiteCreationRequest) {
+          try {
+            const siteCreatorSkill = await skillRepository
+              .getSkillByName("site-creator")
+              .catch(() => null);
+            if (
+              siteCreatorSkill?.content &&
+              !combinedSkillContents.includes(siteCreatorSkill.content)
+            ) {
+              // Prepend so it appears first — highest priority context
+              combinedSkillContents.unshift(siteCreatorSkill.content);
+              logger.info(
+                "Auto-injected site-creator guidelines for website creation request",
+              );
+            }
+          } catch (e) {
+            logger.warn("Failed to auto-inject site-creator:", e);
+          }
+        }
+
         // Build skill instructions prompt block
         let skillsSystemPrompt = "";
         if (combinedSkillContents.length > 0) {
