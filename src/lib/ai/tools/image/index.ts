@@ -100,10 +100,9 @@ export const nanoBananaTool = createTool({
             );
             fileUrl = uploadResult.sourceUrl;
             logger.info(`[Image Tool] Uploaded to: ${fileUrl}`);
-          } catch (err) {
+          } catch (err: any) {
             logger.error(`[Image Tool] Upload failed:`, err);
-            // Fallback: use a placeholder if upload fails (can't send 1MB base64)
-            fileUrl = "";
+            throw new Error(`Upload failed: ${err.message || String(err)}`);
           }
 
           return {

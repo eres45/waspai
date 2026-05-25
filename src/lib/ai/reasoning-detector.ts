@@ -442,8 +442,20 @@ export function stripReasoning(
   text: string,
   modelId: string,
 ): ReasoningExtraction {
-  // Quick escape if no reasoning expected
-  if (!text || !isLeakyReasoningModel(modelId)) {
+  if (!text) {
+    return {
+      reasoning: "",
+      cleanText: text,
+      hasReasoning: false,
+    };
+  }
+
+  // Check if there are explicit reasoning tags or if it's a known leaky model
+  const hasExplicitTags =
+    /<think>|<thinking>|<reasoning>|```thinking/i.test(text) ||
+    text.startsWith("<");
+
+  if (!hasExplicitTags && !isLeakyReasoningModel(modelId)) {
     return {
       reasoning: "",
       cleanText: text,
