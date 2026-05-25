@@ -447,7 +447,6 @@ export const chatRepository: ChatRepository = {
         role: message.role,
         parts: message.parts,
         metadata: message.metadata,
-        created_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -477,12 +476,13 @@ export const chatRepository: ChatRepository = {
         return;
       }
 
-      // Delete messages in same thread created at or after this message
+      // Delete messages in same thread created at or after this message, excluding this message itself
       const { error: deleteError } = await supabaseRest
         .from("chat_message")
         .delete()
         .eq("thread_id", messageData.thread_id)
-        .gte("created_at", messageData.created_at);
+        .gte("created_at", messageData.created_at)
+        .neq("id", messageId);
 
       if (deleteError) {
         throw deleteError;

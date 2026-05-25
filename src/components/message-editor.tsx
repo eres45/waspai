@@ -29,6 +29,7 @@ export type MessageEditorProps = {
 export function MessageEditor({
   message,
   setMode,
+  setMessages,
   sendMessage: _sendMessage,
   threadId,
 }: MessageEditorProps) {
@@ -69,6 +70,19 @@ export function MessageEditor({
         text: draftText,
       };
     }
+
+    // Truncate client-side messages history to instantly update UI and prevent duplication/blinks
+    setMessages((prevMessages) => {
+      const idx = prevMessages.findIndex((m) => m.id === message.id);
+      if (idx !== -1) {
+        const updatedMsg = {
+          ...prevMessages[idx],
+          parts: updatedParts,
+        };
+        return [...prevMessages.slice(0, idx), updatedMsg];
+      }
+      return prevMessages;
+    });
 
     // Save the edited message in the database & delete subsequent responses
     if (threadId) {

@@ -696,10 +696,102 @@ export async function POST(request: Request) {
     const useImageTool =
       Boolean(imageTool?.model) || hasImageGenerationKeywords;
 
-    // If auto-detected but no model specified, use a default
+    // If auto-detected but no model specified, try to detect model from text, otherwise use a default
+    let detectedModel = "flux-1-schnell";
+    if (hasImageGenerationKeywords) {
+      const text = messageText.toLowerCase();
+
+      const modelKeywords: Record<string, string> = {
+        "flux-pro": "flux-pro",
+        "flux pro": "flux-pro",
+        "flux-dev": "flux-1-dev",
+        "flux dev": "flux-1-dev",
+        "flux-schnell": "flux-1-schnell",
+        "flux schnell": "flux-1-schnell",
+        juggernaut: "juggernaut-xl",
+        realvis: "realvisxl-v4",
+        "sd-3-5": "sd-3-5",
+        "sd 3.5": "sd-3-5",
+        "sd3.5": "sd-3-5",
+        "stable diffusion 3.5": "sd-3-5",
+        seedream: "seedream-4-5",
+        sdxl: "sdxl-v1-0",
+      };
+
+      const customStyles = [
+        "ra-photo",
+        "ra-anime",
+        "ra-cinematic",
+        "ra-portrait",
+        "ra-landscape",
+        "ra-scifi",
+        "ra-oil-painting",
+        "ra-pixel-art",
+        "ra-watercolor",
+        "ra-ghibli",
+        "ra-vintage",
+        "ra-raw-film",
+        "ra-ink-splash",
+        "ra-dreamcore",
+        "ra-solarpunk",
+        "ra-neon-noir",
+        "ra-blueprint",
+        "ra-wabi-sabi",
+        "ra-superflat",
+        "ra-brutalist",
+        "ms-photorealistic",
+        "ms-anime",
+        "ms-digital-art",
+        "ms-fantasy",
+        "ms-3d-render",
+        "ms-oil-painting",
+        "ms-watercolor",
+        "ms-pixel-art",
+        "ms-neon-punk",
+        "ms-cinematic",
+        "poll-flux-realism",
+        "poll-flux-anime",
+        "poll-flux-3d",
+        "poll-flux-cablyai",
+        "poll-flux",
+        "poll-turbo",
+        "gma-photorealistic",
+        "gma-anime",
+        "gma-isometric",
+        "gma-low-poly",
+        "gma-comic-book",
+        "cf-flux-schnell",
+        "cf-dreamshaper",
+        "cf-sdxl-lightning",
+        "ai-img",
+        "aitubo-img",
+        "rw-flux",
+      ];
+
+      let found = false;
+      for (const style of customStyles) {
+        const normalized = style.replace(/-/g, " ");
+        if (text.includes(style) || text.includes(normalized)) {
+          detectedModel = style;
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        for (const [kw, modelId] of Object.entries(modelKeywords)) {
+          if (text.includes(kw)) {
+            detectedModel = modelId;
+            break;
+          }
+        }
+      }
+    }
+
+    // If auto-detected but no model specified, use detected/default
     const effectiveImageTool =
       imageTool ||
-      (hasImageGenerationKeywords ? { model: "flux-1-schnell" } : undefined);
+      (hasImageGenerationKeywords ? { model: detectedModel } : undefined);
 
     const isToolCallAllowed =
       supportToolCall &&
@@ -827,7 +919,7 @@ CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
 CRITICAL INSTRUCTIONS:
 1. Call the "image-manager" tool IMMEDIATELY with the user's message as the prompt.
 2. ALWAYS use model="${activeGenerationModel}" as the model parameter — this is the EXACT model ID to pass to the tool. Do NOT use display names or any other value.
-3. Valid model IDs you may use: "flux-1-schnell", "flux-1-dev", "flux-pro", "sdxl-v1-0", "juggernaut-xl", "realvisxl-v4", "sd-3-5", "seedream-4-5". Always use these exact strings.
+3. Valid model IDs you may use: "${activeGenerationModel}", "flux-1-schnell", "flux-1-dev", "flux-pro", "sdxl-v1-0", "juggernaut-xl", "realvisxl-v4", "sd-3-5", "seedream-4-5". Always use the exact string specified in Rule 2.
 4. Use the exact tool name: "image-manager".
 5. Do NOT ask the user to choose a model or ask for clarification.
 6. Do NOT refuse to generate the image - just generate it.

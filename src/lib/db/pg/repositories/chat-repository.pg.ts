@@ -8,7 +8,7 @@ import {
   ArchiveItemTable,
 } from "../schema.pg";
 
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
@@ -193,13 +193,15 @@ export const pgChatRepository: ChatRepository = {
     if (!message) {
       return;
     }
-    // Delete messages that are in the same thread AND created before or at the same time as the target message
+    // Delete messages that are in the same thread AND created at or after the target message
+    // (excluding the target message itself to prevent deleting the user's edited message)
     await db
       .delete(ChatMessageTable)
       .where(
         and(
           eq(ChatMessageTable.threadId, message.threadId),
           gte(ChatMessageTable.createdAt, message.createdAt),
+          ne(ChatMessageTable.id, messageId),
         ),
       );
   },
