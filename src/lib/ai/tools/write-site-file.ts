@@ -1,20 +1,20 @@
-import { tool } from "ai";
+import { tool as createTool } from "ai";
 import { z } from "zod";
 import { getSession } from "auth/server";
-import { archiveRepository, siteRepository } from "lib/db/repository";
+import { archiveRepository } from "lib/db/repository";
 
 /**
  * write_site_file — writes one file into the current project's site draft.
  * The AI calls this once per file BEFORE calling deploy_site.
  * The UI shows a "Creating <filename>" card with a live code preview.
  */
-export const writeSiteFileTool = tool({
+export const writeSiteFileTool = createTool({
   description:
     "Write a single file (HTML, CSS, JS, etc.) for a website being built. " +
     "Call this once per file before calling deploy_site. " +
     "The user will see a live code preview card for each file as it is written. " +
     "Always call html_preview after writing index.html so the user can see a preview.",
-  parameters: z.object({
+  inputSchema: z.object({
     path: z
       .string()
       .describe(
@@ -49,6 +49,7 @@ export const writeSiteFileTool = tool({
         } else if (projectName) {
           const created = await archiveRepository.createArchive({
             name: projectName,
+            description: null,
             userId,
           });
           projectId = created.id;
