@@ -77,7 +77,8 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
 
   const filePath = result?.path ?? siteInput?.path ?? "file";
   const fileContent = result?.content ?? siteInput?.content ?? "";
-  const fileSize = result?.size ?? Buffer.byteLength(fileContent ?? "", "utf8");
+  const fileSize =
+    result?.size ?? new TextEncoder().encode(fileContent ?? "").byteLength;
 
   const Icon = getFileIcon(filePath);
   const badgeColor = getFileBadgeColor(filePath);

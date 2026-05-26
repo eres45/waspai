@@ -226,7 +226,8 @@ State:
 - What file structure is needed? (e.g. \`index.html\`, \`css/styles.css\`, \`about.html\`)
 
 ### 2. Implementation
-- Define the files list parameter (include \`index.html\` and any separate style/script files or sub-pages)
+- Call \`write_site_file\` for EACH file you create — one call per file, in order (index.html first, then CSS, then JS, then sub-pages).
+- Pass \`projectName\` (human name for the project) and \`threadId\` on every \`write_site_file\` call.
 - Import chosen font pairing in \`<head>\` of HTML files
 - Set CSS variables for the color system
 - Build hero FIRST — if hero doesn't impress, the rest doesn't matter
@@ -237,8 +238,8 @@ State:
 - Verify all links use relative linking (e.g. \`href="about"\` or \`href="about.html"\`)
 
 ### 3. Preview & Deploy
-- Run \`html_preview\` to show the main render of the entrypoint file.
-- Run \`deploy_site\` tool with the \`files\` array to deploy all workspace files.
+- After writing index.html, call \`html_preview\` with its full HTML content to show the rendered preview.
+- Call \`deploy_site\` with \`title\`, \`slug\`, \`threadId\`, and the \`files\` array (all files you wrote).
 - Tell the user: "Your site is now live at https://[slug].waspai.in 🚀"
 
 ---
@@ -280,7 +281,7 @@ If ANY checkbox fails → rewrite that section/file before deploying.`;
       is_featured: true,
       install_count: 500,
       icon: "🌐",
-      tools_required: ["deploy_site", "html_preview"],
+      tools_required: ["write_site_file", "html_preview", "deploy_site"],
       tier_required: "free",
       version: "1.0.0",
       created_at: now,
