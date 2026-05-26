@@ -191,8 +191,18 @@ Ensure that the entrypoint HTML page is located at "index.html".`,
         message: `Successfully deployed "${title}"! It is now live at ${liveUrl}`,
       };
     } catch (err: any) {
-      console.error("[deploySiteTool] Error:", err);
-      return { success: false, error: err.message || "Failed to deploy site" };
+      console.error(
+        "[deploySiteTool] Full error:",
+        JSON.stringify(err, null, 2),
+      );
+      // Supabase errors have { message, details, hint, code }
+      const msg =
+        err?.message ||
+        err?.details ||
+        err?.hint ||
+        (typeof err === "string" ? err : null) ||
+        "Failed to deploy site";
+      return { success: false, error: msg };
     }
   },
 });

@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { siteRepository } from "lib/db/repository";
 
-function getMimeType(path: string): string {
-  const ext = path.split(".").pop()?.toLowerCase();
+function getMimeType(filePath: string): string {
+  const ext = filePath.split(".").pop()?.toLowerCase();
   switch (ext) {
     case "html":
     case "htm":
@@ -30,6 +30,33 @@ function getMimeType(path: string): string {
   }
 }
 
+// Common headers for all asset responses
+function assetHeaders(contentType: string): HeadersInit {
+  return {
+    "Content-Type": contentType,
+    "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+    "Access-Control-Allow-Origin": "*",
+  };
+}
+
+function notFoundHtml(message: string) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <title>Not Found</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0b0f19; color: #f3f4f6; }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    p { color: #9ca3af; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>404</h1>
+  <p>${message}</p>
+</body>
+</html>`;
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ slug: string; path?: string[] }> },
@@ -40,98 +67,60 @@ export async function GET(
     const site = await siteRepository.getSiteBySlug(slug);
 
     if (!site) {
-      return new Response(
-        `<!DOCTYPE html>
-<html>
-<head>
-  <title>Site Not Found</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0b0f19; color: #f3f4f6; }
-    h1 { color: #f3f4f6; font-size: 2rem; margin-bottom: 0.5rem; }
-    p { color: #9ca3af; margin-top: 0; }
-  </style>
-</head>
-<body>
-  <h1>404 - Site Not Found</h1>
-  <p>The site you are looking for does not exist or has been deleted.</p>
-</body>
-</html>`,
-        {
-          status: 404,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-          },
-        },
-      );
+      return new Response(notFoundHtml("Site not found or has been deleted."), {
+        status: 404,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
     }
 
-    // Fire-and-forget increment view count
-    siteRepository.incrementViewCount(slug).catch((err) => {
-      console.error("Failed to increment view count:", err);
-    });
-
-    // Resolve file path
+    // Resolve file path — root request → index.html
     const filePath = path && path.length > 0 ? path.join("/") : "index.html";
 
-    // Try finding exact file in DB
+    const isRootRequest = filePath === "index.html" || filePath === "index.htm";
+
+    // Only increment view count on the root HTML page, not for every asset
+    if (isRootRequest) {
+      siteRepository.incrementViewCount(slug).catch(() => {});
+    }
+
+    // 1. Try finding exact file in deployed_site_file
     let file = await siteRepository.getSiteFileByPath(site.id, filePath);
 
-    // Clean URL fallback: e.g. /about -> /about.html
-    if (!file && !filePath.includes(".") && !filePath.endsWith(".html")) {
+    // 2. Clean URL fallback: /about → /about.html
+    if (!file && !filePath.includes(".")) {
       file = await siteRepository.getSiteFileByPath(
         site.id,
         `${filePath}.html`,
       );
     }
 
-    // If still not found and path resolves to index.html, serve the main site content (backward compatibility)
-    if (!file && (filePath === "index.html" || filePath === "index.htm")) {
+    // 3. For root requests, fall back to html_content (backward compat with old single-file deployments)
+    if (!file && isRootRequest && site.htmlContent) {
       return new Response(site.htmlContent, {
         status: 200,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
-        },
+        headers: assetHeaders("text/html; charset=utf-8"),
       });
     }
 
-    // If still not found, return 404
+    // 4. File not found
     if (!file) {
       return new Response(
-        `<!DOCTYPE html>
-<html>
-<head>
-  <title>File Not Found</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0b0f19; color: #f3f4f6; }
-    h1 { color: #f3f4f6; font-size: 2rem; margin-bottom: 0.5rem; }
-    p { color: #9ca3af; margin-top: 0; }
-  </style>
-</head>
-<body>
-  <h1>404 - File Not Found</h1>
-  <p>The file "${filePath}" could not be found on this site.</p>
-</body>
-</html>`,
+        notFoundHtml(`File &quot;${filePath}&quot; not found on this site.`),
         {
           status: 404,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-          },
+          headers: { "Content-Type": "text/html; charset=utf-8" },
         },
       );
     }
 
-    // Serve the file
+    // 5. Serve file with correct MIME type
+    const mimeType = file.mimeType || getMimeType(filePath);
     return new Response(file.content, {
       status: 200,
-      headers: {
-        "Content-Type": file.mimeType || getMimeType(filePath),
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
-      },
+      headers: assetHeaders(mimeType),
     });
   } catch (error) {
-    console.error("Error serving site file:", error);
+    console.error("[site route] Error:", error);
     return new Response("Internal Server Error", { status: 500 });
   }
 }
