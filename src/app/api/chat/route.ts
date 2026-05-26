@@ -85,6 +85,7 @@ import { htmlPreviewTool } from "@/lib/ai/tools/html-preview";
 import { chatExportTool } from "@/lib/ai/tools/chat-export";
 import { deploySiteTool } from "@/lib/ai/tools/deploy-site";
 import { createSkillTool } from "@/lib/ai/tools/skill-tools";
+import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
 import { exaSearchTool as webSearchTool } from "@/lib/ai/tools/web/web-search";
 import {
   listSmsNumbersTool,
@@ -1848,6 +1849,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           // ALWAYS include site deployment and skill creation tools
           deploy_site: deploySiteTool,
           create_skill: createSkillTool,
+          write_site_file: writeSiteFileTool,
 
           // Conditionally include export tool
           ...(isChatExportRequest

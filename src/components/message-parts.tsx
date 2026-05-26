@@ -922,6 +922,17 @@ const DeploySiteCard = dynamic(
   },
 );
 
+const WriteSiteFileCard = dynamic(
+  () =>
+    import("./tool-invocation/write-site-file-card").then(
+      (mod) => mod.WriteSiteFileCard,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -1154,6 +1165,10 @@ export const ToolMessagePart = memo(
 
       if (toolName === DefaultToolName.DeploySite) {
         return <DeploySiteCard part={part} />;
+      }
+
+      if (toolName === DefaultToolName.WriteSiteFile) {
+        return <WriteSiteFileCard part={part} />;
       }
 
       if (state === "output-available") {
