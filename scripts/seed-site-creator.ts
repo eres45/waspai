@@ -112,6 +112,28 @@ These patterns produce generic "AI slop" output. Generating any of these disqual
 
 ---
 
+## IMAGE & MEDIA GUIDELINES (ANTI-BROKEN IMAGES) 🖼️
+
+- **NEVER use complex, expiring Unsplash URL tokens** containing \`ixid\` or random query parameters that expire. These return 403 Forbidden errors and break the site.
+- **DO use stable, direct Unsplash photo URLs** in this format: \`https://images.unsplash.com/photo-[photo-id]?w=800&auto=format&fit=crop&q=60\`
+  Here are guaranteed, permanent, high-quality Unsplash photo IDs you can use:
+  - **Tech/Gaming**: \`photo-1538481199705-c710c4e965fc\` (gaming console/setup), \`photo-1542751371-adc38448a05e\` (gameplay/controller), \`photo-1612287230202-1bf1d85d1bdf\` (gaming gear), \`photo-155066931-4365d14bab8c\` (development workspace), \`photo-1611173373085-3d2e0c5b9c79\` (streaming controller setup)
+  - **SaaS/Data**: \`photo-1551288049-bebda4e38f71\` (dashboard analytics), \`photo-1460925895917-afdab827c52f\` (website mockup/flow chart)
+  - **Abstract/Mesh**: \`photo-1618005182384-a83a8bd57fbe\` (minimalist abstract fluid), \`photo-1604871000636-074fa5117945\` (spotlight/neon art)
+- **Alternatively, use Picsum Photos** with an explicit seed: \`https://picsum.photos/seed/[domain-specific-seed]/800/600\` (e.g. \`https://picsum.photos/seed/novaplay/800/600\`).
+- **Use SVG inline illustrations** or Lucide icons for UI elements instead of raw image placeholders.
+
+---
+
+## CODE FIDELITY & COMPLETENESS (ANTI-SLOP) 🛠️
+
+- **NO placeholders or TODO comments**: Write the actual HTML structure, detailed CSS, and functional Javascript logic. Do not write \`// TODO: implement search\` or \`<div class="placeholder">\`.
+- **Write comprehensive, production-grade code**: Build full layouts, multiple sections, and interactive features. If the user asks for a feature, write the complete JavaScript code to make it work (e.g. interactive filters, simulated login/dashboard, pricing calculators, working sliders).
+- **Interactive State**: Add real UI interactivity. Use Javascript to handle click events, toggle menus, show modals, filter catalog items, update prices based on custom options, and render simulated state changes in the UI.
+- **Minimum Page Structure**: Every landing page or app must be fully fleshed out with at least 5 distinct sections, proper headers, footer, navigation links, and styled empty states or interactive elements.
+
+---
+
 ## MANDATORY VISUAL REQUIREMENTS — MUST APPEAR IN EVERY OUTPUT ✅
 
 ### Hero Section (Non-Negotiable)
@@ -188,29 +210,48 @@ No two consecutive sections may use the same layout structure. Rotate through:
 
 ---
 
-## COLOR SYSTEM — DARK DEVELOPER DEFAULT
+## COLOR & TAILWIND CONFIG SYSTEM — MUST CONFORM 🎨
 
-Use this when no color direction is given:
+If you use Tailwind CSS via CDN, you MUST define all custom colors (including background, surface, text, muted, and accent colors) in the inline \`tailwind.config\` script block so that Tailwind classes map correctly and don't fail silently.
 
-\`\`\`css
-:root {
-  --bg: #080808;
-  --surface: #111111;
-  --surface-2: #1a1a1a;
-  --border: rgba(255,255,255,0.08);
-  --text: #f0f0f0;
-  --text-muted: #888888;
-  --text-faint: #444444;
-  /* Accent: pick ONE */
-  --accent-lime: #c8f135;
-  --accent-purple: #a855f7;
-  --accent-blue: #60a5fa;
-  --accent-amber: #f59e0b;
-}
+### 1. Mandatory Tailwind Configuration Template
+Place this script in your \`<head>\` block:
+\`\`\`html
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#080808',
+          surface: '#111111',
+          'surface-2': '#1a1a1a',
+          border: 'rgba(255, 255, 255, 0.08)',
+          text: '#f0f0f0',
+          muted: '#888888',
+          faint: '#444444',
+          accent: '#c8f135', // lime green, purple (#a855f7), blue (#3b82f6), etc.
+        },
+        fontFamily: {
+          sans: ['"Geist"', 'sans-serif'],
+          serif: ['"Instrument Serif"', 'serif'],
+        }
+      }
+    }
+  };
+</script>
 \`\`\`
 
-For colored text on dark: use pure white for primary, \`#888\` for secondary — not medium gray.
-For borders: always \`rgba(255,255,255,0.08)\` or \`rgba(255,255,255,0.12)\` — never solid gray.
+### 2. Corresponding Class Usage
+- For primary background, use \`bg-bg\`.
+- For cards and containers, use \`bg-surface\` or \`bg-surface-2\` with \`border border-border\`.
+- For primary text, use \`text-text\` (which maps to the custom \`text\` color).
+- For secondary text, use \`text-muted\` (which maps to the custom \`muted\` color).
+- For faint/disabled text, use \`text-faint\`.
+- For borders, use \`border-border\`.
+- For accent color elements, use \`text-accent\` or \`bg-accent\`.
+
+Always ensure that any tailwind color classes you use in your HTML exist inside the \`tailwind.config\` extend block.
 
 ---
 

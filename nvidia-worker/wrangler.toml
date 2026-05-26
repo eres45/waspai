@@ -1,0 +1,10 @@
+name = "nvidia-nim-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Worker configuration
+workers_dev = true
+
+# Environment variables
+[vars]
+NVIDIA_API_BASE = "https://integrate.api.nvidia.com/v1"
