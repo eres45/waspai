@@ -1,7 +1,7 @@
 import { tool as createTool } from "ai";
 import { z } from "zod";
 import { getSession } from "auth/server";
-import { archiveRepository } from "lib/db/repository";
+import { archiveRepository, siteRepository } from "lib/db/repository";
 
 /**
  * write_site_file — writes one file into the current project's site draft.
@@ -58,6 +58,35 @@ export const writeSiteFileTool = createTool({
         }
       } catch {
         // Non-fatal — continue without project link
+      }
+    }
+
+    // Save the file contents immediately to the DB under a draft site
+    if (projectId && userId) {
+      try {
+        let site = await siteRepository.getSiteByProjectId(projectId);
+        if (!site) {
+          // Generate a temporary draft slug
+          const draftSlug = `draft-${projectId.substring(0, 8)}-${Math.random().toString(36).substring(2, 6)}`;
+          site = await siteRepository.createSite({
+            slug: draftSlug,
+            title: projectName || "Draft Site",
+            htmlContent: "",
+            authorId: userId,
+            projectId: projectId,
+            isPublic: false,
+          });
+        }
+
+        // Save this file to the site's DeployedSiteFile table
+        await siteRepository.upsertSiteFiles(site.id, [{ path, content }]);
+
+        // If index.html is being written, update htmlContent on the site as well for fallback
+        if (path === "index.html" || path === "/index.html") {
+          await siteRepository.updateSiteHtmlContent(site.id, content);
+        }
+      } catch (err) {
+        console.error("[write_site_file] Failed to save file to DB:", err);
       }
     }
 

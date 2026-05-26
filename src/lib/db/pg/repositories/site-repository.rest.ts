@@ -72,33 +72,51 @@ function mapSiteFileResponse(item: any): DeployedSiteFile {
 
 export const siteRepositoryRest: SiteRepository = {
   async createSite(site) {
-    // If slug is provided and owned by the same user, update it in place (as per Q4)
-    if (site.slug && site.authorId) {
-      const { data: existingSite } = await supabaseRest
+    let existingSite: any = null;
+
+    // 1. Try finding by project_id first if provided
+    if (site.projectId && site.authorId) {
+      const { data } = await supabaseRest
+        .from("deployed_site")
+        .select("id, author_id")
+        .eq("project_id", site.projectId)
+        .maybeSingle();
+      if (data) {
+        existingSite = data;
+      }
+    }
+
+    // 2. Fallback: try finding by slug
+    if (!existingSite && site.slug && site.authorId) {
+      const { data } = await supabaseRest
         .from("deployed_site")
         .select("id, author_id")
         .eq("slug", site.slug)
         .maybeSingle();
-
-      if (existingSite && existingSite.author_id === site.authorId) {
-        // Update in place
-        const { data, error } = await supabaseRest
-          .from("deployed_site")
-          .update({
-            title: site.title,
-            description: site.description || null,
-            html_content: site.htmlContent,
-            project_id: site.projectId || null,
-            is_public: site.isPublic !== undefined ? site.isPublic : true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingSite.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        return mapSiteResponse(data);
+      if (data) {
+        existingSite = data;
       }
+    }
+
+    if (existingSite && existingSite.author_id === site.authorId) {
+      // Update in place
+      const { data, error } = await supabaseRest
+        .from("deployed_site")
+        .update({
+          slug: site.slug,
+          title: site.title,
+          description: site.description || null,
+          html_content: site.htmlContent,
+          project_id: site.projectId || null,
+          is_public: site.isPublic !== undefined ? site.isPublic : true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingSite.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return mapSiteResponse(data);
     }
 
     // Insert new
@@ -191,13 +209,14 @@ export const siteRepositoryRest: SiteRepository = {
 
   async upsertSiteFiles(siteId, files) {
     for (const file of files) {
-      const mime = file.mimeType || getMimeType(file.path);
+      const cleanPath = file.path.replace(/^\/+/, "");
+      const mime = file.mimeType || getMimeType(cleanPath);
 
       const { data: existingFile } = await supabaseRest
         .from("deployed_site_file")
         .select("id")
         .eq("site_id", siteId)
-        .eq("path", file.path)
+        .eq("path", cleanPath)
         .maybeSingle();
 
       if (existingFile) {
@@ -213,7 +232,7 @@ export const siteRepositoryRest: SiteRepository = {
       } else {
         const { error } = await supabaseRest.from("deployed_site_file").insert({
           site_id: siteId,
-          path: file.path,
+          path: cleanPath,
           content: file.content,
           mime_type: mime,
         });
@@ -234,11 +253,12 @@ export const siteRepositoryRest: SiteRepository = {
   },
 
   async getSiteFileByPath(siteId, path) {
+    const cleanPath = path.replace(/^\/+/, "");
     const { data, error } = await supabaseRest
       .from("deployed_site_file")
       .select("*")
       .eq("site_id", siteId)
-      .eq("path", path)
+      .eq("path", cleanPath)
       .maybeSingle();
 
     if (error || !data) return null;
@@ -257,11 +277,12 @@ export const siteRepositoryRest: SiteRepository = {
   },
 
   async deleteSiteFile(siteId, path) {
+    const cleanPath = path.replace(/^\/+/, "");
     const { error } = await supabaseRest
       .from("deployed_site_file")
       .delete()
       .eq("site_id", siteId)
-      .eq("path", path);
+      .eq("path", cleanPath);
     return !error;
   },
 };

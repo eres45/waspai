@@ -74,7 +74,8 @@ export async function GET(
     }
 
     // Resolve file path — root request → index.html
-    const filePath = path && path.length > 0 ? path.join("/") : "index.html";
+    const cleanPath = path ? path.filter(Boolean) : [];
+    const filePath = cleanPath.length > 0 ? cleanPath.join("/") : "index.html";
 
     const isRootRequest = filePath === "index.html" || filePath === "index.htm";
 
