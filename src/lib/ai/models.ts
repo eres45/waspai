@@ -192,7 +192,7 @@ export async function buildDynamicModelsInfo() {
     models: models
       .map((m) => ({
         name: m.id,
-        isToolCallUnsupported: false,
+        isToolCallUnsupported: !m.id.includes("/"),
         isImageInputUnsupported: !isVisionModel(m.id),
         supportedFileMimeTypes: getMimeTypes(m.id),
         tier: "Free",
@@ -292,7 +292,13 @@ function getModelProvider(modelId: string, ownedBy?: string): string {
 
 // ─── Synchronous helpers ─────────────────────────────────────────────────────
 
-export const isToolCallUnsupportedModel = (_model: LanguageModel) => false;
+export const isToolCallUnsupportedModel = (model: LanguageModel) => {
+  const modelId = (model as any).modelId || "";
+  if (modelId && !modelId.includes("/")) {
+    return true;
+  }
+  return false;
+};
 
 export const isImageInputUnsupportedModel = (_model: LanguageModel) => {
   // We can't do a lookup anymore since there's no static catalog.
