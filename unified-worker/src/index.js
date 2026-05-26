@@ -529,6 +529,48 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
 // ============================================================================
 
 async function* streamResponse(providerKey, res, model) {
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!contentType.includes("text/event-stream")) {
+    const text = await res.text();
+    let content = "";
+    try {
+      const responseData = await nonStreamResponse(
+        providerKey,
+        { text: () => Promise.resolve(text) },
+        model,
+      );
+      content = responseData.choices?.[0]?.message?.content || "";
+    } catch {
+      content = text;
+    }
+
+    if (content) {
+      yield {
+        id: `chatcmpl-${randomUUID()}`,
+        object: "chat.completion.chunk",
+        created: Math.floor(Date.now() / 1000),
+        model,
+        choices: [
+          {
+            index: 0,
+            delta: { content },
+            finish_reason: null,
+          },
+        ],
+      };
+    }
+
+    yield {
+      id: `chatcmpl-${randomUUID()}`,
+      object: "chat.completion.chunk",
+      created: Math.floor(Date.now() / 1000),
+      model,
+      choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+    };
+    return;
+  }
+
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
