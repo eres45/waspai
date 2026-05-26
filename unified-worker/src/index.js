@@ -502,7 +502,11 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
 
   const fetchOpts = {
     method: "POST",
-    headers,
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      ...headers,
+    },
     body: typeof reqBody === "string" ? reqBody : JSON.stringify(reqBody),
   };
 
