@@ -159,6 +159,7 @@ export function ToolSelectDropdown({
       return mentions.map((m) => m.name);
     }
     if (toolChoice == "none") return [];
+    if (modelInfo?.isToolCallUnsupported) return [];
     const translate = t.raw("defaultToolKit");
     const defaultTools = Object.values(AppDefaultToolkit)
       .filter((t) => allowedAppDefaultToolkit?.includes(t))
@@ -179,6 +180,7 @@ export function ToolSelectDropdown({
     allowedMcpServers,
     toolChoice,
     mcpList,
+    modelInfo,
   ]);
 
   const triggerButton = useMemo(() => {
@@ -261,11 +263,17 @@ export function ToolSelectDropdown({
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
-        <ImageEditSelector onEditImage={onEditImage} />
+        <ImageEditSelector
+          onEditImage={onEditImage}
+          disabled={modelInfo?.isToolCallUnsupported}
+        />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
-        <WorkflowToolSelector onSelectWorkflow={onSelectWorkflow} />
+        <WorkflowToolSelector
+          onSelectWorkflow={onSelectWorkflow}
+          disabled={modelInfo?.isToolCallUnsupported}
+        />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
@@ -274,35 +282,40 @@ export function ToolSelectDropdown({
           <DropdownMenuSeparator />
         </div>
 
-        <VideoGenerationSelector onGenerateVideo={onGenerateVideo} />
+        <VideoGenerationSelector
+          onGenerateVideo={onGenerateVideo}
+          disabled={modelInfo?.isToolCallUnsupported}
+        />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
-        <QRCodeSelector />
+        <QRCodeSelector disabled={modelInfo?.isToolCallUnsupported} />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
-        <DocumentToolsSelector />
+        <DocumentToolsSelector disabled={modelInfo?.isToolCallUnsupported} />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
         <div className="py-2">
-          <ToolPresets />
+          <ToolPresets disabled={modelInfo?.isToolCallUnsupported} />
           <div className="py-1">
             <DropdownMenuSeparator />
           </div>
-          <AppDefaultToolKitSelector />
+          <AppDefaultToolKitSelector
+            disabled={modelInfo?.isToolCallUnsupported}
+          />
           <div className="py-1">
             <DropdownMenuSeparator />
           </div>
-          <McpServerSelector />
+          <McpServerSelector disabled={modelInfo?.isToolCallUnsupported} />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function ToolPresets() {
+function ToolPresets({ disabled }: { disabled?: boolean }) {
   const [
     appStoreMutate,
     presets,
@@ -372,7 +385,10 @@ function ToolPresets() {
   return (
     <DropdownMenuGroup className="cursor-pointer">
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+        <DropdownMenuSubTrigger
+          disabled={disabled}
+          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
+        >
           <Package className="size-3.5" />
           {t("Chat.Tool.preset")}
         </DropdownMenuSubTrigger>
@@ -472,8 +488,10 @@ function ToolPresets() {
 
 function WorkflowToolSelector({
   onSelectWorkflow,
+  disabled,
 }: {
   onSelectWorkflow?: (workflow: WorkflowSummary) => void;
+  disabled?: boolean;
 }) {
   const t = useTranslations();
   const workflowToolList = appStore((state) => state.workflowToolList);
@@ -490,7 +508,10 @@ function WorkflowToolSelector({
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+        <DropdownMenuSubTrigger
+          disabled={disabled}
+          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
+        >
           <Waypoints className="size-3.5" />
           {t("Workflow.title")}
         </DropdownMenuSubTrigger>
@@ -605,7 +626,7 @@ function WorkflowToolSelector({
   );
 }
 
-function McpServerSelector() {
+function McpServerSelector({ disabled }: { disabled?: boolean }) {
   const [appStoreMutate, allowedMcpServers, mcpServerList] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -675,6 +696,7 @@ function McpServerSelector() {
         selectedMcpServerList.map((server) => (
           <DropdownMenuSub key={server.id}>
             <DropdownMenuSubTrigger
+              disabled={disabled}
               className="flex items-center gap-2 font-semibold cursor-pointer"
               icon={
                 <div className="flex items-center gap-2 ml-auto">
@@ -763,6 +785,7 @@ interface McpServerToolSelectorProps {
   onClickAllChecked: (checked: boolean) => void;
   checked: boolean;
   onToolClick: (toolName: string, checked: boolean) => void;
+  disabled?: boolean;
 }
 function McpServerToolSelector({
   tools,
@@ -771,6 +794,7 @@ function McpServerToolSelector({
   isAuthorizing,
   checked,
   onToolClick,
+  disabled,
 }: McpServerToolSelectorProps) {
   const t = useTranslations("Common");
   const [loading, setLoading] = useState(false);
@@ -838,7 +862,7 @@ function McpServerToolSelector({
           className="placeholder:text-muted-foreground flex w-full text-xs   outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
         />
         <div className="flex-1" />
-        <Switch checked={checked} />
+        <Switch checked={checked} disabled={disabled} />
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <div className="max-h-96 overflow-y-auto">
@@ -850,8 +874,10 @@ function McpServerToolSelector({
           filteredTools.map((tool) => (
             <DropdownMenuItem
               key={tool.name}
+              disabled={disabled}
               className="flex items-center gap-2 cursor-pointer mb-1"
               onClick={(e) => {
+                if (disabled) return;
                 e.preventDefault();
                 onToolClick(tool.name, !tool.checked);
               }}
@@ -862,7 +888,11 @@ function McpServerToolSelector({
                   {tool.description}
                 </p>
               </div>
-              <Checkbox checked={tool.checked} className="ml-auto" />
+              <Checkbox
+                checked={tool.checked}
+                disabled={disabled}
+                className="ml-auto"
+              />
             </DropdownMenuItem>
           ))
         )}
@@ -871,7 +901,7 @@ function McpServerToolSelector({
   );
 }
 
-function AppDefaultToolKitSelector() {
+function AppDefaultToolKitSelector({ disabled }: { disabled?: boolean }) {
   const [appStoreMutate, allowedAppDefaultToolkit] = appStore(
     useShallow((state) => [state.mutate, state.allowedAppDefaultToolkit]),
   );
@@ -930,11 +960,13 @@ function AppDefaultToolKitSelector() {
         return (
           <DropdownMenuItem
             key={tool.id}
+            disabled={disabled}
             className={cn(
               "cursor-pointer font-semibold text-xs text-muted-foreground",
               allowedAppDefaultToolkit?.includes(tool.id) && "text-foreground",
             )}
             onClick={(e) => {
+              if (disabled) return;
               e.preventDefault();
               toggleAppDefaultToolkit(tool.id);
             }}
@@ -949,6 +981,7 @@ function AppDefaultToolKitSelector() {
             {tool.label}
             <Switch
               className="ml-auto"
+              disabled={disabled}
               checked={allowedAppDefaultToolkit?.includes(tool.id)}
             />
           </DropdownMenuItem>
@@ -1084,13 +1117,18 @@ function AgentSelector({
 
 function VideoGenerationSelector({
   onGenerateVideo,
+  disabled,
 }: {
   onGenerateVideo?: (model: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+        <DropdownMenuSubTrigger
+          disabled={disabled}
+          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
+        >
           <Film className="size-3.5" />
           Video Generation
         </DropdownMenuSubTrigger>
@@ -1130,8 +1168,9 @@ function VideoGenerationSelector({
   );
 }
 
-function QRCodeSelector() {
+function QRCodeSelector({ disabled }: { disabled?: boolean }) {
   const handleQRCodeClick = () => {
+    if (disabled) return;
     toast.info(
       "Ask the AI to generate a QR code by describing what you want to encode",
     );
@@ -1140,7 +1179,10 @@ function QRCodeSelector() {
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+        <DropdownMenuSubTrigger
+          disabled={disabled}
+          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
+        >
           <span className="size-3.5 flex items-center justify-center">⬜</span>
           QR Code
         </DropdownMenuSubTrigger>
@@ -1162,15 +1204,19 @@ function QRCodeSelector() {
   );
 }
 
-function DocumentToolsSelector() {
+function DocumentToolsSelector({ disabled }: { disabled?: boolean }) {
   const handleDocumentClick = () => {
+    if (disabled) return;
     toast.info("Ask the AI to generate documents by describing what you need");
   };
 
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+        <DropdownMenuSubTrigger
+          disabled={disabled}
+          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
+        >
           <FileText className="size-3.5" />
           Document Tools
         </DropdownMenuSubTrigger>
@@ -1442,13 +1488,18 @@ function ImageGeneratorSelector({
 }
 function ImageEditSelector({
   onEditImage,
+  disabled,
 }: {
   onEditImage?: (tool: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <DropdownMenuGroup>
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
+        <DropdownMenuSubTrigger
+          disabled={disabled}
+          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
+        >
           <Wrench className="size-3.5" />
           Edit Image
         </DropdownMenuSubTrigger>
