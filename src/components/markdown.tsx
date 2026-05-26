@@ -80,7 +80,7 @@ const components: Partial<Components> = {
   },
   p: ({ children }) => {
     return (
-      <p className="leading-6 my-4 break-words">
+      <p className="leading-6 my-2 first:mt-0 last:mb-0 break-words">
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </p>
     );
