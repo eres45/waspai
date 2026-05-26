@@ -57,7 +57,6 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const isLoading = !state?.startsWith("output");
-  const _isSuccess = state === "output-available" && output?.success === true;
 
   const siteInput = input as {
     path?: string;
