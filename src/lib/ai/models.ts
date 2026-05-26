@@ -79,15 +79,46 @@ interface WorkerModelsResponse {
  */
 export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
   try {
-    const res = await fetch(`${UNIFIED_WORKER_URL}/v1/models`, {
-      next: { revalidate: 300 }, // cache 5 min
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error(`Worker /v1/models returned ${res.status}`);
-    const json: WorkerModelsResponse = await res.json();
-    return json.data ?? [];
+    const [resNvidia, resCreative] = await Promise.allSettled([
+      fetch(`${UNIFIED_WORKER_URL}/v1/models`, {
+        next: { revalidate: 300 }, // cache 5 min
+        headers: { Accept: "application/json" },
+      }).then(async (r) => {
+        if (!r.ok) throw new Error(`NVIDIA worker returned ${r.status}`);
+        return r.json() as Promise<WorkerModelsResponse>;
+      }),
+      fetch(`${CREATIVE_WORKER_URL}/v1/models`, {
+        next: { revalidate: 300 }, // cache 5 min
+        headers: { Accept: "application/json" },
+      }).then(async (r) => {
+        if (!r.ok) throw new Error(`Creative worker returned ${r.status}`);
+        return r.json() as Promise<WorkerModelsResponse>;
+      }),
+    ]);
+
+    const models: WorkerModel[] = [];
+
+    if (resNvidia.status === "fulfilled" && resNvidia.value?.data) {
+      models.push(...resNvidia.value.data);
+    } else if (resNvidia.status === "rejected") {
+      console.error(
+        "[models] Failed to fetch from NVIDIA worker:",
+        resNvidia.reason,
+      );
+    }
+
+    if (resCreative.status === "fulfilled" && resCreative.value?.data) {
+      models.push(...resCreative.value.data);
+    } else if (resCreative.status === "rejected") {
+      console.error(
+        "[models] Failed to fetch from Creative worker:",
+        resCreative.reason,
+      );
+    }
+
+    return models;
   } catch (err) {
-    console.error("[models] Failed to fetch from unified worker:", err);
+    console.error("[models] Failed to fetch from workers:", err);
     return [];
   }
 }
@@ -306,26 +337,15 @@ export const customModelProvider = {
    */
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
-    // model.model is the model ID as shown in the UI / stored in DB
     const modelId = model.model;
-    const lowerId = modelId.toLowerCase();
 
-    // Route open-source fallback models through the creative worker provider.
-    // NOTE: gpt-oss is intentionally NOT here — it is fully supported by our
-    // NVIDIA worker (real API keys), so it routes through unifiedProvider.
-    const creativeKeywords = [
-      "chatai",
-      "chatbotai",
-      "botnation",
-      "quillbot",
-      "aimirror",
-    ];
-
-    if (creativeKeywords.some((kw) => lowerId.includes(kw))) {
-      return creativeProvider(modelId) as unknown as LanguageModel;
+    // NVIDIA NIM models on the nvidia-nim-worker always have a slash in their ID (e.g., 'meta/llama-3.1-8b-instruct')
+    // Open-source/creative worker models on unified-ai-worker do not contain a slash (e.g., 'llama-3.2-1b', 'chatai-gpt-4o')
+    if (modelId.includes("/")) {
+      return unifiedProvider(modelId) as unknown as LanguageModel;
     }
 
-    return unifiedProvider(modelId) as unknown as LanguageModel;
+    return creativeProvider(modelId) as unknown as LanguageModel;
   },
 };
 
