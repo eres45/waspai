@@ -152,3 +152,6 @@ export const blurBackground = (o: EditImageOptions) =>
 
 export const convertImageToAnime = (o: EditImageOptions) =>
   callEditEndpoint("style-transfer", o);
+
+export const editImage = (o: EditImageOptions) =>
+  callEditEndpoint("edit-image", o);

@@ -11,6 +11,7 @@ import {
   applySuperResolution,
   restoreOldPhoto,
   blurBackground,
+  editImage,
 } from "lib/ai/image/edit-image";
 import { enhanceImageTool } from "./enhance-image";
 
@@ -272,6 +273,51 @@ export const blurBackgroundTool = createTool({
       return {
         image: uploaded,
         guide: "The background of the image has been professionally blurred.",
+      };
+    } catch (e) {
+      logger.error(e);
+      throw e;
+    }
+  },
+});
+
+/**
+ * General Image Editing Tool
+ */
+export const editImageTool = createTool({
+  name: "edit-image",
+  description:
+    "General image editing and manipulation. Use this to add objects, change colors, alter elements, or modify an existing image based on a prompt. Always extract the imageUrl from the file attachments in the conversation and call this tool immediately with the user's prompt.",
+  inputSchema: z.object({
+    imageUrl: z
+      .string()
+      .describe(
+        "The URL of the image to edit. Extract this from the file attachment URL in the conversation.",
+      ),
+    prompt: z
+      .string()
+      .describe(
+        "The editing description (e.g., 'add a red hat on the cat', 'change background to a sunset'). Describe the desired changes precisely.",
+      ),
+  }),
+  execute: async ({ imageUrl, prompt }, { abortSignal }) => {
+    logger.info(
+      `Edit Image tool called with imageUrl: "${imageUrl}", prompt: "${prompt}"`,
+    );
+    try {
+      const processedImage = await editImage({
+        prompt,
+        imageUrl,
+        abortSignal,
+      });
+      const uploadedImage = await uploadToStorage(
+        processedImage.image,
+        "Image editing successful but upload failed.",
+      );
+      return {
+        image: uploadedImage,
+        guide:
+          "Your image has been successfully edited and updated based on your prompt!",
       };
     } catch (e) {
       logger.error(e);

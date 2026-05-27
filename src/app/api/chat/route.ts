@@ -69,6 +69,7 @@ import {
   superResolutionTool,
   restoreOldPhotoTool,
   blurBackgroundTool,
+  editImageTool,
 } from "lib/ai/tools/image/edit-image";
 import { videoGenTool } from "lib/ai/tools/image/video-gen";
 import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
@@ -1280,6 +1281,16 @@ CRITICAL INSTRUCTIONS:
           },
         };
 
+        const scopedEditImageTool = {
+          ...editImageTool,
+          execute: async (args: any, context: any) => {
+            if (args.imageUrl === imagePlaceholder && imageUrl) {
+              args.imageUrl = imageUrl;
+            }
+            return editImageTool!.execute!(args, context);
+          },
+        };
+
         // Detect PDF generation request from keywords (smart intent + PDF words)
         const hasPdfKeywords = lastMessage?.parts?.some((part: any) => {
           if (typeof part !== "object" || part.type !== "text" || !part.text) {
@@ -1884,6 +1895,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           ...(isBlurBackgroundRequest || imageUrl
             ? { "blur-background": scopedBlurBackgroundTool }
             : {}),
+          ...(imageUrl ? { "edit-image": scopedEditImageTool } : {}),
           ...(isVideoGenRequest ? { "video-gen": videoGenTool } : {}),
 
           // ALWAYS include document generation tools to prevent AI from "forgetting" them

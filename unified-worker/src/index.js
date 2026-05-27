@@ -1130,6 +1130,184 @@ async function handleImageGenerations(request) {
 }
 
 // ============================================================================
+// IMAGE EDITING ROUTING & NORMALIZATION
+// ============================================================================
+
+function arrayBufferToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+async function handleImageEdits(request) {
+  try {
+    const body = await request.json();
+    const { image_url, operation, prompt, mask_url } = body;
+
+    if (!image_url) {
+      return new Response(
+        JSON.stringify({ error: "Missing 'image_url' parameter" }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+    }
+
+    // Map operation to correct photogrid-proxy endpoint
+    let path = "";
+    if (operation === "remove-background") {
+      path = "/api/ai/remove/background";
+    } else if (operation === "remove-watermark") {
+      path = "/api/ai/remove/watermark";
+    } else if (operation === "remove-object") {
+      path = "/api/ai/remove/object";
+    } else if (
+      operation === "enhance-quality" ||
+      operation === "enhance-image"
+    ) {
+      path = "/api/ai/enhance/image";
+    } else if (
+      operation === "style-transfer" ||
+      operation === "edit-image" ||
+      operation === "anime-conversion"
+    ) {
+      path = "/api/ai/style/transfer";
+    } else if (operation === "super-resolution") {
+      path = "/api/ai/super-resolution";
+    } else if (
+      operation === "restore-photo" ||
+      operation === "restore-old-photo"
+    ) {
+      path = "/api/ai/restore-photo";
+    } else if (operation === "blur-background") {
+      path = "/api/ai/blur-background";
+    } else {
+      path = "/api/ai/style/transfer"; // Fallback to style-transfer
+    }
+
+    const payload = { image_url };
+    if (prompt) payload.prompt = prompt;
+    if (mask_url) payload.mask_url = mask_url;
+
+    // Use default style "None" for style-transfer if not provided
+    if (path === "/api/ai/style/transfer" && !payload.prompt) {
+      payload.prompt = "cyberpunk"; // Default prompt for style-transfer if missing
+    }
+
+    const res = await fetch(
+      `https://photogrid-proxy.llamai.workers.dev${path}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      return new Response(
+        JSON.stringify({ error: `Upstream error: ${res.status} — ${text}` }),
+        {
+          status: res.status,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+    }
+
+    // Check content-type of response
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("image/")) {
+      // If it is binary, return base64
+      const buffer = await res.arrayBuffer();
+      const base64 = arrayBufferToBase64(buffer);
+
+      const responseData = {
+        image: {
+          url: base64,
+          mimeType: contentType.split(";")[0].trim(),
+        },
+      };
+
+      return new Response(JSON.stringify(responseData), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    // Otherwise, try to parse JSON
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // If not JSON, return it directly
+      return new Response(
+        JSON.stringify({ image: { url: text, mimeType: "image/png" } }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+    }
+
+    // Wrap in expected structure if needed
+    const outputStr =
+      data.url ||
+      data.image_url ||
+      data.image ||
+      data.result ||
+      data.data?.[0]?.url ||
+      data.data?.[0]?.b64_json ||
+      data.proxied_url ||
+      text;
+
+    const responseData = {
+      image: {
+        url:
+          typeof outputStr === "string" ? outputStr : JSON.stringify(outputStr),
+        mimeType: "image/png",
+      },
+    };
+
+    return new Response(JSON.stringify(responseData), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: `Internal server error: ${error.message}` }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    );
+  }
+}
+
+// ============================================================================
 // WORKER EXPORT
 // ============================================================================
 
@@ -1261,6 +1439,11 @@ export default {
     // Image generations
     if (path === "/v1/images/generations" && request.method === "POST") {
       return await handleImageGenerations(request);
+    }
+
+    // Image edits
+    if (path === "/v1/images/edits" && request.method === "POST") {
+      return await handleImageEdits(request);
     }
 
     return new Response(JSON.stringify({ error: "Not found" }), {
