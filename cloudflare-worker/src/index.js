@@ -13,10 +13,12 @@ export default {
     // 2. CORS Preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
+        status: 204,
         headers: {
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, X-Auth-Token",
+          "Access-Control-Allow-Methods": "POST, GET, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers":
+            "Content-Type, Authorization, X-Auth-Token, x-auth-token, X-User-ID, X-File-Name, x-user-id, x-file-name",
           "Access-Control-Max-Age": "86400",
         },
       });
