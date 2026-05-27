@@ -46,13 +46,6 @@ const MODEL_MAP = {
   "chatbotai-claude-3-sonnet": { provider: "chatbotai", model: "gpt-4" },
   "chatbotai-llama-3.1-8b": { provider: "chatbotai", model: "gpt-3.5-turbo" },
 
-  // BotNation (5 working)
-  "botnation-gpt-4o-mini": { provider: "botnation", model: "gpt-4o-mini" },
-  "botnation-gpt-4o": { provider: "botnation", model: "gpt-4o" },
-  "botnation-gpt-3.5-turbo": { provider: "botnation", model: "gpt-3.5-turbo" },
-  "botnation-claude-sonnet": { provider: "botnation", model: "claude-sonnet" },
-  "botnation-llama-3.1-8b": { provider: "botnation", model: "llama-3.1-8b" },
-
   // OpenRouter Hub (2 working)
   "openrouterhub-gpt-4o-mini": {
     provider: "openrouterhub",
