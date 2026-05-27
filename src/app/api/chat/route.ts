@@ -2053,9 +2053,9 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           maxTokens: 8192,
           maxSteps: 15,
           maxRetries: 3,
-          tools: vercelAITooles as any,
+          tools: isToolCallAllowed ? (vercelAITooles as any) : undefined,
           stopWhen: stepCountIs(useImageTool ? 3 : 15),
-          toolChoice: "auto",
+          toolChoice: isToolCallAllowed ? "auto" : undefined,
           abortSignal: request.signal,
         } as any);
         result.consumeStream();
