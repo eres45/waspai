@@ -1202,27 +1202,95 @@ async function handleImageEdits(request) {
       payload.prompt = "cyberpunk"; // Default prompt for style-transfer if missing
     }
 
-    const res = await fetch(
-      `https://photogrid-proxy.llamai.workers.dev${path}`,
-      {
+    let res;
+    let fallbackTriggered = false;
+    try {
+      res = await fetch(`https://photogrid-proxy.llamai.workers.dev${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      },
-    );
+      });
+    } catch (_fetchErr) {
+      fallbackTriggered = true;
+    }
 
-    if (!res.ok) {
-      const text = await res.text();
-      return new Response(
-        JSON.stringify({ error: `Upstream error: ${res.status} — ${text}` }),
-        {
-          status: res.status,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
+    if (fallbackTriggered || !res || !res.ok) {
+      const fallbackPrompt = prompt || operation.replace("-", " ");
+      try {
+        const fallbackRes = await fetch(
+          `https://ai-images-proxy.llamai.workers.dev/?prompt=${encodeURIComponent(fallbackPrompt)}`,
+          {
+            method: "POST",
           },
-        },
-      );
+        );
+
+        if (fallbackRes.ok) {
+          const fallbackText = await fallbackRes.text();
+          let extractedUrl = "";
+          try {
+            const data = JSON.parse(fallbackText);
+            extractedUrl =
+              data.url ||
+              data.image ||
+              data.image_url ||
+              data.imageUrl ||
+              data.data?.[0]?.url ||
+              "";
+          } catch {
+            const match = fallbackText.match(/https?:\/\/[^\s"']+/);
+            if (match) {
+              extractedUrl = match[0];
+            } else {
+              extractedUrl = fallbackText;
+            }
+          }
+
+          if (extractedUrl) {
+            const responseData = {
+              image: {
+                url: extractedUrl,
+                mimeType: "image/png",
+              },
+            };
+            return new Response(JSON.stringify(responseData), {
+              status: 200,
+              headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+              },
+            });
+          }
+        }
+      } catch (_fallbackErr) {
+        // Fallback failed
+      }
+
+      if (res) {
+        const text = await res.text();
+        return new Response(
+          JSON.stringify({ error: `Upstream error: ${res.status} — ${text}` }),
+          {
+            status: res.status,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          },
+        );
+      } else {
+        return new Response(
+          JSON.stringify({
+            error: "Upstream error: Failed to connect to photogrid-proxy",
+          }),
+          {
+            status: 502,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          },
+        );
+      }
     }
 
     // Check content-type of response
