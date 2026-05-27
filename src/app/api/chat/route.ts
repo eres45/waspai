@@ -650,13 +650,67 @@ export async function POST(request: Request) {
       return false;
     });
 
-    // Enable image tool if either explicitly provided or auto-detected
+    // Scan if there is an image in the history or current attachments
+    let hasImageInHistoryOrAttachments = fileUrls.length > 0;
+    if (!hasImageInHistoryOrAttachments) {
+      // Check the messages array for any image parts
+      const reversedMessages = [...messages].reverse();
+      for (const msg of reversedMessages) {
+        const imgPart = msg.parts?.find(
+          (p: any) =>
+            (p.type === "file" ||
+              p.type === "source-url" ||
+              p.type === "image") &&
+            (p.url?.startsWith("http") || p.url?.startsWith("data:")) &&
+            (p.mimeType?.startsWith("image/") ||
+              p.mediaType?.startsWith("image/") ||
+              p.type === "image"),
+        );
+        if (imgPart) {
+          hasImageInHistoryOrAttachments = true;
+          break;
+        }
+      }
+    }
+
+    // Detect image editing/manipulation intent if an image is present
+    let hasImageEditKeywords = false;
+    if (hasImageInHistoryOrAttachments) {
+      const editWords = [
+        "add",
+        "put",
+        "draw",
+        "paint",
+        "change",
+        "modify",
+        "edit",
+        "remove",
+        "erase",
+        "delete",
+        "wearing",
+        "with",
+        "on",
+        "hat",
+        "glasses",
+        "shirt",
+        "background",
+        "foreground",
+      ];
+      const text = messageText.toLowerCase();
+      hasImageEditKeywords = editWords.some((word) =>
+        new RegExp(`\\b${word}\\b`, "i").test(text),
+      );
+    }
+
+    // Enable image tool if either explicitly provided, auto-detected, or an edit request on an existing image
     const useImageTool =
-      Boolean(imageTool?.model) || hasImageGenerationKeywords;
+      Boolean(imageTool?.model) ||
+      hasImageGenerationKeywords ||
+      hasImageEditKeywords;
 
     // If auto-detected but no model specified, try to detect model from text, otherwise use a default
     let detectedModel = "seedream-4-5";
-    if (hasImageGenerationKeywords) {
+    if (hasImageGenerationKeywords || hasImageEditKeywords) {
       const text = messageText.toLowerCase();
 
       const modelKeywords: Record<string, string> = {
@@ -749,7 +803,9 @@ export async function POST(request: Request) {
     // If auto-detected but no model specified, use detected/default
     const effectiveImageTool =
       imageTool ||
-      (hasImageGenerationKeywords ? { model: detectedModel } : undefined);
+      (hasImageGenerationKeywords || hasImageEditKeywords
+        ? { model: detectedModel }
+        : undefined);
 
     const isToolCallAllowed =
       supportToolCall &&
