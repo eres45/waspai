@@ -88,10 +88,26 @@ async function callEditEndpoint(
     const outputStr =
       data.url ||
       data.image_url ||
-      data.image ||
+      data.image?.url || // worker returns { image: { url, mimeType } }
+      (typeof data.image === "string" ? data.image : null) ||
       data.result ||
+      data.proxied_url ||
       data.data?.[0]?.url ||
       data.data?.[0]?.b64_json;
+
+    // If the worker already returned a nested image object with mimeType, use it directly
+    if (
+      data.image?.url &&
+      data.image?.mimeType &&
+      !data.image.url.startsWith("http")
+    ) {
+      return {
+        image: {
+          url: data.image.url.replace(/^data:image\/\w+;base64,/, ""),
+          mimeType: data.image.mimeType || "image/png",
+        },
+      };
+    }
 
     if (!outputStr) {
       throw new Error(`No image in response: ${JSON.stringify(data)}`);
