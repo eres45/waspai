@@ -21,7 +21,7 @@ export async function getStorageInfoAction() {
       storageDriver === "telegram",
     canStageByBlob: !!process.env.BLOB_READ_WRITE_TOKEN,
     cloudflareWorkerUrl: process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL,
-    cloudflareAuthToken: process.env.CLOUDFLARE_WORKER_AUTH_TOKEN,
+    // Note: auth token intentionally NOT exposed to client — uploads are proxied via /api/storage/upload
     userId: session?.user?.id,
   };
 }

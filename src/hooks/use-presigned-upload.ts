@@ -19,7 +19,6 @@ interface StorageInfo {
   supportsDirectUpload: boolean;
   canStageByBlob: boolean;
   cloudflareWorkerUrl?: string;
-  cloudflareAuthToken?: string;
   userId?: string;
 }
 
@@ -96,75 +95,38 @@ export function useFileUpload() {
       }
 
       const cloudflareWorkerUrl = data?.cloudflareWorkerUrl;
-      const cloudflareAuthToken = data?.cloudflareAuthToken;
 
       setIsUploading(true);
       try {
-        // CASE 0: Cloudflare Worker direct upload (Primary bridge if configured)
+        // ALL uploads go through our Next.js API (/api/storage/upload) which
+        // forwards to the Cloudflare worker server-side — no CORS issues.
+        // The auth token never needs to leave the server.
         if (cloudflareWorkerUrl) {
           console.log(
-            `[Upload] Using Cloudflare Worker for ${file.size} byte upload to ${cloudflareWorkerUrl}`,
+            `[Upload] Routing ${file.size} byte upload through Next.js API proxy`,
           );
 
           const formData = new FormData();
-          // Determine Telegram field
-          const isPhoto = contentType.startsWith("image/");
-          const isVideo = contentType.startsWith("video/");
-          const fieldName = isPhoto ? "photo" : isVideo ? "video" : "document";
+          formData.append("file", file, filename);
 
-          formData.append(fieldName, file);
-          formData.append("userId", data?.userId || "anonymous");
-          formData.append("filename", filename);
-          formData.append("fileSize", file.size.toString());
-
-          const workerResponse = await fetch(
-            `${cloudflareWorkerUrl}${cloudflareWorkerUrl.endsWith("/") ? "" : "/"}upload`,
-            {
-              method: "POST",
-              headers: {
-                "X-Auth-Token": cloudflareAuthToken || "",
-              },
-              body: formData,
-            },
-          );
-
-          if (!workerResponse.ok) {
-            const errorText = await workerResponse.text();
-            throw new Error(
-              `Cloudflare Worker upload failed: ${workerResponse.status} ${errorText}`,
-            );
-          }
-
-          const tgResult = await workerResponse.json();
-          if (!tgResult.ok) {
-            throw new Error(
-              `Telegram API via Worker failed: ${tgResult.description}`,
-            );
-          }
-
-          // Use the proxied URL if provided by the worker
-          const finalUrl =
-            tgResult.proxied_url ||
-            `tg://${fieldName}/${tgResult.result.message_id}`;
-
-          const syncResponse = await fetch("/api/storage/upload", {
+          const response = await fetch("/api/storage/upload", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              filename,
-              contentType,
-              externalResult: {
-                url: finalUrl,
-                messageId: tgResult.result.message_id,
-                size: file.size,
-              },
-            }),
+            body: formData,
           });
 
-          const syncData = await syncResponse.json();
+          if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            throw new Error(
+              errorBody.error ||
+                errorBody.message ||
+                `Upload failed: ${response.status}`,
+            );
+          }
+
+          const result = await response.json();
           return {
-            pathname: syncData.key,
-            url: syncData.url,
+            pathname: result.key,
+            url: result.url,
             contentType,
             size: file.size,
           };
