@@ -446,6 +446,22 @@ function recordKeySuccess(keyIndex) {
 }
 
 /**
+ * Fetch with a timeout using AbortController
+ */
+async function fetchWithTimeout(url, options, timeoutMs = 3500) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
+/**
  * Handle chat completions
  */
 async function handleChatCompletions(request) {
@@ -488,17 +504,36 @@ async function handleChatCompletions(request) {
     }
 
     // Make request to NVIDIA API
-    const nvidiaResponse = await fetch(`${NVIDIA_API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...sanitizePayload(requestData),
-        model: requestedModel,
-      }),
-    });
+    let nvidiaResponse;
+    try {
+      nvidiaResponse = await fetchWithTimeout(
+        `${NVIDIA_API_BASE}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...sanitizePayload(requestData),
+            model: requestedModel,
+          }),
+        },
+        3500,
+      );
+    } catch (err) {
+      console.log(`First request failed or timed out: ${err.message || err}`);
+      // Simulate failed response for failover retry
+      nvidiaResponse = {
+        ok: false,
+        status: 504,
+        json: async () => ({
+          error: {
+            message: `Gateway Timeout: Request took too long on key index ${keyIndex}`,
+          },
+        }),
+      };
+    }
 
     const isStream = requestData.stream === true;
 
@@ -509,20 +544,37 @@ async function handleChatCompletions(request) {
       // Try with another key if available
       if (NVIDIA_API_KEYS.length > 1 && keyFailureCount[keyIndex] < 3) {
         const retryKey = getNextApiKey();
-        const retryResponse = await fetch(
-          `${NVIDIA_API_BASE}/chat/completions`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${retryKey}`,
-              "Content-Type": "application/json",
+        let retryResponse;
+        try {
+          retryResponse = await fetchWithTimeout(
+            `${NVIDIA_API_BASE}/chat/completions`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${retryKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                ...sanitizePayload(requestData),
+                model: requestedModel,
+              }),
             },
-            body: JSON.stringify({
-              ...sanitizePayload(requestData),
-              model: requestedModel,
+            5000, // slightly longer timeout for fallback to ensure completion
+          );
+        } catch (err) {
+          console.log(
+            `Retry request failed or timed out: ${err.message || err}`,
+          );
+          retryResponse = {
+            ok: false,
+            status: 504,
+            json: async () => ({
+              error: {
+                message: "Gateway Timeout: Retry request took too long.",
+              },
             }),
-          },
-        );
+          };
+        }
 
         if (retryResponse.ok) {
           recordKeySuccess(currentKeyIndex);
