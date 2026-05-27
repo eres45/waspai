@@ -29,7 +29,9 @@ export async function POST(request: NextRequest) {
     sarvamFormData.append("model", model);
     sarvamFormData.append("language_code", languageCode);
 
-    logger.info(`Sarvam STT: file=${file.name}, size=${file.size} bytes, model=${model}, lang=${languageCode}`);
+    logger.info(
+      `Sarvam STT: file=${file.name}, size=${file.size} bytes, model=${model}, lang=${languageCode}`,
+    );
 
     const sarvamResponse = await fetch("https://api.sarvam.ai/speech-to-text", {
       method: "POST",
@@ -43,7 +45,10 @@ export async function POST(request: NextRequest) {
       const err = await sarvamResponse.text();
       logger.error(`Sarvam STT error ${sarvamResponse.status}: ${err}`);
       return Response.json(
-        { success: false, error: `Sarvam STT provider error: ${sarvamResponse.status}` },
+        {
+          success: false,
+          error: `Sarvam STT provider error: ${sarvamResponse.status}`,
+        },
         { status: 502 },
       );
     }
@@ -51,10 +56,7 @@ export async function POST(request: NextRequest) {
     const resData = await sarvamResponse.json();
     logger.info(`Sarvam STT success: transcript generated successfully`);
 
-    return Response.json(
-      { success: true, ...resData },
-      { status: 200 }
-    );
+    return Response.json({ success: true, ...resData }, { status: 200 });
   } catch (error) {
     logger.error(`STT proxy error: ${error}`);
     return Response.json(

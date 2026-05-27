@@ -20,8 +20,12 @@ describe("STT API Proxy Endpoint", () => {
 
     // Create request with simple form data
     const formData = new FormData();
-    formData.append("file", new Blob(["mock-audio-data"], { type: "audio/wav" }), "test.wav");
-    
+    formData.append(
+      "file",
+      new Blob(["mock-audio-data"], { type: "audio/wav" }),
+      "test.wav",
+    );
+
     const request = new NextRequest("http://localhost/api/stt", {
       method: "POST",
       body: formData,
@@ -38,7 +42,7 @@ describe("STT API Proxy Endpoint", () => {
 
   it("should fail with 400 if no file is uploaded", async () => {
     process.env.SARVAM_API_KEY = "test-key";
-    
+
     const formData = new FormData();
     formData.append("model", "saaras:v3");
 
@@ -67,7 +71,11 @@ describe("STT API Proxy Endpoint", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const formData = new FormData();
-    formData.append("file", new Blob(["mock-audio-bytes"], { type: "audio/wav" }), "test.wav");
+    formData.append(
+      "file",
+      new Blob(["mock-audio-bytes"], { type: "audio/wav" }),
+      "test.wav",
+    );
     formData.append("model", "saaras:v3");
     formData.append("language_code", "hi-IN");
 
@@ -89,7 +97,7 @@ describe("STT API Proxy Endpoint", () => {
         headers: expect.objectContaining({
           "api-subscription-key": "test-key",
         }),
-      })
+      }),
     );
 
     vi.unstubAllGlobals();

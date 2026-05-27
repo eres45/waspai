@@ -43,7 +43,9 @@ describe("TTS API Proxy Endpoint", () => {
       ok: true,
       json: async () => ({
         request_id: "test-req-id",
-        audios: ["UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="],
+        audios: [
+          "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=",
+        ],
       }),
     });
     vi.stubGlobal("fetch", mockFetch);
@@ -76,7 +78,7 @@ describe("TTS API Proxy Endpoint", () => {
           speaker: "bulbul",
           model: "bulbul:v3",
         }),
-      })
+      }),
     );
 
     vi.unstubAllGlobals();

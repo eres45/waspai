@@ -589,10 +589,10 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             isVoiceActive={voiceChat.isOpen}
             isVoiceListening={voiceChat.isOpen}
             onStartVoice={() => {
-              const activeAgentId = toolMentions?.find(
+              const activeAgentId = threadMentions[threadId]?.find(
                 (m) => m.type === "agent",
               )?.agentId;
-              mutate((prev) => ({
+              appStoreMutate((prev) => ({
                 voiceChat: {
                   ...prev.voiceChat,
                   isOpen: true,
@@ -601,7 +601,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
               }));
             }}
             onStopVoice={async () => {
-              mutate((prev) => ({
+              appStoreMutate((prev) => ({
                 voiceChat: {
                   ...prev.voiceChat,
                   isOpen: false,

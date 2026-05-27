@@ -235,8 +235,8 @@ export async function buildDynamicModelsInfo() {
           isImageInputUnsupported: true,
           supportedFileMimeTypes: [],
           tier: "Legacy",
-        }
-      ]
+        },
+      ],
     });
   }
 
