@@ -1667,32 +1667,16 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           ...bindingTools,
           ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
           ...IMAGE_TOOL,
-          // Conditionally include edit image tools - Using Scoped Wrappers for Base64 support
-          ...(isRemoveBgRequest || imageUrl
-            ? { "remove-background": scopedRemoveBgTool }
-            : {}),
-          ...(isEnhanceImageRequest || imageUrl
-            ? { "enhance-image": scopedEnhanceImageTool }
-            : {}),
-          ...(isAnimeConversionRequest || imageUrl
-            ? { "anime-conversion": scopedAnimeConversionTool }
-            : {}),
-          ...(isRemoveWatermarkRequest || imageUrl
-            ? { "remove-watermark": scopedRemoveWatermarkTool }
-            : {}),
-          ...(isRemoveObjectRequest || imageUrl
-            ? { "remove-object": scopedRemoveObjectTool }
-            : {}),
-          ...(isSuperResolutionRequest || imageUrl
-            ? { "super-resolution": scopedSuperResolutionTool }
-            : {}),
-          ...(isRestoreOldPhotoRequest || imageUrl
-            ? { "restore-old-photo": scopedRestoreOldPhotoTool }
-            : {}),
-          ...(isBlurBackgroundRequest || imageUrl
-            ? { "blur-background": scopedBlurBackgroundTool }
-            : {}),
-          ...(imageUrl ? { "edit-image": scopedEditImageTool } : {}),
+          // Always include edit image tools - Using Scoped Wrappers for Base64 support
+          "remove-background": scopedRemoveBgTool,
+          "enhance-image": scopedEnhanceImageTool,
+          "anime-conversion": scopedAnimeConversionTool,
+          "remove-watermark": scopedRemoveWatermarkTool,
+          "remove-object": scopedRemoveObjectTool,
+          "super-resolution": scopedSuperResolutionTool,
+          "restore-old-photo": scopedRestoreOldPhotoTool,
+          "blur-background": scopedBlurBackgroundTool,
+          "edit-image": scopedEditImageTool,
           ...(isVideoGenRequest ? { "video-gen": videoGenTool } : {}),
 
           // ALWAYS include document generation tools to prevent AI from "forgetting" them
