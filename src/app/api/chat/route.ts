@@ -1643,14 +1643,14 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           isChatExportRequest && chatExportPrompt,
         );
 
-        const IMAGE_TOOL = useImageTool
-          ? {
-              [ImageToolName]:
-                effectiveImageTool?.model === "google"
-                  ? nanoBananaTool
-                  : openaiImageTool,
-            }
-          : {};
+        // Always register image-manager — the system prompt tells the AI it always has it.
+        // When the client selects a specific model, effectiveImageTool overrides the default.
+        const IMAGE_TOOL = {
+          [ImageToolName]:
+            effectiveImageTool?.model === "google"
+              ? nanoBananaTool
+              : openaiImageTool,
+        };
 
         const baseTools = {
           ...MCP_TOOLS,
