@@ -315,6 +315,7 @@ export default function PromptInput({
       const selectedImageUrl = validFiles[0]?.url;
 
       const toolMessages: Record<string, string> = {
+        "edit-image": "Upload an image to perform general edits.",
         "remove-background": "Upload an image to remove its background.",
         "enhance-image": "Upload an image to enhance it.",
         "anime-conversion": "Upload an image to convert it to anime style.",
@@ -821,6 +822,13 @@ export default function PromptInput({
                       </DropdownMenuSubTrigger>
                       <DropdownMenuPortal>
                         <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                          <DropdownMenuItem
+                            onClick={() => handleEditImage("edit-image")}
+                            className="cursor-pointer"
+                          >
+                            <Edit2 className="mr-2 size-4" />
+                            General Edit (Add/Modify)
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleEditImage("remove-background")}
                             className="cursor-pointer"

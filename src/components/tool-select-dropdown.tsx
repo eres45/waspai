@@ -1506,6 +1506,15 @@ function ImageEditSelector({
         <DropdownMenuPortal>
           <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
             <DropdownMenuItem
+              onClick={() => onEditImage?.("edit-image")}
+              className="cursor-pointer text-xs"
+            >
+              <div className="mr-2 size-4 flex items-center justify-center">
+                📝
+              </div>
+              General Edit (Add/Modify)
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => onEditImage?.("remove-background")}
               className="cursor-pointer text-xs"
             >
