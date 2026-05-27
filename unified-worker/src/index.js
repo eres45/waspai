@@ -265,8 +265,37 @@ function randomUUID() {
 // REQUEST BUILDERS (per-provider adapters)
 // ============================================================================
 
+const ALLOWED_PARAMS = [
+  "model",
+  "messages",
+  "temperature",
+  "top_p",
+  "n",
+  "stream",
+  "stop",
+  "max_tokens",
+  "presence_penalty",
+  "frequency_penalty",
+  "logit_bias",
+  "user",
+  "response_format",
+  "seed",
+  "tools",
+  "tool_choice",
+];
+
+function sanitizePayload(data) {
+  const sanitized = {};
+  for (const key of ALLOWED_PARAMS) {
+    if (data[key] !== undefined) {
+      sanitized[key] = data[key];
+    }
+  }
+  return sanitized;
+}
+
 function buildOpenAIRequest(body, mappedModel) {
-  return { ...body, model: mappedModel };
+  return { ...sanitizePayload(body), model: mappedModel };
 }
 
 function buildMakeChatRequest(body) {

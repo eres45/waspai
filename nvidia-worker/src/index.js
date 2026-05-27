@@ -495,7 +495,7 @@ async function handleChatCompletions(request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ...requestData,
+        ...sanitizePayload(requestData),
         model: requestedModel,
       }),
     });
@@ -518,7 +518,7 @@ async function handleChatCompletions(request) {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              ...requestData,
+              ...sanitizePayload(requestData),
               model: requestedModel,
             }),
           },
@@ -680,4 +680,33 @@ async function handleHealth() {
       },
     },
   );
+}
+
+const ALLOWED_PARAMS = [
+  "model",
+  "messages",
+  "temperature",
+  "top_p",
+  "n",
+  "stream",
+  "stop",
+  "max_tokens",
+  "presence_penalty",
+  "frequency_penalty",
+  "logit_bias",
+  "user",
+  "response_format",
+  "seed",
+  "tools",
+  "tool_choice",
+];
+
+function sanitizePayload(data) {
+  const sanitized = {};
+  for (const key of ALLOWED_PARAMS) {
+    if (data[key] !== undefined) {
+      sanitized[key] = data[key];
+    }
+  }
+  return sanitized;
 }
