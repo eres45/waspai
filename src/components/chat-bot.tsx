@@ -93,6 +93,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     pendingThreadMention,
     threadImageToolModel,
     editImageState,
+    voiceChat,
   ] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -105,6 +106,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
       state.pendingThreadMention,
       state.threadImageToolModel,
       state.editImageState,
+      state.voiceChat,
     ]),
   );
 
@@ -373,6 +375,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     sendMessageAction: sendMessage,
     setMessagesAction: setMessages,
     isLoading: isLoading || isPendingToolCall,
+    voice: voiceChat.options.providerOptions?.voice as any,
   });
 
   const space = useMemo(() => {

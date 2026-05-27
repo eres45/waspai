@@ -25,11 +25,15 @@ export function DictateButton({
   const recognitionRef = useRef<any>(null);
 
   // Snapshot of the text that was already in the box BEFORE dictation started.
-  // This never changes mid-session.
   const baseTextRef = useRef("");
 
-  // Running accumulation of FINAL (committed) transcription during this session.
+  // Running accumulation of transcription during this session.
   const finalTranscriptRef = useRef("");
+  const currentTranscriptRef = useRef<string>("");
+
+  // VAD silence detection refs
+  const lastSpeechTimeRef = useRef<number>(0);
+  const vadIntervalRef = useRef<any>(null);
 
   // Stable ref so the recognition handler can call setInputAction without
   // being re-created every render.
@@ -38,7 +42,7 @@ export function DictateButton({
     setInputRef.current = setInputAction;
   }, [setInputAction]);
 
-  // Initialize Speech Recognition ONCE on mount.
+  // Check Speech Recognition support on mount.
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -46,8 +50,36 @@ export function DictateButton({
 
     if (!SpeechRecognition) {
       setIsSupported(false);
-      return;
     }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (vadIntervalRef.current) {
+      clearInterval(vadIntervalRef.current);
+      vadIntervalRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_e) {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    onListeningChange?.(false);
+  }, [onListeningChange]);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    // Snapshot what's already in the input box as the base
+    baseTextRef.current = input.trim();
+    finalTranscriptRef.current = "";
+    currentTranscriptRef.current = "";
+    lastSpeechTimeRef.current = Date.now();
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true; // keep listening until stopped
@@ -55,74 +87,101 @@ export function DictateButton({
     recognition.maxAlternatives = 1;
     recognition.lang = navigator.language || "en-US";
 
+    recognition.onstart = () => {
+      setIsListening(true);
+      onListeningChange?.(true);
+    };
+
     recognition.onresult = (event: any) => {
       let interimText = "";
+      let hasNewSpeech = false;
 
-      // Walk only the NEW results in this event (from resultIndex onward)
+      // Walk only the NEW results in this event
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          // Add a space between words, not at start
           finalTranscriptRef.current +=
             (finalTranscriptRef.current ? " " : "") + transcript.trim();
         } else {
           interimText += transcript;
         }
+        hasNewSpeech = true;
       }
 
-      // Reconstruct the full input:
-      //   [original text before we started] + [committed words] + [partial word]
+      if (hasNewSpeech) {
+        lastSpeechTimeRef.current = Date.now();
+      }
+
+      // Reconstruct the full input
       const base = baseTextRef.current;
       const dictated =
         finalTranscriptRef.current +
         (interimText
           ? (finalTranscriptRef.current ? " " : "") + interimText
           : "");
-      setInputRef.current(base + (base && dictated ? " " : "") + dictated);
+
+      const fullText = base + (base && dictated ? " " : "") + dictated;
+      currentTranscriptRef.current = dictated;
+      setInputRef.current(fullText);
     };
 
     recognition.onend = () => {
-      setIsListening(false);
-      onListeningChange?.(false);
+      stopListening();
     };
 
     recognition.onerror = (event: any) => {
-      if (event.error !== "no-speech") {
+      if (event.error !== "no-speech" && event.error !== "aborted") {
         console.error("Dictate error:", event.error);
-        setIsListening(false);
-        onListeningChange?.(false);
       }
+      stopListening();
     };
 
     recognitionRef.current = recognition;
 
-    return () => {
-      recognition.abort();
-    };
-  }, []); // Run once
+    // Start VAD timer to automatically stop after 2 seconds of silence
+    vadIntervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const timeSinceSpeech = now - lastSpeechTimeRef.current;
+      const dictatedText = currentTranscriptRef.current.trim();
+
+      if (
+        lastSpeechTimeRef.current > 0 &&
+        timeSinceSpeech > 2000 &&
+        dictatedText.length > 0
+      ) {
+        stopListening();
+      }
+    }, 300);
+
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error("Failed to start dictate recognition:", err);
+      stopListening();
+    }
+  }, [input, stopListening, onListeningChange]);
 
   const toggleListening = useCallback(() => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-
     if (isListening) {
-      recognition.stop();
-      setIsListening(false);
-      onListeningChange?.(false);
+      stopListening();
     } else {
-      // Snapshot what's already in the input box as the base
-      baseTextRef.current = input.trim();
-      finalTranscriptRef.current = "";
-
-      try {
-        recognition.start();
-        setIsListening(true);
-        onListeningChange?.(true);
-      } catch (_e) {
-        // May throw if already started in certain browsers, safe to ignore
-      }
+      startListening();
     }
-  }, [isListening, input]);
+  }, [isListening, startListening, stopListening]);
+
+  // Clean up resources on unmount
+  useEffect(() => {
+    return () => {
+      if (vadIntervalRef.current) {
+        clearInterval(vadIntervalRef.current);
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (_e) {}
+      }
+    };
+  }, []);
 
   if (!isSupported) return null;
 
@@ -168,7 +227,7 @@ export function DictateButton({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          {isListening ? "Stop Dictating" : "Dictate Message"}
+          {isListening ? "Stop Dictating (VAD active)" : "Dictate Message"}
         </TooltipContent>
       </Tooltip>
     </div>

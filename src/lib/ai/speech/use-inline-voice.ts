@@ -33,6 +33,11 @@ export function useInlineVoice({
   const userSpeechStartTime = useRef<number>(0);
   const userSpeechEndTime = useRef<number>(0);
 
+  // VAD silence detection refs
+  const lastSpeechTimeRef = useRef<number>(0);
+  const currentTranscriptRef = useRef<string>("");
+  const vadIntervalRef = useRef<any>(null);
+
   // TTS Chunking state
   const lastProcessedMessageId = useRef<string | null>(null);
   const lastProcessedCharIndex = useRef<number>(0);
@@ -45,6 +50,43 @@ export function useInlineVoice({
   // Buffer to accumulate incoming stream chunks before identifying a complete sentence
   const sentenceBuffer = useRef<string>("");
   const isFirstSentenceEmitted = useRef<boolean>(false);
+
+  // VAD silence detection to automatically submit input
+  useEffect(() => {
+    if (isActive && isListening && !isAssistantSpeaking) {
+      vadIntervalRef.current = setInterval(() => {
+        const now = Date.now();
+        const timeSinceSpeech = now - lastSpeechTimeRef.current;
+        const transcript = currentTranscriptRef.current.trim();
+
+        // DYNAMIC SILENCE: Short sentence -> faster response, Long sentence -> let them pause
+        const silenceThreshold = transcript.length < 20 ? 1000 : 1800;
+
+        if (
+          lastSpeechTimeRef.current > 0 &&
+          timeSinceSpeech > silenceThreshold &&
+          transcript.length > 0
+        ) {
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+            } catch (_e) {}
+          }
+          clearInterval(vadIntervalRef.current);
+          vadIntervalRef.current = null;
+        }
+      }, 300);
+    } else {
+      if (vadIntervalRef.current) {
+        clearInterval(vadIntervalRef.current);
+        vadIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (vadIntervalRef.current) clearInterval(vadIntervalRef.current);
+    };
+  }, [isActive, isListening, isAssistantSpeaking]);
 
   const startListening = useCallback(async () => {
     try {
@@ -73,6 +115,8 @@ export function useInlineVoice({
 
       let finalTranscript = "";
       userSpeechStartTime.current = Date.now();
+      lastSpeechTimeRef.current = 0;
+      currentTranscriptRef.current = "";
 
       // Mark the current last message as "processed" so we don't read history
       if (messages.length > 0) {
@@ -103,15 +147,23 @@ export function useInlineVoice({
 
       recognitionRef.current.onresult = (event: any) => {
         let tempFinal = "";
+        let interimTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            tempFinal += event.results[i][0].transcript + " ";
+            tempFinal += transcript + " ";
+          } else {
+            interimTranscript += transcript;
           }
         }
-        if (tempFinal) {
-          finalTranscript += tempFinal;
-          // For continuous mode, we DON'T stop here. We let the user finish naturally.
-          // The onend will be triggered by quiet or manual stop if needed.
+        if (tempFinal || interimTranscript.trim().length > 2) {
+          lastSpeechTimeRef.current = Date.now();
+          if (tempFinal) {
+            finalTranscript += tempFinal;
+            currentTranscriptRef.current = finalTranscript;
+          } else {
+            currentTranscriptRef.current = finalTranscript + interimTranscript;
+          }
         }
       };
 
@@ -125,7 +177,9 @@ export function useInlineVoice({
 
       recognitionRef.current.onend = () => {
         setIsListening(false);
-        if (finalTranscript.trim()) {
+        const textToSubmit =
+          finalTranscript.trim() || currentTranscriptRef.current.trim();
+        if (textToSubmit && isActive) {
           userSpeechEndTime.current = Date.now();
           const durationSecs = (
             (userSpeechEndTime.current - userSpeechStartTime.current) /
@@ -136,7 +190,7 @@ export function useInlineVoice({
           sendMessageAction({
             id: generateUUID(),
             role: "user",
-            parts: [{ type: "text", text: finalTranscript.trim() }],
+            parts: [{ type: "text", text: textToSubmit }],
             metadata: {
               isVoice: true,
               userVoiceDuration: durationSecs,
@@ -150,6 +204,8 @@ export function useInlineVoice({
           isFirstSentenceEmitted.current = false;
           ttsQueue.current = [];
           assistantSpeechStartTime.current = Date.now();
+          currentTranscriptRef.current = "";
+          lastSpeechTimeRef.current = 0;
         } else {
           // If active and no text, restart to keep it "awake"
           if (isActive) {

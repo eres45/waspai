@@ -25,6 +25,7 @@ export type VoiceChatOptions = {
   chatModel?: ChatModel;
   allowedMcpServers?: Record<string, any>;
   allowedAppDefaultToolkit?: string[];
+  threadId?: string;
 };
 
 export type VoiceChatHook = (props?: {

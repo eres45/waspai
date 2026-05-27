@@ -153,7 +153,6 @@ export async function POST(request: Request) {
     const {
       id,
       message,
-      messages: clientMessages = [],
       chatModel,
       toolChoice,
       allowedAppDefaultToolkit,
@@ -344,15 +343,10 @@ export async function POST(request: Request) {
       }
     });
 
-    if (isVoiceChat && clientMessages.length > 0) {
-      logger.info(
-        `Voice chat: using ${clientMessages.length} client-provided messages instead of DB history`,
-      );
-      messages.length = 0;
-      messages.push(...clientMessages);
-    } else {
-      logger.info(`Loaded ${messages.length} messages from thread history`);
+    if (isVoiceChat) {
+      logger.info(`Voice chat session: using complete thread history from DB`);
     }
+    logger.info(`Loaded ${messages.length} messages from thread history`);
 
     // Sanitize messages to remove huge base64 data URLs from history
     // This prevents context explosion (5MB+ prompts) when using data: URLs for image previews
@@ -2079,13 +2073,9 @@ Always be aware of these installed skills. If a user asks "how many skills do we
 
       generateId: generateUUID,
       onFinish: async ({ responseMessage }) => {
-        // Skip saving to history if this is a voice chat session
-        if (isVoiceChat) {
-          return;
-        }
-
         // Add isVoice metadata to the response if this was a voice interaction
-        const isVoiceInteraction = (message.metadata as any)?.isVoice === true;
+        const isVoiceInteraction =
+          isVoiceChat || (message.metadata as any)?.isVoice === true;
         const finalMetadata: any = {
           ...metadata,
           ...(isVoiceInteraction ? { isVoice: true } : {}),

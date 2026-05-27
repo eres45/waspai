@@ -4,12 +4,12 @@ import logger from "logger";
 const TTS_WORKER_URL = "https://tts-worker.llamai.workers.dev/v1/audio/speech";
 
 const SARVAM_VOICE_LANGS: Record<string, string> = {
-  "shubh": "hi-IN",
-  "bulbul": "hi-IN",
-  "aswarth": "te-IN",
-  "karthik": "ta-IN",
-  "deepika": "kn-IN",
-  "lata": "mr-IN",
+  shubh: "hi-IN",
+  bulbul: "hi-IN",
+  aswarth: "te-IN",
+  karthik: "ta-IN",
+  deepika: "kn-IN",
+  lata: "mr-IN",
 };
 
 /**
@@ -45,25 +45,31 @@ export async function POST(request: NextRequest) {
         `Sarvam TTS: speaker=${speaker}, lang=${targetLang}, text="${text.substring(0, 60)}..."`,
       );
 
-      const sarvamResponse = await fetch("https://api.sarvam.ai/text-to-speech", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api-subscription-key": process.env.SARVAM_API_KEY,
+      const sarvamResponse = await fetch(
+        "https://api.sarvam.ai/text-to-speech",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-subscription-key": process.env.SARVAM_API_KEY,
+          },
+          body: JSON.stringify({
+            text: text.trim(),
+            target_language_code: targetLang,
+            speaker,
+            model: "bulbul:v3",
+          }),
         },
-        body: JSON.stringify({
-          text: text.trim(),
-          target_language_code: targetLang,
-          speaker,
-          model: "bulbul:v3",
-        }),
-      });
+      );
 
       if (!sarvamResponse.ok) {
         const err = await sarvamResponse.text();
         logger.error(`Sarvam TTS error ${sarvamResponse.status}: ${err}`);
         return Response.json(
-          { success: false, error: `Sarvam TTS provider error: ${sarvamResponse.status}` },
+          {
+            success: false,
+            error: `Sarvam TTS provider error: ${sarvamResponse.status}`,
+          },
           { status: 502 },
         );
       }
@@ -79,7 +85,9 @@ export async function POST(request: NextRequest) {
       }
 
       const audioBuffer = Buffer.from(base64Data, "base64");
-      logger.info(`Sarvam TTS success: ${audioBuffer.byteLength} bytes returned`);
+      logger.info(
+        `Sarvam TTS success: ${audioBuffer.byteLength} bytes returned`,
+      );
 
       return new Response(audioBuffer, {
         status: 200,
@@ -91,11 +99,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Map common names to the new worker voices if needed
-    let targetVoice = voice;
-    if (["nova", "shimmer", "alloy"].includes(voice)) {
-      targetVoice = "en-US-JennyNeural";
-    } else if (["echo", "onyx", "fable"].includes(voice)) {
-      targetVoice = "en-US-GuyNeural";
+    let targetVoice = "en-US-JennyNeural";
+    const maleVoices = [
+      "echo",
+      "onyx",
+      "fable",
+      "verse",
+      "ash",
+      "ballad",
+      "en-US-GuyNeural",
+    ];
+    const femaleVoices = [
+      "nova",
+      "shimmer",
+      "alloy",
+      "sage",
+      "coral",
+      "en-US-JennyNeural",
+    ];
+
+    if (voice && typeof voice === "string") {
+      if (maleVoices.includes(voice)) {
+        targetVoice = "en-US-GuyNeural";
+      } else if (femaleVoices.includes(voice)) {
+        targetVoice = "en-US-JennyNeural";
+      }
     }
 
     logger.info(

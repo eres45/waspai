@@ -233,7 +233,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
         const messageId = generateUUID();
         const requestBody: any = {
-          id: messageId,
+          id: props?.threadId || messageId,
           message: {
             id: userMessage.id,
             role: userMessage.role,
@@ -367,6 +367,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       props?.toolMentions,
       props?.allowedMcpServers,
       props?.allowedAppDefaultToolkit,
+      props?.threadId,
     ],
   );
 
