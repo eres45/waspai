@@ -103,6 +103,14 @@ const MODEL_MAP = {
     provider: "groqworker",
     model: "openai/gpt-oss-120b",
   },
+  "gemini-2.5-flash": {
+    provider: "gemini-openai",
+    model: "gemini-2.5-flash",
+  },
+  "gemini-2.5-flash-lite": {
+    provider: "gemini-openai",
+    model: "gemini-2.5-flash-lite",
+  },
 };
 
 // ============================================================================
@@ -230,6 +238,11 @@ const PROVIDERS = {
     base: "https://chat-gpt-oss.com/api",
     key: null,
     openai: false,
+  },
+  "gemini-openai": {
+    base: "https://gemini-openai.revai.workers.dev/v1",
+    key: null,
+    openai: true,
   },
 };
 
@@ -436,6 +449,7 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
     case "completions":
     case "openrouter":
     case "gptossworker":
+    case "gemini-openai":
       url = `${cfg.base}/chat/completions`;
       reqBody = buildOpenAIRequest(body, mapped.model);
       headers = { "Content-Type": "application/json" };
@@ -606,6 +620,7 @@ async function* streamResponse(providerKey, res, model) {
         case "completions":
         case "openrouter":
         case "gptossworker":
+        case "gemini-openai":
           if (line.startsWith("data: ")) {
             const data = line.slice(6).trim();
             if (data === "[DONE]") continue;
@@ -699,6 +714,7 @@ async function nonStreamResponse(providerKey, res, model) {
     case "completions":
     case "openrouter":
     case "gptossworker":
+    case "gemini-openai":
       try {
         const j = JSON.parse(text);
         return j;
@@ -827,6 +843,7 @@ function getFallbackProvider(providerKey) {
     "svelteai",
     "groqworker",
     "nvidiaworker",
+    "gemini-openai",
   ];
   const idx = fallbackChain.indexOf(providerKey);
   if (idx >= 0 && idx < fallbackChain.length - 1) {

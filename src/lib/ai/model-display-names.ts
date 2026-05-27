@@ -53,6 +53,8 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "openai-gpt-oss-120b": "GPT-OSS 120B",
   "gpt-oss-120b": "GPT-OSS 120B",
   "gpt-oss-120b-p2": "GPT-OSS 120B P2",
+  "gemini-2.5-flash": "Gemini 2.5 Flash",
+  "gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",
   "openai-gpt-oss-20b": "GPT-OSS 20B",
   "openai-gpt-oss-safeguard-20b": "GPT-OSS Safeguard 20B",
   "qwen-qwen3-32b": "Qwen 3 32B",
