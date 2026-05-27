@@ -28,9 +28,9 @@ const sarvamProvider = createOpenAICompatible({
   name: "Sarvam",
   apiKey: process.env.SARVAM_API_KEY || "dummy",
   baseURL: "https://api.sarvam.ai/v1",
-  headers: () => ({
+  headers: {
     "api-subscription-key": process.env.SARVAM_API_KEY || "",
-  }),
+  },
 });
 
 // ─── Vision / image-input heuristic ──────────────────────────────────────────
