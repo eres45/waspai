@@ -179,7 +179,7 @@ export function useInlineVoice({
         setIsListening(false);
         const textToSubmit =
           finalTranscript.trim() || currentTranscriptRef.current.trim();
-        if (textToSubmit && isActive) {
+        if (textToSubmit && isActiveRef.current) {
           userSpeechEndTime.current = Date.now();
           const durationSecs = (
             (userSpeechEndTime.current - userSpeechStartTime.current) /
@@ -208,7 +208,7 @@ export function useInlineVoice({
           lastSpeechTimeRef.current = 0;
         } else {
           // If active and no text, restart to keep it "awake"
-          if (isActive) {
+          if (isActiveRef.current) {
             try {
               recognitionRef.current?.start();
             } catch (_e) {}
@@ -236,6 +236,17 @@ export function useInlineVoice({
     }
     setIsAssistantSpeaking(false);
   }, []);
+
+  const isActiveRef = useRef(isActive);
+  const startListeningRef = useRef(startListening);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
+  useEffect(() => {
+    startListeningRef.current = startListening;
+  }, [startListening]);
 
   const playNextInQueue = useCallback(async () => {
     if (isPlayingQueue.current || ttsQueue.current.length === 0) return;
@@ -268,8 +279,8 @@ export function useInlineVoice({
         } else {
           setIsAssistantSpeaking(false);
           // Auto-restart listening for continuous chat
-          if (isActive) {
-            startListening();
+          if (isActiveRef.current) {
+            startListeningRef.current();
           }
         }
       };

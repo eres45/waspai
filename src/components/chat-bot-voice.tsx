@@ -247,7 +247,7 @@ export function ChatBotVoice() {
 
   useEffect(() => {
     if (voiceChat.isOpen) {
-      // startWithSound();
+      startWithSound();
     } else if (isActive) {
       stop();
     }

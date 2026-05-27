@@ -49,7 +49,6 @@ import { useMounted } from "@/hooks/use-mounted";
 import { AnimatePresence, motion } from "framer-motion";
 import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
 import { useFileDragOverlay } from "@/hooks/use-file-drag-overlay";
-import { useInlineVoice } from "lib/ai/speech/use-inline-voice";
 
 type Props = {
   threadId: string;
@@ -365,19 +364,6 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     return true;
   }, [status, messages]);
 
-  const {
-    isActive: isVoiceActive,
-    isListening: isVoiceListening,
-    startListening: startVoiceListening,
-    stopListening: stopVoiceListening,
-  } = useInlineVoice({
-    messages,
-    sendMessageAction: sendMessage,
-    setMessagesAction: setMessages,
-    isLoading: isLoading || isPendingToolCall,
-    voice: voiceChat.options.providerOptions?.voice as any,
-  });
-
   const space = useMemo(() => {
     if (!isLoading || error) return false;
     const lastMessage = messages.at(-1);
@@ -600,10 +586,28 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             isLoading={isLoading || isPendingToolCall}
             onStopAction={stop}
             onFocus={handleFocus}
-            isVoiceActive={isVoiceActive}
-            isVoiceListening={isVoiceListening}
-            onStartVoice={startVoiceListening}
-            onStopVoice={stopVoiceListening}
+            isVoiceActive={voiceChat.isOpen}
+            isVoiceListening={voiceChat.isOpen}
+            onStartVoice={() => {
+              const activeAgentId = toolMentions?.find(
+                (m) => m.type === "agent",
+              )?.agentId;
+              mutate((prev) => ({
+                voiceChat: {
+                  ...prev.voiceChat,
+                  isOpen: true,
+                  agentId: activeAgentId,
+                },
+              }));
+            }}
+            onStopVoice={async () => {
+              mutate((prev) => ({
+                voiceChat: {
+                  ...prev.voiceChat,
+                  isOpen: false,
+                },
+              }));
+            }}
           />
         </div>
         <DeleteThreadPopup

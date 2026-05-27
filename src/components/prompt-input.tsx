@@ -1074,6 +1074,7 @@ export default function PromptInput({
                     setInputAction={setInputAction}
                     onListeningChange={setIsDictating}
                     className="mx-1"
+                    editorRef={editorRef}
                   />
                 )}
 

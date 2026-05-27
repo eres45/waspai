@@ -12,6 +12,7 @@ interface DictateButtonProps {
   setInputAction: (value: string) => void;
   onListeningChange?: (isListening: boolean) => void;
   className?: string;
+  editorRef?: React.RefObject<any>;
 }
 
 export function DictateButton({
@@ -19,6 +20,7 @@ export function DictateButton({
   setInputAction,
   onListeningChange,
   className,
+  editorRef,
 }: DictateButtonProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -122,7 +124,15 @@ export function DictateButton({
 
       const fullText = base + (base && dictated ? " " : "") + dictated;
       currentTranscriptRef.current = dictated;
-      setInputRef.current(fullText);
+
+      const editor = editorRef?.current;
+      if (editor) {
+        // Update TipTap directly and focus at the end of the text
+        editor.chain().setContent(fullText).focus("end").run();
+      } else {
+        // Fallback to standard input action
+        setInputRef.current(fullText);
+      }
     };
 
     recognition.onend = () => {
