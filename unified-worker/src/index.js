@@ -439,6 +439,43 @@ function parseGPTOSSDirect(line) {
 }
 
 // ============================================================================
+// Mapped model resolver for fallback providers
+function getMappedModel(providerKey, originalModel) {
+  // If the original model is mapped directly to this provider, use it
+  const mappedDirect = MODEL_MAP[originalModel];
+  if (mappedDirect && mappedDirect.provider === providerKey) {
+    return mappedDirect.model;
+  }
+
+  // Otherwise, extract the base name (everything after the first dash)
+  // e.g. chatai-gpt-4o -> base is gpt-4o
+  const dashIndex = originalModel.indexOf("-");
+  if (dashIndex > 0) {
+    const baseName = originalModel.slice(dashIndex + 1);
+
+    // Construct equivalent model key for the fallback provider
+    // e.g. chatbotai-gpt-4o, svelteai-gpt-4o, etc.
+    const fallbackKey = `${providerKey}-${baseName}`;
+    const fallbackMapped = MODEL_MAP[fallbackKey];
+    if (fallbackMapped) {
+      return fallbackMapped.model;
+    }
+
+    // Special alias case for claude-sonnet vs claude-3-sonnet
+    if (baseName === "claude-sonnet") {
+      const altKey = `${providerKey}-claude-3-sonnet`;
+      const altMapped = MODEL_MAP[altKey];
+      if (altMapped) return altMapped.model;
+    } else if (baseName === "claude-3-sonnet") {
+      const altKey = `${providerKey}-claude-sonnet`;
+      const altMapped = MODEL_MAP[altKey];
+      if (altMapped) return altMapped.model;
+    }
+  }
+
+  return originalModel;
+}
+
 // MAIN FETCH LOGIC
 // ============================================================================
 
@@ -446,10 +483,11 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
   const cfg = PROVIDERS[providerKey];
   if (!cfg) throw new Error(`Unknown provider: ${providerKey}`);
 
-  const mapped = MODEL_MAP[body.model] || {
-    provider: providerKey,
-    model: body.model,
-  };
+  if (providerKey === "botnation") {
+    throw new Error("botnation provider is currently disabled");
+  }
+
+  const mappedModel = getMappedModel(providerKey, body.model);
   const apiKey = cfg.key ? env[cfg.key] || null : null;
 
   let url,
@@ -480,7 +518,7 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
     case "gptossworker":
     case "gemini-openai":
       url = `${cfg.base}/chat/completions`;
-      reqBody = buildOpenAIRequest(body, mapped.model);
+      reqBody = buildOpenAIRequest(body, mappedModel);
       headers = { "Content-Type": "application/json" };
       if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
       break;
@@ -516,7 +554,7 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
       break;
 
     case "gemini": {
-      const modelName = mapped.model || "gemini-1.5-pro";
+      const modelName = mappedModel || "gemini-1.5-pro";
       url = `${cfg.base}/models/${modelName}:generateContent?key=${apiKey || ""}`;
       reqBody = buildGeminiRequest(body, apiKey);
       headers = { "Content-Type": "application/json" };
@@ -861,12 +899,15 @@ function createOpenAIResponse(model, content) {
 // ============================================================================
 
 function getFallbackProvider(providerKey) {
+  if (providerKey === "botnation") {
+    return "openrouterhub";
+  }
+
   const fallbackChain = [
     "freecf",
     "gptossworker",
     "chatai",
     "chatbotai",
-    "botnation",
     "openrouterhub",
     "randomai",
     "svelteai",
