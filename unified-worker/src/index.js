@@ -953,6 +953,183 @@ async function routeChat(body, env) {
 }
 
 // ============================================================================
+// IMAGE GENERATION ROUTING & NORMALIZATION
+// ============================================================================
+
+async function handleImageGenerations(request) {
+  try {
+    const body = await request.json();
+    const prompt = body.prompt;
+    let model = body.model || "flux-schnell";
+
+    // Normalize model ID
+    model = model.toLowerCase();
+    if (model.includes("schnell")) model = "flux-schnell";
+    else if (model.includes("dev") || model === "flux") model = "flux";
+    else if (model.includes("juggernaut")) model = "juggernaut-xl";
+    else if (model.includes("realvis")) model = "realvisxl-v4";
+    else if (model.includes("sd-3") || model.includes("sd3")) model = "sd-3.5";
+    else if (model.includes("seedream")) model = "seedream-4.5";
+    else if (model.includes("sdxl")) model = "sdxl-1.0";
+
+    let res, text;
+
+    if (model === "flux-schnell") {
+      res = await fetch(
+        `https://ai-images-proxy.llamai.workers.dev/?prompt=${encodeURIComponent(prompt)}`,
+        {
+          method: "POST",
+        },
+      );
+      text = await res.text();
+    } else if (model === "juggernaut-xl") {
+      res = await fetch(
+        `https://image-world-king-proxy.llamai.workers.dev/api/generate?prompt=${encodeURIComponent(prompt)}`,
+        {
+          method: "POST",
+        },
+      );
+      text = await res.text();
+    } else if (model === "flux") {
+      res = await fetch("https://runware-image-worker.llamai.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, outputType: "URL" }),
+      });
+      text = await res.text();
+    } else if (model === "realvisxl-v4") {
+      res = await fetch("https://mu-devs-image-worker.llamai.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      text = await res.text();
+    } else if (model === "sd-3.5") {
+      res = await fetch("https://aitubo.llamai.workers.dev/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, count: 1 }),
+      });
+      text = await res.text();
+    } else if (model === "seedream-4.5") {
+      res = await fetch(
+        "https://raphaelai.llamai.workers.dev/v1/images/generations",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, style: "None" }),
+        },
+      );
+      text = await res.text();
+    } else if (model === "sdxl-1.0") {
+      res = await fetch(
+        "https://image-api.at41rvplayzz.workers.dev/v1/images/generations",
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer At41rv-API-Image",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "sdxl-1.0",
+            prompt,
+            size: "1024x1024",
+          }),
+        },
+      );
+      text = await res.text();
+    } else {
+      // Default fallback
+      res = await fetch(
+        `https://ai-images-proxy.llamai.workers.dev/?prompt=${encodeURIComponent(prompt)}`,
+        {
+          method: "POST",
+        },
+      );
+      text = await res.text();
+    }
+
+    if (!res.ok) {
+      return new Response(
+        JSON.stringify({ error: `Upstream error: ${res.status} — ${text}` }),
+        {
+          status: res.status,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+    }
+
+    // Try to parse text as JSON and extract URL
+    let imageUrl = "";
+    try {
+      const data = JSON.parse(text);
+      if (data.data && Array.isArray(data.data) && data.data[0]) {
+        imageUrl = data.data[0].url || data.data[0].b64_json || "";
+      } else {
+        imageUrl =
+          data.url || data.image || data.image_url || data.imageUrl || "";
+      }
+    } catch {
+      // If not JSON, check if it contains a URL
+      const match = text.match(/https?:\/\/[^\s"']+/);
+      if (match) {
+        imageUrl = match[0];
+      } else if (text.length > 100) {
+        // Assume base64
+        imageUrl = text;
+      }
+    }
+
+    if (!imageUrl) {
+      return new Response(
+        JSON.stringify({
+          error: "Failed to extract image URL or data from response",
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
+    }
+
+    // Return standard OpenAI-compatible format
+    const responseData = {
+      created: Math.floor(Date.now() / 1000),
+      data: [
+        imageUrl.startsWith("http")
+          ? { url: imageUrl }
+          : { b64_json: imageUrl },
+      ],
+    };
+
+    return new Response(JSON.stringify(responseData), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: `Internal server error: ${error.message}` }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    );
+  }
+}
+
+// ============================================================================
 // WORKER EXPORT
 // ============================================================================
 
@@ -1079,6 +1256,11 @@ export default {
       return new Response(JSON.stringify(responseData), {
         headers: corsHeaders,
       });
+    }
+
+    // Image generations
+    if (path === "/v1/images/generations" && request.method === "POST") {
+      return await handleImageGenerations(request);
     }
 
     return new Response(JSON.stringify({ error: "Not found" }), {
