@@ -75,6 +75,7 @@ export function ChatBotVoice() {
     model,
     allowedMcpServers,
     mcpList,
+    allowedAppDefaultToolkit,
   ] = appStore(
     useShallow((state) => [
       state.voiceChat.agentId,
@@ -83,6 +84,7 @@ export function ChatBotVoice() {
       state.chatModel,
       state.allowedMcpServers,
       state.mcpList,
+      state.allowedAppDefaultToolkit,
     ]),
   );
 
@@ -136,6 +138,9 @@ export function ChatBotVoice() {
   } = useCustomVoiceChat({
     toolMentions,
     agentId,
+    chatModel: model,
+    allowedMcpServers,
+    allowedAppDefaultToolkit,
     ...voiceChat.options.providerOptions,
   });
 

@@ -234,17 +234,28 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         const messageId = generateUUID();
         const requestBody: any = {
           id: messageId,
-          messages: currentHistory.map((m) => ({
+          message: {
+            id: userMessage.id,
+            role: userMessage.role,
+            parts: userMessage.parts,
+            metadata: {
+              agentId: props?.agentId,
+            },
+          },
+          messages: currentHistory.slice(0, -1).map((m) => ({
             id: m.id,
             role: m.role,
-            content: (m.parts[0] as TextPart).text,
+            parts: m.parts,
           })),
-          chatModel: {
+          chatModel: props?.chatModel || {
             provider: "Meta",
-            model: "Llama 3.3 70B",
+            model: "Llama 3.3 70B Versatile",
           },
           toolChoice: "auto",
           systemPrompt: voiceSystemPrompt,
+          mentions: props?.toolMentions,
+          allowedMcpServers: props?.allowedMcpServers,
+          allowedAppDefaultToolkit: props?.allowedAppDefaultToolkit,
         };
 
         const response = await fetch("/api/chat", {
@@ -347,7 +358,16 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         setIsAssistantSpeaking(false);
       }
     },
-    [voice, playNextInQueue],
+    [
+      voice,
+      playNextInQueue,
+      props?.chatModel?.provider,
+      props?.chatModel?.model,
+      props?.agentId,
+      props?.toolMentions,
+      props?.allowedMcpServers,
+      props?.allowedAppDefaultToolkit,
+    ],
   );
 
   // VAD Interval Logic

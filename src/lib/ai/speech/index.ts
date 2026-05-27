@@ -1,5 +1,5 @@
 import { UIMessage } from "ai";
-import { ChatMention } from "app-types/chat";
+import { ChatMention, ChatModel } from "app-types/chat";
 
 export type UIMessageWithCompleted = UIMessage & { completed: boolean };
 
@@ -22,6 +22,9 @@ export type VoiceChatOptions = {
   agentId?: string;
   model?: string;
   voice?: string;
+  chatModel?: ChatModel;
+  allowedMcpServers?: Record<string, any>;
+  allowedAppDefaultToolkit?: string[];
 };
 
 export type VoiceChatHook = (props?: {
