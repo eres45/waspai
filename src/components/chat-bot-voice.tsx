@@ -8,6 +8,7 @@ import {
 } from "lib/ai/speech/custom-tts";
 
 import { useCustomVoiceChat } from "lib/ai/speech/custom-voice-chat";
+import { VoiceVisualizerBlob } from "./voice-visualizer-blob";
 import { cn, groupBy, isNull } from "lib/utils";
 import {
   CheckIcon,
@@ -422,15 +423,24 @@ export function ChatBotVoice() {
                   </Alert>
                 </div>
               ) : null}
-              {isLoading ? (
-                <div className="flex-1"></div>
+              {useCompactView ? (
+                <div className="h-full w-full">
+                  <CompactMessageView
+                    messages={messages}
+                    isActive={isActive}
+                    isListening={isListening}
+                    isUserSpeaking={isUserSpeaking}
+                    isAssistantSpeaking={isAssistantSpeaking}
+                    isLoading={isLoading}
+                  />
+                </div>
+              ) : isLoading ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <MessageLoading className="text-foreground" />
+                </div>
               ) : (
                 <div className="h-full w-full">
-                  {useCompactView ? (
-                    <CompactMessageView messages={messages} />
-                  ) : (
-                    <ConversationView messages={messages} />
-                  )}
+                  <ConversationView messages={messages} />
                 </div>
               )}
             </div>
@@ -599,8 +609,18 @@ function ConversationView({
 
 function CompactMessageView({
   messages,
+  isActive,
+  isListening,
+  isUserSpeaking,
+  isAssistantSpeaking,
+  isLoading,
 }: {
   messages: UIMessageWithCompleted[];
+  isActive: boolean;
+  isListening: boolean;
+  isUserSpeaking: boolean;
+  isAssistantSpeaking: boolean;
+  isLoading: boolean;
 }) {
   const { toolParts, textPart } = useMemo(() => {
     const toolParts = messages
@@ -613,7 +633,7 @@ function CompactMessageView({
   }, [messages]);
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-6">
       <div className="absolute bottom-6 max-h-[80vh] overflow-y-auto left-6 z-10 flex-col gap-2 hidden md:flex">
         {toolParts.map((toolPart, index) => {
           const isExecuting = toolPart?.state.startsWith("input");
@@ -674,23 +694,54 @@ function CompactMessageView({
         })}
       </div>
 
-      {/* Current Message - Prominent */}
-      {textPart && (
-        <div className="w-full mx-auto h-full max-h-[80vh] overflow-y-auto px-4 lg:max-w-4xl flex-1 flex items-center">
-          <div className="animate-in fade-in-50 duration-1000">
-            <p className="text-2xl md:text-3xl lg:text-4xl font-semibold leading-tight tracking-wide">
-              {textPart.text?.split(" ").map((word, wordIndex) => (
-                <span
-                  key={wordIndex}
-                  className="animate-in fade-in duration-5000"
-                >
-                  {word}{" "}
-                </span>
-              ))}
+      <div className="flex flex-col items-center justify-center flex-1 w-full gap-10 max-h-[70vh]">
+        {/* Animated Blob */}
+        <VoiceVisualizerBlob
+          isActive={isActive}
+          isListening={isListening}
+          isUserSpeaking={isUserSpeaking}
+          isAssistantSpeaking={isAssistantSpeaking}
+          isLoading={isLoading}
+        />
+
+        {/* Real-time Assistant Response Text */}
+        <div className="w-full max-w-2xl text-center min-h-[8rem] flex items-start justify-center overflow-y-auto px-4 select-text">
+          {textPart?.text ? (
+            <div className="animate-in fade-in-50 duration-700">
+              <p className="text-xl md:text-2xl font-semibold leading-relaxed tracking-wide text-foreground/90">
+                {textPart.text.split(" ").map((word, wordIndex) => (
+                  <span
+                    key={wordIndex}
+                    className="animate-in fade-in duration-300"
+                  >
+                    {word}{" "}
+                  </span>
+                ))}
+              </p>
+            </div>
+          ) : isLoading ? (
+            <p className="text-lg text-muted-foreground/80 font-medium animate-pulse">
+              Thinking...
             </p>
-          </div>
+          ) : isUserSpeaking && isListening ? (
+            <p className="text-lg text-emerald-500/80 font-medium animate-pulse">
+              Listening...
+            </p>
+          ) : isListening ? (
+            <p className="text-base text-muted-foreground/60 font-medium">
+              Go ahead, I&apos;m listening
+            </p>
+          ) : !isActive ? (
+            <p className="text-base text-muted-foreground/60 font-medium">
+              Tap the phone button to start
+            </p>
+          ) : (
+            <p className="text-base text-muted-foreground/60 font-medium">
+              Microphone is muted
+            </p>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
