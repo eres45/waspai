@@ -133,6 +133,14 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
 
   // 6. Check Telegram configuration
   if (storageDriver === "telegram") {
+    // When routing through the Cloudflare worker proxy, Telegram tokens are
+    // stored inside the worker itself — Next.js never needs them directly.
+    const hasWorkerProxy = !!process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
+    if (hasWorkerProxy) {
+      return { isValid: true };
+    }
+
+    // Direct Telegram mode: tokens must be on the server
     const missing: string[] = [];
     if (!process.env.TELEGRAM_BOT_TOKEN) missing.push("TELEGRAM_BOT_TOKEN");
     if (!process.env.TELEGRAM_CHANNEL_ID) missing.push("TELEGRAM_CHANNEL_ID");
@@ -145,7 +153,8 @@ export async function checkStorageAction(): Promise<StorageCheckResult> {
           "Add required env vars for Telegram storage:\n" +
           "- FILE_STORAGE_TYPE=telegram\n" +
           "- TELEGRAM_BOT_TOKEN=your-bot-token\n" +
-          "- TELEGRAM_CHANNEL_ID=your-channel-id",
+          "- TELEGRAM_CHANNEL_ID=your-channel-id\n" +
+          "(Or set NEXT_PUBLIC_CLOUDFLARE_WORKER_URL to use the Cloudflare worker proxy)",
       };
     }
 
