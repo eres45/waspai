@@ -1,8 +1,4 @@
-import {
-  archiveRepository,
-  chatRepository,
-  siteRepository,
-} from "lib/db/repository";
+import { archiveRepository, siteRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -63,12 +59,22 @@ async function getArchiveWithThreads(
     return { ...archive, threads: [] };
   }
 
-  const allThreads = await chatRepository.selectThreadsByUserId(
-    session.user.id,
-  );
-  const threads = allThreads
-    .filter((thread) => threadIds.includes(thread.id))
-    .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+  // Fetch only the specific threads in this archive — avoids N+1 query
+  const { supabaseRest } = await import("lib/db/supabase-rest");
+  const { data: threadRows } = await supabaseRest
+    .from("chat_thread")
+    .select("id, title, created_at")
+    .eq("user_id", session.user.id)
+    .in("id", threadIds);
+
+  const threads = (threadRows || [])
+    .map((t: any) => ({
+      id: t.id,
+      title: t.title,
+      createdAt: new Date(t.created_at),
+      lastMessageAt: new Date(t.created_at).getTime(),
+    }))
+    .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
 
   return { ...archive, threads };
 }
