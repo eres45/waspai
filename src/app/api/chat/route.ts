@@ -689,18 +689,40 @@ export async function POST(request: Request) {
         "erase",
         "delete",
         "wearing",
-        "with",
-        "on",
+        "wear",
+        "cloths",
+        "clothes",
+        "clothing",
+        "outfit",
+        "dress",
+        "shirt",
         "hat",
         "glasses",
-        "shirt",
+        "with",
+        "make him",
+        "make her",
+        "make it",
+        "make them",
+        "give him",
+        "give her",
+        "give it",
+        "replace",
+        "style",
+        "color",
+        "colour",
         "background",
         "foreground",
+        "birds",
+        "animal",
+        "person",
+        "sky",
+        "cloud",
+        "tree",
+        "flower",
+        "show",
       ];
       const text = messageText.toLowerCase();
-      hasImageEditKeywords = editWords.some((word) =>
-        new RegExp(`\\b${word}\\b`, "i").test(text),
-      );
+      hasImageEditKeywords = editWords.some((word) => text.includes(word));
     }
 
     // Enable image tool if either explicitly provided, auto-detected, or an edit request on an existing image
@@ -2045,6 +2067,95 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           );
           // Don't throw - continue with streamText so user gets some response
           // But log this critical error for debugging
+        }
+
+        // ── Direct image edit: bypass LLM tool calling entirely ──────────────
+        // Some models output tool call JSON as plain text rather than making
+        // a proper function call. For general edit requests, execute the edit
+        // directly server-side and stream the result as a tool invocation.
+        const isGeneralEditRequest =
+          imageUrl &&
+          hasImageEditKeywords &&
+          !isSpecificEditRequest &&
+          !activeEditModel &&
+          !imageTool?.model; // not overridden by explicit image generation model
+
+        if (isGeneralEditRequest && imageUrl) {
+          const editToolCallId = `direct-edit-${Date.now()}`;
+          const editPromptText = messageText || "Edit this image as requested.";
+          const resolvedEditUrl = isBase64Image ? imageUrl : imageUrl;
+
+          // Write tool-call-started
+          dataStream.write({
+            type: "tool-input-available",
+            toolCallId: editToolCallId,
+            toolName: "edit-image",
+            input: { imageUrl: resolvedEditUrl, prompt: editPromptText },
+          });
+
+          try {
+            const { editImage: editImageFn } = await import(
+              "lib/ai/image/edit-image"
+            );
+            const { serverFileStorage } = await import("lib/file-storage");
+
+            const editResult = await editImageFn({
+              imageUrl: resolvedEditUrl,
+              prompt: editPromptText,
+            });
+
+            // Upload to storage
+            let uploadedUrl: { url: string; mimeType: string } =
+              editResult.image;
+            try {
+              const uploaded = await serverFileStorage.upload(
+                Buffer.from(editResult.image.url, "base64"),
+                { contentType: editResult.image.mimeType || "image/png" },
+              );
+              uploadedUrl = {
+                url: uploaded.sourceUrl,
+                mimeType: editResult.image.mimeType || "image/png",
+              };
+            } catch (uploadErr) {
+              logger.error("Edit image upload failed:", uploadErr);
+              // fall back to base64
+            }
+
+            const toolOutput = {
+              image: uploadedUrl,
+              guide: "Your image has been successfully edited!",
+            };
+
+            // Write tool-output-available
+            dataStream.write({
+              type: "tool-output-available",
+              toolCallId: editToolCallId,
+              output: toolOutput,
+            });
+
+            // Stream a short caption via LLM (no tools needed)
+            const captionResult = streamText({
+              model,
+              messages: [
+                {
+                  role: "user" as const,
+                  content: `The image was edited as requested: "${editPromptText}". Give a brief 1-sentence description of what changed. Do NOT mention URLs or raw data.`,
+                },
+              ],
+              abortSignal: request.signal,
+            });
+
+            captionResult.pipeTextStreamToResponse(dataStream as any);
+            return;
+          } catch (editErr) {
+            logger.error("Direct image edit failed:", editErr);
+            // Fall through to normal LLM flow on failure
+            dataStream.write({
+              type: "tool-output-available",
+              toolCallId: editToolCallId,
+              output: { error: "Image edit failed, please try again." },
+            });
+          }
         }
 
         const result = streamText({
