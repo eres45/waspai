@@ -99,12 +99,6 @@ const MODEL_MAP = {
     provider: "nvidiaworker",
     model: "meta/llama-3.3-70b-instruct",
   },
-
-  // GPT-OSS Direct via chat-gpt-oss.com (1 working - fingerprint auth)
-  "gptossd-gpt-oss-120b": { provider: "gptossdirect", model: "gpt-oss-120b" },
-
-  // Cerebras (1 working - needs key)
-  "cerebras-llama3.1-8b": { provider: "cerebras", model: "llama3.1-8b" },
 };
 
 // ============================================================================
@@ -829,8 +823,6 @@ function getFallbackProvider(providerKey) {
     "svelteai",
     "groqworker",
     "nvidiaworker",
-    "gptossdirect",
-    "cerebras",
   ];
   const idx = fallbackChain.indexOf(providerKey);
   if (idx >= 0 && idx < fallbackChain.length - 1) {
