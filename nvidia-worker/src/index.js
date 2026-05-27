@@ -500,7 +500,7 @@ async function handleChatCompletions(request) {
       }),
     });
 
-    const responseData = await nvidiaResponse.json();
+    const isStream = requestData.stream === true;
 
     // Handle errors
     if (!nvidiaResponse.ok) {
@@ -524,12 +524,32 @@ async function handleChatCompletions(request) {
           },
         );
 
-        const retryData = await retryResponse.json();
-
         if (retryResponse.ok) {
           recordKeySuccess(currentKeyIndex);
+          if (isStream) {
+            return new Response(retryResponse.body, {
+              status: 200,
+              headers: {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                Connection: "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+              },
+            });
+          } else {
+            const retryData = await retryResponse.json();
+            return new Response(JSON.stringify(retryData), {
+              status: 200,
+              headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+              },
+            });
+          }
+        } else {
+          const retryData = await retryResponse.json();
           return new Response(JSON.stringify(retryData), {
-            status: 200,
+            status: retryResponse.status,
             headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": "*",
@@ -538,6 +558,7 @@ async function handleChatCompletions(request) {
         }
       }
 
+      const responseData = await nvidiaResponse.json();
       return new Response(JSON.stringify(responseData), {
         status: nvidiaResponse.status,
         headers: {
@@ -549,13 +570,26 @@ async function handleChatCompletions(request) {
 
     recordKeySuccess(keyIndex);
 
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
+    if (isStream) {
+      return new Response(nvidiaResponse.body, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    } else {
+      const responseData = await nvidiaResponse.json();
+      return new Response(JSON.stringify(responseData), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
   } catch (error) {
     return new Response(
       JSON.stringify({
