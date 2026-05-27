@@ -6,19 +6,7 @@ import { Session } from "better-auth";
 import { userRepository } from "lib/db/repository";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { customModelProvider } from "@/lib/ai/models";
-
-// Helper function to get model provider from model name
-const getModelProvider = (modelName: string): string => {
-  for (const { provider, models } of customModelProvider.modelsInfo) {
-    for (const model of models) {
-      if (model.name === modelName) {
-        return provider;
-      }
-    }
-  }
-  return "unknown";
-};
+import { getModelProvider } from "@/lib/ai/models";
 
 /**
  * Get the user by id

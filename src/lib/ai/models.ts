@@ -243,7 +243,7 @@ export async function buildDynamicModelsInfo() {
   return result;
 }
 
-function getModelProvider(modelId: string, ownedBy?: string): string {
+export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
   const raw = (ownedBy || "").toLowerCase();
 
