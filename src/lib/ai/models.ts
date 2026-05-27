@@ -335,11 +335,18 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
 // ─── Synchronous helpers ─────────────────────────────────────────────────────
 
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
-  const modelId = (model as any).modelId || "";
-  if (modelId && !modelId.includes("/")) {
-    return true;
-  }
-  return false;
+  const modelId = ((model as any).modelId || "").toLowerCase();
+  // Models that are known to NOT support tool/function calling:
+  // - Small guard/safety models (llama-guard)
+  // - Very small base models (llama-2-7b, phi-2)
+  // - Anything explicitly named as a base completion model
+  const unsupportedPatterns = [
+    "llama-guard",
+    "llama-2-7b",
+    "llama-2-13b",
+    "phi-2",
+  ];
+  return unsupportedPatterns.some((p) => modelId.includes(p));
 };
 
 export const isImageInputUnsupportedModel = (_model: LanguageModel) => {

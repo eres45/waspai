@@ -1201,6 +1201,35 @@ CRITICAL INSTRUCTIONS:
 
         // ... prompts ...
 
+        // Override imageModelPrompt: if there's an existing image and the user is
+        // asking to modify it (not a specific edit like remove-bg), use edit-image
+        // instead of image-manager (which generates a new image).
+        const isSpecificEditRequest =
+          isRemoveBgRequest ||
+          isEnhanceImageRequest ||
+          isAnimeConversionRequest ||
+          isRemoveWatermarkRequest ||
+          isRemoveObjectRequest ||
+          isSuperResolutionRequest ||
+          isRestoreOldPhotoRequest ||
+          isBlurBackgroundRequest;
+
+        if (
+          imageUrl &&
+          hasImageEditKeywords &&
+          !isSpecificEditRequest &&
+          !activeEditModel
+        ) {
+          imageModelPrompt = `The user wants to modify an existing image.
+CRITICAL INSTRUCTIONS - MUST FOLLOW EXACTLY:
+1. Call the "edit-image" tool IMMEDIATELY with:
+   - imageUrl: "${promptImageUrl}"
+   - prompt: the user's requested modification (e.g. "make him wear clothes", "add a hat", etc.)
+2. Do NOT call "image-manager" — that generates new images from scratch.
+3. Do NOT ask for clarification.
+4. After the tool returns, you MAY describe the edit but do NOT output the image URL.`;
+        }
+
         const scopedRemoveBgTool = {
           ...removeBackgroundTool,
           execute: async (args: any, context: any) => {
