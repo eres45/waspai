@@ -16,6 +16,12 @@ export const CUSTOM_TTS_VOICES = [
   "echo",
   "onyx",
   "fable",
+  "sarvam-shubh",
+  "sarvam-bulbul",
+  "sarvam-aswarth",
+  "sarvam-karthik",
+  "sarvam-deepika",
+  "sarvam-lata",
 ] as const;
 
 export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number];
@@ -30,6 +36,12 @@ export const VOICE_LANGUAGE_MAP: Record<string, string> = {
   echo: "Male US (Legacy)",
   onyx: "Male US (Legacy)",
   fable: "Male US (Legacy)",
+  "sarvam-shubh": "Male IN (Hindi/English - Shubh)",
+  "sarvam-bulbul": "Female IN (Hindi/English - Bulbul)",
+  "sarvam-aswarth": "Male IN (Telugu/English - Aswarth)",
+  "sarvam-karthik": "Male IN (Tamil/English - Karthik)",
+  "sarvam-deepika": "Female IN (Kannada/English - Deepika)",
+  "sarvam-lata": "Female IN (Marathi/English - Lata)",
 };
 
 /**

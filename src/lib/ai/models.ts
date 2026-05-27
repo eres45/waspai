@@ -23,6 +23,16 @@ const creativeProvider = createOpenAICompatible({
   baseURL: `${CREATIVE_WORKER_URL}/v1`,
 });
 
+// Sarvam AI provider
+const sarvamProvider = createOpenAICompatible({
+  name: "Sarvam",
+  apiKey: process.env.SARVAM_API_KEY || "dummy",
+  baseURL: "https://api.sarvam.ai/v1",
+  headers: () => ({
+    "api-subscription-key": process.env.SARVAM_API_KEY || "",
+  }),
+});
+
 // ─── Vision / image-input heuristic ──────────────────────────────────────────
 // Models whose IDs contain these keywords support image input.
 const VISION_KEYWORDS = [
@@ -186,7 +196,7 @@ export async function buildDynamicModelsInfo() {
     grouped.get(provider)!.push(m);
   }
 
-  return Array.from(grouped.entries()).map(([provider, models]) => ({
+  const result = Array.from(grouped.entries()).map(([provider, models]) => ({
     provider,
     hasAPIKey: true,
     models: models
@@ -199,6 +209,38 @@ export async function buildDynamicModelsInfo() {
       }))
       .sort((a, b) => a.name.localeCompare(b.name)),
   }));
+
+  if (process.env.SARVAM_API_KEY) {
+    result.push({
+      provider: "Sarvam",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "sarvam-30b",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: [],
+          tier: "Sarvam",
+        },
+        {
+          name: "sarvam-105b",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: [],
+          tier: "Sarvam",
+        },
+        {
+          name: "sarvam-m",
+          isToolCallUnsupported: true,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: [],
+          tier: "Legacy",
+        }
+      ]
+    });
+  }
+
+  return result;
 }
 
 function getModelProvider(modelId: string, ownedBy?: string): string {
@@ -344,6 +386,10 @@ export const customModelProvider = {
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
     const modelId = model.model;
+
+    if (model.provider === "Sarvam" || modelId.startsWith("sarvam-")) {
+      return sarvamProvider(modelId) as unknown as LanguageModel;
+    }
 
     // NVIDIA NIM models on the nvidia-nim-worker always have a slash in their ID (e.g., 'meta/llama-3.1-8b-instruct')
     // Open-source/creative worker models on unified-ai-worker do not contain a slash (e.g., 'llama-3.2-1b', 'chatai-gpt-4o')
