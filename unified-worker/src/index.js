@@ -99,6 +99,10 @@ const MODEL_MAP = {
     provider: "nvidiaworker",
     model: "meta/llama-3.3-70b-instruct",
   },
+  "gpt-oss-120b-p2": {
+    provider: "groqworker",
+    model: "openai/gpt-oss-120b",
+  },
 };
 
 // ============================================================================
