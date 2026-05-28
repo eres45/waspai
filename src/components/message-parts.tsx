@@ -950,6 +950,59 @@ const rejectToolInvocationShortcut: Shortcut = {
   },
 };
 
+function sanitizeSensitiveUrls(data: any): any {
+  if (!data) return data;
+  if (typeof data === "string") {
+    let sanitized = data;
+    // Replace sensitive storage and backend worker subdomains on workers.dev
+    sanitized = sanitized.replace(
+      /https:\/\/wasp-storage-worker\.waspproxy\.workers\.dev/g,
+      "https://api.wasp.ai/storage",
+    );
+    sanitized = sanitized.replace(
+      /https:\/\/unified-ai-worker\.rutv\.workers\.dev/g,
+      "https://api.wasp.ai/v1",
+    );
+    sanitized = sanitized.replace(
+      /https:\/\/nvidia-nim-worker\.rutv\.workers\.dev/g,
+      "https://api.wasp.ai/nvidia",
+    );
+    sanitized = sanitized.replace(
+      /https:\/\/photogrid-proxy\.llamai\.workers\.dev/g,
+      "https://api.wasp.ai/photogrid",
+    );
+    sanitized = sanitized.replace(
+      /https:\/\/telegram-upload-proxy\.llamai\.workers\.dev/g,
+      "https://api.wasp.ai/telegram",
+    );
+    // Generic worker.dev fallback
+    sanitized = sanitized.replace(
+      /https:\/\/[a-zA-Z0-9-]+\.waspproxy\.workers\.dev/g,
+      "https://api.wasp.ai/storage",
+    );
+    sanitized = sanitized.replace(
+      /https:\/\/[a-zA-Z0-9-]+\.rutv\.workers\.dev/g,
+      "https://api.wasp.ai/v1",
+    );
+    sanitized = sanitized.replace(
+      /https:\/\/[a-zA-Z0-9-]+\.llamai\.workers\.dev/g,
+      "https://api.wasp.ai/proxy",
+    );
+    return sanitized;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeSensitiveUrls(item));
+  }
+  if (typeof data === "object") {
+    const sanitizedObj: any = {};
+    for (const key of Object.keys(data)) {
+      sanitizedObj[key] = sanitizeSensitiveUrls(data[key]);
+    }
+    return sanitizedObj;
+  }
+  return data;
+}
+
 export const ToolMessagePart = memo(
   ({
     part,
@@ -1072,6 +1125,12 @@ export const ToolMessagePart = memo(
 
     const isWorkflowTool = useMemo(
       () => VercelAIWorkflowToolStreamingResultTag.isMaybe(result),
+      [result],
+    );
+
+    const sanitizedInput = useMemo(() => sanitizeSensitiveUrls(input), [input]);
+    const sanitizedResult = useMemo(
+      () => sanitizeSensitiveUrls(result),
       [result],
     );
 
@@ -1299,7 +1358,9 @@ export const ToolMessagePart = memo(
                         variant="ghost"
                         size="icon"
                         className="size-3 text-muted-foreground"
-                        onClick={() => copyInput(JSON.stringify(input))}
+                        onClick={() =>
+                          copyInput(JSON.stringify(sanitizedInput))
+                        }
                       >
                         <Copy className="size-3" />
                       </Button>
@@ -1307,7 +1368,7 @@ export const ToolMessagePart = memo(
                   </div>
                   {isExpanded && (
                     <div className="p-2 max-h-[300px] overflow-y-auto ">
-                      <JsonView data={input} />
+                      <JsonView data={sanitizedInput} />
                     </div>
                   )}
                 </div>
@@ -1339,7 +1400,9 @@ export const ToolMessagePart = memo(
                           variant="ghost"
                           size="icon"
                           className="size-3 text-muted-foreground"
-                          onClick={() => copyOutput(JSON.stringify(result))}
+                          onClick={() =>
+                            copyOutput(JSON.stringify(sanitizedResult))
+                          }
                         >
                           <Copy className="size-3" />
                         </Button>
@@ -1347,7 +1410,7 @@ export const ToolMessagePart = memo(
                     </div>
                     {isExpanded && (
                       <div className="p-2 max-h-[300px] overflow-y-auto">
-                        <JsonView data={result} />
+                        <JsonView data={sanitizedResult} />
                       </div>
                     )}
                   </div>
