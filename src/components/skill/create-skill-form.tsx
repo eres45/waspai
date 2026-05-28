@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, Sparkles, Eye, Edit3, Loader2, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "lib/utils";
 import { Button } from "ui/button";
 import { Input } from "ui/input";
@@ -539,8 +540,10 @@ Keep it practical and actionable. Return ONLY the markdown content, no preamble.
 
             {previewMode ? (
               <div className="flex-1 rounded-xl border border-border/60 bg-accent/5 p-5 min-h-[500px] overflow-auto">
-                <div className="prose prose-sm prose-invert max-w-none">
-                  <ReactMarkdown>{form.content}</ReactMarkdown>
+                <div className="prose prose-sm prose-invert max-w-none overflow-x-auto">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {form.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ) : (

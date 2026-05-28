@@ -15,6 +15,7 @@ import {
   Lock,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Skill, SkillRating, SkillTier } from "@/types/skill";
 import { SkillTierGate } from "./skill-tier-gate";
 import { Button } from "ui/button";
@@ -357,9 +358,11 @@ export function SkillDetail({
         )}
 
         {tab === "content" && (
-          <div className="rounded-xl border border-border/60 bg-accent/5 p-6">
-            <div className="prose prose-sm prose-invert max-w-none">
-              <ReactMarkdown>{skill.content}</ReactMarkdown>
+          <div className="rounded-xl border border-border/60 bg-accent/5 p-6 md:p-8">
+            <div className="prose prose-sm md:prose-base prose-invert max-w-none overflow-x-auto">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {skill.content}
+              </ReactMarkdown>
             </div>
           </div>
         )}

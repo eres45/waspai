@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Plus, Sparkles, FolderHeart } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Sparkles,
+  FolderHeart,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import useSWR, { useSWRConfig } from "swr";
 import { useDebouncedValue } from "@/hooks/use-debounce";
@@ -43,6 +50,18 @@ export function SkillLibrary({ userId: _userId }: SkillLibraryProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { mutate } = useSWRConfig();
+
+  const featuredRowRef = useRef<HTMLDivElement>(null);
+
+  const scrollFeaturedRow = (direction: "left" | "right") => {
+    if (featuredRowRef.current) {
+      const scrollAmount = 320; // Scroll slightly more than card width (256px + gap)
+      featuredRowRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<"explore" | "mine">("explore");
   const [search, setSearch] = useState("");
@@ -276,7 +295,7 @@ export function SkillLibrary({ userId: _userId }: SkillLibraryProps) {
           {activeTab === "explore" && (
             <>
               {/* Category tabs */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.value}
@@ -330,23 +349,46 @@ export function SkillLibrary({ userId: _userId }: SkillLibraryProps) {
                     <span>⭐</span> Featured Skills
                   </h2>
                 </div>
-                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1">
-                  {featuredLoading
-                    ? Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="shrink-0 w-64">
-                          <SkillCardSkeleton />
-                        </div>
-                      ))
-                    : featuredSkills.map((skill) => (
-                        <div key={skill.id} className="shrink-0 w-64">
-                          <SkillCard
-                            skill={skill}
-                            onInstall={handleInstall}
-                            onUninstall={handleUninstall}
-                            onClick={() => goToDetail(skill.id)}
-                          />
-                        </div>
-                      ))}
+                <div className="relative group">
+                  {/* Left Scroll Button */}
+                  <button
+                    onClick={() => scrollFeaturedRow("left")}
+                    className="absolute left-2 top-[50%] -translate-y-1/2 z-10 flex items-center justify-center size-8 rounded-full bg-background/60 border border-border/80 backdrop-blur-md text-muted-foreground hover:text-foreground hover:border-foreground/50 hover:bg-background/95 hover:scale-105 active:scale-95 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg cursor-pointer"
+                    aria-label="Scroll Left"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+
+                  <div
+                    ref={featuredRowRef}
+                    className="flex gap-4 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1 scroll-smooth"
+                  >
+                    {featuredLoading
+                      ? Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className="shrink-0 w-64">
+                            <SkillCardSkeleton />
+                          </div>
+                        ))
+                      : featuredSkills.map((skill) => (
+                          <div key={skill.id} className="shrink-0 w-64">
+                            <SkillCard
+                              skill={skill}
+                              onInstall={handleInstall}
+                              onUninstall={handleUninstall}
+                              onClick={() => goToDetail(skill.id)}
+                            />
+                          </div>
+                        ))}
+                  </div>
+
+                  {/* Right Scroll Button */}
+                  <button
+                    onClick={() => scrollFeaturedRow("right")}
+                    className="absolute right-2 top-[50%] -translate-y-1/2 z-10 flex items-center justify-center size-8 rounded-full bg-background/60 border border-border/80 backdrop-blur-md text-muted-foreground hover:text-foreground hover:border-foreground/50 hover:bg-background/95 hover:scale-105 active:scale-95 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg cursor-pointer"
+                    aria-label="Scroll Right"
+                  >
+                    <ChevronRight className="size-4" />
+                  </button>
                 </div>
               </section>
             )}
