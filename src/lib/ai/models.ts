@@ -183,11 +183,6 @@ const FREE_TIER_MODELS = new Set([
   "qwen3.5-122b-a10b",
   "qwen3.5-397b-a17b",
 
-  // Claude (Frenix)
-  "claude-haiku-4-5",
-  "claude-opus-4-7",
-  "claude-opus-4-7-no-tools",
-
   // Others
   "sarvam-m",
   "step-3.5-flash",
