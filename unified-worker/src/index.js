@@ -12,7 +12,6 @@ const MODEL_MAP = {
 
   // FreeCF Models (16 working)
   "llama-3.2-1b": { provider: "freecf", model: "llama-3.2-1b" },
-  "llama-3.2-3b": { provider: "freecf", model: "llama-3.2-3b" },
   "llama-3.1-8b": { provider: "freecf", model: "llama-3.1-8b" },
   "llama-3.1-8b-awq": { provider: "freecf", model: "llama-3.1-8b-awq" },
   "llama-3.1-8b-fp8": { provider: "freecf", model: "llama-3.1-8b-fp8" },
@@ -108,6 +107,87 @@ const MODEL_MAP = {
     provider: "gemini-openai",
     model: "gemini-2.5-flash-lite",
   },
+
+  // ── Frenix Free-Tier Models ──────────────────────────────────────────────
+  // Anthropic Claude (via Frenix)
+  "claude-haiku-4-5": { provider: "frenix", model: "claude-haiku-4-5" },
+  "claude-opus-4-7": { provider: "frenix", model: "claude-opus-4-7" },
+  "claude-opus-4-7-no-tools": {
+    provider: "frenix",
+    model: "claude-opus-4-7-no-tools",
+  },
+
+  // Meta Llama (via Frenix)
+  "frenix-llama-3.1-70b": {
+    provider: "frenix",
+    model: "llama-3.1-70b-instruct",
+  },
+  "frenix-llama-3.2-11b-vision": {
+    provider: "frenix",
+    model: "llama-3.2-11b-vision-instruct",
+  },
+  "frenix-llama-3.3-70b": {
+    provider: "frenix",
+    model: "llama-3.3-70b-instruct",
+  },
+  "frenix-llama-4-maverick": {
+    provider: "frenix",
+    model: "llama-4-maverick-17b-128e-instruct",
+  },
+
+  // Google Gemma (via Frenix)
+  "frenix-gemma-4-31b": { provider: "frenix", model: "gemma-4-31b-it" },
+  "frenix-gemma-3n-e2b": { provider: "frenix", model: "gemma-3n-e2b-it" },
+
+  // Mistral (via Frenix)
+  "frenix-ministral-14b": {
+    provider: "frenix",
+    model: "ministral-14b-instruct-2512",
+  },
+  "frenix-mistral-large": {
+    provider: "frenix",
+    model: "mistral-large-3-675b-instruct-2512",
+  },
+  "frenix-mistral-nemotron": { provider: "frenix", model: "mistral-nemotron" },
+  "frenix-mixtral-8x7b": {
+    provider: "frenix",
+    model: "mixtral-8x7b-instruct-v0.1",
+  },
+
+  // Microsoft (via Frenix)
+  "frenix-phi-4-multimodal": {
+    provider: "frenix",
+    model: "phi-4-multimodal-instruct",
+  },
+
+  // NVIDIA Nemotron utility (via Frenix — non-excluded ones)
+  "frenix-nemotron-mini-4b": {
+    provider: "frenix",
+    model: "nemotron-mini-4b-instruct",
+  },
+  "frenix-nemotron-nano-12b-vl": {
+    provider: "frenix",
+    model: "nemotron-nano-12b-v2-vl",
+  },
+  "frenix-nemotron-nano-9b": {
+    provider: "frenix",
+    model: "nvidia-nemotron-nano-9b-v2",
+  },
+  "frenix-riva-translate": {
+    provider: "frenix",
+    model: "riva-translate-4b-instruct-v1.1",
+  },
+
+  // Other models (via Frenix)
+  "frenix-axion-1.5-pro": { provider: "frenix", model: "axion-1.5-pro" },
+  "frenix-axion-1.5-pro-free": {
+    provider: "frenix",
+    model: "axion-1.5-pro:free",
+  },
+  "frenix-glm-5": { provider: "frenix", model: "glm-5" },
+  "frenix-glm-4.7": { provider: "frenix", model: "glm-4.7" },
+  "frenix-minimax-m2.5": { provider: "frenix", model: "MiniMax-M2.5" },
+  "frenix-turbo": { provider: "frenix", model: "turbo" },
 };
 
 // ============================================================================
@@ -239,6 +319,18 @@ const PROVIDERS = {
   "gemini-openai": {
     base: "https://gemini-openai.revai.workers.dev/v1",
     key: null,
+    openai: true,
+  },
+  frenix: {
+    base: "https://api.frenix.sh/v1",
+    keys: [
+      "sk-frenix-8060edc63750510e826bb519345fc77a",
+      "sk-frenix-c03afa72cea826dade5a8847cf107ad3",
+      "sk-frenix-4686cdf52d4928ff21a56dec82c999d4",
+      "sk-frenix-414ffb8f6b5a7a89cf843d8f74462233",
+      "sk-frenix-aea6c81b0d86e622ec7d4a1e3352c05e",
+      "sk-frenix-c9d0a4fdf1e9f410353b37e2cf6d63dd",
+    ],
     openai: true,
   },
 };
@@ -485,7 +577,16 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
   }
 
   const mappedModel = getMappedModel(providerKey, body.model);
-  const apiKey = cfg.key ? env[cfg.key] || null : null;
+
+  // Handle rotating keys for Frenix
+  let apiKey = null;
+  if (cfg.keys && Array.isArray(cfg.keys)) {
+    // Round-robin across all keys
+    const keyIndex = Math.floor(Math.random() * cfg.keys.length);
+    apiKey = cfg.keys[keyIndex];
+  } else if (cfg.key) {
+    apiKey = env[cfg.key] || null;
+  }
 
   let url,
     reqBody,
@@ -514,6 +615,7 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
     case "openrouter":
     case "gptossworker":
     case "gemini-openai":
+    case "frenix":
       url = `${cfg.base}/chat/completions`;
       reqBody = buildOpenAIRequest(body, mappedModel);
       headers = { "Content-Type": "application/json" };
