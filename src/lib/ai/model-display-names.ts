@@ -90,7 +90,13 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-llama-guard": "Llama Guard",
   "cf-llama-3-8b-awq": "Llama 3 8B AWQ",
   // Anthropic (Free Proxy)
-  "claude-sonnet-4.5-proxy": "Claude 4.5 Sonnet",
+  "claude-sonnet-4.5-proxy": "Claude Sonnet 4.5",
+  "claude-sonnet": "Claude Sonnet 3.7",
+  "claude-3-sonnet": "Claude 3.5 Sonnet",
+  // Also map the prefixed variants directly
+  "chatai-claude-sonnet": "Claude Sonnet 3.7",
+  "randomai-claude-sonnet": "Claude Sonnet 3.7",
+  "chatbotai-claude-3-sonnet": "Claude 3.5 Sonnet",
   wormgpt: "WormGPT (Uncensored)",
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
   "zai-org-GLM-4.5-air": "GLM-4.5 Air",

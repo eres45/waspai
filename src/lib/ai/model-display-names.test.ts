@@ -3,8 +3,21 @@ import { cleanModelDisplayName } from "./model-display-names";
 
 describe("cleanModelDisplayName", () => {
   it("uses static mapping if available", () => {
+    // Claude with correct versioned display names
     expect(cleanModelDisplayName("claude-sonnet-4.5-proxy")).toBe(
-      "Claude 4.5 Sonnet",
+      "Claude Sonnet 4.5",
+    );
+    expect(cleanModelDisplayName("claude-sonnet")).toBe("Claude Sonnet 3.7");
+    expect(cleanModelDisplayName("claude-3-sonnet")).toBe("Claude 3.5 Sonnet");
+    // Worker-prefixed variants resolve directly to named versions
+    expect(cleanModelDisplayName("chatai-claude-sonnet")).toBe(
+      "Claude Sonnet 3.7",
+    );
+    expect(cleanModelDisplayName("randomai-claude-sonnet")).toBe(
+      "Claude Sonnet 3.7",
+    );
+    expect(cleanModelDisplayName("chatbotai-claude-3-sonnet")).toBe(
+      "Claude 3.5 Sonnet",
     );
     expect(cleanModelDisplayName("openai-gpt-oss-120b")).toBe("GPT-OSS 120B");
   });
