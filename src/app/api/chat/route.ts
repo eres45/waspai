@@ -1071,6 +1071,21 @@ CRITICAL INSTRUCTIONS:
           },
         };
 
+        const scopedAnalyzeImageTool = {
+          ...analyzeImageTool,
+          execute: async (args: any, context: any) => {
+            if (
+              (args.imageUrl === imagePlaceholder ||
+                (!args.imageUrl?.startsWith("http") &&
+                  !args.imageUrl?.startsWith("data:"))) &&
+              imageUrl
+            ) {
+              args.imageUrl = imageUrl;
+            }
+            return analyzeImageTool!.execute!(args, context);
+          },
+        };
+
         // Detect PDF generation request from keywords (smart intent + PDF words)
         const hasPdfKeywords = lastMessage?.parts?.some((part: any) => {
           if (typeof part !== "object" || part.type !== "text" || !part.text) {
@@ -1671,7 +1686,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           // ALWAYS include QR tools
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
-          "analyze-image": analyzeImageTool,
+          "analyze-image": scopedAnalyzeImageTool,
           html_preview: htmlPreviewTool,
           // ALWAYS include site deployment and skill creation tools
           deploy_site: deploySiteTool,
