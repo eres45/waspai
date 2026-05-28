@@ -954,10 +954,10 @@ function sanitizeSensitiveUrls(data: any): any {
   if (!data) return data;
   if (typeof data === "string") {
     let sanitized = data;
-    // Replace sensitive storage and backend worker subdomains on workers.dev
+    // Replace sensitive storage and backend worker subdomains on workers.dev with completely generic paths
     sanitized = sanitized.replace(
       /https:\/\/wasp-storage-worker\.waspproxy\.workers\.dev/g,
-      "https://api.wasp.ai/storage",
+      "https://api.wasp.ai/v1/storage/files",
     );
     sanitized = sanitized.replace(
       /https:\/\/unified-ai-worker\.rutv\.workers\.dev/g,
@@ -965,20 +965,20 @@ function sanitizeSensitiveUrls(data: any): any {
     );
     sanitized = sanitized.replace(
       /https:\/\/nvidia-nim-worker\.rutv\.workers\.dev/g,
-      "https://api.wasp.ai/nvidia",
+      "https://api.wasp.ai/v1/inference",
     );
     sanitized = sanitized.replace(
       /https:\/\/photogrid-proxy\.llamai\.workers\.dev/g,
-      "https://api.wasp.ai/photogrid",
+      "https://api.wasp.ai/v1/media/edit",
     );
     sanitized = sanitized.replace(
       /https:\/\/telegram-upload-proxy\.llamai\.workers\.dev/g,
-      "https://api.wasp.ai/telegram",
+      "https://api.wasp.ai/v1/files/temp",
     );
     // Generic worker.dev fallback
     sanitized = sanitized.replace(
       /https:\/\/[a-zA-Z0-9-]+\.waspproxy\.workers\.dev/g,
-      "https://api.wasp.ai/storage",
+      "https://api.wasp.ai/v1/storage/files",
     );
     sanitized = sanitized.replace(
       /https:\/\/[a-zA-Z0-9-]+\.rutv\.workers\.dev/g,
@@ -986,7 +986,7 @@ function sanitizeSensitiveUrls(data: any): any {
     );
     sanitized = sanitized.replace(
       /https:\/\/[a-zA-Z0-9-]+\.llamai\.workers\.dev/g,
-      "https://api.wasp.ai/proxy",
+      "https://api.wasp.ai/v1/proxy",
     );
     return sanitized;
   }
