@@ -133,6 +133,103 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
   }
 }
 
+const FREE_TIER_MODELS = new Set([
+  // Google Gemma
+  "gemma-4-31b-it",
+  "gemma-3n-e2b-it",
+
+  // Meta Llama
+  "llama-3.1-70b-instruct",
+  "llama-3.2-11b-vision-instruct",
+  "llama-3.3-70b-instruct",
+  "llama-4-maverick-17b-128e-instruct",
+
+  // Microsoft
+  "phi-4-multimodal-instruct",
+
+  // Mistral
+  "ministral-14b-instruct-2512",
+  "mistral-large-3-675b-instruct-2512",
+  "mistral-nemotron",
+  "mixtral-8x7b-instruct-v0.1",
+
+  // NVIDIA Nemotron
+  "nemotron-mini-4b-instruct",
+  "nemotron-nano-12b-v2-vl",
+  "nvidia-nemotron-nano-9b-v2",
+  "riva-translate-4b-instruct-v1.1",
+
+  // OpenAI OSS
+  "gpt-oss-120b",
+  "gpt-oss-20b",
+
+  // Qwen
+  "qwen3-coder-480b-a35b-instruct",
+  "qwen3.5-122b-a10b",
+  "qwen3.5-397b-a17b",
+
+  // Claude
+  "claude-haiku-4-5",
+  "claude-opus-4-7",
+  "claude-opus-4-7-no-tools",
+
+  // Others
+  "sarvam-m",
+  "step-3.5-flash",
+  "solar-10.7b-instruct",
+  "axion-1.5-pro",
+  "axion-1.5-pro:free",
+  "glm-5",
+  "glm-4.7",
+  "minimax-m2.5",
+  "turbo",
+]);
+
+const LOWERCASE_FREE_TIER_MODELS = new Set(
+  Array.from(FREE_TIER_MODELS).map((id) => id.toLowerCase()),
+);
+
+const LOWERCASE_EXCLUDED_MODELS = new Set([
+  "llama-3.1-8b-instruct",
+  "llama-3.2-3b-instruct",
+  "llama-3.2-90b-vision-instruct",
+  "llama-guard-4-12b",
+  "gemma-2-2b-it",
+  "gemma-2-9b-it",
+  "gemma-3n-e4b-it",
+  "gliner-pii",
+  "llama-3.1-nemoguard-8b-content-safety",
+  "llama-3.1-nemoguard-8b-topic-control",
+  "llama-3.1-nemotron-nano-8b-v1",
+  "llama-3.1-nemotron-nano-vl-8b-v1",
+  "llama-3.1-nemotron-safety-guard-8b-v3",
+  "llama-3.3-nemotron-super-49b-v1",
+  "llama-3.3-nemotron-super-49b-v1.5",
+  "nemotron-3-nano-30b-a3b",
+  "nemotron-content-safety-reasoning-4b",
+  "stockmark-2-100b-instruct",
+]);
+
+function getBaseModelId(modelId: string): string {
+  const parts = modelId.split("/");
+  return parts[parts.length - 1].toLowerCase();
+}
+
+export function getModelTier(modelId: string): string {
+  const baseId = getBaseModelId(modelId);
+
+  const isExcluded = Array.from(LOWERCASE_EXCLUDED_MODELS).some((exId) =>
+    baseId.includes(exId),
+  );
+  if (isExcluded) return "Pro";
+
+  const isFree = Array.from(LOWERCASE_FREE_TIER_MODELS).some((freeId) =>
+    baseId.includes(freeId),
+  );
+
+  return isFree ? "Free" : "Pro";
+}
+
 /**
  * Build modelsInfo from live worker data.
  * Groups models by their `owned_by` field (provider).
@@ -205,7 +302,7 @@ export async function buildDynamicModelsInfo() {
         isToolCallUnsupported: !m.id.includes("/"),
         isImageInputUnsupported: !isVisionModel(m.id),
         supportedFileMimeTypes: getMimeTypes(m.id),
-        tier: "Free",
+        tier: getModelTier(m.id),
       }))
       .sort((a, b) => a.name.localeCompare(b.name)),
   }));
