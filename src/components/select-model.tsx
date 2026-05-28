@@ -91,6 +91,13 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
           className="rounded-lg relative shadow-md h-80"
           value={JSON.stringify(model)}
           onClick={(e) => e.stopPropagation()}
+          filter={(value, search) => {
+            if (!search) return 1;
+            const searchWords = search.toLowerCase().trim().split(/\s+/);
+            const target = value.toLowerCase();
+            const allMatch = searchWords.every((word) => target.includes(word));
+            return allMatch ? 1 : 0;
+          }}
         >
           <div className="relative">
             <CommandInput
