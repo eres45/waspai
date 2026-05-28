@@ -121,3 +121,66 @@ export const createReverseModelMapping = (): {
     providers: providerReverseMapping,
   };
 };
+
+export function cleanModelDisplayName(name: string): string {
+  if (!name) return "";
+
+  // 1. If it has a static display name mapped, use it
+  if (MODEL_DISPLAY_NAMES[name]) {
+    return MODEL_DISPLAY_NAMES[name];
+  }
+
+  // 2. Otherwise, clean the raw backend name dynamically!
+  let cleaned = name;
+
+  // Remove common worker/provider prefixes
+  const prefixes = [
+    "chatai-",
+    "chatbotai-",
+    "randomai-",
+    "svelteai-",
+    "openrouterhub-",
+    "groqw-",
+    "nvidiaw-",
+    "cf-",
+    "freecf-",
+    "google/",
+    "meta/",
+    "microsoft/",
+    "mistralai/",
+    "nvidia/",
+    "openai/",
+    "qwen/",
+    "sarvamai/",
+    "stepfun-ai/",
+    "upstage/",
+    "stockmark/",
+  ];
+
+  for (const prefix of prefixes) {
+    if (cleaned.toLowerCase().startsWith(prefix.toLowerCase())) {
+      cleaned = cleaned.slice(prefix.length);
+    }
+  }
+
+  // Clean up formatting (replace hyphens with spaces, capitalize words)
+  cleaned = cleaned
+    .replace(/-+/g, " ") // replace hyphens with spaces
+    .replace(/\b\w/g, (char) => char.toUpperCase()); // capitalize first letter of each word
+
+  // Clean specific common abbreviations/naming artifacts
+  cleaned = cleaned.replace(/Gp/gi, "GP");
+  cleaned = cleaned.replace(/Gpt/gi, "GPT");
+  cleaned = cleaned.replace(/Llm/gi, "LLM");
+  cleaned = cleaned.replace(/It\b/gi, "IT");
+  cleaned = cleaned.replace(/Of/g, "of");
+  cleaned = cleaned.replace(/To/g, "to");
+  cleaned = cleaned.replace(/And/g, "and");
+  cleaned = cleaned.replace(/Awq/gi, "AWQ");
+  cleaned = cleaned.replace(/Fp8/gi, "FP8");
+  cleaned = cleaned.replace(/Lora/gi, "LoRA");
+  cleaned = cleaned.replace(/Sql/gi, "SQL");
+  cleaned = cleaned.replace(/Ds/gi, "DS");
+
+  return cleaned.trim();
+}

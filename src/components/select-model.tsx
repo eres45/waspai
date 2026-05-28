@@ -7,7 +7,7 @@ import { cn } from "lib/utils";
 import { CheckIcon, ChevronDown, ListFilter } from "lucide-react";
 import { Fragment, memo, PropsWithChildren, useEffect, useState } from "react";
 import { Button } from "ui/button";
-import { MODEL_DISPLAY_NAMES } from "lib/ai/model-display-names";
+import { cleanModelDisplayName } from "lib/ai/model-display-names";
 
 import {
   Command,
@@ -74,7 +74,9 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                   className="size-2.5 mr-1"
                 />
               )}
-              <p data-testid="selected-model-name">{model?.model || "model"}</p>
+              <p data-testid="selected-model-name">
+                {model?.model ? cleanModelDisplayName(model.model) : "model"}
+              </p>
             </div>
             <ChevronDown className="size-3" />
           </Button>
@@ -173,7 +175,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         });
                         setOpen(false);
                       }}
-                      value={MODEL_DISPLAY_NAMES[item.name] || item.name}
+                      value={cleanModelDisplayName(item.name)}
                       data-testid={`model-option-${provider.provider}-${item.name}`}
                     >
                       {model?.provider === provider.provider &&
@@ -186,7 +188,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                         <div className="ml-3" />
                       )}
                       <span className="pr-2">
-                        {MODEL_DISPLAY_NAMES[item.name] || item.name}
+                        {cleanModelDisplayName(item.name)}
                       </span>
                       {(item as any).tier !== "Free" ||
                       (item as any).tier === "Free" ? (
