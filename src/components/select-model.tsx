@@ -288,7 +288,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                 </h3>
 
                 {/* Description */}
-                <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed h-[64px] overflow-y-auto custom-scrollbar">
+                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
                   {hoveredMetadata.description}
                 </p>
 
@@ -298,7 +298,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                     <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
                       Context
                     </span>
-                    <div className="text-base font-extrabold mt-0.5 text-foreground tracking-tight">
+                    <div className="text-xl font-black mt-1 text-foreground tracking-tight">
                       {hoveredMetadata.contextLength}
                     </div>
                   </div>
