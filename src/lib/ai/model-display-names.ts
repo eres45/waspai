@@ -163,6 +163,11 @@ export function cleanModelDisplayName(name: string): string {
     }
   }
 
+  // Remove "proxy" word if it is in prefix, suffix, or standalone (case-insensitive)
+  cleaned = cleaned.replace(/^proxy-?/gi, "");
+  cleaned = cleaned.replace(/-?proxy$/gi, "");
+  cleaned = cleaned.replace(/\bproxy\b/gi, "");
+
   // Clean up formatting (replace hyphens with spaces, capitalize words)
   cleaned = cleaned
     .replace(/-+/g, " ") // replace hyphens with spaces
@@ -181,6 +186,12 @@ export function cleanModelDisplayName(name: string): string {
   cleaned = cleaned.replace(/Lora/gi, "LoRA");
   cleaned = cleaned.replace(/Sql/gi, "SQL");
   cleaned = cleaned.replace(/Ds/gi, "DS");
+  cleaned = cleaned.replace(/Deepseek/gi, "DeepSeek");
+  cleaned = cleaned.replace(
+    /\b(\d+(?:\.\d+)?)([bm])\b/gi,
+    (_, num, unit) => num + unit.toUpperCase(),
+  );
+  cleaned = cleaned.replace(/\bV(\d+)\b/g, (_, num) => "v" + num);
 
   return cleaned.trim();
 }
