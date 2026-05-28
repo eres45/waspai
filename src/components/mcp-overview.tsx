@@ -150,7 +150,7 @@ export function MCPOverview() {
               className="hover:translate-y-[-2px] transition-all duration-300"
               onClick={(e) => handleMcpClick(e, mcp)}
             >
-              <mcp.icon />
+              <mcp.icon className="size-4 mr-2" />
               {mcp.label}
             </Button>
           ))}
