@@ -102,7 +102,7 @@ async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
  * Free OCR using Tesseract.js (MIT Licensed)
  * Runs locally without API keys
  */
-async function extractTextFromImageViaTesseract(
+export async function extractTextFromImageViaTesseract(
   imageData: Uint8Array,
 ): Promise<string> {
   const timerId = "OCR-Tesseract-" + Math.random().toString(36).substring(7);
@@ -132,7 +132,7 @@ async function extractTextFromImageViaTesseract(
 /**
  * Free OCR using Cloudflare Workers AI (Llama 3.2 Vision)
  */
-async function extractTextFromImageViaCloudflare(
+export async function extractTextFromImageViaCloudflare(
   imageData: Uint8Array,
 ): Promise<string> {
   const workerUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_WORKER_URL;
@@ -185,12 +185,12 @@ async function extractTextFromImageViaAI(
 ): Promise<string> {
   try {
     console.log(
-      `OCR: Attempting extraction with Llama 3.2 11B Vision (AI SDK Fallback)...`,
+      `OCR: Attempting extraction with Groq Worker Llama 4 Scout Vision...`,
     );
 
     const model = customModelProvider.getModel({
       provider: "Meta",
-      model: "Llama 3.2 11B Vision",
+      model: "groqw-llama-4-scout",
     });
 
     // Convert Uint8Array to Base64 Data URL for maximum compatibility with custom proxies
@@ -210,7 +210,7 @@ async function extractTextFromImageViaAI(
           content: [
             {
               type: "text",
-              text: "Act as a high-precision OCR engine. Extract all text from this image exactly as it appears. Maintain formatting and layout. Return ONLY the extracted text without any prefix, suffix, or commentary.",
+              text: "Act as a high-precision vision and OCR engine. Describe this image in detail and extract all visible text exactly as it appears. Maintain formatting and layout. Return a detailed, clear description of the image content and its text so that another language model can fully understand it even if the user didn't ask.",
             },
             {
               type: "image",
@@ -220,15 +220,15 @@ async function extractTextFromImageViaAI(
         },
       ],
       maxRetries: 1, // Fail fast on hobby tier
-      abortSignal: AbortSignal.timeout(4500), // Strict timeout for fallback
+      abortSignal: AbortSignal.timeout(8000), // Strict timeout for fallback
     });
 
     if (text && text.trim().length > 0) {
-      console.log(`OCR: Successfully extracted text using Qwen Vision`);
+      console.log(`OCR: Successfully analyzed image using Groq Vision`);
       return text.trim();
     }
   } catch (err: any) {
-    console.error(`OCR: Qwen Vision failed: ${err.message || "Unknown error"}`);
+    console.error(`OCR: Groq Vision failed: ${err.message || "Unknown error"}`);
     throw err;
   }
 
@@ -341,51 +341,12 @@ export async function extractTextFromDocuments(
               }
             }
 
-            // Start fetching image data and initializing worker in parallel
-            const imageDataPromise = getImageData(link);
-            const workerPromise = getTesseractWorker().catch(() => null);
-
-            const imageData = await imageDataPromise;
+            // Fetch image data
+            const imageData = await getImageData(link);
             if (!imageData) return "";
 
-            // 1. Try Free Local OCR (Tesseract) first
-            let text = "";
-            try {
-              const worker = await workerPromise;
-              if (worker) {
-                // Race Tesseract against a 5s timeout to ensure we have time for AI fallback
-                text = await Promise.race([
-                  extractTextFromImageViaTesseract(imageData),
-                  new Promise<string>(
-                    (resolve) =>
-                      setTimeout(() => {
-                        console.warn("OCR: Tesseract timed out after 4s");
-                        resolve("");
-                      }, 4000), // 4s timeout
-                  ),
-                ]);
-              }
-            } catch (e) {
-              console.warn("OCR: Tesseract fail in doc loop", e);
-            }
-
-            // 2. Fallback to Cloudflare AI Vision (Free)
-            if (!text || text.length < 10) {
-              console.log(
-                `OCR: Local OCR yielded poor results (${text.length} chars). Falling back to Cloudflare AI...`,
-              );
-              const cfText = await extractTextFromImageViaCloudflare(imageData);
-              if (cfText) text = cfText;
-            }
-
-            // 3. Last Fallback to AI SDK Vision
-            if (!text || text.length < 10) {
-              console.log(
-                `OCR: Cloudflare Vision poor results. Falling back to AI SDK...`,
-              );
-              const aiText = await extractTextFromImageViaAI(link, imageData);
-              if (aiText) text = aiText;
-            }
+            // Call high-precision Groq Worker Vision model directly for all images to get detailed analysis & OCR
+            const text = await extractTextFromImageViaAI(link, imageData);
 
             if (text) {
               return `\n\n[Document Content: ${link.split("/").pop()}]\n${text}`;

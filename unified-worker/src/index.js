@@ -73,7 +73,7 @@ const MODEL_MAP = {
     model: "openai/gpt-3.5-turbo-16k",
   },
 
-  // Groq Worker (2 working)
+  // Groq Worker (3 working)
   "groqw-llama-3.1-8b": {
     provider: "groqworker",
     model: "llama-3.1-8b-instant",
@@ -81,6 +81,10 @@ const MODEL_MAP = {
   "groqw-llama-3.3-70b": {
     provider: "groqworker",
     model: "llama-3.3-70b-versatile",
+  },
+  "groqw-llama-4-scout": {
+    provider: "groqworker",
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
   },
 
   // NVIDIA Worker (2 working)

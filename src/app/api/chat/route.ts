@@ -212,30 +212,9 @@ export async function POST(request: Request) {
     logger.info(`Attachments count: ${attachments.length}`);
     logger.info(`File URLs extracted: ${fileUrls.length}`);
 
-    // Only run OCR if the user explicitly asked about the text content of the file.
-    // This avoids wasting 4-8s on OCR for image editing, describing, or other tasks.
-    const ocrKeywords = [
-      "read",
-      "extract",
-      "ocr",
-      "what does it say",
-      "what's written",
-      "what is written",
-      "text in",
-      "text from",
-      "transcribe",
-      "translate",
-      "parse",
-      "scan",
-      "recognize",
-      "get text",
-      "copy text",
-      "written on",
-    ];
-    const messageLower = messageText.toLowerCase();
-    const userWantsOcr =
-      fileUrls.length > 0 &&
-      ocrKeywords.some((kw) => messageLower.includes(kw));
+    // Automatically run OCR/Vision analysis for all uploaded files (images, docs, etc.)
+    // This feeds the extracted content directly to the active model context so it knows what it is, even if the user didn't explicitly ask.
+    const userWantsOcr = fileUrls.length > 0;
 
     logger.info(
       `Starting parallel metadata fetch (OCR=${userWantsOcr}, thread, agent)`,
