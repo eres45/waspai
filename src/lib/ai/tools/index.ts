@@ -52,6 +52,8 @@ export enum DefaultToolName {
   // QR Code
   GenerateQRCode = "generate-qr-code",
   GenerateQRCodeWithLogo = "generate-qr-code-with-logo",
+  // Image Analysis
+  AnalyzeImage = "analyze-image",
   // Other
   HtmlPreview = "html_preview",
   ExportChat = "export-chat-messages",

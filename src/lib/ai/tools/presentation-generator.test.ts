@@ -3,7 +3,7 @@ import { presentationGeneratorTool } from "./presentation-generator";
 
 describe("Presentation Generator Tool", () => {
   it("successfully validates and processes a 10-slide structure", async () => {
-    const result = await presentationGeneratorTool.execute({
+    const result = await (presentationGeneratorTool.execute as any)({
       title: "Wasp AI Launch",
       description: "Next-gen AI assistant ecosystem",
       topic: "Artificial Intelligence",

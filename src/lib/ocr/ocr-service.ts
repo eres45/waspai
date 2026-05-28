@@ -78,7 +78,9 @@ async function fetchFile(url: string): Promise<Response | null> {
 /**
  * Helper to fetch image data and convert to Uint8Array for the AI SDK.
  */
-async function getImageData(imageUrl: string): Promise<Uint8Array | null> {
+export async function getImageData(
+  imageUrl: string,
+): Promise<Uint8Array | null> {
   // Handle base64 data URLs
   if (imageUrl.startsWith("data:")) {
     try {
@@ -179,9 +181,10 @@ export async function extractTextFromImageViaCloudflare(
  * High-performance OCR using AI SDK (Llama 3.2 Vision)
  * Used as a secondary fallback
  */
-async function extractTextFromImageViaAI(
+export async function extractTextFromImageViaAI(
   imageUrl: string,
   imageData: Uint8Array,
+  customPrompt?: string,
 ): Promise<string> {
   try {
     console.log(
@@ -210,7 +213,9 @@ async function extractTextFromImageViaAI(
           content: [
             {
               type: "text",
-              text: "Act as a high-precision vision and OCR engine. Describe this image in detail and extract all visible text exactly as it appears. Maintain formatting and layout. Return a detailed, clear description of the image content and its text so that another language model can fully understand it even if the user didn't ask.",
+              text:
+                customPrompt ||
+                "Act as a high-precision vision and OCR engine. Describe this image in detail and extract all visible text exactly as it appears. Maintain formatting and layout. Return a detailed, clear description of the image content and its text so that another language model can fully understand it even if the user didn't ask.",
             },
             {
               type: "image",

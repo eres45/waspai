@@ -39,6 +39,7 @@ import { pdfGeneratorTool } from "./pdf-generator";
 import { presentationGeneratorTool } from "./presentation-generator";
 import { pptProcessorTool } from "./ppt-processor";
 import { videoGenTool } from "./image/video-gen";
+import { analyzeImageTool } from "./image/analyze-image";
 import { qrCodeGeneratorTool, qrCodeWithLogoTool } from "./qr-code-generator";
 import { htmlPreviewTool } from "./html-preview";
 import { chatExportTool } from "./chat-export";
@@ -95,6 +96,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.RestoreOldPhoto]: restoreOldPhotoTool,
     [DefaultToolName.BlurBackground]: blurBackgroundTool,
     [DefaultToolName.VideoGen]: videoGenTool,
+    [DefaultToolName.AnalyzeImage]: analyzeImageTool,
   },
   [AppDefaultToolkit.Browser]: {
     [DefaultToolName.SteelBrowser]: steelBrowserTool,

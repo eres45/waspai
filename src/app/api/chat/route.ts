@@ -59,7 +59,11 @@ import {
 import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { generateUUID } from "lib/utils";
-import { nanoBananaTool, openaiImageTool } from "lib/ai/tools/image";
+import {
+  nanoBananaTool,
+  openaiImageTool,
+  analyzeImageTool,
+} from "lib/ai/tools/image";
 import {
   removeBackgroundTool,
   enhanceImageTool,
@@ -1667,6 +1671,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           // ALWAYS include QR tools
           "generate-qr-code": qrCodeGeneratorTool,
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
+          "analyze-image": analyzeImageTool,
           html_preview: htmlPreviewTool,
           // ALWAYS include site deployment and skill creation tools
           deploy_site: deploySiteTool,

@@ -138,3 +138,5 @@ export const nanoBananaTool = createTool({
 
 // Alias for compatibility
 export const openaiImageTool = nanoBananaTool;
+
+export * from "./analyze-image";

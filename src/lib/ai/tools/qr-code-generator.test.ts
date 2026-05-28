@@ -14,7 +14,7 @@ vi.mock("lib/file-storage", () => {
 
 describe("QR Code Generator Tool", () => {
   it("generates a QR code successfully (happy path)", async () => {
-    const result = await qrCodeGeneratorTool.execute(
+    const result = await (qrCodeGeneratorTool.execute as any)(
       {
         content: "https://wasp-ai.com",
         size: 300,
@@ -34,7 +34,7 @@ describe("QR Code Generator Tool", () => {
   });
 
   it("handles extreme sizes by adjusting them within range (100-1000)", async () => {
-    const resultTooSmall = await qrCodeGeneratorTool.execute(
+    const resultTooSmall = await (qrCodeGeneratorTool.execute as any)(
       {
         content: "https://wasp-ai.com",
         size: 50, // too small
@@ -46,7 +46,7 @@ describe("QR Code Generator Tool", () => {
     );
     expect(resultTooSmall.qrSize).toBe(100);
 
-    const resultTooLarge = await qrCodeGeneratorTool.execute(
+    const resultTooLarge = await (qrCodeGeneratorTool.execute as any)(
       {
         content: "https://wasp-ai.com",
         size: 2000, // too large

@@ -19,7 +19,7 @@ vi.mock("lib/file-storage", () => {
 describe("Document Generator Tools", () => {
   describe("Word Document Tool", () => {
     it("generates a DOCX document successfully", async () => {
-      const result = await wordDocumentTool.execute(
+      const result = await (wordDocumentTool.execute as any)(
         {
           title: "Test Report",
           content: "Line 1\nLine 2",
@@ -42,7 +42,7 @@ describe("Document Generator Tools", () => {
 
   describe("CSV Generator Tool", () => {
     it("generates a CSV file successfully", async () => {
-      const result = await csvGeneratorTool.execute(
+      const result = await (csvGeneratorTool.execute as any)(
         {
           title: "Sales Data",
           content: "Month,Revenue\nJanuary,1000\nFebruary,1500",
@@ -65,7 +65,7 @@ describe("Document Generator Tools", () => {
 
   describe("Text File Tool", () => {
     it("generates a TXT file successfully", async () => {
-      const result = await textFileTool.execute(
+      const result = await (textFileTool.execute as any)(
         {
           title: "Notes",
           content: "Remember to do groceries.",
