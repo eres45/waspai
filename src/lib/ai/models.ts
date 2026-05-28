@@ -137,27 +137,42 @@ const FREE_TIER_MODELS = new Set([
   // Google Gemma
   "gemma-4-31b-it",
   "gemma-3n-e2b-it",
+  "frenix-gemma-4-31b",
+  "frenix-gemma-3n-e2b",
 
   // Meta Llama
   "llama-3.1-70b-instruct",
   "llama-3.2-11b-vision-instruct",
   "llama-3.3-70b-instruct",
   "llama-4-maverick-17b-128e-instruct",
+  "frenix-llama-3.1-70b",
+  "frenix-llama-3.2-11b-vision",
+  "frenix-llama-3.3-70b",
+  "frenix-llama-4-maverick",
 
   // Microsoft
   "phi-4-multimodal-instruct",
+  "frenix-phi-4-multimodal",
 
   // Mistral
   "ministral-14b-instruct-2512",
   "mistral-large-3-675b-instruct-2512",
   "mistral-nemotron",
   "mixtral-8x7b-instruct-v0.1",
+  "frenix-ministral-14b",
+  "frenix-mistral-large",
+  "frenix-mistral-nemotron",
+  "frenix-mixtral-8x7b",
 
-  // NVIDIA Nemotron
+  // NVIDIA Nemotron (non-excluded)
   "nemotron-mini-4b-instruct",
   "nemotron-nano-12b-v2-vl",
   "nvidia-nemotron-nano-9b-v2",
   "riva-translate-4b-instruct-v1.1",
+  "frenix-nemotron-mini-4b",
+  "frenix-nemotron-nano-12b-vl",
+  "frenix-nemotron-nano-9b",
+  "frenix-riva-translate",
 
   // OpenAI OSS
   "gpt-oss-120b",
@@ -168,7 +183,7 @@ const FREE_TIER_MODELS = new Set([
   "qwen3.5-122b-a10b",
   "qwen3.5-397b-a17b",
 
-  // Claude
+  // Claude (Frenix)
   "claude-haiku-4-5",
   "claude-opus-4-7",
   "claude-opus-4-7-no-tools",
@@ -182,7 +197,14 @@ const FREE_TIER_MODELS = new Set([
   "glm-5",
   "glm-4.7",
   "minimax-m2.5",
+  "MiniMax-M2.5",
   "turbo",
+  "frenix-axion-1.5-pro",
+  "frenix-axion-1.5-pro-free",
+  "frenix-glm-5",
+  "frenix-glm-4.7",
+  "frenix-minimax-m2.5",
+  "frenix-turbo",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -344,11 +366,30 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
   const raw = (ownedBy || "").toLowerCase();
 
+  // Frenix-prefixed models: resolve to the correct vendor before broad pattern checks
+  if (id.startsWith("frenix-llama")) return "Meta";
+  if (id.startsWith("frenix-gemma")) return "Google";
+  if (
+    id.startsWith("frenix-mistral") ||
+    id.startsWith("frenix-ministral") ||
+    id.startsWith("frenix-mixtral")
+  )
+    return "Mistral";
+  if (id.startsWith("frenix-phi")) return "Microsoft";
+  if (id.startsWith("frenix-nemotron") || id.startsWith("frenix-riva"))
+    return "NVIDIA";
+  if (id.startsWith("frenix-glm")) return "Z-AI";
+  if (id.startsWith("frenix-minimax")) return "MiniMax";
+  if (id.startsWith("frenix-turbo")) return "Perplexity";
+  if (id.startsWith("frenix-axion")) return "Axion";
+  if (id.startsWith("frenix-")) return "Frenix";
+
   if (
     id.includes("claude") ||
     id.includes("anthropic") ||
     raw.includes("anthropic") ||
-    raw.includes("claude")
+    raw.includes("claude") ||
+    raw.includes("frenix")
   )
     return "Anthropic";
   if (

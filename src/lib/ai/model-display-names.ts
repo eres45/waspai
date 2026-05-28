@@ -89,14 +89,51 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "cf-llama-2-13b": "Llama 2 13B",
   "cf-llama-guard": "Llama Guard",
   "cf-llama-3-8b-awq": "Llama 3 8B AWQ",
-  // Anthropic (Free Proxy)
+  // Anthropic Claude (Frenix free tier)
   "claude-sonnet-4.5-proxy": "Claude Sonnet 4.5",
   "claude-sonnet": "Claude Sonnet 3.7",
   "claude-3-sonnet": "Claude 3.5 Sonnet",
+  "claude-haiku-4-5": "Claude Haiku 4.5",
+  "claude-opus-4-7": "Claude Opus 4.7",
+  "claude-opus-4-7-no-tools": "Claude Opus 4.7 (No Tools)",
   // Also map the prefixed variants directly
   "chatai-claude-sonnet": "Claude Sonnet 3.7",
   "randomai-claude-sonnet": "Claude Sonnet 3.7",
   "chatbotai-claude-3-sonnet": "Claude 3.5 Sonnet",
+
+  // Frenix Meta Llama models
+  "frenix-llama-3.1-70b": "Llama 3.1 70B",
+  "frenix-llama-3.2-11b-vision": "Llama 3.2 Vision 11B",
+  "frenix-llama-3.3-70b": "Llama 3.3 70B",
+  "frenix-llama-4-maverick": "Llama 4 Maverick 17B",
+
+  // Frenix Google Gemma models
+  "frenix-gemma-4-31b": "Gemma 4 31B",
+  "frenix-gemma-3n-e2b": "Gemma 3N E2B",
+
+  // Frenix Mistral models
+  "frenix-ministral-14b": "Ministral 14B",
+  "frenix-mistral-large": "Mistral Large 3 675B",
+  "frenix-mistral-nemotron": "Mistral Nemotron",
+  "frenix-mixtral-8x7b": "Mixtral 8x7B",
+
+  // Frenix Microsoft
+  "frenix-phi-4-multimodal": "Phi-4 Multimodal",
+
+  // Frenix NVIDIA Nemotron (non-excluded)
+  "frenix-nemotron-mini-4b": "Nemotron Mini 4B",
+  "frenix-nemotron-nano-12b-vl": "Nemotron Nano 12B VL",
+  "frenix-nemotron-nano-9b": "Nemotron Nano 9B",
+  "frenix-riva-translate": "Riva Translate 4B",
+
+  // Frenix Other models
+  "frenix-axion-1.5-pro": "Axion 1.5 Pro",
+  "frenix-axion-1.5-pro-free": "Axion 1.5 Pro (Free)",
+  "frenix-glm-5": "GLM-5 (Reasoning)",
+  "frenix-glm-4.7": "GLM-4.7 (Reasoning)",
+  "frenix-minimax-m2.5": "MiniMax M2.5",
+  "frenix-turbo": "Perplexity Turbo",
+
   wormgpt: "WormGPT (Uncensored)",
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
   "zai-org-GLM-4.5-air": "GLM-4.5 Air",
