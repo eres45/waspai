@@ -53,10 +53,11 @@ function formatBytes(bytes: number) {
 }
 
 export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
-  const { state, output, input } = part as any;
+  const { state, output, input, toolName } = part as any;
   const [expanded, setExpanded] = useState(false);
 
   const isLoading = !state?.startsWith("output");
+  const isEditing = toolName === "edit_site_file";
 
   const siteInput = input as {
     path?: string;
@@ -123,7 +124,13 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
 
         {/* Label */}
         <span className="text-xs text-foreground/80 font-medium truncate flex-1">
-          {isLoading ? "Writing" : "Created"}{" "}
+          {isEditing
+            ? isLoading
+              ? "Editing"
+              : "Edited"
+            : isLoading
+              ? "Writing"
+              : "Created"}{" "}
           <span className="font-mono text-foreground">{fileName}</span>
         </span>
 

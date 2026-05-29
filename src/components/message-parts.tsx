@@ -1227,7 +1227,10 @@ export const ToolMessagePart = memo(
         return <DeploySiteCard part={part} />;
       }
 
-      if (toolName === DefaultToolName.WriteSiteFile) {
+      if (
+        toolName === DefaultToolName.WriteSiteFile ||
+        toolName === DefaultToolName.EditSiteFile
+      ) {
         return <WriteSiteFileCard part={part} />;
       }
 

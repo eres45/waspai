@@ -62,6 +62,8 @@ export enum DefaultToolName {
   CreateSkill = "create_skill",
   DeploySite = "deploy_site",
   WriteSiteFile = "write_site_file",
+  ReadSiteFile = "read_site_file",
+  EditSiteFile = "edit_site_file",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";
