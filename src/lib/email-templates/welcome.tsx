@@ -24,7 +24,7 @@ type WelcomeEmailProps = {
   inviteUrl?: string;
 };
 
-const baseUrl = "https://waspai.app";
+const baseUrl = "https://waspai.in";
 
 const iconWrap =
   "mx-auto flex h-[66px] w-[66px] items-center justify-center rounded-[14px] bg-[#1b1c20] text-center shadow-[inset_0_1px_16px_rgba(255,255,255,0.08),0_0_24px_rgba(255,255,255,0.05)]";
@@ -202,7 +202,7 @@ function Logo({ muted = false }: { muted?: boolean }) {
           alt="WaspAI"
           className="block"
           height="30"
-          src={`${baseUrl}/static/waspai-logo-transparent.png`}
+          src={`${baseUrl}/wasp-ai-logo.png`}
           style={{ opacity: muted ? 0.86 : 1 }}
           width="46"
         />
@@ -475,8 +475,8 @@ export function WaspAIWelcomeEmail({
 
 WaspAIWelcomeEmail.PreviewProps = {
   userName: "{{user_name}}",
-  dashboardUrl: "https://waspai.app/dashboard",
-  inviteUrl: "https://waspai.app/dashboard/invite",
+  dashboardUrl: "https://waspai.in/dashboard",
+  inviteUrl: "https://waspai.in/dashboard/invite",
 } satisfies WelcomeEmailProps;
 
 export async function getWelcomeEmailHtml(userName: string): Promise<string> {
