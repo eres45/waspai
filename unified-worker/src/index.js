@@ -1192,7 +1192,7 @@ async function handleImageGenerations(request) {
     else if (model.includes("seedream")) model = "seedream-4.5";
     else if (model.includes("sdxl")) model = "sdxl-1.0";
 
-    let res, text;
+    let res;
 
     if (model === "flux-schnell") {
       res = await fetch(
@@ -1201,7 +1201,6 @@ async function handleImageGenerations(request) {
           method: "POST",
         },
       );
-      text = await res.text();
     } else if (model === "juggernaut-xl") {
       res = await fetch(
         `https://image-world-king-proxy.llamai.workers.dev/api/generate?prompt=${encodeURIComponent(prompt)}`,
@@ -1209,28 +1208,24 @@ async function handleImageGenerations(request) {
           method: "POST",
         },
       );
-      text = await res.text();
     } else if (model === "flux") {
       res = await fetch("https://runware-image-worker.llamai.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, outputType: "URL" }),
       });
-      text = await res.text();
     } else if (model === "realvisxl-v4") {
       res = await fetch("https://mu-devs-image-worker.llamai.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
-      text = await res.text();
     } else if (model === "sd-3.5") {
       res = await fetch("https://aitubo.llamai.workers.dev/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, count: 1 }),
       });
-      text = await res.text();
     } else if (model === "seedream-4.5") {
       res = await fetch(
         "https://raphaelai.llamai.workers.dev/v1/images/generations",
@@ -1240,7 +1235,6 @@ async function handleImageGenerations(request) {
           body: JSON.stringify({ prompt, style: "None" }),
         },
       );
-      text = await res.text();
     } else if (model === "sdxl-1.0") {
       res = await fetch(
         "https://image-api.at41rvplayzz.workers.dev/v1/images/generations",
@@ -1257,7 +1251,6 @@ async function handleImageGenerations(request) {
           }),
         },
       );
-      text = await res.text();
     } else {
       // Default fallback
       res = await fetch(
@@ -1266,12 +1259,14 @@ async function handleImageGenerations(request) {
           method: "POST",
         },
       );
-      text = await res.text();
     }
 
     if (!res.ok) {
+      const errorText = await res.text().catch(() => res.statusText);
       return new Response(
-        JSON.stringify({ error: `Upstream error: ${res.status} — ${text}` }),
+        JSON.stringify({
+          error: `Upstream error: ${res.status} — ${errorText}`,
+        }),
         {
           status: res.status,
           headers: {
@@ -1281,6 +1276,49 @@ async function handleImageGenerations(request) {
         },
       );
     }
+
+    // Read the response buffer safely
+    const responseBuffer = await res.arrayBuffer();
+    const bytes = new Uint8Array(responseBuffer);
+
+    // Check if the response is a raw binary image
+    const contentType = res.headers.get("content-type") || "";
+    const isPng =
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47;
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+
+    if (
+      contentType.includes("image/") ||
+      contentType.includes("octet-stream") ||
+      isPng ||
+      isJpeg
+    ) {
+      let binaryString = "";
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binaryString += String.fromCharCode(bytes[i]);
+      }
+      const base64Data = btoa(binaryString);
+
+      const responseData = {
+        created: Math.floor(Date.now() / 1000),
+        data: [{ b64_json: base64Data }],
+      };
+
+      return new Response(JSON.stringify(responseData), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+
+    // Otherwise, decode the response safely as ISO-8859-1 (Latin1) to prevent high-byte corruption in fallback parses
+    const text = new TextDecoder("iso-8859-1").decode(responseBuffer);
 
     // Try to parse text as JSON and extract URL
     let imageUrl = "";
@@ -1318,13 +1356,36 @@ async function handleImageGenerations(request) {
       );
     }
 
+    // Perform standard base64 encoding check for raw binary PNG/JPG data
+    let finalB64 = imageUrl;
+    if (!imageUrl.startsWith("http")) {
+      const isRawBinary =
+        imageUrl.startsWith("\x89PNG") ||
+        imageUrl.includes("PNG") ||
+        imageUrl.startsWith("\xff\xd8") || // JPEG magic
+        !/^[A-Za-z0-9+/=\s]+$/.test(imageUrl);
+      if (isRawBinary) {
+        // Convert the ISO-8859-1 binary string to standard base64
+        const bytes = new Uint8Array(imageUrl.length);
+        for (let i = 0; i < imageUrl.length; i++) {
+          bytes[i] = imageUrl.charCodeAt(i);
+        }
+        let binaryString = "";
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binaryString += String.fromCharCode(bytes[i]);
+        }
+        finalB64 = btoa(binaryString);
+      }
+    }
+
     // Return standard OpenAI-compatible format
     const responseData = {
       created: Math.floor(Date.now() / 1000),
       data: [
         imageUrl.startsWith("http")
           ? { url: imageUrl }
-          : { b64_json: imageUrl },
+          : { b64_json: finalB64 },
       ],
     };
 
