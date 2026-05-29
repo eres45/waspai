@@ -470,10 +470,13 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   const modelId = ((model as any).modelId || "").toLowerCase();
   // Models that are known to NOT support tool/function calling:
+  // - Frenix-routed models: sending tools causes them to attempt broken tool calls
+  //   which produce empty delta.content in SSE → nothing visible in UI
   // - Small guard/safety models (llama-guard)
   // - Very small base models (llama-2-7b, phi-2)
   // - Anything explicitly named as a base completion model
   const unsupportedPatterns = [
+    "frenix-",
     "llama-guard",
     "llama-2-7b",
     "llama-2-13b",
