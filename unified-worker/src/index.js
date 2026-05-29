@@ -31,6 +31,11 @@ const MODEL_MAP = {
   "gpt-oss-120b": { provider: "gptossworker", model: "gpt-oss-120b" },
   "gpt-5-nano": { provider: "gptossworker", model: "gpt-5-nano" },
 
+  // Raw / Legacy Claude Models
+  "claude-sonnet": { provider: "chatai", model: "claude-sonnet" },
+  "claude-3-sonnet": { provider: "chatai", model: "claude-sonnet" },
+  "claude-sonnet-4.5": { provider: "chatai", model: "claude-sonnet" },
+
   // ChatAI Proxy (5 working)
   "chatai-gpt-4o-mini": { provider: "chatai", model: "gpt-4o-mini" },
   "chatai-gpt-4o": { provider: "chatai", model: "gpt-4o" },
@@ -536,30 +541,44 @@ function getMappedModel(providerKey, originalModel) {
     return mappedDirect.model;
   }
 
-  // Otherwise, extract the base name (everything after the first dash)
-  // e.g. chatai-gpt-4o -> base is gpt-4o
+  // Determine the base model name by stripping known provider prefixes if present
+  let baseName = originalModel;
   const dashIndex = originalModel.indexOf("-");
   if (dashIndex > 0) {
-    const baseName = originalModel.slice(dashIndex + 1);
-
-    // Construct equivalent model key for the fallback provider
-    // e.g. chatbotai-gpt-4o, svelteai-gpt-4o, etc.
-    const fallbackKey = `${providerKey}-${baseName}`;
-    const fallbackMapped = MODEL_MAP[fallbackKey];
-    if (fallbackMapped) {
-      return fallbackMapped.model;
+    const prefix = originalModel.slice(0, dashIndex);
+    const knownProviders = [
+      "chatai",
+      "chatbotai",
+      "randomai",
+      "svelteai",
+      "openrouterhub",
+      "groqw",
+      "nvidiaw",
+      "freecf",
+      "frenix",
+    ];
+    if (knownProviders.includes(prefix)) {
+      baseName = originalModel.slice(dashIndex + 1);
     }
+  }
 
-    // Special alias case for claude-sonnet vs claude-3-sonnet
-    if (baseName === "claude-sonnet") {
-      const altKey = `${providerKey}-claude-3-sonnet`;
-      const altMapped = MODEL_MAP[altKey];
-      if (altMapped) return altMapped.model;
-    } else if (baseName === "claude-3-sonnet") {
-      const altKey = `${providerKey}-claude-sonnet`;
-      const altMapped = MODEL_MAP[altKey];
-      if (altMapped) return altMapped.model;
-    }
+  // Construct equivalent model key for the fallback provider
+  // e.g. chatbotai-gpt-4o, svelteai-gpt-4o, etc.
+  const fallbackKey = `${providerKey}-${baseName}`;
+  const fallbackMapped = MODEL_MAP[fallbackKey];
+  if (fallbackMapped) {
+    return fallbackMapped.model;
+  }
+
+  // Special alias case for claude-sonnet vs claude-3-sonnet
+  if (baseName === "claude-sonnet" || baseName === "claude-sonnet-4.5") {
+    const altKey = `${providerKey}-claude-3-sonnet`;
+    const altMapped = MODEL_MAP[altKey];
+    if (altMapped) return altMapped.model;
+  } else if (baseName === "claude-3-sonnet") {
+    const altKey = `${providerKey}-claude-sonnet`;
+    const altMapped = MODEL_MAP[altKey];
+    if (altMapped) return altMapped.model;
   }
 
   return originalModel;
