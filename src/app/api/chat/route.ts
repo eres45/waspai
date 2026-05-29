@@ -2028,17 +2028,26 @@ Always be aware of these installed skills. If a user asks "how many skills do we
       errorMessage.toLowerCase().includes("model") ||
       errorMessage.toLowerCase().includes("provider");
 
+    // Detect the specific "empty output" error that happens when a model
+    // returns neither text nor tool calls (e.g. Frenix models with tools sent)
+    const isEmptyOutputError =
+      errorMessage.includes("model output must contain") ||
+      errorMessage.includes("output text or tool calls");
+
     logger.error("Chat API Error:", {
       message: errorMessage,
       isModelError,
+      isEmptyOutputError,
       stack: errorStack,
     });
 
     return Response.json(
       {
-        message: isModelError
-          ? `Model Error: ${errorMessage}`
-          : "The model is a bit shy right now. Maybe try its sibling? 🙈",
+        message: isEmptyOutputError
+          ? "The model returned an empty response. Please try again or switch to a different model."
+          : isModelError
+            ? `Model Error: ${errorMessage}`
+            : "The model is a bit shy right now. Maybe try its sibling? 🙈",
         error:
           process.env.NODE_ENV === "development" ? String(error) : undefined,
       },
