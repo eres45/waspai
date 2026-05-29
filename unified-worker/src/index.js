@@ -392,6 +392,17 @@ function buildOpenAIRequest(body, mappedModel) {
   return { ...sanitizePayload(body), model: mappedModel };
 }
 
+// Frenix models don't support tool/function calling.
+// Sending tools causes them to emit tool_calls instead of delta.content,
+// which results in an empty response in the UI.
+function buildFrenixRequest(body, mappedModel) {
+  const payload = sanitizePayload(body);
+  // Always strip tools for Frenix — they don't support function calling
+  delete payload.tools;
+  delete payload.tool_choice;
+  return { ...payload, model: mappedModel };
+}
+
 function buildMakeChatRequest(body) {
   return {
     messages: body.messages,
@@ -634,9 +645,16 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
     case "openrouter":
     case "gptossworker":
     case "gemini-openai":
-    case "frenix":
       url = `${cfg.base}/chat/completions`;
       reqBody = buildOpenAIRequest(body, mappedModel);
+      headers = { "Content-Type": "application/json" };
+      if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+      break;
+
+    // Frenix models don't support tool/function calling — always strip tools
+    case "frenix":
+      url = `${cfg.base}/chat/completions`;
+      reqBody = buildFrenixRequest(body, mappedModel);
       headers = { "Content-Type": "application/json" };
       if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
       break;
