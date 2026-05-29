@@ -392,14 +392,30 @@ function buildOpenAIRequest(body, mappedModel) {
   return { ...sanitizePayload(body), model: mappedModel };
 }
 
-// Frenix models don't support tool/function calling.
-// Sending tools causes them to emit tool_calls instead of delta.content,
-// which results in an empty response in the UI.
+// Certain Frenix models don't support tool/function calling or fail/return empty tool calls.
+// We strip tools only for those known incompatible models.
 function buildFrenixRequest(body, mappedModel) {
   const payload = sanitizePayload(body);
-  // Always strip tools for Frenix — they don't support function calling
-  delete payload.tools;
-  delete payload.tool_choice;
+
+  // List of Frenix models known to fail or ignore when tools are provided
+  const toolCallUnsupportedFrenixModels = [
+    "glm-5",
+    "glm-4.7",
+    "minimax-m2.5",
+    "gemma-4-31b-it",
+    "gemma-3n-e2b-it",
+    "riva-translate-4b-instruct-v1.1",
+  ];
+
+  const modelIdLower = (mappedModel || "").toLowerCase();
+  const shouldStrip = toolCallUnsupportedFrenixModels.some((m) =>
+    modelIdLower.includes(m),
+  );
+
+  if (shouldStrip) {
+    delete payload.tools;
+    delete payload.tool_choice;
+  }
   return { ...payload, model: mappedModel };
 }
 
@@ -801,6 +817,9 @@ async function* streamResponse(providerKey, res, model) {
 
     for (const line of lines) {
       let content = "";
+      let delta = null;
+      let hasDelta = false;
+      let finish_reason = null;
 
       switch (providerKey) {
         case "pollinations":
@@ -831,21 +850,38 @@ async function* streamResponse(providerKey, res, model) {
             if (data === "[DONE]") continue;
             try {
               const j = JSON.parse(data);
-              content = j.choices?.[0]?.delta?.content || "";
+              const choice = j.choices?.[0];
+              if (choice) {
+                delta = choice.delta;
+                finish_reason = choice.finish_reason || null;
+                hasDelta = true;
+              }
             } catch {}
           }
           break;
 
         case "aimirror":
           content = parseAimirrorSSE(line);
+          if (content) {
+            delta = { content };
+            hasDelta = true;
+          }
           break;
 
         case "llmchat":
           content = parseLLMChatStream(line);
+          if (content) {
+            delta = { content };
+            hasDelta = true;
+          }
           break;
 
         case "gptossdirect":
           content = parseGPTOSSDirect(line);
+          if (content) {
+            delta = { content };
+            hasDelta = true;
+          }
           break;
 
         case "quillbot":
@@ -854,16 +890,31 @@ async function* streamResponse(providerKey, res, model) {
             try {
               const j = JSON.parse(data);
               content = j.chunk || "";
+              if (content) {
+                delta = { content };
+                hasDelta = true;
+              }
             } catch {}
           }
           break;
 
         default:
           content = line;
+          if (content) {
+            delta = { content };
+            hasDelta = true;
+          }
       }
 
-      if (content) {
-        hasYieldedContent = true;
+      if (hasDelta && delta) {
+        if (
+          delta.content ||
+          delta.reasoning_content ||
+          (delta.tool_calls && delta.tool_calls.length > 0)
+        ) {
+          hasYieldedContent = true;
+        }
+
         yield {
           id: `chatcmpl-${randomUUID()}`,
           object: "chat.completion.chunk",
@@ -872,8 +923,8 @@ async function* streamResponse(providerKey, res, model) {
           choices: [
             {
               index: 0,
-              delta: { content },
-              finish_reason: null,
+              delta,
+              finish_reason,
             },
           ],
         };

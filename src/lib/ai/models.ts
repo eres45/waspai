@@ -316,7 +316,7 @@ export async function buildDynamicModelsInfo() {
     models: models
       .map((m) => ({
         name: m.id,
-        isToolCallUnsupported: !m.id.includes("/"),
+        isToolCallUnsupported: isToolCallUnsupportedModel(m.id),
         isImageInputUnsupported: !isVisionModel(m.id),
         supportedFileMimeTypes: getMimeTypes(m.id),
         tier: getModelTier(m.id),
@@ -467,22 +467,39 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
 
 // ─── Synchronous helpers ─────────────────────────────────────────────────────
 
-export const isToolCallUnsupportedModel = (model: LanguageModel) => {
-  const modelId = ((model as any).modelId || "").toLowerCase();
+export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
+  const modelId =
+    typeof model === "string"
+      ? model.toLowerCase()
+      : ((model as any).modelId || "").toLowerCase();
+
   // Models that are known to NOT support tool/function calling:
-  // - Frenix-routed models: sending tools causes them to attempt broken tool calls
-  //   which produce empty delta.content in SSE → nothing visible in UI
   // - Small guard/safety models (llama-guard)
   // - Very small base models (llama-2-7b, phi-2)
-  // - Anything explicitly named as a base completion model
+  // - Incompatible Frenix models that fail or return empty tool calls:
   const unsupportedPatterns = [
-    "frenix-",
     "llama-guard",
     "llama-2-7b",
     "llama-2-13b",
     "phi-2",
+    "frenix-glm-5",
+    "frenix-glm-4.7",
+    "frenix-minimax-m2.5",
+    "frenix-gemma-4-31b",
+    "frenix-gemma-3n-e2b",
+    "frenix-riva-translate",
   ];
-  return unsupportedPatterns.some((p) => modelId.includes(p));
+
+  const isExcluded = unsupportedPatterns.some((p) => modelId.includes(p));
+  if (isExcluded) return true;
+
+  // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
+  // assume it doesn't support tool calls
+  if (!modelId.includes("/") && !modelId.includes("frenix-")) {
+    return true;
+  }
+
+  return false;
 };
 
 export const isImageInputUnsupportedModel = (_model: LanguageModel) => {
