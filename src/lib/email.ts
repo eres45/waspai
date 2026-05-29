@@ -11,7 +11,7 @@ const resendApiKeys = process.env.RESEND_API_KEY
 export async function sendWelcomeEmail(email: string, userName: string) {
   try {
     logger.info(`Attempting to send welcome email to: ${email} (${userName})`);
-    const html = getWelcomeEmailHtml(userName);
+    const html = await getWelcomeEmailHtml(userName);
 
     if (resendApiKeys.length === 0) {
       logger.warn(
