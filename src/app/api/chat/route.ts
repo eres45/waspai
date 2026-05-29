@@ -207,18 +207,29 @@ export async function POST(request: Request) {
         .map((part: any) => part?.text)
         .join(" ") || "";
 
-    // Extract file URLs from attachments for OCR processing
-    const fileUrls = attachments
+    // Extract file attachments for OCR processing — include metadata so OCR can
+    // detect file type via mime type when the storage URL has no extension
+    const fileAttachmentsForOcr = attachments
       .filter((att) => att.type === "file" || att.type === "source-url")
-      .map((att) => att.url)
-      .filter((url) => url && (url.includes("http") || url.includes("data:")));
+      .filter(
+        (att) =>
+          att.url && (att.url.includes("http") || att.url.includes("data:")),
+      )
+      .map((att) => ({
+        url: att.url,
+        mediaType: att.mediaType,
+        filename: att.filename,
+      }));
+
+    // Keep plain URL list for other uses (e.g. image URL extraction)
+    const fileUrls = fileAttachmentsForOcr.map((a) => a.url);
 
     logger.info(`Attachments count: ${attachments.length}`);
     logger.info(`File URLs extracted: ${fileUrls.length}`);
 
     // Automatically run OCR/Vision analysis for all uploaded files (images, docs, etc.)
     // This feeds the extracted content directly to the active model context so it knows what it is, even if the user didn't explicitly ask.
-    const userWantsOcr = fileUrls.length > 0;
+    const userWantsOcr = fileAttachmentsForOcr.length > 0;
 
     logger.info(
       `Starting parallel metadata fetch (OCR=${userWantsOcr}, thread, agent)`,
@@ -226,7 +237,7 @@ export async function POST(request: Request) {
 
     // Define the promises
     const ocrPromise = userWantsOcr
-      ? processFileURLsForModel(messageText, fileUrls)
+      ? processFileURLsForModel(messageText, fileAttachmentsForOcr)
       : Promise.resolve(messageText);
 
     const threadPromise = chatRepository.selectThreadDetails(id);
@@ -482,45 +493,50 @@ export async function POST(request: Request) {
       }
     }
 
-    // Filter out unsupported file types before sending to model
+    // Filter out unsupported file types before sending to model.
+    // After OCR extraction, non-image file parts (PDFs, docs, code files) should
+    // be stripped from message.parts — their content is already in the enriched text.
+    // Only image file parts are kept for vision-capable models.
     const supportedFileTypes = [
       "image/jpeg",
       "image/png",
       "image/webp",
       "image/gif",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "image/bmp",
+      "image/tiff",
+      // NOTE: PDFs, docs, and text files are intentionally omitted.
+      // Their content is extracted by OCR and injected into the text context.
+      // Sending raw file URLs to most models causes errors.
     ];
 
     const unsupportedParts: any[] = [];
     message.parts = message.parts.filter((part: any) => {
       if (part.type === "file" && part.mediaType) {
-        if (!supportedFileTypes.includes(part.mediaType)) {
-          unsupportedParts.push({
-            mediaType: part.mediaType,
-            filename: part.filename,
-          });
-          logger.warn(
-            `Filtering out unsupported file type: ${part.mediaType} (${part.filename})`,
-          );
-          return false;
-        }
+        // Keep image file parts for vision models
+        if (supportedFileTypes.includes(part.mediaType)) return true;
+        // Strip everything else (PDFs, docs, code files — content injected via OCR text)
+        unsupportedParts.push({
+          mediaType: part.mediaType,
+          filename: part.filename || part.name,
+        });
+        logger.info(
+          `Stripping file part from message (content extracted by OCR): ${part.mediaType} (${part.filename || part.name})`,
+        );
+        return false;
       }
       return true;
     });
 
-    // If there were actually unsupported files (non-docs/images), we can add a subtle note
-    if (unsupportedParts.length > 0) {
-      const unsupportedNote = `\n\n[System Note: The following files were present but could not be fully parsed: ${unsupportedParts.map((p) => `${p.filename} (${p.mediaType})`).join(", ")}]`;
-
+    // Add a context note if OCR failed to extract content (timed out or unsupported)
+    const ocrExtractedContent = enrichedMessageText !== messageText;
+    if (unsupportedParts.length > 0 && !ocrExtractedContent) {
+      const fileNames = unsupportedParts
+        .map((p) => `${p.filename || "file"} (${p.mediaType})`)
+        .join(", ");
+      const fallbackNote = `\n\n[System Note: The following file(s) were uploaded but content extraction timed out or failed: ${fileNames}. Please try again or use a different file format.]`;
       const textPart = message.parts.find((p: any) => p.type === "text") as any;
       if (textPart && textPart.text) {
-        textPart.text += unsupportedNote;
+        textPart.text += fallbackNote;
       }
     }
 
