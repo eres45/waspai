@@ -289,4 +289,35 @@ export const pgUserRepository: UserRepository = {
         .map((a) => a.providerId),
     };
   },
+
+  setWelcomeEmailSent: async (userId: string, sent: boolean): Promise<User> => {
+    try {
+      const [result] = await db
+        .update(UserTable)
+        .set({
+          welcomeEmailSent: sent,
+          updatedAt: new Date(),
+        })
+        .where(eq(UserTable.id, userId))
+        .returning();
+
+      if (!result) {
+        logger.error(
+          `User not found for updating welcome email status: ${userId}`,
+        );
+        throw new Error(`User not found: ${userId}`);
+      }
+
+      return {
+        ...result,
+        preferences: result.preferences ?? null,
+      };
+    } catch (error) {
+      logger.error(
+        `Failed to update welcome email status for ${userId}:`,
+        error,
+      );
+      throw error;
+    }
+  },
 };

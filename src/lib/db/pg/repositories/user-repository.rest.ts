@@ -10,6 +10,7 @@ const mapUserToEntity = (data: any): any => {
     createdAt: data.created_at ? new Date(data.created_at) : undefined,
     updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
     preferences: data.preferences as UserPreferences,
+    welcomeEmailSent: data.welcome_email_sent,
   };
 };
 
@@ -363,5 +364,29 @@ export const userRepositoryRest: UserRepository = {
       totalTokens,
       period: "Last 30 Days",
     };
+  },
+
+  async setWelcomeEmailSent(userId: string, sent: boolean) {
+    try {
+      const { data, error } = await supabaseRest
+        .from("user")
+        .update({
+          welcome_email_sent: sent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error(`[User REST] Error setting welcomeEmailSent:`, error);
+        throw error;
+      }
+
+      return mapUserToEntity(data);
+    } catch (error) {
+      logger.error(`[User REST] setWelcomeEmailSent error:`, error);
+      throw error;
+    }
   },
 };

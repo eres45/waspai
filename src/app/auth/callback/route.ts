@@ -3,6 +3,7 @@ import logger from "@/lib/logger";
 import { supabaseAuth } from "@/lib/auth/supabase-auth";
 import { cookies } from "next/headers";
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
             logger.info(
               `[AuthCallback] Attempting to sync user ${user.id} (${email}) with name "${name}" and avatar "${avatarUrl}"`,
             );
-            await userRepositoryRest.createOrUpdateUser(
+            const dbUser = await userRepositoryRest.createOrUpdateUser(
               user.id,
               email,
               name,
@@ -65,9 +66,23 @@ export async function GET(request: NextRequest) {
             logger.info(
               `[AuthCallback] GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
             );
+
+            // Hook Into Welcome Email: Check if welcomeEmailSent is false
+            if (dbUser && !dbUser.welcomeEmailSent) {
+              logger.info(
+                `[AuthCallback] Welcome email not sent yet for user: ${email}. Sending now...`,
+              );
+              const sendResult = await sendWelcomeEmail(email, name);
+              if (sendResult.success) {
+                await userRepositoryRest.setWelcomeEmailSent(user.id, true);
+                logger.info(
+                  `[AuthCallback] Welcome email sent and recorded in DB for user: ${email}`,
+                );
+              }
+            }
           } catch (dbErr) {
             logger.error(
-              `[AuthCallback] Failed to create/update user in database: ${email}`,
+              `[AuthCallback] Failed to create/update user or send welcome email: ${email}`,
               dbErr,
             );
             // Continue anyway - user is authenticated in Supabase

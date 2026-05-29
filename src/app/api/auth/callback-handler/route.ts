@@ -3,6 +3,7 @@ import logger from "@/lib/logger";
 import { supabaseAuth } from "@/lib/auth/supabase-auth";
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import { cookies } from "next/headers";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Create or update user in database with avatar
     try {
-      await userRepositoryRest.createOrUpdateUser(
+      const dbUser = await userRepositoryRest.createOrUpdateUser(
         user.id,
         email,
         name,
@@ -59,8 +60,25 @@ export async function POST(request: NextRequest) {
       logger.info(
         `GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
       );
+
+      // Check if welcome email has not been sent yet
+      if (dbUser && !dbUser.welcomeEmailSent) {
+        logger.info(
+          `Welcome email not sent yet for user: ${email}. Sending now...`,
+        );
+        const sendResult = await sendWelcomeEmail(email, name);
+        if (sendResult.success) {
+          await userRepositoryRest.setWelcomeEmailSent(user.id, true);
+          logger.info(
+            `Welcome email sent and recorded in DB for user: ${email}`,
+          );
+        }
+      }
     } catch (dbErr) {
-      logger.error(`Failed to create/update user in database: ${email}`, dbErr);
+      logger.error(
+        `Failed to create/update user or send welcome email: ${email}`,
+        dbErr,
+      );
       // Continue anyway - user is authenticated in Supabase
     }
 

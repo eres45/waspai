@@ -80,6 +80,7 @@ export type UserRepository = {
     hasPassword: boolean;
     oauthProviders: string[];
   }>;
+  setWelcomeEmailSent: (userId: string, sent: boolean) => Promise<User>;
 };
 
 export const UserZodSchema = z.object({
