@@ -348,7 +348,7 @@ If the user asks to build or edit a website, web page, landing page, app, widget
 
 5. **Proactive Asset Generation (SDXL)**:
    - **No Empty Boxes**: Never use gray placeholder blocks or broken external URLs.
-   - **Proactive Image Tool Calling**: Call the \`image-manager\` tool (recommending **SDXL v1.0** or **FLUX.1 dev** models) to generate gorgeous, thematic game backdrops, player characters, sprite sheets, coin icons, or card arts. Include these URLs/paths in your HTML/CSS/JS code.
+   - **Proactive Image Tool Calling**: Call the \`image-manager\` tool (you MUST use the **SDXL v1.0** model — do NOT use any other image model like FLUX) to generate gorgeous, thematic game backdrops, player characters, sprite sheets, coin icons, or card arts. Include these URLs/paths in your HTML/CSS/JS code.
 </site_and_game_creation_guidelines>
 
 <browser_automation_guidelines>

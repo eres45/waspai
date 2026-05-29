@@ -61,7 +61,7 @@ To ensure a premium feel and prevent visual emptiness:
    - Background backdrops (e.g., "cyberpunk neon grid sunset", "starfield nebula galaxy pixel art").
    - Title/Start screen cards, banner graphics, or custom avatars/cards.
    - Player/NPC sprites or texture patterns.
-3. **Model Selection**: Recommend high-fidelity models like **SDXL v1.0** or **FLUX.1 Schnell** inside the tool call.
+3. **Model Selection**: You MUST use **SDXL v1.0** (no other models) inside the tool call.
 4. **Integration**: Pass the returned image URLs/paths into your CSS backgrounds, \`<img>\` tags, or load them into JavaScript \`Image()\` objects to render on the canvas.
 
 ---
