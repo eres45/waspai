@@ -7,15 +7,17 @@ export function getWelcomeEmailHtml(userName: string): string {
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#111;display:flex;justify-content:center;padding:28px 12px;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;}
+body{background:#111;font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;margin:0;padding:0;}
 
 /* ── SHELL ── */
 .shell{
-  width:100%;max-width:600px;
+  width:100%;max-width:660px;
   background:#060606;
   position:relative;overflow:hidden;
   border:0.5px solid rgba(255,255,255,0.055);
   font-family:'Montserrat','Helvetica Neue',Helvetica,Arial,sans-serif;
+  margin: 0 auto;
+  text-align: left;
 }
 
 /* ── SPOTLIGHT CANVAS ── */
@@ -248,262 +250,277 @@ body{background:#111;display:flex;justify-content:center;padding:28px 12px;font-
 </style>
 </head>
 <body>
-<div class="shell">
+<!-- Bulletproof Center Table Wrapper for Gmail/Outlook compatibility -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111; width:100% !important; min-width:100% !important; table-layout: fixed; margin:0; padding:28px 0;">
+  <tr>
+    <td align="center" valign="top" style="background:#111; padding: 0 12px;">
 
-  <!-- SPOTLIGHT SVG BG — polygon cones + dust, same as poster -->
-  <svg class="bg" viewBox="0 0 600 1100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="rg1" cx="90%" cy="1%" r="72%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.075"/>
-        <stop offset="28%" stop-color="#ffffff" stop-opacity="0.03"/>
-        <stop offset="60%" stop-color="#ffffff" stop-opacity="0.007"/>
-        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-      </radialGradient>
-      <radialGradient id="rg2" cx="80%" cy="0%" r="52%">
-        <stop offset="0%" stop-color="#cccccc" stop-opacity="0.06"/>
-        <stop offset="50%" stop-color="#aaaaaa" stop-opacity="0.015"/>
-        <stop offset="100%" stop-color="#aaaaaa" stop-opacity="0"/>
-      </radialGradient>
-      <filter id="gb" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur stdDeviation="3"/>
-      </filter>
-      <filter id="gb2" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="1.5"/>
-      </filter>
-    </defs>
-    <!-- ambient radial glows -->
-    <rect width="600" height="1100" fill="url(#rg1)"/>
-    <rect width="600" height="1100" fill="url(#rg2)"/>
-    <!-- main wide cone -->
-    <polygon points="540,-8 600,-8 240,480 180,490" fill="rgba(255,255,255,0.025)" filter="url(#gb)"/>
-    <!-- bright narrow core beam -->
-    <polygon points="572,-8 600,-8 305,360 285,375" fill="rgba(255,255,255,0.045)" filter="url(#gb2)"/>
-    <!-- secondary medium beam -->
-    <polygon points="520,-8 600,-8 190,540 150,540" fill="rgba(255,255,255,0.016)" filter="url(#gb)"/>
-    <!-- very faint outer sweep -->
-    <polygon points="480,-8 600,-8 130,600" fill="rgba(255,255,255,0.009)" filter="url(#gb)"/>
-    <!-- edge highlight on right -->
-    <polygon points="592,-8 600,-8 600,180" fill="rgba(255,255,255,0.055)" filter="url(#gb2)"/>
-    <!-- dust particles in beam zone -->
-    <g fill="rgba(255,255,255,0.22)">
-      <circle cx="488" cy="48" r="0.8"/><circle cx="512" cy="72" r="0.65"/>
-      <circle cx="470" cy="105" r="0.75"/><circle cx="540" cy="38" r="0.5"/>
-      <circle cx="457" cy="148" r="0.9"/><circle cx="518" cy="128" r="0.55"/>
-      <circle cx="483" cy="186" r="0.6"/><circle cx="545" cy="92" r="0.45"/>
-      <circle cx="434" cy="198" r="0.7"/><circle cx="568" cy="62" r="0.5"/>
-      <circle cx="502" cy="236" r="0.5"/><circle cx="556" cy="164" r="0.6"/>
-      <circle cx="450" cy="262" r="0.45"/><circle cx="522" cy="294" r="0.5"/>
-      <circle cx="582" cy="122" r="0.4"/><circle cx="414" cy="304" r="0.6"/>
-      <circle cx="546" cy="244" r="0.4"/><circle cx="468" cy="344" r="0.5"/>
-      <circle cx="534" cy="354" r="0.35"/><circle cx="490" cy="412" r="0.4"/>
-      <circle cx="394" cy="374" r="0.5"/><circle cx="426" cy="432" r="0.35"/>
-      <circle cx="563" cy="302" r="0.4"/><circle cx="442" cy="390" r="0.4"/>
-      <circle cx="578" cy="196" r="0.35"/><circle cx="406" cy="456" r="0.45"/>
-    </g>
-  </svg>
+      <!-- Shell table -->
+      <table class="shell" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 660px; background:#060606; border: 0.5px solid rgba(255,255,255,0.055); position: relative; overflow: hidden; margin: 0 auto; text-align: left;">
+        <tr>
+          <td valign="top">
 
-  <div class="z">
+            <!-- SPOTLIGHT SVG BG — polygon cones + dust, same as poster -->
+            <svg class="bg" viewBox="0 0 600 1100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="rg1" cx="90%" cy="1%" r="72%">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="0.075"/>
+                  <stop offset="28%" stop-color="#ffffff" stop-opacity="0.03"/>
+                  <stop offset="60%" stop-color="#ffffff" stop-opacity="0.007"/>
+                  <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="rg2" cx="80%" cy="0%" r="52%">
+                  <stop offset="0%" stop-color="#cccccc" stop-opacity="0.06"/>
+                  <stop offset="50%" stop-color="#aaaaaa" stop-opacity="0.015"/>
+                  <stop offset="100%" stop-color="#aaaaaa" stop-opacity="0"/>
+                </radialGradient>
+                <filter id="gb" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="3"/>
+                </filter>
+                <filter id="gb2" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5"/>
+                </filter>
+              </defs>
+              <!-- ambient radial glows -->
+              <rect width="600" height="1100" fill="url(#rg1)"/>
+              <rect width="600" height="1100" fill="url(#rg2)"/>
+              <!-- main wide cone -->
+              <polygon points="540,-8 600,-8 240,480 180,490" fill="rgba(255,255,255,0.025)" filter="url(#gb)"/>
+              <!-- bright narrow core beam -->
+              <polygon points="572,-8 600,-8 305,360 285,375" fill="rgba(255,255,255,0.045)" filter="url(#gb2)"/>
+              <!-- secondary medium beam -->
+              <polygon points="520,-8 600,-8 190,540 150,540" fill="rgba(255,255,255,0.016)" filter="url(#gb)"/>
+              <!-- very faint outer sweep -->
+              <polygon points="480,-8 600,-8 130,600" fill="rgba(255,255,255,0.009)" filter="url(#gb)"/>
+              <!-- edge highlight on right -->
+              <polygon points="592,-8 600,-8 600,180" fill="rgba(255,255,255,0.055)" filter="url(#gb2)"/>
+              <!-- dust particles in beam zone -->
+              <g fill="rgba(255,255,255,0.22)">
+                <circle cx="488" cy="48" r="0.8"/><circle cx="512" cy="72" r="0.65"/>
+                <circle cx="470" cy="105" r="0.75"/><circle cx="540" cy="38" r="0.5"/>
+                <circle cx="457" cy="148" r="0.9"/><circle cx="518" cy="128" r="0.55"/>
+                <circle cx="483" cy="186" r="0.6"/><circle cx="545" cy="92" r="0.45"/>
+                <circle cx="434" cy="198" r="0.7"/><circle cx="568" cy="62" r="0.5"/>
+                <circle cx="502" cy="236" r="0.5"/><circle cx="556" cy="164" r="0.6"/>
+                <circle cx="450" cy="262" r="0.45"/><circle cx="522" cy="294" r="0.5"/>
+                <circle cx="582" cy="122" r="0.4"/><circle cx="414" cy="304" r="0.6"/>
+                <circle cx="546" cy="244" r="0.4"/><circle cx="468" cy="344" r="0.5"/>
+                <circle cx="534" cy="354" r="0.35"/><circle cx="490" cy="412" r="0.4"/>
+                <circle cx="394" cy="374" r="0.5"/><circle cx="426" cy="432" r="0.35"/>
+                <circle cx="563" cy="302" r="0.4"/><circle cx="442" cy="390" r="0.4"/>
+                <circle cx="578" cy="196" r="0.35"/><circle cx="406" cy="456" r="0.45"/>
+              </g>
+            </svg>
 
-    <!-- ═══ HEADER ═══ -->
-    <div class="hdr">
-      <div><span class="beta-badge">Early Access Beta</span></div>
-      <div class="logo-row">
-        <svg width="25" height="25" viewBox="0 0 28 28" fill="none" style="display: inline-block; vertical-align: middle;">
-          <path d="M3.5 7.5L9.5 21L14 11.5L18.5 21L24.5 7.5" stroke="rgba(255,255,255,0.86)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="logo-txt" style="vertical-align: middle;">WaspAI</span>
-      </div>
-    </div>
+            <div class="z">
 
-    <!-- ═══ HERO ═══ -->
-    <div class="hero">
-      <div class="h1">Welcome To</div>
-      <div class="h2">WaspAI</div>
-      <div class="flare-row">
-        <div class="fl"></div>
-        <div class="fd"></div>
-        <div class="fr"></div>
-      </div>
-      <div class="hsub">Your AI workspace is ready</div>
-    </div>
-
-    <!-- ═══ BODY ═══ -->
-    <div class="body-pad">
-
-      <p class="greet">Welcome, <strong>${userName}</strong></p>
-      <p class="para">
-        Your workspace is now active.<br><br>
-        Create agents, automate workflows, generate websites,<br>
-        build skills, and access 100+ AI models — all from one place.
-      </p>
-
-      <!-- CAPABILITY TABLE — table layout, Outlook safe, no CSS grid -->
-      <div class="caps-outer">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tbody>
-            <tr class="cap-row">
-              <td width="50%">
-                <span class="cap-ico">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
-                    <circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+              <!-- ═══ HEADER ═══ -->
+              <div class="hdr">
+                <div><span class="beta-badge">Early Access Beta</span></div>
+                <div class="logo-row">
+                  <svg width="25" height="25" viewBox="0 0 28 28" fill="none" style="display: inline-block; vertical-align: middle;">
+                    <path d="M3.5 7.5L9.5 21L14 11.5L18.5 21L24.5 7.5" stroke="rgba(255,255,255,0.86)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                </span>
-                <span class="cap-lbl">AI Agents</span>
-              </td>
-              <td width="50%">
-                <span class="cap-ico">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
-                    <rect x="1" y="3.5" width="4" height="3.5" rx="1"/><rect x="11" y="3.5" width="4" height="3.5" rx="1"/><rect x="6" y="9" width="4" height="3.5" rx="1"/><path d="M5 5.25h6M8 7v2"/>
-                  </svg>
-                </span>
-                <span class="cap-lbl">Workflows</span>
-              </td>
-            </tr>
-            <tr class="cap-row">
-              <td>
-                <span class="cap-ico">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
-                    <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>
-                  </svg>
-                </span>
-                <span class="cap-lbl">Website Creation</span>
-              </td>
-              <td>
-                <span class="cap-ico">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
-                    <path d="M2 8h3l2-5 2 10 2-5h3"/>
-                  </svg>
-                </span>
-                <span class="cap-lbl">Skill Library</span>
-              </td>
-            </tr>
-            <tr class="cap-row">
-              <td>
-                <span class="cap-ico">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
-                    <rect x="2" y="3" width="12" height="9" rx="1.5"/><circle cx="6" cy="7.5" r="1.5"/><path d="M10 5.5l2.5 2-2.5 2"/>
-                  </svg>
-                </span>
-                <span class="cap-lbl">Image Generation</span>
-              </td>
-              <td>
-                <span class="cap-ico">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
-                    <polygon points="5.5,4 13,8 5.5,12"/><rect x="2" y="4" width="2" height="8" rx="0.5"/>
-                  </svg>
-                </span>
-                <span class="cap-lbl">Video Generation</span>
-              </td>
-            </tr>
-            <tr class="cap-row last">
-              <td colspan="2" class="cap-full">
-                <span class="cap-ico" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.11);">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.3" stroke-linecap="round">
-                    <circle cx="8" cy="8" r="5.5"/><path d="M8 4v4l2.5 1.5"/>
-                  </svg>
-                </span>
-                <span class="cap-lbl" style="color:rgba(255,255,255,0.6);font-size:10px;">
-                  100+ AI Models &nbsp;·&nbsp; GPT &nbsp;·&nbsp; Claude &nbsp;·&nbsp; Gemini &nbsp;·&nbsp; Mistral &amp; more
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <span class="logo-txt" style="vertical-align: middle; display: inline-block; margin-left: 6px;">WaspAI</span>
+                </div>
+              </div>
 
-      <!-- CTA — real anchor link, no JS -->
-      <div class="cta-wrap">
-        <div style="display:inline-block;position:relative;">
-          <div style="height:0.5px;background:linear-gradient(to right,transparent,rgba(255,255,255,0.18),transparent);"></div>
-          <a href="https://waspai.ai/dashboard" class="cta-btn">OPEN DASHBOARD</a>
-        </div>
-        <div class="cta-hint">Access your workspace instantly</div>
-      </div>
+              <!-- ═══ HERO ═══ -->
+              <div class="hero">
+                <div class="h1">Welcome To</div>
+                <div class="h2">WaspAI</div>
+                <div class="flare-row">
+                  <div class="fl"></div>
+                  <div class="fd"></div>
+                  <div class="fr"></div>
+                </div>
+                <div class="hsub">Your AI workspace is ready</div>
+              </div>
 
-      <!-- REFERRAL STRIP -->
-      <div class="ref-strip">
-        <div class="ref-title">Invite &amp; Unlock</div>
-        <div class="ref-desc">
-          Invite <strong>5 friends</strong> and unlock <strong>7 days of WaspAI Pro</strong> — free.<br>
-          Share your personal invite link from the dashboard.
-        </div>
-      </div>
+              <!-- ═══ BODY ═══ -->
+              <div class="body-pad">
 
-    </div>
+                <p class="greet">Welcome, <strong>${userName}</strong></p>
+                <p class="para">
+                  Your workspace is now active.<br><br>
+                  Create agents, automate workflows, generate websites,<br>
+                  build skills, and access 100+ AI models — all from one place.
+                </p>
 
-    <!-- RULE -->
-    <div class="rule"></div>
+                <!-- CAPABILITY TABLE — table layout, Outlook safe, no CSS grid -->
+                <div class="caps-outer">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tbody>
+                      <tr class="cap-row">
+                        <td width="50%">
+                          <span class="cap-ico">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
+                              <circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl">AI Agents</span>
+                        </td>
+                        <td width="50%">
+                          <span class="cap-ico">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
+                              <rect x="1" y="3.5" width="4" height="3.5" rx="1"/><rect x="11" y="3.5" width="4" height="3.5" rx="1"/><rect x="6" y="9" width="4" height="3.5" rx="1"/><path d="M5 5.25h6M8 7v2"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl">Workflows</span>
+                        </td>
+                      </tr>
+                      <tr class="cap-row">
+                        <td>
+                          <span class="cap-ico">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
+                              <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl">Website Creation</span>
+                        </td>
+                        <td>
+                          <span class="cap-ico">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
+                              <path d="M2 8h3l2-5 2 10 2-5h3"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl">Skill Library</span>
+                        </td>
+                      </tr>
+                      <tr class="cap-row">
+                        <td>
+                          <span class="cap-ico">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
+                              <rect x="2" y="3" width="12" height="9" rx="1.5"/><circle cx="6" cy="7.5" r="1.5"/><path d="M10 5.5l2.5 2-2.5 2"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl">Image Generation</span>
+                        </td>
+                        <td>
+                          <span class="cap-ico">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.3" stroke-linecap="round">
+                              <polygon points="5.5,4 13,8 5.5,12"/><rect x="2" y="4" width="2" height="8" rx="0.5"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl">Video Generation</span>
+                        </td>
+                      </tr>
+                      <tr class="cap-row last">
+                        <td colspan="2" class="cap-full">
+                          <span class="cap-ico" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.11);">
+                            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.3" stroke-linecap="round">
+                              <circle cx="8" cy="8" r="5.5"/><path d="M8 4v4l2.5 1.5"/>
+                            </svg>
+                          </span>
+                          <span class="cap-lbl" style="color:rgba(255,255,255,0.6);font-size:10px;">
+                            100+ AI Models &nbsp;·&nbsp; GPT &nbsp;·&nbsp; Claude &nbsp;·&nbsp; Gemini &nbsp;·&nbsp; Mistral &amp; more
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-    <!-- ═══ FEATURE CARDS — table layout ═══ -->
-    <div class="feats-wrap">
-      <div class="feats-eyebrow">What awaits you</div>
-      <table class="feats-table" cellpadding="0" cellspacing="9" border="0" width="100%">
-        <tbody>
-          <tr>
-            <td class="fcard">
-              <span class="fcard-top"></span>
-              <span class="fcard-ico">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round">
-                  <circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
-                </svg>
-              </span>
-              <span class="fcard-ttl">AI Agents</span>
-              <span class="fcard-dsc">Autonomous agents that reason, plan, and act on complex tasks.</span>
-            </td>
-            <td class="fcard">
-              <span class="fcard-top"></span>
-              <span class="fcard-ico">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round">
-                  <rect x="1" y="3.5" width="4" height="3.5" rx="1"/><rect x="11" y="3.5" width="4" height="3.5" rx="1"/><rect x="6" y="9" width="4" height="3.5" rx="1"/><path d="M5 5.25h6M8 7v2"/>
-                </svg>
-              </span>
-              <span class="fcard-ttl">Workflows</span>
-              <span class="fcard-dsc">Chain models and tools into pipelines built for real production.</span>
-            </td>
-            <td class="fcard">
-              <span class="fcard-top"></span>
-              <span class="fcard-ico">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round">
-                  <circle cx="8" cy="8" r="5.5"/><path d="M5.5 8h5M8 5.5v5"/>
-                </svg>
-              </span>
-              <span class="fcard-ttl">100+ Models</span>
-              <span class="fcard-dsc">Every leading model unified. Switch freely, stay in flow.</span>
-            </td>
-          </tr>
-        </tbody>
+                <!-- CTA — real anchor link, no JS -->
+                <div class="cta-wrap">
+                  <div style="display:inline-block;position:relative;">
+                    <div style="height:0.5px;background:linear-gradient(to right,transparent,rgba(255,255,255,0.18),transparent);"></div>
+                    <a href="https://waspai.ai/dashboard" class="cta-btn">OPEN DASHBOARD</a>
+                  </div>
+                  <div class="cta-hint">Access your workspace instantly</div>
+                </div>
+
+                <!-- REFERRAL STRIP -->
+                <div class="ref-strip">
+                  <div class="ref-title">Invite &amp; Unlock</div>
+                  <div class="ref-desc">
+                    Invite <strong>5 friends</strong> and unlock <strong>7 days of WaspAI Pro</strong> — free.<br>
+                    Share your personal invite link from the dashboard.
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- RULE -->
+              <div class="rule"></div>
+
+              <!-- ═══ FEATURE CARDS — table layout ═══ -->
+              <div class="feats-wrap">
+                <div class="feats-eyebrow">What awaits you</div>
+                <table class="feats-table" cellpadding="0" cellspacing="9" border="0" width="100%">
+                  <tbody>
+                    <tr>
+                      <td class="fcard">
+                        <span class="fcard-top"></span>
+                        <span class="fcard-ico">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round">
+                            <circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+                          </svg>
+                        </span>
+                        <span class="fcard-ttl">AI Agents</span>
+                        <span class="fcard-dsc">Autonomous agents that reason, plan, and act on complex tasks.</span>
+                      </td>
+                      <td class="fcard">
+                        <span class="fcard-top"></span>
+                        <span class="fcard-ico">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round">
+                            <rect x="1" y="3.5" width="4" height="3.5" rx="1"/><rect x="11" y="3.5" width="4" height="3.5" rx="1"/><rect x="6" y="9" width="4" height="3.5" rx="1"/><path d="M5 5.25h6M8 7v2"/>
+                          </svg>
+                        </span>
+                        <span class="fcard-ttl">Workflows</span>
+                        <span class="fcard-dsc">Chain models and tools into pipelines built for real production.</span>
+                      </td>
+                      <td class="fcard">
+                        <span class="fcard-top"></span>
+                        <span class="fcard-ico">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.3" stroke-linecap="round">
+                            <circle cx="8" cy="8" r="5.5"/><path d="M5.5 8h5M8 5.5v5"/>
+                          </svg>
+                        </span>
+                        <span class="fcard-ttl">100+ Models</span>
+                        <span class="fcard-dsc">Every leading model unified. Switch freely, stay in flow.</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- RULE -->
+              <div class="rule"></div>
+
+              <!-- ═══ FOOTER ═══ -->
+              <div class="ftr">
+                <div class="ftr-tag">
+                  One Workspace. &nbsp;<strong>Every AI Model.</strong>&nbsp; Infinite Possibilities.
+                </div>
+
+                <!-- THREE-COLUMN PIPE ROW — matches poster exactly -->
+                <div class="pipe-row">
+                  <span class="pseg">One Workspace</span>
+                  <span class="pipe">|</span>
+                  <span class="pseg mid">Every AI Model</span>
+                  <span class="pipe">|</span>
+                  <span class="pseg">Infinite Possibilities</span>
+                </div>
+
+                <div class="stay">Stay Tuned.</div>
+
+                <div class="micro">
+                  © 2026 WaspAI &nbsp;·&nbsp; All rights reserved
+                  &nbsp;·&nbsp; <a href="https://waspai.ai/unsubscribe">Unsubscribe</a>
+                  &nbsp;·&nbsp; <a href="https://waspai.ai/privacy">Privacy</a>
+                </div>
+              </div>
+
+            </div><!-- /z -->
+
+          </td>
+        </tr>
       </table>
-    </div>
 
-    <!-- RULE -->
-    <div class="rule"></div>
-
-    <!-- ═══ FOOTER ═══ -->
-    <div class="ftr">
-      <div class="ftr-tag">
-        One Workspace. &nbsp;<strong>Every AI Model.</strong>&nbsp; Infinite Possibilities.
-      </div>
-
-      <!-- THREE-COLUMN PIPE ROW — matches poster exactly -->
-      <div class="pipe-row">
-        <span class="pseg">One Workspace</span>
-        <span class="pipe">|</span>
-        <span class="pseg mid">Every AI Model</span>
-        <span class="pipe">|</span>
-        <span class="pseg">Infinite Possibilities</span>
-      </div>
-
-      <div class="stay">Stay Tuned.</div>
-
-      <div class="micro">
-        © 2026 WaspAI &nbsp;·&nbsp; All rights reserved
-        &nbsp;·&nbsp; <a href="https://waspai.ai/unsubscribe">Unsubscribe</a>
-        &nbsp;·&nbsp; <a href="https://waspai.ai/privacy">Privacy</a>
-      </div>
-    </div>
-
-  </div><!-- /z -->
-</div><!-- /shell -->
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
   return html;
