@@ -1,5 +1,4 @@
 import logger from "logger";
-import { CREATIVE_WORKER_URL } from "../models";
 
 export interface VideoGenOptions {
   prompt: string;
@@ -14,7 +13,8 @@ export interface VideoGenResult {
   };
 }
 
-const VIDEO_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/video/generations`;
+const VIDEO_ENDPOINT =
+  "https://swift-sora-video.revai.workers.dev/api/generate";
 
 /**
  * Dynamic fetch wrapper with exponential backoff retries.
@@ -75,7 +75,13 @@ export async function generateVideoWithMeta(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: options.prompt,
-          ...(options.model ? { model: options.model } : {}),
+          aspect_ratio: "16:9",
+          style: options.model?.includes("cinematic")
+            ? "cinematic"
+            : options.model?.includes("anime")
+              ? "anime"
+              : "none",
+          type: "txt",
         }),
         signal: controller.signal,
       },
