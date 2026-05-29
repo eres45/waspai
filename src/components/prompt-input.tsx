@@ -52,6 +52,7 @@ import {
 } from "ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
+import { cleanModelDisplayName } from "lib/ai/model-display-names";
 import { UploadLimitBadge } from "./chat/upload-limit-badge";
 
 import { EMOJI_DATA } from "lib/const";
@@ -1065,7 +1066,7 @@ export default function PromptInput({
                           className="text-foreground group-data-[state=open]:text-foreground  "
                           data-testid="selected-model-name"
                         >
-                          {chatModel.model}
+                          {cleanModelDisplayName(chatModel.model)}
                         </span>
                       </>
                     ) : (

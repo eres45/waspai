@@ -787,6 +787,7 @@ async function* streamResponse(providerKey, res, model) {
         case "openrouter":
         case "gptossworker":
         case "gemini-openai":
+        case "frenix":
           if (line.startsWith("data: ")) {
             const data = line.slice(6).trim();
             if (data === "[DONE]") continue;
@@ -881,6 +882,7 @@ async function nonStreamResponse(providerKey, res, model) {
     case "openrouter":
     case "gptossworker":
     case "gemini-openai":
+    case "frenix":
       try {
         const j = JSON.parse(text);
         return j;

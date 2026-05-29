@@ -43,6 +43,7 @@ import { ChatMetadata, ChatModel, ManualToolConfirmTag } from "app-types/chat";
 import { useTranslations } from "next-intl";
 import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { Separator } from "ui/separator";
+import { cleanModelDisplayName } from "lib/ai/model-display-names";
 
 import { TextShimmer } from "ui/text-shimmer";
 import equal from "lib/equal";
@@ -603,7 +604,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                               {metadata.chatModel.provider}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {metadata.chatModel.model}
+                              {cleanModelDisplayName(metadata.chatModel.model)}
                               {metadata.toolCount !== undefined &&
                                 metadata.toolCount > 0 && (
                                   <span className="ml-2">
