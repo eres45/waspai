@@ -40,3 +40,10 @@
 ## Security & Configuration Tips
 - Copy `.env.example` to `.env`; never commit secrets. For local HTTP use `NO_HTTPS=1` or `pnpm build:local`.
 - If using DB/Redis locally, start services via Docker scripts or your own stack.
+
+## Interactive Previews & Premium Asset Generation
+- For games, widgets, interactive dashboards, or visual web pages:
+  - Unless the user explicitly requests code in the UI, **ALWAYS invoke the `html_preview` tool** to render a live sandboxed visual preview.
+  - **Never write minimal placeholder code** (e.g. 30 to 50 lines). Always write fully featured, complete, and robust code featuring premium aesthetics (harmonious HSL color palettes, glassmorphism, responsive grid layouts), micro-animations, and complete interactive logic (physics, state management, scoreboards, keyboard/touch bindings).
+  - **Self-verify your output** before finalizing. If you detect any shortcomings or bugs, proactively edit the code to fix them.
+
