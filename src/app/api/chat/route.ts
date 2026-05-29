@@ -1535,6 +1535,34 @@ CRITICAL INSTRUCTIONS:
           }
         }
 
+        // Auto-inject game-creator guidelines when user asks to create/edit a game
+        const isGameCreationRequest =
+          /\b(create|make|build|write|add|new|edit|update|improve|modify|play|deploy|host|publish)\b/.test(
+            lastMessageText,
+          ) &&
+          /\b(game|arcade|widget|dashboard|simulator|simulation|animation|interactive)\b/.test(
+            lastMessageText,
+          );
+        if (isGameCreationRequest) {
+          try {
+            const gameCreatorSkill = await skillRepository
+              .getSkillByName("game-creator")
+              .catch(() => null);
+            if (
+              gameCreatorSkill?.content &&
+              !combinedSkillContents.includes(gameCreatorSkill.content)
+            ) {
+              // Prepend so it appears first — highest priority context
+              combinedSkillContents.unshift(gameCreatorSkill.content);
+              logger.info(
+                "Auto-injected game-creator guidelines for game creation request",
+              );
+            }
+          } catch (e) {
+            logger.warn("Failed to auto-inject game-creator:", e);
+          }
+        }
+
         // Build skill instructions prompt block
         let skillsSystemPrompt = "";
         if (combinedSkillContents.length > 0) {
