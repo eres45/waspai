@@ -1781,6 +1781,9 @@ Always be aware of these installed skills. If a user asks "how many skills do we
                   ({
                     type: "file",
                     url: att.url,
+                    filename: att.filename,
+                    mediaType: att.mediaType,
+                    // Legacy fallbacks:
                     name: att.filename,
                     mimeType: att.mediaType,
                   }) as any,

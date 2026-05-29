@@ -183,6 +183,19 @@ export const appStore = create<AppState & AppDispatch>()(
           ...state.voiceChat,
           isOpen: false,
         },
+        threadFiles: Object.entries(state.threadFiles || {}).reduce(
+          (acc, [threadId, files]) => {
+            acc[threadId] = files.map((file) => ({
+              ...file,
+              // Strip non-serializable AbortController and mark incomplete uploads as aborted
+              abortController: undefined,
+              isUploading: false,
+              progress: file.isUploading ? 0 : file.progress,
+            }));
+            return acc;
+          },
+          {} as Record<string, UploadedFile[]>,
+        ),
       }),
     },
   ),

@@ -61,7 +61,28 @@ async function fetchFile(url: string): Promise<Response | null> {
       }
     }
 
-    // 2. Handle standard relative URLs
+    // 2. Handle Cloudflare worker serve URLs (/serve?path=...)
+    if (
+      url.includes("path=") &&
+      (url.includes("/serve") || url.includes("workers.dev"))
+    ) {
+      try {
+        const parsedUrl = new URL(url);
+        const filePath = parsedUrl.searchParams.get("path");
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (filePath && botToken) {
+          const tgUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+          console.log(
+            `OCR: Fetching direct from Telegram using query param path: ${filePath}`,
+          );
+          return await fetch(tgUrl);
+        }
+      } catch (e) {
+        console.error("OCR: Failed to parse serve URL with searchParams:", e);
+      }
+    }
+
+    // 3. Handle standard relative URLs
     let finalUrl = url;
     if (url.startsWith("/")) {
       const host = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

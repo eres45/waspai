@@ -1707,7 +1707,7 @@ const FilePartPreview = ({
 
 // File Message Part Component
 interface FileMessagePartProps {
-  part: FileUIPart; // FileUIPart from AI SDK
+  part: FileUIPart & { name?: string; mimeType?: string }; // FileUIPart from AI SDK with legacy fallbacks
   isUserMessage: boolean;
 }
 
@@ -1715,13 +1715,14 @@ export const FileMessagePart = memo(
   ({ part, isUserMessage }: FileMessagePartProps) => {
     const fileUrl = part.url;
     const filename =
-      part.filename || part.url?.split("/").pop() || "Attachment";
+      part.filename || part.name || part.url?.split("/").pop() || "Attachment";
+    const mediaType = part.mediaType || part.mimeType;
 
     return (
       <FilePartPreview
         url={fileUrl}
         filename={filename}
-        mediaType={part.mediaType}
+        mediaType={mediaType}
         isUserMessage={isUserMessage}
       />
     );
@@ -1735,15 +1736,29 @@ export function SourceUrlMessagePart({
   part,
   isUserMessage,
 }: {
-  part: { type: "source-url"; url: string; title?: string; mediaType?: string };
+  part: {
+    type: "source-url";
+    url: string;
+    title?: string;
+    filename?: string;
+    name?: string;
+    mediaType?: string;
+    mimeType?: string;
+  };
   isUserMessage: boolean;
 }) {
-  const name = part.title || part.url?.split("/").pop() || "attachment";
+  const name =
+    part.title ||
+    part.filename ||
+    part.name ||
+    part.url?.split("/").pop() ||
+    "attachment";
+  const mediaType = part.mediaType || part.mimeType;
   return (
     <FilePartPreview
       url={part.url}
       filename={name}
-      mediaType={part.mediaType}
+      mediaType={mediaType}
       isUserMessage={isUserMessage}
       isSourceUrl={true}
     />
