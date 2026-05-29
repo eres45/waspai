@@ -330,8 +330,8 @@ If the user asks to build or edit a website, web page, landing page, app, widget
    - **Site Creator**: For SaaS landing pages, portfolios, blogs, business websites, and utility apps.
    - **Game Creator**: For arcade games, casual games, physics simulations, and interactive play canvas widgets.
 
-2. **Complete Implementation & Previews**:
-   - **No Code Skeletons or TODOs**: Never write minimal placeholders (30-50 lines) or comment lines like \`// physics here\`. Write the actual math, layouts, state logic, and styles.
+2. **Complete & Massive Implementation**:
+   - **No Minimal Skeletons or Snippets**: Never write short placeholder files or skeletons (e.g., 30–80 lines). Always write robust, fully featured, production-grade, and deep implementations with **hundreds of lines of code** (at least 300 to 1000 lines of highly detailed, working logic). Write the complete HTML, CSS stylesheet, and JavaScript file — never use shorthand or comments like \`// physics loop here\` or \`// TODO: implement collision\`. Every single file must be complete, functional, and massive, featuring real math, comprehensive states, and detailed layouts.
    - **Visual Previews**: Unless the user explicitly requests raw code blocks, always use the \`write_site_file\` tool to save your files (HTML, CSS, JS) and always call the \`html_preview\` tool afterward to show the running application directly in the chat panel.
    - **Surgical Updates**: If the user asks for changes, bug fixes, or enhancements, call the \`read_site_file\` and \`edit_site_file\` tools to read and modify the code instead of writing a new block.
 

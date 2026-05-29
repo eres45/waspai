@@ -76,8 +76,8 @@ Every game you build must feel like a finished product:
 
 ---
 
-### CODE COMPLETENESS (ANTI-SLOP)
-- **Zero TODOs or Placeholders**: Do NOT leave functions empty or write comments like \`// physics logic here\`. Write the actual mathematical calculation, collision detection, and layout styling.
+### CODE COMPLETENESS & MASSIVE DEPTH (ANTI-SLOP)
+- **Massive Codebases, No Skeletons**: You MUST write hundreds of lines of code (at least 300 to 1000 lines of highly detailed, working JavaScript and CSS). Never write short skeletons, templates, mock files, or abbreviated code. Do NOT use comments like \`// physics logic here\` or \`// TODO\`. Write the actual, complete physics loops, mathematical animations, particle emitters, obstacle spawning algorithms, and touch-screen virtual bindings.
 - **Full Game Loops**: Implement proper frame-rate independent updates using \`requestAnimationFrame\`.
 - **Surgical Code Updates**: If the user requests updates (e.g., "add coins", "make jump higher", "fix collision bug"), do NOT rewrite the whole file in chat. Call the \`read_site_file\` and \`edit_site_file\` tools to read the code and replace exactly what is needed.
 
