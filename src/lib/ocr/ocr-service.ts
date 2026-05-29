@@ -259,12 +259,31 @@ export async function extractTextFromDocuments(
     for (const link of links) {
       const lowerLink = link.toLowerCase();
       try {
-        // Simple text formats
+        // Simple text / code formats
         if (
           lowerLink.endsWith(".txt") ||
           lowerLink.endsWith(".md") ||
           lowerLink.endsWith(".json") ||
-          lowerLink.endsWith(".csv")
+          lowerLink.endsWith(".csv") ||
+          lowerLink.endsWith(".tsv") ||
+          lowerLink.endsWith(".tsx") ||
+          lowerLink.endsWith(".ts") ||
+          lowerLink.endsWith(".js") ||
+          lowerLink.endsWith(".jsx") ||
+          lowerLink.endsWith(".html") ||
+          lowerLink.endsWith(".css") ||
+          lowerLink.endsWith(".py") ||
+          lowerLink.endsWith(".sql") ||
+          lowerLink.endsWith(".yaml") ||
+          lowerLink.endsWith(".yml") ||
+          lowerLink.endsWith(".toml") ||
+          lowerLink.endsWith(".xml") ||
+          lowerLink.endsWith(".go") ||
+          lowerLink.endsWith(".rs") ||
+          lowerLink.endsWith(".sh") ||
+          lowerLink.includes("data:text/") ||
+          lowerLink.includes("data:application/json") ||
+          lowerLink.includes("data:text/javascript")
         ) {
           console.log(`OCR: Fetching text content locally from ${link}`);
           const res = await fetchFile(link);
@@ -408,7 +427,7 @@ export async function processFileURLsForModel(
     const isPdf =
       lowerUrl.includes(".pdf") || lowerUrl.includes("data:application/pdf");
 
-    // Check for document files (Word, PowerPoint, Excel, Text, CSV)
+    // Check for document files (Word, PowerPoint, Excel, Text, CSV, Markdown, JSON, Code files)
     const isDocument =
       lowerUrl.includes(".doc") ||
       lowerUrl.includes(".docx") ||
@@ -418,6 +437,24 @@ export async function processFileURLsForModel(
       lowerUrl.includes(".xlsx") ||
       lowerUrl.includes(".txt") ||
       lowerUrl.includes(".csv") ||
+      lowerUrl.includes(".tsv") ||
+      lowerUrl.includes(".md") ||
+      lowerUrl.includes(".json") ||
+      lowerUrl.includes(".tsx") ||
+      lowerUrl.includes(".ts") ||
+      lowerUrl.includes(".js") ||
+      lowerUrl.includes(".jsx") ||
+      lowerUrl.includes(".html") ||
+      lowerUrl.includes(".css") ||
+      lowerUrl.includes(".py") ||
+      lowerUrl.includes(".sql") ||
+      lowerUrl.includes(".yaml") ||
+      lowerUrl.includes(".yml") ||
+      lowerUrl.includes(".toml") ||
+      lowerUrl.includes(".xml") ||
+      lowerUrl.includes(".go") ||
+      lowerUrl.includes(".rs") ||
+      lowerUrl.includes(".sh") ||
       lowerUrl.includes("data:application/msword") ||
       lowerUrl.includes(
         "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -430,8 +467,9 @@ export async function processFileURLsForModel(
       lowerUrl.includes(
         "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       ) ||
-      lowerUrl.includes("data:text/plain") ||
-      lowerUrl.includes("data:text/csv");
+      lowerUrl.includes("data:text/") ||
+      lowerUrl.includes("data:application/json") ||
+      lowerUrl.includes("data:text/javascript");
 
     return isImage || isPdf || isDocument;
   });
