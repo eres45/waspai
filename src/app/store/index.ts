@@ -19,6 +19,8 @@ export interface UploadedFile {
   previewUrl?: string;
   abortController?: AbortController;
   dataUrl?: string; // Full data URL format: "data:image/png;base64,..."
+  isPasted?: boolean;
+  content?: string;
 }
 
 export interface CharacterSummary {

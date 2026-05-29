@@ -50,8 +50,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn, generateUUID } from "@/lib/utils";
 import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
+import { useFileUpload } from "@/hooks/use-presigned-upload";
 import { cleanModelDisplayName } from "lib/ai/model-display-names";
 import { UploadLimitBadge } from "./chat/upload-limit-badge";
 
@@ -114,6 +115,7 @@ export default function PromptInput({
   const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFiles } = useThreadFileUploader(threadId);
+  const { upload } = useFileUpload();
   const { data: providers } = useChatModels();
 
   const [
@@ -168,6 +170,99 @@ export default function PromptInput({
   }, [threadImageToolModel, threadId]);
 
   const editorRef = useRef<Editor | null>(null);
+
+  const handlePasteText = useCallback(
+    async (text: string) => {
+      // Intercept paste if it has > 200 words or > 1000 characters
+      const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+      const charCount = text.length;
+
+      if (wordCount > 200 || charCount > 1000) {
+        if (!threadId) return false;
+
+        const fileId = generateUUID();
+        const abortController = new AbortController();
+
+        // Create standard File object
+        const pastedFileObject = new File(
+          [text],
+          `pasted_text_${fileId.slice(0, 6)}.txt`,
+          {
+            type: "text/plain",
+          },
+        );
+
+        const uploadingFile: UploadedFile = {
+          id: fileId,
+          url: "",
+          name: pastedFileObject.name,
+          mimeType: pastedFileObject.type,
+          size: pastedFileObject.size,
+          isUploading: true,
+          progress: 0,
+          isPasted: true,
+          content: text,
+          abortController,
+        };
+
+        // Add to uploadedFiles in appStore
+        appStoreMutate((prev) => ({
+          threadFiles: {
+            ...prev.threadFiles,
+            [threadId]: [...(prev.threadFiles[threadId] ?? []), uploadingFile],
+          },
+        }));
+
+        toast.info(
+          "Pasted text is too long! Intercepted and attached as a file.",
+        );
+
+        try {
+          const uploaded = await upload(pastedFileObject);
+          if (uploaded) {
+            appStoreMutate((prev) => ({
+              threadFiles: {
+                ...prev.threadFiles,
+                [threadId]: (prev.threadFiles[threadId] ?? []).map((f) =>
+                  f.id === fileId
+                    ? {
+                        ...f,
+                        url: uploaded.url,
+                        isUploading: false,
+                        progress: 100,
+                      }
+                    : f,
+                ),
+              },
+            }));
+          } else {
+            appStoreMutate((prev) => ({
+              threadFiles: {
+                ...prev.threadFiles,
+                [threadId]: (prev.threadFiles[threadId] ?? []).filter(
+                  (f) => f.id !== fileId,
+                ),
+              },
+            }));
+          }
+        } catch (_err) {
+          appStoreMutate((prev) => ({
+            threadFiles: {
+              ...prev.threadFiles,
+              [threadId]: (prev.threadFiles[threadId] ?? []).filter(
+                (f) => f.id !== fileId,
+              ),
+            },
+          }));
+        }
+
+        return true; // Intercepted successfully!
+      }
+
+      return false; // Let normal paste happen
+    },
+    [threadId, appStoreMutate, upload],
+  );
 
   const setChatModel = useCallback(
     (model: ChatModel) => {
@@ -709,6 +804,7 @@ export default function PromptInput({
                     ref={editorRef}
                     disabledMention={disabledMention}
                     onFocus={onFocus}
+                    onPasteText={handlePasteText}
                   />
                 </div>
               </div>
@@ -1146,6 +1242,7 @@ export default function PromptInput({
                 <div className="flex flex-wrap gap-2">
                   {uploadedFiles.map((file) => {
                     const isImage = file.mimeType.startsWith("image/");
+                    const isPasted = file.isPasted;
                     const imageSrc =
                       file.previewUrl || file.url || file.dataUrl || "";
                     const displayName = file.name;
@@ -1157,7 +1254,18 @@ export default function PromptInput({
                         key={file.id}
                         className="relative group rounded-lg overflow-hidden border-2 border-border hover:border-primary transition-all"
                       >
-                        {isImage ? (
+                        {isPasted ? (
+                          <div className="w-36 h-28 flex flex-col justify-between bg-muted/40 p-2.5 text-left border border-border/40 rounded-lg">
+                            <div className="text-[10px] font-mono text-muted-foreground/90 line-clamp-4 overflow-hidden break-all whitespace-pre-wrap select-none leading-normal">
+                              {file.content || file.name}
+                            </div>
+                            <div className="flex items-center mt-1">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase border border-border bg-background/50 text-foreground/80 select-none">
+                                PASTED
+                              </span>
+                            </div>
+                          </div>
+                        ) : isImage ? (
                           /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={imageSrc}

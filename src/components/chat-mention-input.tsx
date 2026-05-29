@@ -49,6 +49,7 @@ interface ChatMentionInputProps {
   ref?: RefObject<Editor | null>;
   onFocus?: () => void;
   onBlur?: () => void;
+  onPasteText?: (text: string) => Promise<boolean> | boolean;
 }
 
 export default function ChatMentionInput({
@@ -61,6 +62,7 @@ export default function ChatMentionInput({
   disabledMention,
   onFocus,
   onBlur,
+  onPasteText,
 }: ChatMentionInputProps) {
   const latestMentions = useRef<string[]>([]);
 
@@ -95,6 +97,7 @@ export default function ChatMentionInput({
       onFocus={onFocus}
       onBlur={onBlur}
       fullWidthSuggestion={true}
+      onPasteText={onPasteText}
     />
   );
 }

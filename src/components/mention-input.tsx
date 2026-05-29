@@ -51,6 +51,7 @@ interface MentionInputProps {
     onSelectMention: (item: { label: string; id: string }) => void;
     style?: React.CSSProperties;
   }>;
+  onPasteText?: (text: string) => Promise<boolean> | boolean;
 }
 
 export default function MentionInput({
@@ -69,6 +70,7 @@ export default function MentionInput({
   onFocus,
   onBlur,
   fullWidthSuggestion = false,
+  onPasteText,
 }: MentionInputProps) {
   const [open, setOpen] = useState(false);
   const position = useRef<{
@@ -182,9 +184,19 @@ export default function MentionInput({
           class:
             "w-full max-h-80 min-h-[2rem] break-words overflow-y-auto resize-none focus:outline-none px-2 py-1 prose prose-sm dark:prose-invert ",
         },
+        handlePaste: (_view, event, _slice) => {
+          const text = event.clipboardData?.getData("text/plain");
+          if (text && onPasteText) {
+            const handled = onPasteText(text);
+            if (handled) {
+              return true; // Prevent default paste behavior
+            }
+          }
+          return false; // Allow standard paste
+        },
       },
     };
-  }, [disabled, MentionItem, suggestionChar, onChange]);
+  }, [disabled, MentionItem, suggestionChar, onChange, onPasteText]);
 
   const editor = useEditor(editorConfig);
 
