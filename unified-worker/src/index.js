@@ -789,6 +789,7 @@ async function* streamResponse(providerKey, res, model) {
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let hasYieldedContent = false; // Track if we've actually streamed any text
 
   while (true) {
     const { done, value } = await reader.read();
@@ -862,6 +863,7 @@ async function* streamResponse(providerKey, res, model) {
       }
 
       if (content) {
+        hasYieldedContent = true;
         yield {
           id: `chatcmpl-${randomUUID()}`,
           object: "chat.completion.chunk",
@@ -877,6 +879,28 @@ async function* streamResponse(providerKey, res, model) {
         };
       }
     }
+  }
+
+  // If the model returned tool calls or an empty response (no text content at all),
+  // emit a fallback message so the AI SDK doesn't throw "model output must contain
+  // either output text or tool calls".
+  if (!hasYieldedContent) {
+    yield {
+      id: `chatcmpl-${randomUUID()}`,
+      object: "chat.completion.chunk",
+      created: Math.floor(Date.now() / 1000),
+      model,
+      choices: [
+        {
+          index: 0,
+          delta: {
+            content:
+              "I wasn't able to generate a response through this model. Please try again or switch to a different model.",
+          },
+          finish_reason: null,
+        },
+      ],
+    };
   }
 
   // Final chunk
