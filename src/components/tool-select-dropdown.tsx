@@ -10,10 +10,8 @@ import {
   ChevronRight,
   CodeIcon,
   FileText,
-  Film,
   GlobeIcon,
   HardDriveUploadIcon,
-  ImagesIcon,
   InfoIcon,
   Loader,
   MessageCircle,
@@ -111,9 +109,9 @@ export function ToolSelectDropdown({
   side,
   onSelectWorkflow,
   onSelectAgent,
-  onGenerateImage,
-  onGenerateVideo,
-  onEditImage,
+  onGenerateImage: _onGenerateImage,
+  onGenerateVideo: _onGenerateVideo,
+  onEditImage: _onEditImage,
   mentions,
   className,
 }: ToolSelectDropdownProps) {
@@ -255,21 +253,11 @@ export function ToolSelectDropdown({
           </Tooltip>
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="md:w-72" align={align} side={side}>
-        <ImageGeneratorSelector
-          onGenerateImage={onGenerateImage}
-          modelInfo={modelInfo}
-        />
-        <div className="py-1">
-          <DropdownMenuSeparator />
-        </div>
-        <ImageEditSelector
-          onEditImage={onEditImage}
-          disabled={modelInfo?.isToolCallUnsupported}
-        />
-        <div className="py-1">
-          <DropdownMenuSeparator />
-        </div>
+      <DropdownMenuContent
+        className="md:w-72 max-h-[320px] overflow-y-auto"
+        align={align}
+        side={side}
+      >
         <WorkflowToolSelector
           onSelectWorkflow={onSelectWorkflow}
           disabled={modelInfo?.isToolCallUnsupported}
@@ -278,14 +266,6 @@ export function ToolSelectDropdown({
           <DropdownMenuSeparator />
         </div>
         <AgentSelector onSelectAgent={onSelectAgent} />
-        <div className="py-1">
-          <DropdownMenuSeparator />
-        </div>
-
-        <VideoGenerationSelector
-          onGenerateVideo={onGenerateVideo}
-          disabled={modelInfo?.isToolCallUnsupported}
-        />
         <div className="py-1">
           <DropdownMenuSeparator />
         </div>
@@ -1108,66 +1088,6 @@ function AgentSelector({
   );
 }
 
-// ... (skip intermediate code, I should use multi_replace or separate checks, but definitions are far apart.
-// Actually line 89-98 is Props. lines 1073 is Selector. I can do replace of Selector and Props separately or together if allowed.
-// replace_file_content doesn't allow multiple chunks unless allowMultiple=true with generic match. But ToolSelectDropdownProps is unique.
-// I'll do props first, then Selector.
-// Wait, I already did props lines 93-97 last time.
-// I'll update it again to add onEditImage.
-
-function VideoGenerationSelector({
-  onGenerateVideo,
-  disabled,
-}: {
-  onGenerateVideo?: (model: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <DropdownMenuGroup>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger
-          disabled={disabled}
-          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
-        >
-          <Film className="size-3.5" />
-          Video Generation
-        </DropdownMenuSubTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuSubContent>
-            <DropdownMenuItem
-              onClick={() => onGenerateVideo?.("sora")}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                🎬
-              </span>
-              SORA Standard
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onGenerateVideo?.("sora-cinematic")}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                🎥
-              </span>
-              SORA Cinematic
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onGenerateVideo?.("sora-anime")}
-              className="cursor-pointer text-xs"
-            >
-              <span className="mr-2 size-4 flex items-center justify-center">
-                🌸
-              </span>
-              SORA Anime
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuPortal>
-      </DropdownMenuSub>
-    </DropdownMenuGroup>
-  );
-}
-
 function QRCodeSelector({ disabled }: { disabled?: boolean }) {
   const handleQRCodeClick = () => {
     if (disabled) return;
@@ -1258,342 +1178,6 @@ function DocumentToolsSelector({ disabled }: { disabled?: boolean }) {
                 💾
               </span>
               Export Chat
-            </DropdownMenuItem>
-          </DropdownMenuSubContent>
-        </DropdownMenuPortal>
-      </DropdownMenuSub>
-    </DropdownMenuGroup>
-  );
-}
-
-function ImageGeneratorSelector({
-  onGenerateImage,
-  modelInfo,
-}: {
-  onGenerateImage?: (model?: string) => void;
-  modelInfo?: { isToolCallUnsupported?: boolean };
-}) {
-  const t = useTranslations("Chat");
-
-  const raStyles = [
-    { id: "ra-photo", name: "Photo Real" },
-    { id: "ra-anime", name: "Anime" },
-    { id: "ra-cinematic", name: "Cinematic" },
-    { id: "ra-portrait", name: "Portrait" },
-    { id: "ra-landscape", name: "Landscape" },
-    { id: "ra-scifi", name: "Sci-Fi" },
-    { id: "ra-oil-painting", name: "Oil Painting" },
-    { id: "ra-pixel-art", name: "Pixel Art" },
-    { id: "ra-watercolor", name: "Watercolor" },
-    { id: "ra-ghibli", name: "Ghibli style" },
-    { id: "ra-vintage", name: "Vintage" },
-    { id: "ra-raw-film", name: "Raw Film" },
-    { id: "ra-ink-splash", name: "Ink Splash" },
-    { id: "ra-dreamcore", name: "Dreamcore" },
-    { id: "ra-solarpunk", name: "Solarpunk" },
-    { id: "ra-neon-noir", name: "Neon Noir" },
-    { id: "ra-blueprint", name: "Blueprint" },
-    { id: "ra-wabi-sabi", name: "Wabi-Sabi" },
-    { id: "ra-superflat", name: "Superflat" },
-    { id: "ra-brutalist", name: "Brutalist" },
-  ];
-
-  const msStyles = [
-    { id: "ms-photorealistic", name: "MS Photorealistic" },
-    { id: "ms-anime", name: "MS Anime" },
-    { id: "ms-digital-art", name: "MS Digital Art" },
-    { id: "ms-fantasy", name: "MS Fantasy" },
-    { id: "ms-3d-render", name: "MS 3D Render" },
-    { id: "ms-oil-painting", name: "MS Oil Painting" },
-    { id: "ms-watercolor", name: "MS Watercolor" },
-    { id: "ms-pixel-art", name: "MS Pixel Art" },
-    { id: "ms-neon-punk", name: "MS Neon Punk" },
-    { id: "ms-cinematic", name: "MS Cinematic" },
-  ];
-
-  const pollStyles = [
-    { id: "poll-flux", name: "Pollinations Flux" },
-    { id: "poll-flux-realism", name: "Pollinations Realism" },
-    { id: "poll-flux-anime", name: "Pollinations Anime" },
-    { id: "poll-flux-3d", name: "Pollinations 3D" },
-    { id: "poll-flux-cablyai", name: "Pollinations CablyAI" },
-    { id: "poll-turbo", name: "Pollinations Turbo" },
-    { id: "gma-photorealistic", name: "GenMyArt Photo" },
-    { id: "gma-anime", name: "GenMyArt Anime" },
-    { id: "gma-isometric", name: "GenMyArt Isometric" },
-    { id: "gma-low-poly", name: "GenMyArt Low Poly" },
-    { id: "gma-comic-book", name: "GenMyArt Comic" },
-    { id: "cf-flux-schnell", name: "CF Flux Schnell" },
-    { id: "cf-dreamshaper", name: "CF Dreamshaper" },
-    { id: "cf-sdxl-lightning", name: "CF SDXL Lightning" },
-    { id: "ai-img", name: "AI Image" },
-    { id: "aitubo-img", name: "Aitubo Image" },
-    { id: "rw-flux", name: "Runware Flux" },
-  ];
-
-  return (
-    <DropdownMenuGroup>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
-          <ImagesIcon className="size-3.5" />
-          {t("generateImage")}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
-            {/* Standard Category Submenu */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="text-xs font-semibold cursor-pointer">
-                ⚡ Flagship & Standard
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("flux-pro")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    FLUX.1 Pro
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("flux-1-dev")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    FLUX.1 Dev
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("flux-1-schnell")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    FLUX.1 Schnell
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("sd-3-5")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    Stable Diffusion 3.5
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("realvisxl-v4")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    RealVisXL v4
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("juggernaut-xl")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    Juggernaut XL
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("seedream-4-5")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    Seedream 4.5
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={modelInfo?.isToolCallUnsupported}
-                    onClick={() => onGenerateImage?.("sdxl-v1-0")}
-                    className="cursor-pointer text-xs"
-                  >
-                    <ImagesIcon className="mr-2 size-4" />
-                    SDXL v1.0
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-
-            {/* Raphael AI Category Submenu */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="text-xs font-semibold cursor-pointer">
-                🎨 Raphael AI Premium Styles
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-                  {raStyles.map((item) => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      disabled={modelInfo?.isToolCallUnsupported}
-                      onClick={() => onGenerateImage?.(item.id)}
-                      className="cursor-pointer text-xs"
-                    >
-                      <ImagesIcon className="mr-2 size-4" />
-                      {item.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-
-            {/* MagicStudio Category Submenu */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="text-xs font-semibold cursor-pointer">
-                ✨ MagicStudio Styles
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-                  {msStyles.map((item) => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      disabled={modelInfo?.isToolCallUnsupported}
-                      onClick={() => onGenerateImage?.(item.id)}
-                      className="cursor-pointer text-xs"
-                    >
-                      <ImagesIcon className="mr-2 size-4" />
-                      {item.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-
-            {/* Pollinations & Others Submenu */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="text-xs font-semibold cursor-pointer">
-                🌸 Pollinations & Styles
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-                  {pollStyles.map((item) => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      disabled={modelInfo?.isToolCallUnsupported}
-                      onClick={() => onGenerateImage?.(item.id)}
-                      className="cursor-pointer text-xs"
-                    >
-                      <ImagesIcon className="mr-2 size-4" />
-                      {item.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-          </DropdownMenuSubContent>
-        </DropdownMenuPortal>
-      </DropdownMenuSub>
-    </DropdownMenuGroup>
-  );
-}
-function ImageEditSelector({
-  onEditImage,
-  disabled,
-}: {
-  onEditImage?: (tool: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <DropdownMenuGroup>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger
-          disabled={disabled}
-          className="text-xs flex items-center gap-2 font-semibold cursor-pointer"
-        >
-          <Wrench className="size-3.5" />
-          Edit Image
-        </DropdownMenuSubTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("edit-image")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                📝
-              </div>
-              General Edit (Add/Modify)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("remove-background")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                ✨
-              </div>
-              Remove Background
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("enhance-image")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🪄
-              </div>
-              Enhance Image
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("anime-conversion")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🏮
-              </div>
-              Anime Conversion
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("style-transfer")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🎨
-              </div>
-              AI Style Transfer
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("remove-watermark")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🚫
-              </div>
-              Remove Watermark
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("remove-object")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🧹
-              </div>
-              Remove Object
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("super-resolution")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🚀
-              </div>
-              Super Resolution
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("restore-old-photo")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                📜
-              </div>
-              Restore Old Photo
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onEditImage?.("blur-background")}
-              className="cursor-pointer text-xs"
-            >
-              <div className="mr-2 size-4 flex items-center justify-center">
-                🌫️
-              </div>
-              Blur Background
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuPortal>
