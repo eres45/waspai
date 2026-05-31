@@ -29,6 +29,7 @@ import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
 import { getSession } from "auth/server";
 import logger from "logger";
+import { convertToSavePart } from "./shared.chat";
 
 import { JSONSchema7 } from "json-schema";
 import { ObjectJsonSchema7 } from "app-types/util";
@@ -289,5 +290,32 @@ export async function exportChatAction({
     threadId,
     exporterId: userId,
     expiresAt: expiresAt ?? undefined,
+  });
+}
+
+export async function saveInterruptedMessageAction({
+  threadId,
+  message,
+}: {
+  threadId: string;
+  message: UIMessage;
+}) {
+  const session = await getSession();
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  logger.info(
+    `Saving interrupted message: ${message.id} in thread ${threadId}`,
+  );
+
+  const parts = message.parts.map(convertToSavePart);
+
+  return await chatRepository.upsertMessage({
+    id: message.id,
+    threadId,
+    role: "assistant",
+    parts,
+    metadata: message.metadata as any,
   });
 }

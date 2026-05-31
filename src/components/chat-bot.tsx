@@ -29,7 +29,10 @@ import {
 import { useToRef } from "@/hooks/use-latest";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 import { Button } from "ui/button";
-import { deleteThreadAction } from "@/app/api/chat/actions";
+import {
+  deleteThreadAction,
+  saveInterruptedMessageAction,
+} from "@/app/api/chat/actions";
 import { useRouter } from "next/navigation";
 import { ArrowDown, Loader, FilePlus } from "lucide-react";
 import {
@@ -284,6 +287,22 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     experimental_throttle: 100,
     onFinish,
   });
+
+  const handleStop = useCallback(async () => {
+    stop();
+
+    const lastMessage = messages.at(-1);
+    if (lastMessage && lastMessage.role === "assistant") {
+      try {
+        await saveInterruptedMessageAction({
+          threadId,
+          message: lastMessage,
+        });
+      } catch (err) {
+        console.error("Failed to save partial message on stop:", err);
+      }
+    }
+  }, [stop, messages, threadId]);
 
   const sendMessage = useCallback(
     (...args: any[]) => {
@@ -584,7 +603,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             sendMessageAction={sendMessage}
             setInputAction={setInput}
             isLoading={isLoading || isPendingToolCall}
-            onStopAction={stop}
+            onStopAction={handleStop}
             onFocus={handleFocus}
             isVoiceActive={voiceChat.isOpen}
             isVoiceListening={voiceChat.isOpen}
