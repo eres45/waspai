@@ -81,6 +81,30 @@ async function generateImageViaUnifiedWorker(
   };
 
   let modelId = options.model;
+
+  if (
+    modelId &&
+    (modelId.toLowerCase() === "magic-studio" ||
+      modelId.toLowerCase() === "magicstudio")
+  ) {
+    const url = `https://magic-studio.ziddi-beatz.workers.dev/?prompt=${encodeURIComponent(options.prompt)}`;
+    const response = await fetchWithRetry(url, {
+      method: "GET",
+      signal: options.abortSignal,
+    });
+    if (!response.ok) {
+      throw new Error(`Magic Studio image gen failed: HTTP ${response.status}`);
+    }
+    const buffer = await response.arrayBuffer();
+    return {
+      images: [
+        {
+          base64: Buffer.from(buffer).toString("base64"),
+          mimeType: "image/png",
+        },
+      ],
+    };
+  }
   if (modelId) {
     const rawModelLower = modelId.toLowerCase();
 
