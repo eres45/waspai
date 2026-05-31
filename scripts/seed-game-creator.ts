@@ -77,7 +77,8 @@ Every game you build must feel like a finished product:
 ---
 
 ### CODE COMPLETENESS & MASSIVE DEPTH (ANTI-SLOP)
-- **Massive Codebases, No Skeletons**: You MUST write hundreds of lines of code (at least 300 to 1000 lines of highly detailed, working JavaScript and CSS). Never write short skeletons, templates, mock files, or abbreviated code. Do NOT use comments like \`// physics logic here\` or \`// TODO\`. Write the actual, complete physics loops, mathematical animations, particle emitters, obstacle spawning algorithms, and touch-screen virtual bindings.
+- **Massive Main File Codebase (500+ Lines)**: You MUST write a massive, highly detailed, working codebase. Do NOT distribute thin, 50-line skeletal snippets across files. Instead, write **at least 500 to 1000+ lines of robust, production-grade logic in your primary game file (typically \`js/game.js\` or a self-contained \`index.html\` script block)**. The primary file must carry the vast majority of the game depth, featuring complete collision engines, fully implemented state machines, custom sound synthesizers, rendering engines, particle systems, score keeping, and dynamic level generators.
+- **No Mocking or Skeletons**: Never write shorthand comments, mock stubs, or abbreviated code. Do NOT use comments like \`// physics logic here\` or \`// TODO\`. You must write out every single line of the physics formulas, mathematical animations, particle emitters, obstacle spawning algorithms, and touch-screen virtual bindings yourself.
 - **Full Game Loops**: Implement proper frame-rate independent updates using \`requestAnimationFrame\`.
 - **Surgical Code Updates**: If the user requests updates (e.g., "add coins", "make jump higher", "fix collision bug"), do NOT rewrite the whole file in chat. Call the \`read_site_file\` and \`edit_site_file\` tools to read the code and replace exactly what is needed.
 

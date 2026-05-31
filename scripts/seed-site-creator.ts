@@ -143,8 +143,8 @@ These patterns produce generic \"AI slop\" output. Generating any of these disqu
 
 ## CODE FIDELITY & COMPLETENESS (ANTI-SLOP) 🛠️
 
-- **NO placeholders or TODO comments**: Write the actual HTML structure, detailed CSS, and functional Javascript logic. Do not write \`// TODO: implement search\`.
-- **Write comprehensive, production-grade code**: Build full layouts, multiple sections, and interactive features. If the user asks for a feature, write the complete JavaScript code to make it work (e.g. interactive filters, simulated login/dashboard, pricing calculators, working sliders).
+- **Massive Primary File Codebase (500+ Lines)**: You MUST write hundreds of lines of code. Do NOT distribute thin, skeletal snippets across files. Instead, write **at least 500 to 1000+ lines of robust, production-grade code in your primary file (typically \`index.html\` or a main \`js/app.js\` file)**. The primary file must carry the vast majority of the application depth, including fully detailed layouts, rich interactive logic, and styled UI components.
+- **NO placeholders or TODO comments**: Write the actual HTML structure, detailed CSS, and functional Javascript logic. Do not write \`// TODO: implement search\` or use mock stubs. You must write out every single line of the interactive filters, simulated dashboards, pricing calculators, and sliders yourself.
 - **Interactive State**: Add real UI interactivity. Use Javascript to handle click events, toggle menus, show modals, filter catalog items, update prices based on custom options, and render simulated state changes in the UI.
 - **Minimum Page Structure**: Every landing page or app must be fully fleshed out with at least 5 distinct sections, proper headers, footer, navigation links, and styled empty states or interactive elements.
 
