@@ -121,8 +121,8 @@ const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
 });
 
-// Allow up to 120 seconds for this route (video generation takes ~30s)
-export const maxDuration = 120;
+// Allow up to 300 seconds for this route (video generation takes ~30s, code generation takes longer)
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
@@ -1953,7 +1953,18 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           maxSteps: 15,
           maxRetries: 3,
           tools: isToolCallAllowed ? (vercelAITooles as any) : undefined,
-          stopWhen: stepCountIs(useImageTool ? 3 : 15),
+          stopWhen: stepCountIs(
+            useImageTool &&
+              !isSiteCreationRequest &&
+              !isGameCreationRequest &&
+              !combinedSkillContents.some((c) =>
+                /\b(game-creator|site-creator|Game Creator|Site Creator)\b/.test(
+                  c,
+                ),
+              )
+              ? 3
+              : 15,
+          ),
           toolChoice: isToolCallAllowed ? "auto" : undefined,
           abortSignal: request.signal,
         } as any);

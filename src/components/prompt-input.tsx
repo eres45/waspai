@@ -172,7 +172,7 @@ export default function PromptInput({
   const editorRef = useRef<Editor | null>(null);
 
   const handlePasteText = useCallback(
-    async (text: string) => {
+    (text: string) => {
       // Intercept paste if it has > 200 words or > 1000 characters
       const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
       const charCount = text.length;
@@ -217,25 +217,36 @@ export default function PromptInput({
           "Pasted text is too long! Intercepted and attached as a file.",
         );
 
-        try {
-          const uploaded = await upload(pastedFileObject);
-          if (uploaded) {
-            appStoreMutate((prev) => ({
-              threadFiles: {
-                ...prev.threadFiles,
-                [threadId]: (prev.threadFiles[threadId] ?? []).map((f) =>
-                  f.id === fileId
-                    ? {
-                        ...f,
-                        url: uploaded.url,
-                        isUploading: false,
-                        progress: 100,
-                      }
-                    : f,
-                ),
-              },
-            }));
-          } else {
+        upload(pastedFileObject)
+          .then((uploaded) => {
+            if (uploaded) {
+              appStoreMutate((prev) => ({
+                threadFiles: {
+                  ...prev.threadFiles,
+                  [threadId]: (prev.threadFiles[threadId] ?? []).map((f) =>
+                    f.id === fileId
+                      ? {
+                          ...f,
+                          url: uploaded.url,
+                          isUploading: false,
+                          progress: 100,
+                        }
+                      : f,
+                  ),
+                },
+              }));
+            } else {
+              appStoreMutate((prev) => ({
+                threadFiles: {
+                  ...prev.threadFiles,
+                  [threadId]: (prev.threadFiles[threadId] ?? []).filter(
+                    (f) => f.id !== fileId,
+                  ),
+                },
+              }));
+            }
+          })
+          .catch((_err) => {
             appStoreMutate((prev) => ({
               threadFiles: {
                 ...prev.threadFiles,
@@ -244,17 +255,7 @@ export default function PromptInput({
                 ),
               },
             }));
-          }
-        } catch (_err) {
-          appStoreMutate((prev) => ({
-            threadFiles: {
-              ...prev.threadFiles,
-              [threadId]: (prev.threadFiles[threadId] ?? []).filter(
-                (f) => f.id !== fileId,
-              ),
-            },
-          }));
-        }
+          });
 
         return true; // Intercepted successfully!
       }
