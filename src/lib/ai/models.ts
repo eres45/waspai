@@ -5,6 +5,7 @@ import {
 } from "./file-support";
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { cleanModelDisplayName } from "./model-display-names";
 
 export const UNIFIED_WORKER_URL = "https://nvidia-nim-worker.rutv.workers.dev";
 export const CREATIVE_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
@@ -247,6 +248,34 @@ export function getModelTier(modelId: string): string {
   return isFree ? "Free" : "Pro";
 }
 
+const COMMON_PREFIXES = [
+  "chatai-",
+  "chatbotai-",
+  "randomai-",
+  "svelteai-",
+  "openrouterhub-",
+  "groqw-",
+  "nvidiaw-",
+  "cf-",
+  "freecf-",
+  "google/",
+  "meta/",
+  "microsoft/",
+  "mistralai/",
+  "nvidia/",
+  "openai/",
+  "qwen/",
+  "sarvamai/",
+  "stepfun-ai/",
+  "upstage/",
+  "stockmark/",
+];
+
+function isPrefixedModel(name: string): boolean {
+  const lowercaseName = name.toLowerCase();
+  return COMMON_PREFIXES.some((prefix) => lowercaseName.startsWith(prefix));
+}
+
 /**
  * Build modelsInfo from live worker data.
  * Groups models by their `owned_by` field (provider).
@@ -310,19 +339,58 @@ export async function buildDynamicModelsInfo() {
     grouped.get(provider)!.push(m);
   }
 
-  const result = Array.from(grouped.entries()).map(([provider, models]) => ({
-    provider,
-    hasAPIKey: true,
-    models: models
-      .map((m) => ({
-        name: m.id,
-        isToolCallUnsupported: isToolCallUnsupportedModel(m.id),
-        isImageInputUnsupported: !isVisionModel(m.id),
-        supportedFileMimeTypes: getMimeTypes(m.id),
-        tier: getModelTier(m.id),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  }));
+  const result = Array.from(grouped.entries()).map(([provider, models]) => {
+    // 1. Map models to their info structure
+    const mappedModels = models.map((m) => ({
+      name: m.id,
+      isToolCallUnsupported: isToolCallUnsupportedModel(m.id),
+      isImageInputUnsupported: !isVisionModel(m.id),
+      supportedFileMimeTypes: getMimeTypes(m.id),
+      tier: getModelTier(m.id),
+    }));
+
+    // 2. Sort mapped models to prioritize canonical/non-prefixed first
+    const sortedModels = mappedModels.sort((a, b) => {
+      const aPrefixed = isPrefixedModel(a.name);
+      const bPrefixed = isPrefixedModel(b.name);
+
+      if (aPrefixed !== bPrefixed) {
+        return aPrefixed ? 1 : -1; // non-prefixed first
+      }
+
+      // Sort by length of ID (shorter first)
+      if (a.name.length !== b.name.length) {
+        return a.name.length - b.name.length;
+      }
+
+      // Alphabetical fallback
+      return a.name.localeCompare(b.name);
+    });
+
+    // 3. Deduplicate by display name (case-insensitive)
+    const seenDisplayNames = new Set<string>();
+    const uniqueModels: typeof mappedModels = [];
+    for (const m of sortedModels) {
+      const displayName = cleanModelDisplayName(m.name).toLowerCase();
+      if (!seenDisplayNames.has(displayName)) {
+        seenDisplayNames.add(displayName);
+        uniqueModels.push(m);
+      }
+    }
+
+    // 4. Finally, sort the unique models alphabetically by display name
+    uniqueModels.sort((a, b) => {
+      const aDisp = cleanModelDisplayName(a.name);
+      const bDisp = cleanModelDisplayName(b.name);
+      return aDisp.localeCompare(bDisp);
+    });
+
+    return {
+      provider,
+      hasAPIKey: true,
+      models: uniqueModels,
+    };
+  });
 
   if (process.env.SARVAM_API_KEY) {
     result.push({
