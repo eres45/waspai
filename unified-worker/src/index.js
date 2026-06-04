@@ -222,13 +222,10 @@ const LORDROUTER_MODELS = [
   "claude-opus-4-6",
   "claude-opus-4-7",
   "claude-sonnet-4-6",
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
   "deepseek-r1",
   "deepseek-v3",
   "deepseek-v4-flash",
   "deepseek-v4-pro",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
   "gemini-2.5-pro",
   "gemini-3-pro",
   "gemini-3.1-flash-lite",
@@ -261,7 +258,6 @@ const LORDROUTER_MODELS = [
   "moonshotai/kimi-k2.6:free",
   "nousresearch/hermes-3-llama-3.1-405b:free",
   "nvidia/nemotron-3-nano-30b-a3b:free",
-  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-nano-12b-v2-vl:free",
   "nvidia/nemotron-nano-9b-v2:free",
@@ -269,7 +265,6 @@ const LORDROUTER_MODELS = [
   "o3-mini",
   "openai/gpt-oss-120b:free",
   "openai/gpt-oss-20b:free",
-  "openrouter/free",
   "poolside/laguna-m.1:free",
   "poolside/laguna-xs.2:free",
   "qwen-3-max",
@@ -841,7 +836,25 @@ async function fetchFromProvider(
     fetchOpts.headers["Accept"] = "text/event-stream";
   }
 
-  const res = await fetch(url, fetchOpts);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout limit
+
+  let res;
+  try {
+    res = await fetch(url, {
+      ...fetchOpts,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error(
+        "Timeout: The model provider took longer than 15 seconds to respond.",
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -951,17 +964,20 @@ async function* streamResponse(providerKey, res, model) {
               const choice = j.choices?.[0];
               if (choice) {
                 delta = choice.delta;
-                if (
-                  delta &&
-                  delta.tool_calls &&
-                  Array.isArray(delta.tool_calls)
-                ) {
-                  delta.tool_calls = delta.tool_calls.map((tc, idx) => {
-                    if (tc.index === undefined) {
-                      return { ...tc, index: idx };
-                    }
-                    return tc;
-                  });
+                if (delta) {
+                  // Normalize reasoning fields to standard reasoning_content for Vercel AI SDK
+                  if (delta.reasoning && !delta.reasoning_content) {
+                    delta.reasoning_content = delta.reasoning;
+                  }
+                  // Normalize tool calls to include index
+                  if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
+                    delta.tool_calls = delta.tool_calls.map((tc, idx) => {
+                      if (tc.index === undefined) {
+                        return { ...tc, index: idx };
+                      }
+                      return tc;
+                    });
+                  }
                 }
                 finish_reason = choice.finish_reason || null;
                 hasDelta = true;
