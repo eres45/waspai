@@ -35,36 +35,38 @@ export default function AdminPanelLogin() {
   }
 
   return (
-    <div style={styles.root}>
-      {/* Animated background */}
-      <div style={styles.bg}>
-        <div style={styles.orb1} />
-        <div style={styles.orb2} />
-        <div style={styles.orb3} />
-      </div>
-
-      <div style={styles.card}>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
         {/* Logo */}
-        <div style={styles.logoWrap}>
-          <div style={styles.logoIcon}>W</div>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg shrink-0">
+            W
+          </div>
           <div>
-            <div style={styles.logoTitle}>Wasp AI</div>
-            <div style={styles.logoSub}>Admin Panel</div>
+            <p className="text-sm font-semibold text-foreground leading-none">
+              Wasp AI
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Admin Panel</p>
           </div>
         </div>
 
-        <h1 style={styles.heading}>Restricted Access</h1>
-        <p style={styles.sub}>
-          Authorised personnel only. All access is logged.
-        </p>
+        {/* Card */}
+        <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+          <h1 className="text-lg font-semibold text-foreground mb-1">
+            Sign in
+          </h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Restricted access — authorised personnel only
+          </p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.fieldGroup}>
-            <label style={styles.label} htmlFor="ap-email">
-              Admin Email
-            </label>
-            <div style={styles.inputWrap}>
-              <span style={styles.inputIcon}>✉</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="ap-email"
+                className="text-sm font-medium text-foreground"
+              >
+                Email
+              </label>
               <input
                 id="ap-email"
                 type="email"
@@ -73,17 +75,17 @@ export default function AdminPanelLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="waspai@admin.in"
-                style={styles.input}
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition"
               />
             </div>
-          </div>
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.label} htmlFor="ap-pass">
-              Password
-            </label>
-            <div style={styles.inputWrap}>
-              <span style={styles.inputIcon}>🔐</span>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="ap-pass"
+                className="text-sm font-medium text-foreground"
+              >
+                Password
+              </label>
               <input
                 id="ap-pass"
                 type="password"
@@ -92,210 +94,38 @@ export default function AdminPanelLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                style={styles.input}
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition"
               />
             </div>
-          </div>
 
-          {error && <div style={styles.error}>⚠ {error}</div>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              ...styles.btn,
-              opacity: loading ? 0.7 : 1,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? (
-              <span style={styles.spinner} />
-            ) : (
-              "Sign in to Admin Panel →"
+            {error && (
+              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+                <span>⚠</span>
+                {error}
+              </div>
             )}
-          </button>
-        </form>
 
-        <div style={styles.footer}>
-          🔒 Secured · Server-side verified · Session expires in 8 hours
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Signing in…
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+          </form>
         </div>
-      </div>
 
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; }
-        @keyframes float1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,-40px) scale(1.1)} }
-        @keyframes float2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,50px) scale(0.9)} }
-        @keyframes float3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(20px,30px) scale(1.05)} }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #ap-email:focus, #ap-pass:focus {
-          outline: none;
-          border-color: rgba(139,92,246,0.8) !important;
-          box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
-        }
-        button:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 8px 32px rgba(139,92,246,0.5) !important;
-        }
-      `}</style>
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          🔒 Secured · Server-verified · Session expires in 8h
+        </p>
+      </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  root: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background:
-      "linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0d1117 100%)",
-    fontFamily: "'Inter', sans-serif",
-    position: "relative",
-    overflow: "hidden",
-  },
-  bg: { position: "absolute", inset: 0, pointerEvents: "none" },
-  orb1: {
-    position: "absolute",
-    width: 500,
-    height: 500,
-    borderRadius: "50%",
-    background:
-      "radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)",
-    top: -100,
-    left: -100,
-    animation: "float1 8s ease-in-out infinite",
-  },
-  orb2: {
-    position: "absolute",
-    width: 400,
-    height: 400,
-    borderRadius: "50%",
-    background:
-      "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)",
-    bottom: -80,
-    right: -80,
-    animation: "float2 10s ease-in-out infinite",
-  },
-  orb3: {
-    position: "absolute",
-    width: 300,
-    height: 300,
-    borderRadius: "50%",
-    background:
-      "radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%)",
-    top: "50%",
-    right: "20%",
-    animation: "float3 12s ease-in-out infinite",
-  },
-  card: {
-    position: "relative",
-    zIndex: 10,
-    background: "rgba(255,255,255,0.04)",
-    backdropFilter: "blur(24px)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 24,
-    padding: "48px 40px",
-    width: "100%",
-    maxWidth: 440,
-    boxShadow:
-      "0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
-  },
-  logoWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 32,
-  },
-  logoIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 22,
-    fontWeight: 700,
-    color: "#fff",
-    boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
-  },
-  logoTitle: { fontSize: 18, fontWeight: 700, color: "#fff" },
-  logoSub: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 },
-  heading: {
-    fontSize: 26,
-    fontWeight: 700,
-    color: "#fff",
-    marginBottom: 8,
-    letterSpacing: "-0.5px",
-  },
-  sub: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.4)",
-    marginBottom: 32,
-    lineHeight: 1.5,
-  },
-  form: { display: "flex", flexDirection: "column", gap: 20 },
-  fieldGroup: { display: "flex", flexDirection: "column", gap: 8 },
-  label: { fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.6)" },
-  inputWrap: { position: "relative", display: "flex", alignItems: "center" },
-  inputIcon: {
-    position: "absolute",
-    left: 14,
-    fontSize: 15,
-    pointerEvents: "none",
-    zIndex: 1,
-  },
-  input: {
-    width: "100%",
-    padding: "12px 14px 12px 40px",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 12,
-    color: "#fff",
-    fontSize: 15,
-    transition: "border-color 0.2s, box-shadow 0.2s",
-    outline: "none",
-  },
-  error: {
-    background: "rgba(239,68,68,0.12)",
-    border: "1px solid rgba(239,68,68,0.3)",
-    borderRadius: 10,
-    padding: "10px 14px",
-    color: "#f87171",
-    fontSize: 14,
-    fontWeight: 500,
-  },
-  btn: {
-    padding: "14px",
-    background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
-    border: "none",
-    borderRadius: 12,
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: 600,
-    transition: "transform 0.2s, box-shadow 0.2s, opacity 0.2s",
-    boxShadow: "0 4px 20px rgba(139,92,246,0.35)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-  },
-  spinner: {
-    width: 20,
-    height: 20,
-    border: "2px solid rgba(255,255,255,0.3)",
-    borderTop: "2px solid #fff",
-    borderRadius: "50%",
-    animation: "spin 0.7s linear infinite",
-    display: "inline-block",
-  },
-  footer: {
-    marginTop: 28,
-    textAlign: "center" as const,
-    fontSize: 12,
-    color: "rgba(255,255,255,0.25)",
-    letterSpacing: "0.3px",
-  },
-};

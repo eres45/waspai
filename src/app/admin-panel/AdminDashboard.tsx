@@ -23,6 +23,20 @@ type Stats = {
   usersByRole: { role: string; count: number }[];
 };
 
+const STAT_CARDS = (stats: Stats) => [
+  { label: "Total Users", value: stats.totalUsers, icon: "👥" },
+  { label: "Chat Threads", value: stats.totalChats, icon: "💬" },
+  { label: "Messages", value: stats.totalMessages, icon: "📨" },
+  { label: "Agents", value: stats.totalAgents, icon: "🤖" },
+  { label: "Workflows", value: stats.totalWorkflows, icon: "⚡" },
+  { label: "Deployed Sites", value: stats.totalSites, icon: "🌐" },
+];
+
+const NAV_ITEMS = [
+  { id: "overview", label: "Overview", icon: "▪" },
+  { id: "users", label: "Users", icon: "▪" },
+] as const;
+
 export default function AdminDashboard({
   stats,
   adminEmail,
@@ -35,7 +49,7 @@ export default function AdminDashboard({
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"overview" | "users">("overview");
 
-  const filteredUsers = stats.recentUsers.filter(
+  const filtered = stats.recentUsers.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase()),
@@ -49,298 +63,256 @@ export default function AdminDashboard({
     });
   }
 
-  const statCards = [
-    {
-      label: "Total Users",
-      value: stats.totalUsers.toLocaleString(),
-      icon: "👥",
-      color: "#8b5cf6",
-      bg: "rgba(139,92,246,0.12)",
-    },
-    {
-      label: "Chat Threads",
-      value: stats.totalChats.toLocaleString(),
-      icon: "💬",
-      color: "#3b82f6",
-      bg: "rgba(59,130,246,0.12)",
-    },
-    {
-      label: "Messages",
-      value: stats.totalMessages.toLocaleString(),
-      icon: "📨",
-      color: "#06b6d4",
-      bg: "rgba(6,182,212,0.12)",
-    },
-    {
-      label: "Agents",
-      value: stats.totalAgents.toLocaleString(),
-      icon: "🤖",
-      color: "#10b981",
-      bg: "rgba(16,185,129,0.12)",
-    },
-    {
-      label: "Workflows",
-      value: stats.totalWorkflows.toLocaleString(),
-      icon: "⚡",
-      color: "#f59e0b",
-      bg: "rgba(245,158,11,0.12)",
-    },
-    {
-      label: "Deployed Sites",
-      value: stats.totalSites.toLocaleString(),
-      icon: "🌐",
-      color: "#ec4899",
-      bg: "rgba(236,72,153,0.12)",
-    },
-  ];
-
-  const roleColors: Record<string, string> = {
-    admin: "#8b5cf6",
-    editor: "#3b82f6",
-    user: "#6b7280",
-  };
-
   return (
-    <div style={s.root}>
-      {/* Sidebar */}
-      <aside style={s.sidebar}>
-        <div style={s.sidebarTop}>
-          <div style={s.logo}>
-            <div style={s.logoIcon}>W</div>
+    <div className="flex min-h-screen bg-background text-foreground">
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+      <aside className="w-56 shrink-0 border-r border-border bg-sidebar flex flex-col justify-between py-4 sticky top-0 h-screen">
+        {/* Top */}
+        <div>
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 px-4 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-base shrink-0">
+              W
+            </div>
             <div>
-              <div style={s.logoTitle}>Wasp AI</div>
-              <div style={s.logoSub}>Admin Panel</div>
+              <p className="text-sm font-semibold text-sidebar-foreground leading-none">
+                Wasp AI
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Admin Panel
+              </p>
             </div>
           </div>
 
-          <nav style={s.nav}>
-            <button
-              style={{
-                ...s.navItem,
-                ...(tab === "overview" ? s.navActive : {}),
-              }}
-              onClick={() => setTab("overview")}
-            >
-              <span>📊</span> Overview
-            </button>
-            <button
-              style={{ ...s.navItem, ...(tab === "users" ? s.navActive : {}) }}
-              onClick={() => setTab("users")}
-            >
-              <span>👥</span> Users
-            </button>
+          {/* Nav */}
+          <nav className="px-2 space-y-0.5">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
+                  tab === item.id
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                }`}
+              >
+                <span className="text-[10px]">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
           </nav>
         </div>
 
-        <div style={s.sidebarBottom}>
-          <div style={s.adminBadge}>
-            <div style={s.adminDot} />
-            <div>
-              <div style={s.adminEmail}>{adminEmail}</div>
-              <div style={s.adminRole}>Super Admin</div>
+        {/* Bottom */}
+        <div className="px-2 space-y-2">
+          {/* Admin info */}
+          <div className="px-3 py-2.5 rounded-lg bg-sidebar-accent/50">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+              <p className="text-xs font-medium text-sidebar-foreground truncate">
+                {adminEmail}
+              </p>
             </div>
+            <p className="text-[11px] text-muted-foreground pl-3.5">
+              Super Admin
+            </p>
           </div>
+
           <button
-            style={s.logoutBtn}
             onClick={handleLogout}
             disabled={isPending}
+            className="w-full px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors text-left disabled:opacity-60"
           >
-            {isPending ? "Signing out…" : "Sign Out"}
+            {isPending ? "Signing out…" : "Sign out"}
           </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <main style={s.main}>
-        {/* Header */}
-        <div style={s.header}>
-          <div>
-            <h1 style={s.pageTitle}>
-              {tab === "overview" ? "Dashboard Overview" : "User Management"}
-            </h1>
-            <p style={s.pageSubtitle}>
-              {tab === "overview"
-                ? "Real-time stats from your Wasp AI database"
-                : "View and manage all registered users"}
-            </p>
-          </div>
-          <div style={s.headerRight}>
-            <div style={s.liveIndicator}>
-              <div style={s.liveDot} />
-              Live
-            </div>
-          </div>
+      {/* ── Main ────────────────────────────────────────────────────────── */}
+      <main className="flex-1 p-6 overflow-auto">
+        {/* Page header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-foreground">
+            {tab === "overview" ? "Overview" : "Users"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {tab === "overview"
+              ? "Live stats from your Wasp AI database"
+              : "All registered users"}
+          </p>
         </div>
 
-        {/* Overview Tab */}
+        {/* ── Overview Tab ──────────────────────────────────────────────── */}
         {tab === "overview" && (
-          <>
-            {/* Stats Grid */}
-            <div style={s.statsGrid}>
-              {statCards.map((c) => (
-                <div key={c.label} style={s.statCard}>
-                  <div
-                    style={{ ...s.statIcon, background: c.bg, color: c.color }}
-                  >
-                    {c.icon}
-                  </div>
-                  <div style={s.statValue}>{c.value}</div>
-                  <div style={s.statLabel}>{c.label}</div>
-                  <div style={{ ...s.statAccent, background: c.color }} />
+          <div className="space-y-6">
+            {/* Stats grid */}
+            <div className="grid grid-cols-3 gap-4">
+              {STAT_CARDS(stats).map((c) => (
+                <div
+                  key={c.label}
+                  className="bg-card border border-border rounded-xl p-4"
+                >
+                  <p className="text-2xl mb-1">{c.icon}</p>
+                  <p className="text-2xl font-bold text-foreground tabular-nums">
+                    {c.value.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {c.label}
+                  </p>
                 </div>
               ))}
             </div>
 
             {/* Role breakdown */}
-            <div style={s.section}>
-              <div style={s.sectionHeader}>
-                <h2 style={s.sectionTitle}>Users by Role</h2>
-              </div>
-              <div style={s.roleGrid}>
+            <div className="bg-card border border-border rounded-xl p-4">
+              <h2 className="text-sm font-semibold text-foreground mb-4">
+                Users by Role
+              </h2>
+              <div className="flex gap-3">
                 {stats.usersByRole.map((r) => (
-                  <div key={r.role} style={s.roleCard}>
-                    <div
-                      style={{
-                        ...s.roleBadge,
-                        background: `${roleColors[r.role] || "#6b7280"}22`,
-                        color: roleColors[r.role] || "#6b7280",
-                        borderColor: `${roleColors[r.role] || "#6b7280"}44`,
-                      }}
-                    >
-                      {r.role}
-                    </div>
-                    <div style={s.roleCount}>
-                      {Number(r.count).toLocaleString()}
-                    </div>
-                    <div style={s.roleLabel}>users</div>
+                  <div
+                    key={r.role}
+                    className="flex-1 bg-muted/50 rounded-lg p-3 text-center"
+                  >
+                    <RoleBadge role={r.role} />
+                    <p className="text-2xl font-bold text-foreground tabular-nums mt-2">
+                      {Number(r.count)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">users</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Recent Users Preview */}
-            <div style={s.section}>
-              <div style={s.sectionHeader}>
-                <h2 style={s.sectionTitle}>Recently Joined</h2>
-                <button style={s.viewAll} onClick={() => setTab("users")}>
-                  View All →
+            {/* Recent users */}
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Recently Joined
+                </h2>
+                <button
+                  onClick={() => setTab("users")}
+                  className="text-xs text-primary hover:underline"
+                >
+                  View all →
                 </button>
               </div>
-              <UserTable users={stats.recentUsers.slice(0, 5)} />
+              <UsersTable users={stats.recentUsers.slice(0, 5)} />
             </div>
-          </>
+          </div>
         )}
 
-        {/* Users Tab */}
+        {/* ── Users Tab ─────────────────────────────────────────────────── */}
         {tab === "users" && (
-          <div style={s.section}>
-            <div style={s.searchBar}>
-              <span style={s.searchIcon}>🔍</span>
+          <div className="bg-card border border-border rounded-xl p-4">
+            {/* Search */}
+            <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 mb-4">
+              <svg
+                className="w-4 h-4 text-muted-foreground shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
               <input
                 type="text"
                 placeholder="Search by name or email…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={s.searchInput}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
               />
-              <span style={s.searchCount}>
-                {filteredUsers.length} of {stats.recentUsers.length} users
+              <span className="text-xs text-muted-foreground shrink-0">
+                {filtered.length}/{stats.recentUsers.length}
               </span>
             </div>
-            <UserTable users={filteredUsers} />
+            <UsersTable users={filtered} />
           </div>
         )}
       </main>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #0d0d1a; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        @keyframes livePulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:0.6} }
-      `}</style>
     </div>
   );
 }
 
-function UserTable({ users }: { users: User[] }) {
+function RoleBadge({ role }: { role: string }) {
+  const styles: Record<string, string> = {
+    admin: "bg-primary/15 text-primary border border-primary/30",
+    editor: "bg-blue-500/15 text-blue-400 border border-blue-500/30",
+    user: "bg-muted text-muted-foreground border border-border",
+  };
   return (
-    <div style={s.tableWrap}>
-      <table style={s.table}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${styles[role] ?? styles.user}`}
+    >
+      {role}
+    </span>
+  );
+}
+
+function UsersTable({ users }: { users: User[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
         <thead>
-          <tr>
-            {["Name", "Email", "Role", "Status", "Joined"].map((h) => (
-              <th key={h} style={s.th}>
+          <tr className="border-b border-border">
+            {["User", "Email", "Role", "Status", "Joined"].map((h) => (
+              <th
+                key={h}
+                className="text-left text-xs font-medium text-muted-foreground pb-2 px-2 first:pl-0 last:pr-0 uppercase tracking-wide"
+              >
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-border">
           {users.length === 0 ? (
             <tr>
-              <td colSpan={5} style={s.emptyCell}>
+              <td
+                colSpan={5}
+                className="text-center py-8 text-muted-foreground text-sm"
+              >
                 No users found
               </td>
             </tr>
           ) : (
             users.map((u) => (
-              <tr key={u.id} style={s.tr}>
-                <td style={s.td}>
-                  <div style={s.userCell}>
-                    <div style={s.avatar}>
-                      {u.name?.[0]?.toUpperCase() || "?"}
+              <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                <td className="py-3 px-2 first:pl-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                      {u.name?.[0]?.toUpperCase() ?? "?"}
                     </div>
-                    <span style={s.userName}>{u.name}</span>
+                    <span className="font-medium text-foreground truncate max-w-[120px]">
+                      {u.name}
+                    </span>
                   </div>
                 </td>
-                <td style={s.td}>
-                  <span style={s.emailText}>{u.email}</span>
-                </td>
-                <td style={s.td}>
-                  <span
-                    style={{
-                      ...s.rolePill,
-                      background:
-                        u.role === "admin"
-                          ? "rgba(139,92,246,0.15)"
-                          : u.role === "editor"
-                            ? "rgba(59,130,246,0.15)"
-                            : "rgba(107,114,128,0.15)",
-                      color:
-                        u.role === "admin"
-                          ? "#a78bfa"
-                          : u.role === "editor"
-                            ? "#60a5fa"
-                            : "#9ca3af",
-                      border: `1px solid ${
-                        u.role === "admin"
-                          ? "rgba(139,92,246,0.3)"
-                          : u.role === "editor"
-                            ? "rgba(59,130,246,0.3)"
-                            : "rgba(107,114,128,0.3)"
-                      }`,
-                    }}
-                  >
-                    {u.role}
+                <td className="py-3 px-2">
+                  <span className="text-muted-foreground truncate block max-w-[180px]">
+                    {u.email}
                   </span>
                 </td>
-                <td style={s.td}>
+                <td className="py-3 px-2">
+                  <RoleBadge role={u.role} />
+                </td>
+                <td className="py-3 px-2">
                   <span
-                    style={{
-                      ...s.statusPill,
-                      background: u.banned
-                        ? "rgba(239,68,68,0.12)"
-                        : "rgba(16,185,129,0.12)",
-                      color: u.banned ? "#f87171" : "#34d399",
-                      border: `1px solid ${u.banned ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}`,
-                    }}
+                    className={`inline-flex items-center gap-1 text-xs font-medium ${
+                      u.banned ? "text-destructive" : "text-green-500"
+                    }`}
                   >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
                     {u.banned ? "Banned" : "Active"}
                   </span>
                 </td>
-                <td style={s.td}>
-                  <span style={s.dateText}>
+                <td className="py-3 px-2 last:pr-0">
+                  <span className="text-muted-foreground">
                     {new Date(u.createdAt).toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
@@ -356,307 +328,3 @@ function UserTable({ users }: { users: User[] }) {
     </div>
   );
 }
-
-const s: Record<string, React.CSSProperties> = {
-  root: {
-    display: "flex",
-    minHeight: "100vh",
-    background: "#0a0a14",
-    fontFamily: "'Inter', sans-serif",
-    color: "#fff",
-  },
-  // ── Sidebar ────────────────────────────────────────────────────────────────
-  sidebar: {
-    width: 240,
-    background: "rgba(255,255,255,0.03)",
-    borderRight: "1px solid rgba(255,255,255,0.06)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    padding: "24px 0",
-    position: "sticky" as const,
-    top: 0,
-    height: "100vh",
-    flexShrink: 0,
-  },
-  sidebarTop: { padding: "0 16px" },
-  logo: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 36,
-    paddingLeft: 8,
-  },
-  logoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 18,
-    fontWeight: 700,
-    boxShadow: "0 4px 12px rgba(139,92,246,0.4)",
-  },
-  logoTitle: { fontSize: 15, fontWeight: 700, color: "#fff" },
-  logoSub: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 },
-  nav: { display: "flex", flexDirection: "column", gap: 4 },
-  navItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "10px 12px",
-    background: "transparent",
-    border: "none",
-    borderRadius: 10,
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 14,
-    fontWeight: 500,
-    cursor: "pointer",
-    textAlign: "left" as const,
-    transition: "all 0.15s",
-    width: "100%",
-  },
-  navActive: {
-    background: "rgba(139,92,246,0.15)",
-    color: "#a78bfa",
-    border: "1px solid rgba(139,92,246,0.2)",
-  },
-  sidebarBottom: { padding: "0 16px" },
-  adminBadge: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "12px",
-    background: "rgba(255,255,255,0.04)",
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  adminDot: {
-    width: 8,
-    height: 8,
-    borderRadius: "50%",
-    background: "#10b981",
-    flexShrink: 0,
-    animation: "livePulse 2s ease-in-out infinite",
-  },
-  adminEmail: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
-    fontWeight: 500,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap" as const,
-    maxWidth: 150,
-  },
-  adminRole: { fontSize: 11, color: "#8b5cf6", marginTop: 2 },
-  logoutBtn: {
-    width: "100%",
-    padding: "9px",
-    background: "rgba(239,68,68,0.1)",
-    border: "1px solid rgba(239,68,68,0.2)",
-    borderRadius: 10,
-    color: "#f87171",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.15s",
-  },
-  // ── Main ───────────────────────────────────────────────────────────────────
-  main: {
-    flex: 1,
-    padding: "32px 36px",
-    overflow: "auto",
-  },
-  header: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 36,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: 700,
-    color: "#fff",
-    letterSpacing: "-0.5px",
-  },
-  pageSubtitle: { fontSize: 14, color: "rgba(255,255,255,0.4)", marginTop: 4 },
-  headerRight: { display: "flex", alignItems: "center", gap: 12 },
-  liveIndicator: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "6px 12px",
-    background: "rgba(16,185,129,0.1)",
-    border: "1px solid rgba(16,185,129,0.2)",
-    borderRadius: 20,
-    color: "#34d399",
-    fontSize: 13,
-    fontWeight: 500,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: "50%",
-    background: "#10b981",
-    animation: "livePulse 2s ease-in-out infinite",
-  },
-  // ── Stats ─────────────────────────────────────────────────────────────────
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 16,
-    marginBottom: 32,
-  },
-  statCard: {
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    padding: "24px 20px",
-    position: "relative" as const,
-    overflow: "hidden",
-  },
-  statIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 20,
-    marginBottom: 16,
-  },
-  statValue: { fontSize: 32, fontWeight: 700, color: "#fff", lineHeight: 1 },
-  statLabel: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.4)",
-    marginTop: 6,
-    fontWeight: 500,
-  },
-  statAccent: {
-    position: "absolute" as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    opacity: 0.5,
-  },
-  // ── Section ────────────────────────────────────────────────────────────────
-  section: {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: 600, color: "#fff" },
-  viewAll: {
-    background: "transparent",
-    border: "none",
-    color: "#8b5cf6",
-    fontSize: 13,
-    cursor: "pointer",
-    fontWeight: 500,
-  },
-  roleGrid: { display: "flex", gap: 16, flexWrap: "wrap" as const },
-  roleCard: {
-    flex: 1,
-    minWidth: 120,
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: 12,
-    padding: "20px 16px",
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: 8,
-  },
-  roleBadge: {
-    padding: "4px 12px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: 600,
-    border: "1px solid",
-    textTransform: "capitalize" as const,
-  },
-  roleCount: { fontSize: 36, fontWeight: 700, color: "#fff" },
-  roleLabel: { fontSize: 12, color: "rgba(255,255,255,0.4)" },
-  // ── Search ─────────────────────────────────────────────────────────────────
-  searchBar: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 12,
-    padding: "10px 14px",
-    marginBottom: 20,
-  },
-  searchIcon: { fontSize: 15, flexShrink: 0 },
-  searchInput: {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    outline: "none",
-    color: "#fff",
-    fontSize: 14,
-  },
-  searchCount: { fontSize: 12, color: "rgba(255,255,255,0.3)", flexShrink: 0 },
-  // ── Table ──────────────────────────────────────────────────────────────────
-  tableWrap: { overflowX: "auto" as const },
-  table: { width: "100%", borderCollapse: "collapse" as const },
-  th: {
-    textAlign: "left" as const,
-    fontSize: 12,
-    fontWeight: 600,
-    color: "rgba(255,255,255,0.4)",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.06em",
-    padding: "8px 12px",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-  },
-  tr: { borderBottom: "1px solid rgba(255,255,255,0.04)" },
-  td: { padding: "12px 12px", verticalAlign: "middle" as const },
-  emptyCell: {
-    textAlign: "center" as const,
-    padding: "32px",
-    color: "rgba(255,255,255,0.3)",
-    fontSize: 14,
-  },
-  userCell: { display: "flex", alignItems: "center", gap: 10 },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: "50%",
-    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 13,
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-  userName: { fontSize: 14, fontWeight: 500, color: "#fff" },
-  emailText: { fontSize: 13, color: "rgba(255,255,255,0.5)" },
-  rolePill: {
-    padding: "3px 10px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: 500,
-    textTransform: "capitalize" as const,
-  },
-  statusPill: {
-    padding: "3px 10px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: 500,
-  },
-  dateText: { fontSize: 13, color: "rgba(255,255,255,0.4)" },
-};
