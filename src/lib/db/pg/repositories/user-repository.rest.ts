@@ -11,6 +11,7 @@ const mapUserToEntity = (data: any): any => {
     updatedAt: data.updated_at ? new Date(data.updated_at) : undefined,
     preferences: data.preferences as UserPreferences,
     welcomeEmailSent: data.welcome_email_sent,
+    tier: data.tier,
   };
 };
 

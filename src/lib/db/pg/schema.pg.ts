@@ -112,6 +112,7 @@ export const UserTable = pgTable("user", {
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
   role: text("role").notNull().default("user"),
+  tier: text("tier").notNull().default("free"),
   welcomeEmailSent: boolean("welcome_email_sent").default(false).notNull(),
 });
 
