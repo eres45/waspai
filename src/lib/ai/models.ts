@@ -209,6 +209,72 @@ const FREE_TIER_MODELS = new Set([
   "frenix-grok-4.3",
   "frenix-grok-4.20-fast",
   "waspai-model",
+
+  // LordRouter Models
+  "lordrouter-@cf/moonshotai/kimi-k2.5",
+  "lordrouter-@cf/moonshotai/kimi-k2.6",
+  "lordrouter-claude-opus-4-1",
+  "lordrouter-claude-opus-4-5",
+  "lordrouter-claude-opus-4-6",
+  "lordrouter-claude-opus-4-7",
+  "lordrouter-claude-sonnet-4-6",
+  "lordrouter-cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+  "lordrouter-deepseek-r1",
+  "lordrouter-deepseek-v3",
+  "lordrouter-deepseek-v4-flash",
+  "lordrouter-deepseek-v4-pro",
+  "lordrouter-gemini-2.5-flash",
+  "lordrouter-gemini-2.5-flash-lite",
+  "lordrouter-gemini-2.5-pro",
+  "lordrouter-gemini-3-pro",
+  "lordrouter-gemini-3.1-flash-lite",
+  "lordrouter-gemini-3.1-pro",
+  "lordrouter-gemini-3.5-flash",
+  "lordrouter-gemini-3.5-flash-thinking",
+  "lordrouter-gemini-3.5-flash-thinking-lite",
+  "lordrouter-gemini-auto",
+  "lordrouter-gemini-flash-lite",
+  "lordrouter-gemma-4-26b-a4b-it",
+  "lordrouter-gemma-4-31b-it",
+  "lordrouter-google/gemma-4-26b-a4b-it:free",
+  "lordrouter-google/gemma-4-31b-it:free",
+  "lordrouter-gpt-5",
+  "lordrouter-gpt-5-5",
+  "lordrouter-gpt-5-mini",
+  "lordrouter-gpt-5-nano",
+  "lordrouter-gpt-5.1",
+  "lordrouter-gpt-5.3",
+  "lordrouter-gpt-5.3-chat-latest",
+  "lordrouter-gpt-5.4",
+  "lordrouter-gpt-5.5",
+  "lordrouter-grok-4",
+  "lordrouter-kimi-k2",
+  "lordrouter-liquid/lfm-2.5-1.2b-instruct:free",
+  "lordrouter-liquid/lfm-2.5-1.2b-thinking:free",
+  "lordrouter-llama-3.3-70b",
+  "lordrouter-meta-llama/llama-3.2-3b-instruct:free",
+  "lordrouter-meta-llama/llama-3.3-70b-instruct:free",
+  "lordrouter-moonshotai/kimi-k2.6:free",
+  "lordrouter-nousresearch/hermes-3-llama-3.1-405b:free",
+  "lordrouter-nvidia/nemotron-3-nano-30b-a3b:free",
+  "lordrouter-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "lordrouter-nvidia/nemotron-3-super-120b-a12b:free",
+  "lordrouter-nvidia/nemotron-nano-12b-v2-vl:free",
+  "lordrouter-nvidia/nemotron-nano-9b-v2:free",
+  "lordrouter-o3",
+  "lordrouter-o3-mini",
+  "lordrouter-openai/gpt-oss-120b:free",
+  "lordrouter-openai/gpt-oss-20b:free",
+  "lordrouter-openrouter/free",
+  "lordrouter-poolside/laguna-m.1:free",
+  "lordrouter-poolside/laguna-xs.2:free",
+  "lordrouter-qwen-3-max",
+  "lordrouter-qwen-qwq-32b",
+  "lordrouter-qwen/qwen3-coder:free",
+  "lordrouter-qwen/qwen3-next-80b-a3b-instruct:free",
+  "lordrouter-stepfun-ai/step-3.5-flash",
+  "lordrouter-stepfun-ai/step-3.7-flash",
+  "lordrouter-z-ai/glm-4.5-air:free",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -436,6 +502,11 @@ export async function buildDynamicModelsInfo() {
 export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
   if (id === "waspai-model") return "WaspAI";
+  if (
+    id.startsWith("lordrouter-") ||
+    (ownedBy && ownedBy.toLowerCase() === "lordrouter")
+  )
+    return "LordRouter";
   const raw = (ownedBy || "").toLowerCase();
 
   // Frenix-prefixed models: resolve to the correct vendor before broad pattern checks
@@ -558,6 +629,11 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
+  // LordRouter models support tool calling
+  if (modelId.startsWith("lordrouter-")) {
+    return false;
+  }
+
   // Disable tool calls for all Frenix models (improves response time, prevents empty stream bugs)
   if (modelId.includes("frenix-")) {
     return true;
@@ -639,6 +715,10 @@ export const customModelProvider = {
 
     if (model.provider === "Sarvam" || modelId.startsWith("sarvam-")) {
       return sarvamProvider(modelId) as unknown as LanguageModel;
+    }
+
+    if (modelId.startsWith("lordrouter-")) {
+      return creativeProvider(modelId) as unknown as LanguageModel;
     }
 
     // NVIDIA NIM models on the nvidia-nim-worker always have a slash in their ID (e.g., 'meta/llama-3.1-8b-instruct')

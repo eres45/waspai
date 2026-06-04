@@ -213,6 +213,78 @@ const MODEL_MAP = {
   "waspai-model": { provider: "zerovai", model: "voidv1-flash" },
 };
 
+// LordRouter Models Auto-Mapping
+const LORDROUTER_MODELS = [
+  "@cf/moonshotai/kimi-k2.5",
+  "@cf/moonshotai/kimi-k2.6",
+  "claude-opus-4-1",
+  "claude-opus-4-5",
+  "claude-opus-4-6",
+  "claude-opus-4-7",
+  "claude-sonnet-4-6",
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+  "deepseek-r1",
+  "deepseek-v3",
+  "deepseek-v4-flash",
+  "deepseek-v4-pro",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.5-pro",
+  "gemini-3-pro",
+  "gemini-3.1-flash-lite",
+  "gemini-3.1-pro",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-thinking",
+  "gemini-3.5-flash-thinking-lite",
+  "gemini-auto",
+  "gemini-flash-lite",
+  "gemma-4-26b-a4b-it",
+  "gemma-4-31b-it",
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "gpt-5",
+  "gpt-5-5",
+  "gpt-5-mini",
+  "gpt-5-nano",
+  "gpt-5.1",
+  "gpt-5.3",
+  "gpt-5.3-chat-latest",
+  "gpt-5.4",
+  "gpt-5.5",
+  "grok-4",
+  "kimi-k2",
+  "liquid/lfm-2.5-1.2b-instruct:free",
+  "liquid/lfm-2.5-1.2b-thinking:free",
+  "llama-3.3-70b",
+  "meta-llama/llama-3.2-3b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "moonshotai/kimi-k2.6:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nvidia/nemotron-nano-12b-v2-vl:free",
+  "nvidia/nemotron-nano-9b-v2:free",
+  "o3",
+  "o3-mini",
+  "openai/gpt-oss-120b:free",
+  "openai/gpt-oss-20b:free",
+  "openrouter/free",
+  "poolside/laguna-m.1:free",
+  "poolside/laguna-xs.2:free",
+  "qwen-3-max",
+  "qwen-qwq-32b",
+  "qwen/qwen3-coder:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "stepfun-ai/step-3.5-flash",
+  "stepfun-ai/step-3.7-flash",
+  "z-ai/glm-4.5-air:free",
+];
+
+for (const model of LORDROUTER_MODELS) {
+  MODEL_MAP[`lordrouter-${model}`] = { provider: "lordrouter", model: model };
+}
+
 // ============================================================================
 // PROVIDER CONFIGS
 // ============================================================================
@@ -359,6 +431,11 @@ const PROVIDERS = {
   zerovai: {
     base: "https://0vai.vercel.app/api/v1",
     keys: ["void_sk_ekfyclcognsx5jkz5g5x1nnr"],
+    openai: true,
+  },
+  lordrouter: {
+    base: "https://lordrouter.xyz/v1",
+    keys: ["sk-6dF5EeJRn45B8ZUvfPZDTl1ETxICiaBtfrdVp8PgC1SuEm4z"],
     openai: true,
   },
 };
@@ -673,6 +750,7 @@ async function fetchFromProvider(
     case "gptossworker":
     case "gemini-openai":
     case "zerovai":
+    case "lordrouter":
       url = `${cfg.base}/chat/completions`;
       reqBody = buildOpenAIRequest(body, mappedModel);
       headers = { "Content-Type": "application/json" };

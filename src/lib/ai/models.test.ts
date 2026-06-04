@@ -120,7 +120,7 @@ describe("customModelProvider file support metadata", () => {
   });
 });
 
-describe("WaspAI model integrations", () => {
+describe("WaspAI & LordRouter integrations", () => {
   it("cleans WaspAI display name correctly", () => {
     expect(cleanModelDisplayName("waspai-model")).toBe("WaspAI model");
   });
@@ -128,5 +128,24 @@ describe("WaspAI model integrations", () => {
   it("supports tool calling for waspai-model", () => {
     const { isToolCallUnsupportedModel } = modelsModule;
     expect(isToolCallUnsupportedModel("waspai-model")).toBe(false);
+  });
+
+  it("cleans LordRouter display names and handles clashes with P2", () => {
+    // claude-opus-4-7 exists in MODEL_DISPLAY_NAMES, so lordrouter-claude-opus-4-7 should have P2
+    expect(cleanModelDisplayName("lordrouter-claude-opus-4-7")).toBe(
+      "Claude Opus 4.7 P2",
+    );
+
+    // stepfun-ai/step-3.5-flash does not exist statically in MODEL_DISPLAY_NAMES, so it cleans dynamically
+    expect(cleanModelDisplayName("lordrouter-stepfun-ai/step-3.5-flash")).toBe(
+      "Step 3.5 Flash",
+    );
+  });
+
+  it("supports tool calling for LordRouter models", () => {
+    const { isToolCallUnsupportedModel } = modelsModule;
+    expect(isToolCallUnsupportedModel("lordrouter-claude-opus-4-7")).toBe(
+      false,
+    );
   });
 });

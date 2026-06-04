@@ -1,6 +1,7 @@
 // Provider display order
 export const PROVIDER_ORDER = [
   "waspai", // WaspAI
+  "lordrouter", // LordRouter
   "google", // Google
   "anthropic", // Anthropic
   "mistral", // Mistral
@@ -23,6 +24,7 @@ export const PROVIDER_ORDER = [
 // Map backend provider names to display names
 export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   waspai: "WaspAI",
+  lordrouter: "LordRouter",
   google: "Google",
   anthropic: "Anthropic",
   mistral: "Mistral",
@@ -178,6 +180,25 @@ export const createReverseModelMapping = (): {
 export function cleanModelDisplayName(name: string): string {
   if (!name) return "";
 
+  // Handle LordRouter custom prefix and clash detection
+  if (name.startsWith("lordrouter-")) {
+    const baseName = name.slice("lordrouter-".length);
+    const cleanedBase = cleanModelDisplayName(baseName);
+
+    // Check if this model is already explicitly in our static list
+    const hasOriginal =
+      MODEL_DISPLAY_NAMES[baseName] !== undefined ||
+      MODEL_DISPLAY_NAMES[baseName.toLowerCase()] !== undefined ||
+      Object.keys(MODEL_DISPLAY_NAMES).some(
+        (k) => k.toLowerCase() === baseName.toLowerCase(),
+      );
+
+    if (hasOriginal) {
+      return `${cleanedBase} P2`;
+    }
+    return cleanedBase;
+  }
+
   // 1. If it has a static display name mapped, use it
   if (MODEL_DISPLAY_NAMES[name]) {
     return MODEL_DISPLAY_NAMES[name];
@@ -188,6 +209,7 @@ export function cleanModelDisplayName(name: string): string {
 
   // Remove common worker/provider prefixes
   const prefixes = [
+    "lordrouter-",
     "chatai-",
     "chatbotai-",
     "randomai-",

@@ -3,6 +3,7 @@ import { buildDynamicModelsInfo } from "lib/ai/models";
 // Provider display order
 const PROVIDER_ORDER = [
   "WaspAI",
+  "LordRouter",
   "Anthropic",
   "OpenAI",
   "Google",
