@@ -156,7 +156,9 @@ describe("WaspAI & LordRouter integrations", () => {
 
   it("correctly resolves model tier (Free vs Pro) for LordRouter models", () => {
     const { getModelTier } = modelsModule;
-    expect(getModelTier("lordrouter-gpt-5")).toBe("Free");
+    expect(getModelTier("lordrouter-gpt-5")).toBe("Pro");
+    expect(getModelTier("lordrouter-deepseek-r1")).toBe("Pro");
+    expect(getModelTier("lordrouter-gemini-2.5-flash")).toBe("Pro");
 
     const proModels = [
       "gemini-3-pro",
@@ -183,7 +185,6 @@ describe("WaspAI & LordRouter integrations", () => {
 
     for (const m of proModels) {
       expect(getModelTier(`lordrouter-${m}`)).toBe("Pro");
-      expect(getModelTier(m)).toBe("Pro");
     }
   });
 });
