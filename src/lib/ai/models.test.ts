@@ -153,4 +153,37 @@ describe("WaspAI & LordRouter integrations", () => {
       false,
     );
   });
+
+  it("correctly resolves model tier (Free vs Pro) for LordRouter models", () => {
+    const { getModelTier } = modelsModule;
+    expect(getModelTier("lordrouter-gpt-5")).toBe("Free");
+
+    const proModels = [
+      "gemini-3-pro",
+      "gemini-3.1-flash-lite",
+      "gemini-3.1-pro",
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-thinking",
+      "gemini-3.5-flash-thinking-lite",
+      "claude-opus-4-1",
+      "claude-opus-4-5",
+      "claude-opus-4-6",
+      "claude-opus-4-7",
+      "claude-sonnet-4-6",
+      "gpt-5-5",
+      "gpt-5-mini",
+      "gpt-5.1",
+      "gpt-5.3",
+      "gpt-5.3-chat-latest",
+      "gpt-5.4",
+      "gpt-5.5",
+      "deepseek-v4-flash",
+      "deepseek-v4-pro",
+    ];
+
+    for (const m of proModels) {
+      expect(getModelTier(`lordrouter-${m}`)).toBe("Pro");
+      expect(getModelTier(m)).toBe("Pro");
+    }
+  });
 });

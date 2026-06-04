@@ -951,6 +951,18 @@ async function* streamResponse(providerKey, res, model) {
               const choice = j.choices?.[0];
               if (choice) {
                 delta = choice.delta;
+                if (
+                  delta &&
+                  delta.tool_calls &&
+                  Array.isArray(delta.tool_calls)
+                ) {
+                  delta.tool_calls = delta.tool_calls.map((tc, idx) => {
+                    if (tc.index === undefined) {
+                      return { ...tc, index: idx };
+                    }
+                    return tc;
+                  });
+                }
                 finish_reason = choice.finish_reason || null;
                 hasDelta = true;
               }

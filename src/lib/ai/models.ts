@@ -213,25 +213,12 @@ const FREE_TIER_MODELS = new Set([
   // LordRouter Models
   "lordrouter-@cf/moonshotai/kimi-k2.5",
   "lordrouter-@cf/moonshotai/kimi-k2.6",
-  "lordrouter-claude-opus-4-1",
-  "lordrouter-claude-opus-4-5",
-  "lordrouter-claude-opus-4-6",
-  "lordrouter-claude-opus-4-7",
-  "lordrouter-claude-sonnet-4-6",
   "lordrouter-cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
   "lordrouter-deepseek-r1",
   "lordrouter-deepseek-v3",
-  "lordrouter-deepseek-v4-flash",
-  "lordrouter-deepseek-v4-pro",
   "lordrouter-gemini-2.5-flash",
   "lordrouter-gemini-2.5-flash-lite",
   "lordrouter-gemini-2.5-pro",
-  "lordrouter-gemini-3-pro",
-  "lordrouter-gemini-3.1-flash-lite",
-  "lordrouter-gemini-3.1-pro",
-  "lordrouter-gemini-3.5-flash",
-  "lordrouter-gemini-3.5-flash-thinking",
-  "lordrouter-gemini-3.5-flash-thinking-lite",
   "lordrouter-gemini-auto",
   "lordrouter-gemini-flash-lite",
   "lordrouter-gemma-4-26b-a4b-it",
@@ -239,14 +226,7 @@ const FREE_TIER_MODELS = new Set([
   "lordrouter-google/gemma-4-26b-a4b-it:free",
   "lordrouter-google/gemma-4-31b-it:free",
   "lordrouter-gpt-5",
-  "lordrouter-gpt-5-5",
-  "lordrouter-gpt-5-mini",
   "lordrouter-gpt-5-nano",
-  "lordrouter-gpt-5.1",
-  "lordrouter-gpt-5.3",
-  "lordrouter-gpt-5.3-chat-latest",
-  "lordrouter-gpt-5.4",
-  "lordrouter-gpt-5.5",
   "lordrouter-grok-4",
   "lordrouter-kimi-k2",
   "lordrouter-liquid/lfm-2.5-1.2b-instruct:free",
@@ -308,16 +288,27 @@ function getBaseModelId(modelId: string): string {
 }
 
 export function getModelTier(modelId: string): string {
+  const lowercaseModelId = modelId.toLowerCase();
   const baseId = getBaseModelId(modelId);
 
-  const isExcluded = Array.from(LOWERCASE_EXCLUDED_MODELS).some((exId) =>
-    baseId.includes(exId),
-  );
+  const isExcluded = Array.from(LOWERCASE_EXCLUDED_MODELS).some((exId) => {
+    return (
+      lowercaseModelId === exId ||
+      baseId === exId ||
+      lowercaseModelId.endsWith(`-${exId}`) ||
+      lowercaseModelId.endsWith(`/${exId}`)
+    );
+  });
   if (isExcluded) return "Pro";
 
-  const isFree = Array.from(LOWERCASE_FREE_TIER_MODELS).some((freeId) =>
-    baseId.includes(freeId),
-  );
+  const isFree = Array.from(LOWERCASE_FREE_TIER_MODELS).some((freeId) => {
+    return (
+      lowercaseModelId === freeId ||
+      baseId === freeId ||
+      lowercaseModelId.endsWith(`-${freeId}`) ||
+      lowercaseModelId.endsWith(`/${freeId}`)
+    );
+  });
 
   return isFree ? "Free" : "Pro";
 }
