@@ -1,7 +1,6 @@
 // Provider display order
 export const PROVIDER_ORDER = [
   "waspai", // WaspAI
-  "lordrouter", // LordRouter
   "google", // Google
   "anthropic", // Anthropic
   "mistral", // Mistral
@@ -24,7 +23,6 @@ export const PROVIDER_ORDER = [
 // Map backend provider names to display names
 export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   waspai: "WaspAI",
-  lordrouter: "LordRouter",
   google: "Google",
   anthropic: "Anthropic",
   mistral: "Mistral",
@@ -185,13 +183,10 @@ export function cleanModelDisplayName(name: string): string {
     const baseName = name.slice("lordrouter-".length);
     const cleanedBase = cleanModelDisplayName(baseName);
 
-    // Check if this model is already explicitly in our static list
-    const hasOriginal =
-      MODEL_DISPLAY_NAMES[baseName] !== undefined ||
-      MODEL_DISPLAY_NAMES[baseName.toLowerCase()] !== undefined ||
-      Object.keys(MODEL_DISPLAY_NAMES).some(
-        (k) => k.toLowerCase() === baseName.toLowerCase(),
-      );
+    // Check if this display name is already in use by another provider statically
+    const hasOriginal = Object.values(MODEL_DISPLAY_NAMES).some(
+      (val) => val.toLowerCase() === cleanedBase.toLowerCase(),
+    );
 
     if (hasOriginal) {
       return `${cleanedBase} P2`;
@@ -206,6 +201,15 @@ export function cleanModelDisplayName(name: string): string {
 
   // 2. Otherwise, clean the raw backend name dynamically!
   let cleaned = name;
+
+  // Extract name after last slash if present (e.g., google/gemma-3 -> gemma-3)
+  if (cleaned.includes("/")) {
+    const parts = cleaned.split("/");
+    cleaned = parts[parts.length - 1];
+  }
+
+  // Strip :free suffix
+  cleaned = cleaned.replace(/:free$/gi, "");
 
   // Remove common worker/provider prefixes
   const prefixes = [

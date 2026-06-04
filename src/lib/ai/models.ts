@@ -502,11 +502,6 @@ export async function buildDynamicModelsInfo() {
 export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
   if (id === "waspai-model") return "WaspAI";
-  if (
-    id.startsWith("lordrouter-") ||
-    (ownedBy && ownedBy.toLowerCase() === "lordrouter")
-  )
-    return "LordRouter";
   const raw = (ownedBy || "").toLowerCase();
 
   // Frenix-prefixed models: resolve to the correct vendor before broad pattern checks
@@ -611,6 +606,9 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   if (id.includes("command-") || raw.includes("cohere")) return "Cohere";
 
   if (ownedBy) {
+    if (ownedBy.toLowerCase() === "lordrouter") {
+      return "Other";
+    }
     return ownedBy.charAt(0).toUpperCase() + ownedBy.slice(1);
   }
   return "Other";

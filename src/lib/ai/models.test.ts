@@ -140,6 +140,11 @@ describe("WaspAI & LordRouter integrations", () => {
     expect(cleanModelDisplayName("lordrouter-stepfun-ai/step-3.5-flash")).toBe(
       "Step 3.5 Flash",
     );
+
+    // @cf/moonshotai/kimi-k2.6 should be cleaned to "Kimi K2.6" without any prefix
+    expect(cleanModelDisplayName("lordrouter-@cf/moonshotai/kimi-k2.6")).toBe(
+      "Kimi K2.6",
+    );
   });
 
   it("supports tool calling for LordRouter models", () => {
