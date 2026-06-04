@@ -6,13 +6,16 @@ import { OpenAIIcon } from "./openai-icon";
 import { OllamaIcon } from "./ollama-icon";
 import { OpenRouterIcon } from "./open-router-icon";
 import { MicrosoftIcon } from "./microsoft-icon";
+import { WaspAIIcon } from "./waspai-icon";
 
 export function ModelProviderIcon({
   provider,
   className,
 }: { provider: string; className?: string }) {
   const p = provider?.toLowerCase() || "";
-  return p === "openai" ? (
+  return p === "waspai" ? (
+    <WaspAIIcon className={className} />
+  ) : p === "openai" ? (
     <OpenAIIcon className={className} />
   ) : p === "xai" || p === "grok" ? (
     <GrokIcon className={className} />

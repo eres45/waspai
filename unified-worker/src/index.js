@@ -208,6 +208,9 @@ const MODEL_MAP = {
   "frenix-grok-4.1-fast": { provider: "frenix", model: "grok-4.1-fast" },
   "frenix-grok-4.3": { provider: "frenix", model: "grok-4.3" },
   "frenix-grok-4.20-fast": { provider: "frenix", model: "grok-4.20-fast" },
+
+  // WaspAI model (via 0vai)
+  "waspai-model": { provider: "zerovai", model: "voidv1-flash" },
 };
 
 // ============================================================================
@@ -351,6 +354,11 @@ const PROVIDERS = {
       "sk-frenix-aea6c81b0d86e622ec7d4a1e3352c05e",
       "sk-frenix-c9d0a4fdf1e9f410353b37e2cf6d63dd",
     ],
+    openai: true,
+  },
+  zerovai: {
+    base: "https://0vai.vercel.app/api/v1",
+    keys: ["void_sk_ekfyclcognsx5jkz5g5x1nnr"],
     openai: true,
   },
 };
@@ -658,6 +666,7 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
     case "openrouter":
     case "gptossworker":
     case "gemini-openai":
+    case "zerovai":
       url = `${cfg.base}/chat/completions`;
       reqBody = buildOpenAIRequest(body, mappedModel);
       headers = { "Content-Type": "application/json" };

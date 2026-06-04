@@ -1,5 +1,6 @@
 // Provider display order
 export const PROVIDER_ORDER = [
+  "waspai", // WaspAI
   "google", // Google
   "anthropic", // Anthropic
   "mistral", // Mistral
@@ -21,6 +22,7 @@ export const PROVIDER_ORDER = [
 
 // Map backend provider names to display names
 export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  waspai: "WaspAI",
   google: "Google",
   anthropic: "Anthropic",
   mistral: "Mistral",
@@ -42,6 +44,7 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 
 // Map backend model names to display names (real names)
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
+  "waspai-model": "WaspAI model",
   // Groq / A4F Aggregated Models
   "canopylabs-orpheus-v1-english": "Orpheus v1 English",
   "llama-3.1-8b-instant": "Llama 3.1 8B Instant",

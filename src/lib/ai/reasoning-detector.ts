@@ -65,6 +65,9 @@ export const REASONING_LEAKY_MODELS = [
   // NVIDIA NIM reasoning models (gpt-oss sends reasoning_content)
   /gpt-oss/i,
 
+  // WaspAI model (from 0vai reasoning model)
+  /waspai/i,
+
   // AIHubMix Free Models generic catch-all
   /.*-free$/i,
 ];

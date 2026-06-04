@@ -208,6 +208,7 @@ const FREE_TIER_MODELS = new Set([
   "frenix-grok-4.1-fast",
   "frenix-grok-4.3",
   "frenix-grok-4.20-fast",
+  "waspai-model",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -434,6 +435,7 @@ export async function buildDynamicModelsInfo() {
 
 export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
+  if (id === "waspai-model") return "WaspAI";
   const raw = (ownedBy || "").toLowerCase();
 
   // Frenix-prefixed models: resolve to the correct vendor before broad pattern checks
@@ -550,6 +552,11 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     typeof model === "string"
       ? model.toLowerCase()
       : ((model as any).modelId || "").toLowerCase();
+
+  // WaspAI model natively supports tool calling
+  if (modelId === "waspai-model") {
+    return false;
+  }
 
   // Disable tool calls for all Frenix models (improves response time, prevents empty stream bugs)
   if (modelId.includes("frenix-")) {

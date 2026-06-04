@@ -119,3 +119,14 @@ describe("customModelProvider file support metadata", () => {
     }
   });
 });
+
+describe("WaspAI model integrations", () => {
+  it("cleans WaspAI display name correctly", () => {
+    expect(cleanModelDisplayName("waspai-model")).toBe("WaspAI model");
+  });
+
+  it("supports tool calling for waspai-model", () => {
+    const { isToolCallUnsupportedModel } = modelsModule;
+    expect(isToolCallUnsupportedModel("waspai-model")).toBe(false);
+  });
+});
