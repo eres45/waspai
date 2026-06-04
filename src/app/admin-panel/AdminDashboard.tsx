@@ -21,6 +21,7 @@ type Stats = {
   totalSites: number;
   recentUsers: User[];
   usersByRole: { role: string; count: number }[];
+  error: string | null;
 };
 
 const STAT_CARDS = (stats: Stats) => [
@@ -141,6 +142,13 @@ export default function AdminDashboard({
               : "All registered users"}
           </p>
         </div>
+
+        {/* DB error banner */}
+        {stats.error && (
+          <div className="mb-4 flex items-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg px-4 py-3 text-sm">
+            ⚠ {stats.error}
+          </div>
+        )}
 
         {/* ── Overview Tab ──────────────────────────────────────────────── */}
         {tab === "overview" && (
