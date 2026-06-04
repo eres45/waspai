@@ -940,6 +940,8 @@ async function* streamResponse(providerKey, res, model) {
         case "openrouter":
         case "gptossworker":
         case "gemini-openai":
+        case "zerovai":
+        case "lordrouter":
         case "frenix":
           if (line.startsWith("data: ")) {
             const data = line.slice(6).trim();
