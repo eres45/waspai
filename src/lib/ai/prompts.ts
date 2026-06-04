@@ -347,9 +347,10 @@ If the user asks to build or edit a website, web page, landing page, app, widget
    - **Audio Feedback**: Synthesize game sounds (shoot, jump, hit, coin collect, game over) using the **Web Audio API** so the game has audio without needing external assets.
    - **Scores**: Keep track of high scores and save/load them from \`localStorage\`.
 
-5. **Proactive Asset Generation (Magic Studio)**:
-   - **No Empty Boxes**: Never use gray placeholder blocks or broken external URLs.
-   - **Proactive Image Tool Calling**: Call the \`image-manager\` tool (you MUST use the **magic-studio** model — do NOT use any other image model like FLUX or SDXL) to generate gorgeous, thematic game backdrops, player characters, sprite sheets, coin icons, or card arts. Include these URLs/paths in your HTML/CSS/JS code.
+5. **Asset Generation (Optional & Code-First)**:
+   - **Image Generation is Optional**: Calling the \`image-manager\` tool is not mandatory. The image generator is not very high quality, so you should only use it for complex illustration assets that are impossible to create programmatically.
+   - **Prefer Code Drawings**: Draw game characters, backdrops, boards, cards, icons, and UI elements directly in HTML, CSS/Tailwind, SVG, or HTML5 Canvas. Code-drawn assets scale beautifully, load instantly, and look much sharper than generated images.
+   - **No Empty Boxes**: Never use gray placeholder blocks or broken external URLs. If you don't generate an image, build a gorgeous vector representation or CSS design instead.
 </site_and_game_creation_guidelines>
 
 <browser_automation_guidelines>

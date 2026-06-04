@@ -137,6 +137,7 @@ These patterns produce generic \"AI slop\" output. Generating any of these disqu
 
 ## IMAGE & MEDIA GUIDELINES (ANTI-BROKEN IMAGES) 🖼️
 
+- **Image Generation is Optional**: Calling the \`image-manager\` tool is not mandatory. Since the image generator quality is limited, prefer drawing decorative UI graphics using inline SVGs, CSS patterns, canvas, or using high-quality static Unsplash assets. Only use the image generator if you absolutely need custom assets that cannot be created with code or fetched from Unsplash.
 - **NEVER use complex, expiring Unsplash URL tokens** containing \`ixid\` or random query parameters that expire. These return 403 Forbidden errors and break the site.
 - **DO use stable, direct Unsplash photo URLs** in this format: \`https://images.unsplash.com/photo-[photo-id]?w=800&auto=format&fit=crop&q=60\`
   Here are guaranteed, permanent, high-quality Unsplash photo IDs you can use:

@@ -140,6 +140,9 @@ const FREE_TIER_MODELS = new Set([
   "gemma-3n-e2b-it",
   "frenix-gemma-4-31b",
   "frenix-gemma-3n-e2b",
+  "frenix-gemma-3-12b",
+  "frenix-gemma-3-27b",
+  "frenix-gemini-3-flash-preview",
 
   // Meta Llama
   "llama-3.1-70b-instruct",
@@ -201,6 +204,10 @@ const FREE_TIER_MODELS = new Set([
   "frenix-glm-4.7",
   "frenix-minimax-m2.5",
   "frenix-turbo",
+  "frenix-qwen3-coder-480b",
+  "frenix-grok-4.1-fast",
+  "frenix-grok-4.3",
+  "frenix-grok-4.20-fast",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -431,7 +438,8 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
 
   // Frenix-prefixed models: resolve to the correct vendor before broad pattern checks
   if (id.startsWith("frenix-llama")) return "Meta";
-  if (id.startsWith("frenix-gemma")) return "Google";
+  if (id.startsWith("frenix-gemma") || id.startsWith("frenix-gemini"))
+    return "Google";
   if (
     id.startsWith("frenix-mistral") ||
     id.startsWith("frenix-ministral") ||
@@ -445,6 +453,8 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   if (id.startsWith("frenix-minimax")) return "MiniMax";
   if (id.startsWith("frenix-turbo")) return "Perplexity";
   if (id.startsWith("frenix-axion")) return "Axion";
+  if (id.startsWith("frenix-qwen")) return "Qwen";
+  if (id.startsWith("frenix-grok")) return "xAI";
   if (id.startsWith("frenix-")) return "Frenix";
 
   if (
@@ -540,6 +550,11 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     typeof model === "string"
       ? model.toLowerCase()
       : ((model as any).modelId || "").toLowerCase();
+
+  // Disable tool calls for all Frenix models (improves response time, prevents empty stream bugs)
+  if (modelId.includes("frenix-")) {
+    return true;
+  }
 
   // Models that are known to NOT support tool/function calling:
   // - Small guard/safety models (llama-guard)

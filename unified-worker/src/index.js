@@ -193,6 +193,21 @@ const MODEL_MAP = {
   "frenix-glm-4.7": { provider: "frenix", model: "glm-4.7" },
   "frenix-minimax-m2.5": { provider: "frenix", model: "MiniMax-M2.5" },
   "frenix-turbo": { provider: "frenix", model: "turbo" },
+
+  // Discovered Next-Gen models
+  "frenix-gemma-3-12b": { provider: "frenix", model: "gemma-3-12b-it" },
+  "frenix-gemma-3-27b": { provider: "frenix", model: "gemma-3-27b-it" },
+  "frenix-gemini-3-flash-preview": {
+    provider: "frenix",
+    model: "gemini-3-flash-preview",
+  },
+  "frenix-qwen3-coder-480b": {
+    provider: "frenix",
+    model: "qwen3-coder-480b-a35b-instruct",
+  },
+  "frenix-grok-4.1-fast": { provider: "frenix", model: "grok-4.1-fast" },
+  "frenix-grok-4.3": { provider: "frenix", model: "grok-4.3" },
+  "frenix-grok-4.20-fast": { provider: "frenix", model: "grok-4.20-fast" },
 };
 
 // ============================================================================
@@ -396,26 +411,8 @@ function buildOpenAIRequest(body, mappedModel) {
 // We strip tools only for those known incompatible models.
 function buildFrenixRequest(body, mappedModel) {
   const payload = sanitizePayload(body);
-
-  // List of Frenix models known to fail or ignore when tools are provided
-  const toolCallUnsupportedFrenixModels = [
-    "glm-5",
-    "glm-4.7",
-    "minimax-m2.5",
-    "gemma-4-31b-it",
-    "gemma-3n-e2b-it",
-    "riva-translate-4b-instruct-v1.1",
-  ];
-
-  const modelIdLower = (mappedModel || "").toLowerCase();
-  const shouldStrip = toolCallUnsupportedFrenixModels.some((m) =>
-    modelIdLower.includes(m),
-  );
-
-  if (shouldStrip) {
-    delete payload.tools;
-    delete payload.tool_choice;
-  }
+  delete payload.tools;
+  delete payload.tool_choice;
   return { ...payload, model: mappedModel };
 }
 

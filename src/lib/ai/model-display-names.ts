@@ -107,9 +107,12 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "frenix-llama-3.3-70b": "Llama 3.3 70B",
   "frenix-llama-4-maverick": "Llama 4 Maverick 17B",
 
-  // Frenix Google Gemma models
+  // Frenix Google Gemma/Gemini models
   "frenix-gemma-4-31b": "Gemma 4 31B",
   "frenix-gemma-3n-e2b": "Gemma 3N E2B",
+  "frenix-gemma-3-12b": "Gemma 3 12B",
+  "frenix-gemma-3-27b": "Gemma 3 27B",
+  "frenix-gemini-3-flash-preview": "Gemini 3 Flash Preview",
 
   // Frenix Mistral models
   "frenix-ministral-14b": "Ministral 14B",
@@ -133,6 +136,10 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "frenix-glm-4.7": "GLM-4.7 (Reasoning)",
   "frenix-minimax-m2.5": "MiniMax M2.5",
   "frenix-turbo": "Perplexity Turbo",
+  "frenix-qwen3-coder-480b": "Qwen 3 Coder 480B",
+  "frenix-grok-4.1-fast": "Grok 4.1 Fast",
+  "frenix-grok-4.3": "Grok 4.3",
+  "frenix-grok-4.20-fast": "Grok 4.20 Fast",
 
   wormgpt: "WormGPT (Uncensored)",
   "zai-org-GLM-4.7": "GLM-4.7 (Reasoning)",
