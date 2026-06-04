@@ -209,6 +209,26 @@ const FREE_TIER_MODELS = new Set([
   "frenix-grok-4.3",
   "frenix-grok-4.20-fast",
   "waspai-model",
+
+  // LordRouter Models (Free Tier)
+  "lordrouter-gemini-2.5-flash",
+  "lordrouter-gemini-2.5-flash-lite",
+  "lordrouter-gemini-2.5-pro",
+  "lordrouter-gemini-auto",
+  "lordrouter-gemini-flash-lite",
+  "lordrouter-liquid/lfm-2.5-1.2b-instruct:free",
+  "lordrouter-liquid/lfm-2.5-1.2b-thinking:free",
+  "lordrouter-poolside/laguna-m.1:free",
+  "lordrouter-poolside/laguna-xs.2:free",
+  "lordrouter-qwen-3-max",
+  "lordrouter-openrouter/free",
+  "lordrouter-z-ai/glm-4.5-air:free",
+  "lordrouter-cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+  "lordrouter-nvidia/nemotron-3-nano-30b-a3b:free",
+  "lordrouter-nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "lordrouter-nvidia/nemotron-3-super-120b-a12b:free",
+  "lordrouter-nvidia/nemotron-nano-12b-v2-vl:free",
+  "lordrouter-nvidia/nemotron-nano-9b-v2:free",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -244,8 +264,11 @@ function getBaseModelId(modelId: string): string {
 export function getModelTier(modelId: string): string {
   const lowercaseModelId = modelId.toLowerCase();
 
-  // All LordRouter models are Pro tier
-  if (lowercaseModelId.startsWith("lordrouter-")) {
+  // LordRouter models are Pro tier unless explicitly registered in the free list
+  if (
+    lowercaseModelId.startsWith("lordrouter-") &&
+    !LOWERCASE_FREE_TIER_MODELS.has(lowercaseModelId)
+  ) {
     return "Pro";
   }
 

@@ -158,7 +158,10 @@ describe("WaspAI & LordRouter integrations", () => {
     const { getModelTier } = modelsModule;
     expect(getModelTier("lordrouter-gpt-5")).toBe("Pro");
     expect(getModelTier("lordrouter-deepseek-r1")).toBe("Pro");
-    expect(getModelTier("lordrouter-gemini-2.5-flash")).toBe("Pro");
+    expect(getModelTier("lordrouter-gemini-2.5-flash")).toBe("Free");
+    expect(getModelTier("lordrouter-nvidia/nemotron-nano-9b-v2:free")).toBe(
+      "Free",
+    );
 
     const proModels = [
       "gemini-3-pro",
