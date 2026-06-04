@@ -619,7 +619,13 @@ function getMappedModel(providerKey, originalModel) {
 // MAIN FETCH LOGIC
 // ============================================================================
 
-async function fetchFromProvider(providerKey, body, env, stream = false) {
+async function fetchFromProvider(
+  providerKey,
+  body,
+  env,
+  stream = false,
+  clientIp = "",
+) {
   const cfg = PROVIDERS[providerKey];
   if (!cfg) throw new Error(`Unknown provider: ${providerKey}`);
 
@@ -746,6 +752,12 @@ async function fetchFromProvider(providerKey, body, env, stream = false) {
     },
     body: typeof reqBody === "string" ? reqBody : JSON.stringify(reqBody),
   };
+
+  if (clientIp) {
+    fetchOpts.headers["X-Forwarded-For"] = clientIp;
+    fetchOpts.headers["X-Real-IP"] = clientIp;
+    fetchOpts.headers["CF-Connecting-IP"] = clientIp;
+  }
 
   if (stream && cfg.openai) {
     fetchOpts.headers["Accept"] = "text/event-stream";
@@ -1145,7 +1157,7 @@ function getFallbackProvider(providerKey) {
 // ROUTER
 // ============================================================================
 
-async function routeChat(body, env) {
+async function routeChat(body, env, clientIp = "") {
   const modelName = body.model;
   const mapped = MODEL_MAP[modelName];
 
@@ -1163,7 +1175,13 @@ async function routeChat(body, env) {
   // Try primary + up to 2 fallbacks
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const { res } = await fetchFromProvider(provider, body, env, stream);
+      const { res } = await fetchFromProvider(
+        provider,
+        body,
+        env,
+        stream,
+        clientIp,
+      );
       return { res, provider, stream };
     } catch (err) {
       lastError = err.message;
@@ -1740,7 +1758,11 @@ export default {
         );
       }
 
-      const result = await routeChat(body, env);
+      const clientIp =
+        request.headers.get("CF-Connecting-IP") ||
+        request.headers.get("X-Real-IP") ||
+        "";
+      const result = await routeChat(body, env, clientIp);
 
       if (result.error) {
         return new Response(JSON.stringify({ error: result.error }), {
