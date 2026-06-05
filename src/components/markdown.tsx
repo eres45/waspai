@@ -190,7 +190,10 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     <article className="w-full h-full relative">
       <ReactMarkdown
         components={components}
-        remarkPlugins={[remarkGfm, remarkMath]}
+        remarkPlugins={[
+          remarkGfm,
+          [remarkMath, { singleDollarTextMath: false }],
+        ]}
         rehypePlugins={[rehypeKatex]}
       >
         {children}
