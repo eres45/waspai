@@ -31,10 +31,10 @@ const MODEL_MAP = {
   "gpt-oss-120b": { provider: "gptossworker", model: "gpt-oss-120b" },
   "gpt-5-nano": { provider: "gptossworker", model: "gpt-5-nano" },
 
-  // Raw / Legacy Claude Models
-  "claude-sonnet": { provider: "chatai", model: "claude-sonnet" },
-  "claude-3-sonnet": { provider: "chatai", model: "claude-sonnet" },
-  "claude-sonnet-4.5": { provider: "chatai", model: "claude-sonnet" },
+  // Raw / Legacy Claude Models — routed via LordRouter which supports system messages
+  "claude-sonnet": { provider: "lordrouter", model: "claude-sonnet-4-6" },
+  "claude-3-sonnet": { provider: "lordrouter", model: "claude-sonnet-4-6" },
+  "claude-sonnet-4.5": { provider: "lordrouter", model: "claude-sonnet-4-6" },
 
   // ChatAI Proxy (5 working)
   "chatai-gpt-4o-mini": { provider: "chatai", model: "gpt-4o-mini" },
