@@ -60,6 +60,26 @@ describe("cleanModelDisplayName", () => {
     );
     expect(cleanModelDisplayName("gemma-2-2b-it")).toBe("Gemma 2 2B IT");
   });
+
+  it("converts hyphenated version numbers to decimals", () => {
+    expect(cleanModelDisplayName("claude-opus-4-1")).toBe("Claude Opus 4.1");
+    expect(cleanModelDisplayName("claude-opus-4-5")).toBe("Claude Opus 4.5");
+    expect(cleanModelDisplayName("claude-opus-4-6")).toBe("Claude Opus 4.6");
+    expect(cleanModelDisplayName("claude-sonnet-4-6")).toBe(
+      "Claude Sonnet 4.6",
+    );
+    expect(cleanModelDisplayName("gpt-5-5")).toBe("GPT 5.5");
+    // Should NOT match parameter sizes ending in b/m
+    expect(cleanModelDisplayName("llama-3-8b")).toBe("Llama 3 8B");
+  });
+
+  it("standardizes casing for common model acronyms", () => {
+    expect(cleanModelDisplayName("z-ai/glm-4.5-air")).toBe("GLM 4.5 Air");
+    expect(cleanModelDisplayName("liquid/lfm-2.5")).toBe("LFM 2.5");
+    expect(cleanModelDisplayName("qwen-qwq-32b")).toBe("Qwen QwQ 32B");
+    expect(cleanModelDisplayName("nvidia/nemotron-vl")).toBe("Nemotron VL");
+    expect(cleanModelDisplayName("openai/gpt-oss-120b")).toBe("GPT-OSS 120B");
+  });
 });
 
 describe("createReverseModelMapping", () => {

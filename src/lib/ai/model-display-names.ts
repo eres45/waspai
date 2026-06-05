@@ -291,6 +291,9 @@ export function cleanModelDisplayName(name: string): string {
   cleaned = cleaned.replace(/-?proxy$/gi, "");
   cleaned = cleaned.replace(/\bproxy\b/gi, "");
 
+  // Convert version hyphens to dots (e.g., -4-1 -> -4.1)
+  cleaned = cleaned.replace(/-(\d+)-(\d+)\b/g, "-$1.$2");
+
   // Clean up formatting (replace hyphens with spaces, capitalize words)
   cleaned = cleaned
     .replace(/-+/g, " ") // replace hyphens with spaces
@@ -310,6 +313,12 @@ export function cleanModelDisplayName(name: string): string {
   cleaned = cleaned.replace(/Sql/gi, "SQL");
   cleaned = cleaned.replace(/Ds/gi, "DS");
   cleaned = cleaned.replace(/Deepseek/gi, "DeepSeek");
+  cleaned = cleaned.replace(/\bGlm\b/gi, "GLM");
+  cleaned = cleaned.replace(/\bLfm\b/gi, "LFM");
+  cleaned = cleaned.replace(/\bQwq\b/gi, "QwQ");
+  cleaned = cleaned.replace(/\bVl\b/gi, "VL");
+  cleaned = cleaned.replace(/\bOss\b/gi, "OSS");
+  cleaned = cleaned.replace(/GPT OSS/gi, "GPT-OSS");
   cleaned = cleaned.replace(
     /\b(\d+(?:\.\d+)?)([bm])\b/gi,
     (_, num, unit) => num + unit.toUpperCase(),
