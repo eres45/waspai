@@ -143,6 +143,8 @@ const MODEL_MAP = {
   // Google Gemma (via Frenix)
   "frenix-gemma-4-31b": { provider: "frenix", model: "gemma-4-31b-it" },
   "frenix-gemma-3n-e2b": { provider: "frenix", model: "gemma-3n-e2b-it" },
+  "google-gemma-2-9b-it": { provider: "freecf", model: "gemma-3-12b" },
+  "gemma-2-9b-it": { provider: "freecf", model: "gemma-3-12b" },
 
   // Mistral (via Frenix)
   "frenix-ministral-14b": {

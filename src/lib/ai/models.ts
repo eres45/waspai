@@ -596,8 +596,15 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
-  // LordRouter models support tool calling
+  // LordRouter models support tool calling unless they are reasoning/thinking/qwq models
   if (modelId.startsWith("lordrouter-")) {
+    if (
+      modelId.includes("thinking") ||
+      modelId.includes("reasoning") ||
+      modelId.includes("qwq")
+    ) {
+      return true;
+    }
     return false;
   }
 

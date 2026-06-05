@@ -1856,7 +1856,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           // maximize history based on model's specific limits instead of hardcoded 10 messages
           messages: convertToModelMessages(
             (() => {
-              const modelId = modelToUse?.model || "google-gemma-2-9b-it";
+              const modelId = modelToUse?.model || "frenix-gemma-3-12b";
               const maxContextChars = getModelContextLimit(modelId);
 
               // 1. Prepare Current Message (User) with Enriched + Truncated Content
