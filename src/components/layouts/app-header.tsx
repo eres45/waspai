@@ -210,9 +210,9 @@ export function AppHeader() {
         <Link href="/subscription" passHref>
           <Button
             variant="ghost"
-            className="h-8 px-4 rounded-full border border-amber-500/30 hover:border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 hover:text-amber-400 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm shadow-amber-500/5 flex items-center gap-1.5 text-xs font-semibold group cursor-pointer"
+            className="h-8 px-4 rounded-full border border-border/80 hover:border-foreground/30 bg-secondary/30 hover:bg-secondary/60 text-foreground/80 hover:text-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm shadow-black/5 flex items-center gap-1.5 text-xs font-semibold group cursor-pointer"
           >
-            <Sparkles className="size-3.5 text-amber-500 group-hover:rotate-12 transition-transform duration-300" />
+            <Sparkles className="size-3.5 text-foreground/60 group-hover:text-foreground group-hover:rotate-12 transition-all duration-300" />
             <span>Upgrade your Plan</span>
           </Button>
         </Link>
