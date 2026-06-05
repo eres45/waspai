@@ -152,6 +152,34 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen3-coder-plus": "Qwen 2.5 Coder (Plus)",
 };
 
+const COMMON_PREFIXES = [
+  "chatai-",
+  "chatbotai-",
+  "randomai-",
+  "svelteai-",
+  "openrouterhub-",
+  "groqw-",
+  "nvidiaw-",
+  "cf-",
+  "freecf-",
+  "google/",
+  "meta/",
+  "microsoft/",
+  "mistralai/",
+  "nvidia/",
+  "openai/",
+  "qwen/",
+  "sarvamai/",
+  "stepfun-ai/",
+  "upstage/",
+  "stockmark/",
+];
+
+function isPrefixedModel(name: string): boolean {
+  const lowercaseName = name.toLowerCase();
+  return COMMON_PREFIXES.some((prefix) => lowercaseName.startsWith(prefix));
+}
+
 // Create reverse mapping from display names to backend names
 export const createReverseModelMapping = (): {
   models: Record<string, string>;
@@ -159,7 +187,23 @@ export const createReverseModelMapping = (): {
 } => {
   const modelReverseMapping: Record<string, string> = {};
   Object.entries(MODEL_DISPLAY_NAMES).forEach(([backendName, displayName]) => {
-    modelReverseMapping[displayName] = backendName;
+    const existing = modelReverseMapping[displayName];
+    if (existing) {
+      const existingPrefixed = isPrefixedModel(existing);
+      const newPrefixed = isPrefixedModel(backendName);
+      if (existingPrefixed && !newPrefixed) {
+        modelReverseMapping[displayName] = backendName;
+        return;
+      }
+      if (!existingPrefixed && newPrefixed) {
+        return;
+      }
+      if (backendName.length < existing.length) {
+        modelReverseMapping[displayName] = backendName;
+      }
+    } else {
+      modelReverseMapping[displayName] = backendName;
+    }
   });
 
   const providerReverseMapping: Record<string, string> = {};
