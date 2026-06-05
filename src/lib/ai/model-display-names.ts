@@ -60,6 +60,12 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",
   "openai-gpt-oss-20b": "GPT-OSS 20B",
   "openai-gpt-oss-safeguard-20b": "GPT-OSS Safeguard 20B",
+
+  // GPT-5 Nano is served standalone by gptossworker AND LordRouter
+  "gpt-5-nano": "GPT-5 Nano",
+  // NOTE: o3, o3-mini intentionally NOT in static map — only available via lordrouter-o3,
+  // lordrouter-o3-mini. Keeping them out avoids false "P2" suffix on lordrouter variants.
+  // NOTE: openai/gpt-oss-*:free NOT in static map for the same reason.
   "qwen-qwen3-32b": "Qwen 3 32B",
   "cf-google-gemma-7b-it": "Gemma 7B IT (Legacy)",
   "cf-google-gemma-2b-it-lora": "Gemma 2B LoRA (Legacy)",
@@ -250,12 +256,13 @@ export const createReverseModelMapping = (
 export function cleanModelDisplayName(name: string): string {
   if (!name) return "";
 
-  // Handle LordRouter custom prefix and clash detection
+  // Handle LordRouter prefix first
   if (name.startsWith("lordrouter-")) {
     const baseName = name.slice("lordrouter-".length);
     const cleanedBase = cleanModelDisplayName(baseName);
 
     // Check if this display name is already in use by another provider statically
+    // (intentionally excludes lordrouter-only base names from this check)
     const hasOriginal = Object.values(MODEL_DISPLAY_NAMES).some(
       (val) => val.toLowerCase() === cleanedBase.toLowerCase(),
     );
@@ -322,6 +329,10 @@ export function cleanModelDisplayName(name: string): string {
   // Convert version hyphens to dots (e.g., -4-1 -> -4.1)
   cleaned = cleaned.replace(/-(\d+)-(\d+)\b/g, "-$1.$2");
 
+  // Fix GPT-5 / o-series naming: use hyphen instead of space after "gpt" prefix
+  // e.g. "gpt-5-mini" -> after replacing hyphens -> "GPT 5 Mini" but we want "GPT-5 Mini"
+  // We handle this post-cleanup by detecting the pattern.
+
   // Clean up formatting (replace hyphens with spaces, capitalize words)
   cleaned = cleaned
     .replace(/-+/g, " ") // replace hyphens with spaces
@@ -347,6 +358,14 @@ export function cleanModelDisplayName(name: string): string {
   cleaned = cleaned.replace(/\bVl\b/gi, "VL");
   cleaned = cleaned.replace(/\bOss\b/gi, "OSS");
   cleaned = cleaned.replace(/GPT OSS/gi, "GPT-OSS");
+  // GPT-5 and o-series: apply hyphen after GPT prefix and fix o-series lowercase
+  // "GPT 5" -> "GPT-5", "GPT 5 Mini" -> "GPT-5 Mini", etc.
+  cleaned = cleaned.replace(/^GPT (\d)/i, "GPT-$1");
+  // o-series models: "O3" -> "o3", "O3 Mini" -> "o3 mini"
+  cleaned = cleaned.replace(/^O(\d)/i, (_, d) => `o${d}`);
+  if (/^o\d/.test(cleaned)) {
+    cleaned = cleaned.toLowerCase();
+  }
   cleaned = cleaned.replace(
     /\b(\d+(?:\.\d+)?)([bm])\b/gi,
     (_, num, unit) => num + unit.toUpperCase(),

@@ -26,7 +26,7 @@ describe("cleanModelDisplayName", () => {
   });
 
   it("strips raw backend/worker prefixes dynamically", () => {
-    expect(cleanModelDisplayName("chatai-gpt-4")).toBe("GPT 4");
+    expect(cleanModelDisplayName("chatai-gpt-4")).toBe("GPT-4");
     expect(cleanModelDisplayName("groqw-llama-3.1-8b")).toBe("Llama 3.1 8B");
     expect(cleanModelDisplayName("freecf-mistral-7b")).toBe("Mistral 7B");
     expect(cleanModelDisplayName("sarvamai/samraad-v1")).toBe("Samraad v1");
@@ -35,7 +35,8 @@ describe("cleanModelDisplayName", () => {
   it("strips proxy from prefix and suffix dynamically", () => {
     // Suffix cases
     expect(cleanModelDisplayName("llama-3-proxy")).toBe("Llama 3");
-    expect(cleanModelDisplayName("gpt-4o-Proxy")).toBe("GPT 4o");
+    // gpt-4o uses hyphen convention (GPT-4o)
+    expect(cleanModelDisplayName("gpt-4o-Proxy")).toBe("GPT-4o");
 
     // Prefix cases
     expect(cleanModelDisplayName("proxy-claude-instant")).toBe(
@@ -68,7 +69,8 @@ describe("cleanModelDisplayName", () => {
     expect(cleanModelDisplayName("claude-sonnet-4-6")).toBe(
       "Claude Sonnet 4.6",
     );
-    expect(cleanModelDisplayName("gpt-5-5")).toBe("GPT 5.5");
+    // gpt-5-5 → GPT-5.5 (hyphen convention + version conversion)
+    expect(cleanModelDisplayName("gpt-5-5")).toBe("GPT-5.5");
     // Should NOT match parameter sizes ending in b/m
     expect(cleanModelDisplayName("llama-3-8b")).toBe("Llama 3 8B");
   });
