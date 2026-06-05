@@ -456,12 +456,13 @@ export default function SubscriptionPage() {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <h3 className="text-lg font-semibold text-foreground">
-                What does &quot;fair-use&quot; mean?
+                Is usage truly unlimited?
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                Fair-use means reasonable daily limits that work for 99% of
-                users. We don&apos;t show exact numbers to avoid confusion -
-                just use the AI naturally!
+                Yes! We offer unlimited conversational turns without daily or
+                monthly caps. We only enforce standard per-minute and per-hour
+                request limits to prevent automated abuse, which automatically
+                reset after a short duration.
               </p>
             </div>
 

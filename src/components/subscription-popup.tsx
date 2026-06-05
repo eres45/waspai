@@ -127,7 +127,8 @@ export function SubscriptionPopup() {
                 </Badge>
               </DrawerTitle>
               <DrawerDescription>
-                Fair-use limits. Premium features. Unbeatable value.
+                Unlimited usage with rate limits. Premium features. Unbeatable
+                value.
               </DrawerDescription>
             </div>
             <Button

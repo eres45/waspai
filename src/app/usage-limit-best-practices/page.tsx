@@ -11,6 +11,8 @@ import {
   HelpCircle,
   Clock,
   Sparkles,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { Button } from "ui/button";
 import {
@@ -73,23 +75,22 @@ export default function UsageLimitBestPractices() {
             Usage Limits &amp; Best Practices
           </h1>
           <p className="text-lg text-zinc-400 max-w-2xl leading-relaxed">
-            Understand how fair-use policy limits work on Wasp AI and learn the
-            best strategies to optimize your prompts, conserve tokens, and
+            Understand how rate limits and capacity work on Wasp AI and learn
+            the best strategies to optimize your prompts, conserve tokens, and
             maximize your access.
           </p>
         </div>
 
         {/* Why Limits Exist Card */}
-        <Card className="bg-zinc-950 border-zinc-900 mb-12 shadow-2xl relative overflow-hidden group">
+        <Card className="bg-zinc-950 border-zinc-900 mb-16 shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-1 h-full bg-zinc-700" />
           <CardHeader className="p-8">
             <CardTitle className="text-xl flex items-center gap-3 text-white">
               <Scale className="w-5 h-5 text-zinc-400" />
-              Why are usage limits enforced?
+              How Rate Limiting Works
             </CardTitle>
             <CardDescription className="text-zinc-500 mt-1">
-              Our models are powered by high-performance APIs and computing
-              servers.
+              Flexible access designed to keep premium AI affordable.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 pt-0 text-sm text-zinc-400 leading-relaxed space-y-4">
@@ -97,19 +98,146 @@ export default function UsageLimitBestPractices() {
               To keep subscription prices up to{" "}
               <strong className="text-white">60% cheaper</strong> than other
               providers, Wasp AI uses a shared rate-limiting and client-side
-              processing architecture. Usage limits are designed to protect the
-              system from automated abuse and ensure that server computing
-              capacity is distributed fairly among all active subscribers.
+              processing architecture.
             </p>
             <p>
-              Limits are tracked dynamically using a{" "}
-              <strong className="text-white">rolling daily window</strong>. If
-              you hit a limit, it resets automatically as the window advances,
-              or you can switch to one of our highly capable, lower-overhead
-              models to continue working immediately.
+              Rather than imposing hard daily or monthly quotas on your
+              conversation turns, Wasp AI offers{" "}
+              <strong className="text-white">unlimited usage</strong> that is
+              subject only to temporary, short-term rate limits. These rate
+              limits protect the system from automated script abuse, bots, and
+              server overloading.
+            </p>
+            <p>
+              If you reach a temporary rate cap, the limit clears automatically
+              after a brief cooldown period (usually just a few minutes),
+              allowing you to resume your work without any daily blockades.
             </p>
           </CardContent>
         </Card>
+
+        {/* Plan Breakdown Section */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <Cpu className="w-5 h-5 text-zinc-400" />
+            Detailed Plan &amp; Limit Breakdown
+          </h2>
+
+          <div className="grid gap-6">
+            {/* Free Plan */}
+            <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-6 hover:border-zinc-800 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
+                <Sparkles className="w-5 h-5 text-zinc-500" />
+                <h3 className="text-lg font-bold text-white">Free Plan</h3>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4 text-xs text-zinc-400 leading-relaxed">
+                <div>
+                  <h4 className="font-semibold text-white mb-1.5">
+                    Model Access &amp; Capacity:
+                  </h4>
+                  <p>
+                    Unlimited use of all Free models (like GPT-4o Mini, Claude
+                    Haiku, Gemini Flash) under standard speed and baseline rate
+                    limits.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1.5">
+                    Capabilities &amp; Limits:
+                  </h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Limited image generations &amp; basic memory</li>
+                    <li>Limited web searches &amp; file uploads</li>
+                    <li>Access to Community support</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-6 hover:border-zinc-800 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-zinc-900/10 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center gap-3 mb-4">
+                <Zap className="w-5 h-5 text-zinc-400" />
+                <h3 className="text-lg font-bold text-white">Pro Plan</h3>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4 text-xs text-zinc-400 leading-relaxed">
+                <div>
+                  <h4 className="font-semibold text-white mb-1.5">
+                    Model Access &amp; Capacity:
+                  </h4>
+                  <p>
+                    Faster speed and significantly higher rate limits on Free
+                    models. Access to GPT-4o Mini, Claude Haiku, and Gemini
+                    Flash.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1.5">
+                    Capabilities &amp; Limits:
+                  </h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>
+                      Pro image generation models &amp; advanced image editing
+                    </li>
+                    <li>
+                      Unlimited web search, code execution &amp; tool uses
+                    </li>
+                    <li>Unlimited file, PDF, &amp; document uploads</li>
+                    <li>Custom MCP Servers &amp; custom HTTP workflows</li>
+                    <li>
+                      Limited workflows, projects, custom agents, and storage
+                    </li>
+                    <li>24/7 Priority email support</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Ultra Plan */}
+            <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-6 hover:border-zinc-800 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-800/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="flex items-center gap-3 mb-4">
+                <Crown className="w-5 h-5 text-zinc-300" />
+                <h3 className="text-lg font-bold text-white">Ultra Plan</h3>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4 text-xs text-zinc-400 leading-relaxed">
+                <div>
+                  <h4 className="font-semibold text-white mb-1.5">
+                    Model Access &amp; Capacity:
+                  </h4>
+                  <p>
+                    Highest priority execution and maximum rate limits. Includes
+                    premium frontier models (GPT-4o, Claude Opus, Gemini Ultra,
+                    Reasoning o1/R1).
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-1.5">
+                    Capabilities &amp; Limits:
+                  </h4>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Advanced Video and Music generation (Suno/Stable)</li>
+                    <li>
+                      Voice Generation (ElevenLabs) and 4K image upscaling
+                    </li>
+                    <li>
+                      Unlimited web access &amp; unlimited advanced search
+                    </li>
+                    <li>
+                      Unlimited workflows, projects, custom agents, and storage
+                    </li>
+                    <li>MCP Servers &amp; custom API integrations</li>
+                    <li>
+                      Priority support, dedicated assistance &amp; early beta
+                      access
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Grid of Best Practices */}
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
@@ -117,12 +245,12 @@ export default function UsageLimitBestPractices() {
           Key Optimization Best Practices
         </h2>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 gap-6 mb-16">
           {/* Card 1: Prompt Optimization */}
           <Card className="bg-zinc-950 border-zinc-900 hover:border-zinc-800 transition-colors shadow-lg">
             <CardHeader className="p-6">
               <CardTitle className="text-base flex items-center gap-3.5 text-white">
-                <Cpu className="w-4.5 h-4.5 text-zinc-500" />
+                <Lock className="w-4.5 h-4.5 text-zinc-500" />
                 Prompt Caching &amp; Context Size
               </CardTitle>
             </CardHeader>
@@ -223,12 +351,13 @@ export default function UsageLimitBestPractices() {
         <div className="space-y-6 border-t border-zinc-900 pt-6">
           <div className="space-y-2">
             <h3 className="text-base font-semibold text-white">
-              Do my limits carry over to the next billing cycle?
+              Are there daily or monthly usage caps?
             </h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              No. Quotas are calculated dynamically on a rolling daily basis
-              rather than monthly batches. If you hit a limit, your access will
-              gradually restore within 24 hours.
+              No, there are no hard daily or monthly quotas for conversation
+              turns. Usage is unlimited, but to prevent spam and abuse we
+              enforce standard rate limits that reset automatically after a
+              brief cooldown.
             </p>
           </div>
 
@@ -246,12 +375,12 @@ export default function UsageLimitBestPractices() {
 
           <div className="space-y-2">
             <h3 className="text-base font-semibold text-white">
-              Can I monitor my current token utilization?
+              Can I monitor my current utilization?
             </h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
               Yes, in your portal dashboard we show active usage stats. The
               system also triggers a warning toast if you are approaching a
-              standard daily rate cap, suggesting optimal models for fallback.
+              standard rate cap, suggesting optimal models for fallback.
             </p>
           </div>
         </div>
