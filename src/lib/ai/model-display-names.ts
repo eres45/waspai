@@ -60,6 +60,9 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",
   "openai-gpt-oss-20b": "GPT-OSS 20B",
   "openai-gpt-oss-safeguard-20b": "GPT-OSS Safeguard 20B",
+  // Gemini "thinking" variants — LordRouter strips reasoning tokens, so drop the "Thinking" label
+  "gemini-3.5-flash-thinking": "Gemini 3.5 Flash",
+  "gemini-3.5-flash-thinking-lite": "Gemini 3.5 Flash Lite",
 
   // GPT-5 Nano is served standalone by gptossworker AND LordRouter
   "gpt-5-nano": "GPT-5 Nano",
