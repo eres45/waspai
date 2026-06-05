@@ -140,9 +140,7 @@ export default function SubscriptionPage() {
         {
           category: "Model Access",
           items: [
-            "GPT-4o Mini, Claude 3.5 Haiku",
-            "Gemini 2.0 Flash, DeepSeek V3 (Full)",
-            "Mistral Large",
+            "Access to all advanced Pro models",
             "All Free models with faster speed & higher limits",
           ],
         },
@@ -181,9 +179,8 @@ export default function SubscriptionPage() {
         {
           category: "Frontier Intelligence",
           items: [
-            "GPT-4o, Claude Opus, Gemini Ultra (Top Priority)",
+            "Access to all premium Frontier & Reasoning models (Top Priority)",
             "All Free & Pro models with top priority access",
-            "Reasoning Models (o1, o3, DeepSeek R1)",
           ],
         },
         {

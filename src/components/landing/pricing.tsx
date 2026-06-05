@@ -42,7 +42,7 @@ const plans = [
     description:
       "The complete AI toolkit for power users and professional developers.",
     features: [
-      "GPT-4o Mini, Claude Haiku, Gemini Flash",
+      "Access to advanced Pro models",
       "All Free models with faster speed & limits",
       "Pro image generation & advanced image editing",
       "Unlimited web search, code execution & tools",
@@ -65,7 +65,7 @@ const plans = [
     description:
       "The ultimate frontier models for heavy production and complex orchestration.",
     features: [
-      "GPT-4o, Claude Opus, Gemini Ultra (Top Priority)",
+      "Access to all premium Frontier & Reasoning models (Top Priority)",
       "All image models, tools & Video generation",
       "Web access & unlimited advanced search",
       "Unlimited workflows, projects, skills & agents",
