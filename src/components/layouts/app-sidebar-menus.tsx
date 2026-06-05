@@ -51,16 +51,19 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
         <SidebarMenu>
           <Tooltip>
             <SidebarMenuItem className="mb-1">
-              <Link
-                href="/chat"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setOpenMobile(false);
-                  router.push(`/chat`);
-                  router.refresh();
-                }}
+              <SidebarMenuButton
+                asChild
+                className="flex font-semibold group/new-chat bg-input/20 border border-border/40"
               >
-                <SidebarMenuButton className="flex font-semibold group/new-chat bg-input/20 border border-border/40">
+                <Link
+                  href="/chat"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setOpenMobile(false);
+                    router.push(`/chat`);
+                    router.refresh();
+                  }}
+                >
                   <WriteIcon className="size-4" />
                   {t("Layout.newChat")}
                   <div className="flex items-center gap-1 text-xs font-medium ml-auto opacity-0 group-hover/new-chat:opacity-100 transition-opacity">
@@ -73,44 +76,44 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
                       </span>
                     ))}
                   </div>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
         <SidebarMenu>
           <Tooltip>
             <SidebarMenuItem>
-              <Link href="/mcp">
-                <SidebarMenuButton className="font-semibold">
+              <SidebarMenuButton asChild className="font-semibold">
+                <Link href="/mcp">
                   <MCPIcon className="size-4 fill-accent-foreground" />
                   {t("Layout.mcpConfiguration")}
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
         <SidebarMenu>
           <Tooltip>
             <SidebarMenuItem>
-              <Link href="/workflow">
-                <SidebarMenuButton className="font-semibold">
+              <SidebarMenuButton asChild className="font-semibold">
+                <Link href="/workflow">
                   <Waypoints className="size-4" />
                   {t("Layout.workflow")}
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
         <SidebarMenu>
           <Tooltip>
             <SidebarMenuItem>
-              <Link href="/skills">
-                <SidebarMenuButton className="font-semibold">
+              <SidebarMenuButton asChild className="font-semibold">
+                <Link href="/skills">
                   <Blocks className="size-4" />
                   Skills
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
