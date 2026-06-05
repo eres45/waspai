@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { MCPIcon } from "ui/mcp-icon";
+import { useRouter } from "next/navigation";
 
 import { NotionIcon } from "ui/notion-icon";
 import { LinearIcon } from "ui/linear-icon";
@@ -106,6 +107,7 @@ export const RECOMMENDED_MCPS = [
 
 export function MCPOverview() {
   const t = useTranslations("MCP");
+  const router = useRouter();
 
   const handleMcpClick = (
     e: React.MouseEvent,
@@ -118,7 +120,7 @@ export function MCPOverview() {
     params.set("name", mcp.name);
     params.set("config", JSON.stringify(mcp.config));
 
-    window.location.href = `/mcp/create?${params.toString()}`;
+    router.push(`/mcp/create?${params.toString()}`);
   };
 
   return (

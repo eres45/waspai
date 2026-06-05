@@ -37,12 +37,12 @@ const AppSidebarAdmin = () => {
     <SidebarMenu className="group/admin">
       <Tooltip>
         <SidebarMenuItem>
-          <Link href="/admin" data-testid="admin-sidebar-link">
-            <SidebarMenuButton className="font-semibold">
+          <SidebarMenuButton asChild className="font-semibold">
+            <Link href="/admin" data-testid="admin-sidebar-link">
               <Shield className="size-4 text-foreground" />
               {t("title")}
-            </SidebarMenuButton>
-          </Link>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       </Tooltip>
       {shouldExpandAdmin && (

@@ -27,7 +27,6 @@ export function AppSidebar({
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
         router.push("/chat");
-        router.refresh();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -45,7 +44,6 @@ export function AppSidebar({
         enableShortcuts={true}
         onLinkClick={() => {
           router.push("/chat");
-          router.refresh();
         }}
       />
 
