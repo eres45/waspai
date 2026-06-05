@@ -68,3 +68,10 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function GET() {
+  return Response.json({
+    success: true,
+    enabled: !!process.env.SARVAM_API_KEY,
+  });
+}

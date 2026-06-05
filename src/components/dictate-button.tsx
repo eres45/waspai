@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Mic } from "lucide-react";
+import { Mic, Loader2 } from "lucide-react";
 import { Button } from "ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { cn } from "lib/utils";
@@ -24,7 +24,13 @@ export function DictateButton({
 }: DictateButtonProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
+  const [isSarvamEnabled, setIsSarvamEnabled] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioStreamRef = useRef<MediaStream | null>(null);
 
   // Snapshot of the text that was already in the box BEFORE dictation started.
   const baseTextRef = useRef("");
@@ -44,7 +50,7 @@ export function DictateButton({
     setInputRef.current = setInputAction;
   }, [setInputAction]);
 
-  // Check Speech Recognition support on mount.
+  // Check Speech Recognition support and check if Sarvam STT is enabled
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -53,6 +59,18 @@ export function DictateButton({
     if (!SpeechRecognition) {
       setIsSupported(false);
     }
+
+    // Call configuration endpoint to see if Sarvam API key is configured
+    fetch("/api/stt")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.enabled) {
+          setIsSarvamEnabled(true);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to check Sarvam STT config status:", err);
+      });
   }, []);
 
   const stopListening = useCallback(() => {
@@ -60,17 +78,31 @@ export function DictateButton({
       clearInterval(vadIntervalRef.current);
       vadIntervalRef.current = null;
     }
+
+    // Stop native SpeechRecognition
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
       } catch (_e) {}
       recognitionRef.current = null;
     }
+
+    // Stop MediaRecorder
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (_e) {}
+      mediaRecorderRef.current = null;
+    }
+
     setIsListening(false);
     onListeningChange?.(false);
   }, [onListeningChange]);
 
-  const startListening = useCallback(() => {
+  const startWebSpeechFallback = useCallback(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
@@ -127,10 +159,8 @@ export function DictateButton({
 
       const editor = editorRef?.current;
       if (editor) {
-        // Update TipTap directly and focus at the end of the text
         editor.chain().setContent(fullText).focus("end").run();
       } else {
-        // Fallback to standard input action
         setInputRef.current(fullText);
       }
     };
@@ -169,7 +199,140 @@ export function DictateButton({
       console.error("Failed to start dictate recognition:", err);
       stopListening();
     }
-  }, [input, stopListening, onListeningChange]);
+  }, [input, stopListening, onListeningChange, editorRef]);
+
+  const startRecording = useCallback(async () => {
+    try {
+      audioChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
+
+      // Determine supported container types
+      let mimeType = "";
+      if (MediaRecorder.isTypeSupported("audio/webm")) {
+        mimeType = "audio/webm";
+      } else if (MediaRecorder.isTypeSupported("audio/ogg")) {
+        mimeType = "audio/ogg";
+      } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+        mimeType = "audio/mp4";
+      }
+
+      const options = mimeType ? { mimeType } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mimeType || "audio/webm",
+        });
+
+        // Release the microphone stream immediately
+        if (audioStreamRef.current) {
+          audioStreamRef.current.getTracks().forEach((track) => track.stop());
+          audioStreamRef.current = null;
+        }
+
+        if (audioBlob.size === 0) return;
+
+        // Perform Speech-to-Text API proxy call
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          const extension = mimeType
+            ? mimeType.split("/")[1].split(";")[0]
+            : "webm";
+          const file = new File([audioBlob], `recorded_audio.${extension}`, {
+            type: audioBlob.type,
+          });
+
+          formData.append("file", file);
+
+          // Language detection logic
+          const browserLang = navigator.language || "en-US";
+          let model = "saarika:v2.5";
+          let langCode = "en-IN"; // English (India) default
+
+          if (browserLang.startsWith("hi")) {
+            model = "saaras:v3";
+            langCode = "hi-IN";
+          } else if (browserLang.startsWith("ta")) {
+            model = "saaras:v3";
+            langCode = "ta-IN";
+          } else if (browserLang.startsWith("te")) {
+            model = "saaras:v3";
+            langCode = "te-IN";
+          } else if (browserLang.startsWith("kn")) {
+            model = "saaras:v3";
+            langCode = "kn-IN";
+          } else if (browserLang.startsWith("mr")) {
+            model = "saaras:v3";
+            langCode = "mr-IN";
+          }
+
+          formData.append("model", model);
+          formData.append("language_code", langCode);
+
+          const response = await fetch("/api/stt", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              `STT request failed with status: ${response.status}`,
+            );
+          }
+
+          const result = await response.json();
+          if (result.success && result.transcript) {
+            const base = input.trim();
+            const text = result.transcript.trim();
+            const fullText = base ? `${base} ${text}` : text;
+
+            const editor = editorRef?.current;
+            if (editor) {
+              editor.chain().setContent(fullText).focus("end").run();
+            } else {
+              setInputRef.current(fullText);
+            }
+          }
+        } catch (err) {
+          console.error(
+            "Sarvam STT failed, trying native Web Speech fallback...",
+            err,
+          );
+          // Auto-fallback
+          startWebSpeechFallback();
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      setIsListening(true);
+      onListeningChange?.(true);
+    } catch (err) {
+      console.error(
+        "Failed to start MediaRecorder, falling back to Web Speech:",
+        err,
+      );
+      startWebSpeechFallback();
+    }
+  }, [input, onListeningChange, startWebSpeechFallback, editorRef]);
+
+  const startListening = useCallback(() => {
+    if (isSarvamEnabled) {
+      startRecording();
+    } else {
+      startWebSpeechFallback();
+    }
+  }, [isSarvamEnabled, startRecording, startWebSpeechFallback]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -190,10 +353,13 @@ export function DictateButton({
           recognitionRef.current.abort();
         } catch (_e) {}
       }
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
     };
   }, []);
 
-  if (!isSupported) return null;
+  if (!isSupported && !isSarvamEnabled) return null;
 
   return (
     <div className={cn("flex items-center", className)}>
@@ -204,6 +370,7 @@ export function DictateButton({
               variant="ghost"
               size="sm"
               onClick={toggleListening}
+              disabled={isTranscribing}
               className={cn(
                 "h-8 w-8 p-0 rounded-full transition-all duration-300",
                 isListening
@@ -213,17 +380,27 @@ export function DictateButton({
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={isListening ? "mic-on" : "mic-off"}
+                  key={
+                    isTranscribing
+                      ? "loading"
+                      : isListening
+                        ? "mic-on"
+                        : "mic-off"
+                  }
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.8, opacity: 0 }}
                 >
-                  <Mic className="size-4" />
+                  {isTranscribing ? (
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                  ) : (
+                    <Mic className="size-4" />
+                  )}
                 </motion.div>
               </AnimatePresence>
             </Button>
 
-            {isListening && (
+            {isListening && !isTranscribing && (
               <motion.span
                 className="absolute inset-0 rounded-full bg-red-500/20 -z-10"
                 animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
@@ -237,7 +414,13 @@ export function DictateButton({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          {isListening ? "Stop Dictating (VAD active)" : "Dictate Message"}
+          {isTranscribing
+            ? "Transcribing voice..."
+            : isListening
+              ? isSarvamEnabled
+                ? "Stop Dictating (Recording)"
+                : "Stop Dictating (VAD active)"
+              : "Dictate Message"}
         </TooltipContent>
       </Tooltip>
     </div>

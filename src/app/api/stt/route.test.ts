@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { POST } from "./route";
+import { POST, GET } from "./route";
 import { NextRequest } from "next/server";
 
 vi.mock("logger", () => ({
@@ -101,5 +101,33 @@ describe("STT API Proxy Endpoint", () => {
     );
 
     vi.unstubAllGlobals();
+  });
+
+  describe("GET Configuration Endpoint", () => {
+    it("should return enabled: false when SARVAM_API_KEY is not configured", async () => {
+      const originalApiKey = process.env.SARVAM_API_KEY;
+      delete process.env.SARVAM_API_KEY;
+
+      const response = await GET();
+      expect(response.status).toBe(200);
+      const json = await response.json();
+      expect(json.success).toBe(true);
+      expect(json.enabled).toBe(false);
+
+      process.env.SARVAM_API_KEY = originalApiKey;
+    });
+
+    it("should return enabled: true when SARVAM_API_KEY is configured", async () => {
+      const originalApiKey = process.env.SARVAM_API_KEY;
+      process.env.SARVAM_API_KEY = "test-sarvam-key-active";
+
+      const response = await GET();
+      expect(response.status).toBe(200);
+      const json = await response.json();
+      expect(json.success).toBe(true);
+      expect(json.enabled).toBe(true);
+
+      process.env.SARVAM_API_KEY = originalApiKey;
+    });
   });
 });
