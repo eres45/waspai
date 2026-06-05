@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { cleanModelDisplayName } from "./model-display-names";
+import {
+  cleanModelDisplayName,
+  createReverseModelMapping,
+} from "./model-display-names";
 
 describe("cleanModelDisplayName", () => {
   it("uses static mapping if available", () => {
@@ -56,5 +59,17 @@ describe("cleanModelDisplayName", () => {
       "Llama 3.1 8B Instruct",
     );
     expect(cleanModelDisplayName("gemma-2-2b-it")).toBe("Gemma 2 2B IT");
+  });
+});
+
+describe("createReverseModelMapping", () => {
+  it("prioritizes canonical/non-prefixed model IDs over prefixed ones", () => {
+    const { models } = createReverseModelMapping();
+
+    // Verify Claude 3.5 Sonnet maps to claude-3-sonnet instead of chatbotai-claude-3-sonnet
+    expect(models["Claude 3.5 Sonnet"]).toBe("claude-3-sonnet");
+
+    // Verify Claude Sonnet 3.7 maps to claude-sonnet instead of chatai-claude-sonnet / randomai-claude-sonnet
+    expect(models["Claude Sonnet 3.7"]).toBe("claude-sonnet");
   });
 });
