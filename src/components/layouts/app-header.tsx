@@ -7,7 +7,9 @@ import {
   ChevronDown,
   MessageCircleDashed,
   PanelLeft,
+  Sparkles,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "ui/button";
 import { Separator } from "ui/separator";
 
@@ -202,6 +204,19 @@ export function AppHeader() {
           <UserProfileDropdown />
         </div>
       )}
+
+      {/* Center-Top Upgrade Plan Button */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 pointer-events-auto hidden sm:flex items-center gap-1.5 z-50">
+        <Link href="/subscription" passHref>
+          <Button
+            variant="ghost"
+            className="h-8 px-4 rounded-full border border-amber-500/30 hover:border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 hover:text-amber-400 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm shadow-amber-500/5 flex items-center gap-1.5 text-xs font-semibold group cursor-pointer"
+          >
+            <Sparkles className="size-3.5 text-amber-500 group-hover:rotate-12 transition-transform duration-300" />
+            <span>Upgrade your Plan</span>
+          </Button>
+        </Link>
+      </div>
     </header>
   );
 }
