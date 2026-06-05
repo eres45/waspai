@@ -1976,6 +1976,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
         result.consumeStream();
         dataStream.merge(
           result.toUIMessageStream({
+            sendReasoning: true,
             messageMetadata: ({ part }) => {
               if (part.type == "finish") {
                 metadata.usage = part.totalUsage;
