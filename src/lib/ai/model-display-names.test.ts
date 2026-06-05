@@ -92,4 +92,24 @@ describe("createReverseModelMapping", () => {
     // Verify Claude Sonnet 3.7 maps to claude-sonnet instead of chatai-claude-sonnet / randomai-claude-sonnet
     expect(models["Claude Sonnet 3.7"]).toBe("claude-sonnet");
   });
+
+  it("resolves dynamic and clashing model IDs correctly when provided", () => {
+    const dynamicModelIds = [
+      "claude-opus-4-7",
+      "lordrouter-claude-opus-4-7",
+      "lordrouter-liquid/lfm-2.5-1.2b-instruct:free",
+    ];
+    const { models } = createReverseModelMapping(dynamicModelIds);
+
+    // Verify clash-resolved P2 model maps back to its lordrouter backend name
+    expect(models["Claude Opus 4.7 P2"]).toBe("lordrouter-claude-opus-4-7");
+
+    // Verify standard clashing model maps to its standard backend name
+    expect(models["Claude Opus 4.7"]).toBe("claude-opus-4-7");
+
+    // Verify dynamic model without P2 maps correctly
+    expect(models["LFM 2.5 1.2B Instruct"]).toBe(
+      "lordrouter-liquid/lfm-2.5-1.2b-instruct:free",
+    );
+  });
 });

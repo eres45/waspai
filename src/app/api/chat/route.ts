@@ -13,6 +13,7 @@ import {
   customModelProvider,
   isToolCallUnsupportedModel,
   isImageInputUnsupportedModel,
+  buildDynamicModelsInfo,
 } from "lib/ai/models";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
 
@@ -190,8 +191,12 @@ export async function POST(request: Request) {
       )?.agentId || (message.metadata as ChatMetadata)?.agentId;
 
     // Convert display names back to backend names
+    const dynamicModelsInfo = await buildDynamicModelsInfo();
+    const dynamicModelIds = dynamicModelsInfo.flatMap((p) =>
+      p.models.map((m) => m.name),
+    );
     const { models: modelReverseMapping, providers: providerReverseMapping } =
-      createReverseModelMapping();
+      createReverseModelMapping(dynamicModelIds);
     let modelToUse = chatModel;
     if (modelToUse) {
       const backendProvider =

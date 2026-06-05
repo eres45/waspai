@@ -1,6 +1,6 @@
 import { smoothStream, streamText } from "ai";
 
-import { customModelProvider } from "lib/ai/models";
+import { customModelProvider, buildDynamicModelsInfo } from "lib/ai/models";
 import { CREATE_THREAD_TITLE_PROMPT } from "lib/ai/prompts";
 import globalLogger from "logger";
 import { ChatModel } from "app-types/chat";
@@ -40,8 +40,12 @@ export async function POST(request: Request) {
     );
 
     // Convert display names back to backend names
+    const dynamicModelsInfo = await buildDynamicModelsInfo();
+    const dynamicModelIds = dynamicModelsInfo.flatMap((p) =>
+      p.models.map((m) => m.name),
+    );
     const { models: modelReverseMapping, providers: providerReverseMapping } =
-      createReverseModelMapping();
+      createReverseModelMapping(dynamicModelIds);
     let modelToUse = chatModel;
     if (modelToUse) {
       const backendProvider =

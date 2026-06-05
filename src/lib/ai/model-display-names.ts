@@ -181,11 +181,15 @@ function isPrefixedModel(name: string): boolean {
 }
 
 // Create reverse mapping from display names to backend names
-export const createReverseModelMapping = (): {
+export const createReverseModelMapping = (
+  dynamicModelIds?: string[],
+): {
   models: Record<string, string>;
   providers: Record<string, string>;
 } => {
   const modelReverseMapping: Record<string, string> = {};
+
+  // 1. Map static display names
   Object.entries(MODEL_DISPLAY_NAMES).forEach(([backendName, displayName]) => {
     const existing = modelReverseMapping[displayName];
     if (existing) {
@@ -205,6 +209,30 @@ export const createReverseModelMapping = (): {
       modelReverseMapping[displayName] = backendName;
     }
   });
+
+  // 2. Map dynamic display names if provided
+  if (dynamicModelIds) {
+    dynamicModelIds.forEach((backendName) => {
+      const displayName = cleanModelDisplayName(backendName);
+      const existing = modelReverseMapping[displayName];
+      if (existing) {
+        const existingPrefixed = isPrefixedModel(existing);
+        const newPrefixed = isPrefixedModel(backendName);
+        if (existingPrefixed && !newPrefixed) {
+          modelReverseMapping[displayName] = backendName;
+          return;
+        }
+        if (!existingPrefixed && newPrefixed) {
+          return;
+        }
+        if (backendName.length < existing.length) {
+          modelReverseMapping[displayName] = backendName;
+        }
+      } else {
+        modelReverseMapping[displayName] = backendName;
+      }
+    });
+  }
 
   const providerReverseMapping: Record<string, string> = {};
   Object.entries(PROVIDER_DISPLAY_NAMES).forEach(
