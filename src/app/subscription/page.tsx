@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "ui/button";
 import {
   Card,
@@ -419,7 +420,7 @@ export default function SubscriptionPage() {
         </div>
 
         {/* Comparison Note */}
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             All prices shown in{" "}
             <span className="font-semibold">{CURRENCIES[currency].code}</span>.
@@ -431,6 +432,16 @@ export default function SubscriptionPage() {
               contact us
             </a>
             .
+          </p>
+          <p className="text-xs text-muted-foreground/60">
+            <Link
+              href="/usage-limit-best-practices"
+              className="underline hover:text-primary transition-colors"
+            >
+              *Usage limits apply
+            </Link>
+            . Prices and plans are subject to change at Anthropic&apos;s
+            discretion.
           </p>
         </div>
       </div>

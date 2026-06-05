@@ -10,6 +10,7 @@ import {
   DrawerTitle,
 } from "ui/drawer";
 import { Button } from "ui/button";
+import Link from "next/link";
 import { X, Sparkles, Zap, Crown } from "lucide-react";
 import {
   Card,
@@ -223,14 +224,24 @@ export function SubscriptionPopup() {
             </div>
 
             {/* View Full Details Link */}
-            <div className="text-center pt-4 border-t border-border">
+            <div className="text-center pt-4 border-t border-border flex flex-col items-center gap-2">
               <Button
                 variant="link"
                 onClick={() => (window.location.href = "/subscription")}
-                className="text-sm"
+                className="text-sm h-auto p-0"
               >
                 View full pricing details & features →
               </Button>
+              <p className="text-[10px] text-muted-foreground/60">
+                <Link
+                  href="/usage-limit-best-practices"
+                  className="underline hover:text-primary transition-colors"
+                >
+                  *Usage limits apply
+                </Link>
+                . Prices and plans are subject to change at Anthropic&apos;s
+                discretion.
+              </p>
             </div>
 
             {/* Compact FAQ */}

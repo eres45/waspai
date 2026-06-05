@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,19 @@ export function Pricing() {
               </FeatureCard>
             );
           })}
+        </div>
+
+        <div className="text-center mt-12">
+          <p className="text-xs text-white/30">
+            <Link
+              href="/usage-limit-best-practices"
+              className="underline hover:text-white/60 transition-colors"
+            >
+              *Usage limits apply
+            </Link>
+            . Prices and plans are subject to change at Anthropic&apos;s
+            discretion.
+          </p>
         </div>
       </div>
     </section>
