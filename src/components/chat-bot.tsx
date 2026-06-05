@@ -132,7 +132,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
         (v) => v.id === threadId,
       );
       const isNewThread =
-        !prevThread?.title &&
+        (!prevThread?.title || prevThread.title === "New Chat") &&
         messages.filter((v) => v.role === "user" || v.role === "assistant")
           .length < 3;
       if (isNewThread) {

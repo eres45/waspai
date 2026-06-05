@@ -278,6 +278,7 @@ function UserProfileDropdown() {
 }
 
 function ThreadDropdownComponent() {
+  const t = useTranslations();
   const [threadList, currentThreadId, generatingTitleThreadIds] = appStore(
     useShallow((state) => [
       state.threadList,
@@ -286,14 +287,17 @@ function ThreadDropdownComponent() {
     ]),
   );
   const currentThread = useMemo(() => {
-    return threadList.find((thread) => thread.id === currentThreadId);
+    return (
+      threadList.find((thread) => thread.id === currentThreadId) ||
+      (currentThreadId ? { id: currentThreadId, title: "" } : null)
+    );
   }, [threadList, currentThreadId]);
 
   useEffect(() => {
     if (currentThread?.id) {
-      document.title = currentThread.title || "New Chat";
+      document.title = currentThread.title || t("Layout.newChat");
     }
-  }, [currentThread?.id]);
+  }, [currentThread?.id, currentThread?.title, t]);
 
   if (!currentThread) return null;
 
@@ -305,7 +309,7 @@ function ThreadDropdownComponent() {
 
       <ThreadDropdown
         threadId={currentThread.id}
-        beforeTitle={currentThread.title}
+        beforeTitle={currentThread.title || t("Layout.newChat")}
       >
         <div>
           <Tooltip>
@@ -316,11 +320,11 @@ function ThreadDropdownComponent() {
               >
                 {generatingTitleThreadIds.includes(currentThread.id) ? (
                   <TextShimmer className="truncate max-w-60 min-w-0 mr-1">
-                    {currentThread.title || "New Chat"}
+                    {currentThread.title || t("Layout.newChat")}
                   </TextShimmer>
                 ) : (
                   <p className="truncate max-w-60 min-w-0 mr-1">
-                    {currentThread.title || "New Chat"}
+                    {currentThread.title || t("Layout.newChat")}
                   </p>
                 )}
 
@@ -328,7 +332,7 @@ function ThreadDropdownComponent() {
               </Button>
             </TooltipTrigger>
             <TooltipContent className="max-w-[200px] p-4 break-all overflow-y-auto max-h-[200px]">
-              {currentThread.title || "New Chat"}
+              {currentThread.title || t("Layout.newChat")}
             </TooltipContent>
           </Tooltip>
         </div>

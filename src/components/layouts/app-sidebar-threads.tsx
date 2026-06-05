@@ -283,18 +283,18 @@ export function AppSidebarThreads() {
                                       thread.id,
                                     ) ? (
                                       <TextShimmer className="truncate min-w-0">
-                                        {thread.title || "New Chat"}
+                                        {thread.title || t("newChat")}
                                       </TextShimmer>
                                     ) : (
                                       <p className="truncate min-w-0">
-                                        {thread.title || "New Chat"}
+                                        {thread.title || t("newChat")}
                                       </p>
                                     )}
                                   </Link>
                                 </SidebarMenuButton>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-[200px] p-4 break-all overflow-y-auto max-h-[200px]">
-                                {thread.title || "New Chat"}
+                                {thread.title || t("newChat")}
                               </TooltipContent>
                             </Tooltip>
 

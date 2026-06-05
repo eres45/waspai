@@ -24,14 +24,20 @@ export const ChatGreeting = () => {
   const t = useTranslations("Chat.Greeting");
 
   const word = useMemo(() => {
-    if (!user?.name) return "";
-    const words = [
-      t(getGreetingByTime(), { name: user.name }),
-      t("niceToSeeYouAgain", { name: user.name }),
-      t("whatAreYouWorkingOnToday", { name: user.name }),
-      t("letMeKnowWhenYoureReadyToBegin"),
-      t("whatAreYouThinking", { name: user.name }),
-    ];
+    const name = user?.name;
+    const words = name
+      ? [
+          t(getGreetingByTime(), { name }),
+          t("niceToSeeYouAgain", { name }),
+          t("whatAreYouWorkingOnToday", { name }),
+          t("letMeKnowWhenYoureReadyToBegin"),
+          t("whatAreYouThinking", { name }),
+        ]
+      : [
+          t("letMeKnowWhenYoureReadyToBegin"),
+          t("whatAreYourThoughtsToday"),
+          t("whereWouldYouLikeToStart"),
+        ];
     return words[Math.floor(Math.random() * words.length)];
   }, [user?.name, t]);
 
