@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSession } from "auth/server";
-import { pgDb } from "lib/db/pg/db.pg";
-import { UserTable } from "lib/db/pg/schema.pg";
-import { eq } from "drizzle-orm";
+import { supabaseRest } from "lib/db/supabase-rest";
 import { cookies } from "next/headers";
 
 export async function POST(req: NextRequest) {
@@ -32,11 +30,11 @@ export async function POST(req: NextRequest) {
       // Payment verification successful
       const session = await getSession();
       if (session?.user?.id) {
-        // Update user tier in PostgreSQL database
-        await pgDb
-          .update(UserTable)
-          .set({ tier: plan })
-          .where(eq(UserTable.id, session.user.id));
+        // Update user tier in database using HTTP REST client
+        await supabaseRest
+          .from("user")
+          .update({ tier: plan })
+          .eq("id", session.user.id);
 
         // Update local session cookie for instant client synchronization
         const cookieStore = await cookies();

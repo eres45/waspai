@@ -1128,6 +1128,25 @@ async function nonStreamResponse(providerKey, res, model) {
         return createOpenAIResponse(model, text);
       }
 
+    case "lordrouter":
+      try {
+        const j = JSON.parse(text);
+        const choice = j.choices?.[0];
+        if (choice && choice.message) {
+          // Normalize reasoning to reasoning_content for Vercel AI SDK
+          if (choice.message.reasoning && !choice.message.reasoning_content) {
+            choice.message.reasoning_content = choice.message.reasoning;
+          }
+          // If content is null/empty but reasoning exists, copy reasoning to content for fallback
+          if (!choice.message.content) {
+            choice.message.content = choice.message.reasoning_content || "";
+          }
+        }
+        return j;
+      } catch {
+        return createOpenAIResponse(model, text);
+      }
+
     case "makechat":
     case "freegptblond":
     case "kimik2": {
