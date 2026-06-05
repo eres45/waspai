@@ -125,9 +125,14 @@ describe("WaspAI & LordRouter integrations", () => {
     expect(cleanModelDisplayName("waspai-model")).toBe("WaspAI model");
   });
 
-  it("supports tool calling for waspai-model", () => {
+  it("supports tool calling for waspai-model, Sarvam, and GPT-OSS models", () => {
     const { isToolCallUnsupportedModel } = modelsModule;
     expect(isToolCallUnsupportedModel("waspai-model")).toBe(false);
+    expect(isToolCallUnsupportedModel("sarvam-30b")).toBe(false);
+    expect(isToolCallUnsupportedModel("sarvam-105b")).toBe(false);
+    expect(isToolCallUnsupportedModel("sarvam-m")).toBe(true);
+    expect(isToolCallUnsupportedModel("gpt-oss-120b")).toBe(false);
+    expect(isToolCallUnsupportedModel("gpt-oss-20b")).toBe(false);
   });
 
   it("cleans LordRouter display names and handles clashes with P2", () => {

@@ -28,7 +28,8 @@ const MODEL_MAP = {
   llama: { provider: "freecf", model: "llama" },
 
   // GPT-OSS Worker (2 working)
-  "gpt-oss-120b": { provider: "gptossworker", model: "gpt-oss-120b" },
+  "gpt-oss-120b": { provider: "lordrouter", model: "openai/gpt-oss-120b:free" },
+  "gpt-oss-20b": { provider: "lordrouter", model: "openai/gpt-oss-20b:free" },
   "gpt-5-nano": { provider: "gptossworker", model: "gpt-5-nano" },
 
   // Raw / Legacy Claude Models — routed via LordRouter which supports system messages
@@ -64,17 +65,17 @@ const MODEL_MAP = {
   "randomai-claude-sonnet": { provider: "randomai", model: "claude-sonnet" },
   "randomai-gemini-pro": { provider: "randomai", model: "gemini-pro" },
 
-  // SvelteAI (5 working)
-  "svelteai-gpt-4o": { provider: "svelteai", model: "openai/gpt-4o" },
-  "svelteai-gpt-4o-mini": { provider: "svelteai", model: "openai/gpt-4o-mini" },
-  "svelteai-gpt-4": { provider: "svelteai", model: "openai/gpt-4" },
+  // SvelteAI (5 working - routed via working proxies because svelteai upstream is down)
+  "svelteai-gpt-4o": { provider: "chatai", model: "gpt-4o" },
+  "svelteai-gpt-4o-mini": { provider: "chatai", model: "gpt-4o-mini" },
+  "svelteai-gpt-4": { provider: "chatbotai", model: "gpt-4" },
   "svelteai-gpt-3.5-turbo": {
-    provider: "svelteai",
-    model: "openai/gpt-3.5-turbo",
+    provider: "chatai",
+    model: "gpt-3.5-turbo",
   },
   "svelteai-gpt-3.5-16k": {
-    provider: "svelteai",
-    model: "openai/gpt-3.5-turbo-16k",
+    provider: "chatai",
+    model: "gpt-3.5-turbo",
   },
 
   // Groq Worker (3 working)
@@ -101,8 +102,8 @@ const MODEL_MAP = {
     model: "meta/llama-3.3-70b-instruct",
   },
   "gpt-oss-120b-p2": {
-    provider: "groqworker",
-    model: "openai/gpt-oss-120b",
+    provider: "lordrouter",
+    model: "openai/gpt-oss-120b:free",
   },
   "gemini-2.5-flash": {
     provider: "gemini-openai",

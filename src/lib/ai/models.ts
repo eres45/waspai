@@ -596,6 +596,16 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
+  // Sarvam models support tool calling (except the legacy sarvam-m)
+  if (modelId.startsWith("sarvam-")) {
+    return modelId === "sarvam-m";
+  }
+
+  // GPT-OSS models support tool calling
+  if (modelId.includes("gpt-oss")) {
+    return false;
+  }
+
   // LordRouter models support tool calling unless they are reasoning/thinking/qwq models
   if (modelId.startsWith("lordrouter-")) {
     if (
