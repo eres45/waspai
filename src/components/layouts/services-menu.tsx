@@ -7,7 +7,6 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
 } from "ui/dropdown-menu";
 import {
   LifeBuoyIcon,
@@ -16,7 +15,6 @@ import {
   Briefcase,
   FileText,
   Shield,
-  Globe,
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,7 +30,7 @@ export function ServicesMenu() {
         icon={<ChevronRight className="size-4 ml-2" />}
       >
         <Briefcase className="mr-2 size-4" />
-        <span className="mr-auto">Services</span>
+        <span className="mr-auto">Learn more</span>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent className="w-56">
@@ -70,38 +68,6 @@ export function ServicesMenu() {
               <FileText className="mr-2 size-4 text-muted-foreground" />
               <span>Terms of Service</span>
             </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-            Resources
-          </DropdownMenuLabel>
-
-          <DropdownMenuItem
-            onClick={() =>
-              window.open("https://waspai.in/sitemap.xml", "_blank")
-            }
-            className="cursor-pointer"
-          >
-            <Globe className="mr-2 size-4 text-muted-foreground" />
-            <span>Sitemap</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuLabel className="text-muted-foreground text-xs uppercase tracking-wider">
-            Community
-          </DropdownMenuLabel>
-
-          <DropdownMenuItem
-            onClick={() =>
-              window.open("https://discord.gg/XBC6TN4FqV", "_blank")
-            }
-            className="cursor-pointer"
-          >
-            <Briefcase className="mr-2 size-4 text-muted-foreground" />
-            <span>Join Discord</span>
           </DropdownMenuItem>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
