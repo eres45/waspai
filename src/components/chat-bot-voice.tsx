@@ -456,7 +456,6 @@ export function ChatBotVoice() {
                 <TooltipTrigger asChild>
                   <Button
                     variant={"secondary"}
-                    size={"icon"}
                     disabled={isClosing || isLoading}
                     onClick={() => {
                       if (!isActive) {
@@ -468,7 +467,7 @@ export function ChatBotVoice() {
                       }
                     }}
                     className={cn(
-                      "rounded-full p-6 transition-colors duration-300",
+                      "rounded-full size-12 flex items-center justify-center p-0 transition-colors duration-300",
 
                       isLoading
                         ? "bg-accent-foreground text-accent animate-pulse"
@@ -484,7 +483,7 @@ export function ChatBotVoice() {
                     {isLoading || isClosing ? (
                       <Loader className="size-6 animate-spin" />
                     ) : !isActive ? (
-                      <PhoneIcon className="size-6 fill-green-500 stroke-none" />
+                      <PhoneIcon className="size-6 fill-green-500/20 text-green-500" />
                     ) : isListening ? (
                       <MicIcon
                         className={`size-6 ${isUserSpeaking ? "text-primary" : "text-muted-foreground transition-colors duration-300"}`}
@@ -506,8 +505,7 @@ export function ChatBotVoice() {
                 <TooltipTrigger asChild>
                   <Button
                     variant={"secondary"}
-                    size={"icon"}
-                    className="rounded-full p-6"
+                    className="rounded-full size-12 flex items-center justify-center p-0"
                     disabled={isLoading || isClosing}
                     onClick={endVoiceChat}
                   >
