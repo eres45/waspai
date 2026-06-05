@@ -22,11 +22,12 @@ const plans = [
     description:
       "Essential features for casual AI users and developers testing the waters.",
     features: [
-      "Gemma 2, Qwen 2.5, Phi-4",
-      "5 file uploads per day",
-      "5 image generations per day",
-      "Community support access",
-      "Basic tool access",
+      "Unlimited use of all Free models",
+      "Limited image generations",
+      "Limited memory & indexing",
+      "Limited web searches",
+      "Limited file uploads",
+      "Community support",
     ],
     cta: "Get Started",
     highlighted: false,

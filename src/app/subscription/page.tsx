@@ -111,34 +111,17 @@ export default function SubscriptionPage() {
         "Access to standard models and limited premium features to get started.",
       features: [
         {
-          category: "Standard Models (High Limits)",
-          items: [
-            "Llama 3, Mistral 7B, Gemma 2",
-            "Qwen 1.5, GLM 4.7",
-            "~50 msgs/day",
-          ],
+          category: "Core Access",
+          items: ["Unlimited use of all Free models", "Community support"],
         },
         {
-          category: "Premium Teasers (Limited)",
+          category: "Limits",
           items: [
-            "Claude 4.5 Sonnet (Proxy)",
-            "DeepSeek V3",
-            "WormGPT",
-            "~5-10 msgs/day",
+            "Limited image generations",
+            "Limited memory & indexing",
+            "Limited web searches",
+            "Limited file uploads",
           ],
-        },
-        {
-          category: "Daily Limits",
-          items: [
-            "5 image generations/day",
-            "5 file uploads/day",
-            "5 tool uses/day",
-            "5 custom characters",
-          ],
-        },
-        {
-          category: "Support",
-          items: ["Community support"],
         },
       ],
       cta: "Get Started Free",
