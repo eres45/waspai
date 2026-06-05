@@ -192,3 +192,24 @@ describe("WaspAI & LordRouter integrations", () => {
     }
   });
 });
+
+describe("getModelProvider", () => {
+  it("resolves Google Gemini models correctly when owned by gemini-openai", () => {
+    const { getModelProvider } = modelsModule;
+    expect(getModelProvider("gemini-2.5-flash", "gemini-openai")).toBe(
+      "Google",
+    );
+    expect(getModelProvider("gemini-2.5-flash-lite", "gemini-openai")).toBe(
+      "Google",
+    );
+  });
+
+  it("resolves standard OpenAI and Anthropic models correctly", () => {
+    const { getModelProvider } = modelsModule;
+    expect(getModelProvider("gpt-4o", "openai")).toBe("OpenAI");
+    expect(getModelProvider("claude-3-5-sonnet", "anthropic")).toBe(
+      "Anthropic",
+    );
+    expect(getModelProvider("frenix-llama-3.1-70b")).toBe("Meta");
+  });
+});

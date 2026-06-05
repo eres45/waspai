@@ -503,6 +503,13 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   )
     return "Anthropic";
   if (
+    id.includes("gemini") ||
+    id.includes("gemma") ||
+    raw.includes("google") ||
+    raw.includes("gemini")
+  )
+    return "Google";
+  if (
     id.includes("gpt-") ||
     id.includes("o1-") ||
     id.includes("o3-") ||
@@ -511,13 +518,6 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
     raw.includes("gpt")
   )
     return "OpenAI";
-  if (
-    id.includes("gemini") ||
-    id.includes("gemma") ||
-    raw.includes("google") ||
-    raw.includes("gemini")
-  )
-    return "Google";
   if (id.includes("deepseek") || raw.includes("deepseek")) return "DeepSeek";
   if (id.includes("llama") || raw.includes("meta") || raw.includes("llama"))
     return "Meta";
