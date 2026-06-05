@@ -61,10 +61,15 @@ export function VoiceVisualizerBlob({
       <iframe
         src="https://my.spline.design/celestialflowabstractdigitalform-ZTDbcj9auutvM9BeViKnrpjR/"
         frameBorder="0"
-        width="100%"
-        height="100%"
-        style={{ pointerEvents: "none", border: "none" }}
-        className="w-full h-full scale-[1.05]"
+        style={{
+          pointerEvents: "none",
+          border: "none",
+          position: "absolute",
+          width: "130%",
+          height: "130%",
+          left: "-15%",
+          top: "-15%",
+        }}
       />
 
       {/* Subtle state indicator dot at the bottom center */}
