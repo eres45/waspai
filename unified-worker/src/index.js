@@ -28,7 +28,7 @@ const MODEL_MAP = {
   llama: { provider: "freecf", model: "llama" },
 
   // GPT-OSS Worker (2 working)
-  "gpt-oss-120b": { provider: "lordrouter", model: "openai/gpt-oss-120b:free" },
+  "gpt-oss-120b": { provider: "gptossworker", model: "gpt-oss-120b" },
   "gpt-oss-20b": { provider: "lordrouter", model: "openai/gpt-oss-20b:free" },
   "gpt-5-nano": { provider: "gptossworker", model: "gpt-5-nano" },
 
@@ -102,8 +102,8 @@ const MODEL_MAP = {
     model: "meta/llama-3.3-70b-instruct",
   },
   "gpt-oss-120b-p2": {
-    provider: "lordrouter",
-    model: "openai/gpt-oss-120b:free",
+    provider: "groqworker",
+    model: "openai/gpt-oss-120b",
   },
   "gemini-2.5-flash": {
     provider: "gemini-openai",
@@ -710,6 +710,11 @@ async function fetchFromProvider(
 
   const mappedModel = getMappedModel(providerKey, body.model);
 
+  let actualStream = stream;
+  if (providerKey === "groqworker" && mappedModel === "openai/gpt-oss-120b") {
+    actualStream = false;
+  }
+
   // Handle rotating keys for Frenix
   let apiKey = null;
   if (cfg.keys && Array.isArray(cfg.keys)) {
@@ -819,6 +824,14 @@ async function fetchFromProvider(
       throw new Error(`Unhandled provider: ${providerKey}`);
   }
 
+  if (
+    providerKey === "groqworker" &&
+    mappedModel === "openai/gpt-oss-120b" &&
+    reqBody
+  ) {
+    reqBody.stream = false;
+  }
+
   const fetchOpts = {
     method: "POST",
     headers: {
@@ -835,7 +848,7 @@ async function fetchFromProvider(
     fetchOpts.headers["CF-Connecting-IP"] = clientIp;
   }
 
-  if (stream && cfg.openai) {
+  if (actualStream && cfg.openai) {
     fetchOpts.headers["Accept"] = "text/event-stream";
   }
 
@@ -877,15 +890,43 @@ async function* streamResponse(providerKey, res, model) {
   if (!contentType.includes("text/event-stream")) {
     const text = await res.text();
     let content = "";
+    let reasoning_content = "";
+    let tool_calls = null;
     try {
       const responseData = await nonStreamResponse(
         providerKey,
         { text: () => Promise.resolve(text) },
         model,
       );
-      content = responseData.choices?.[0]?.message?.content || "";
+      const msg = responseData.choices?.[0]?.message;
+      if (msg) {
+        content = msg.content || "";
+        reasoning_content = msg.reasoning_content || msg.reasoning || "";
+        tool_calls = msg.tool_calls || null;
+      }
     } catch {
       content = text;
+    }
+
+    if (!reasoning_content && !content && !tool_calls) {
+      content =
+        "I wasn't able to generate a response through this model. Please try again or switch to a different model.";
+    }
+
+    if (reasoning_content) {
+      yield {
+        id: `chatcmpl-${randomUUID()}`,
+        object: "chat.completion.chunk",
+        created: Math.floor(Date.now() / 1000),
+        model,
+        choices: [
+          {
+            index: 0,
+            delta: { reasoning_content },
+            finish_reason: null,
+          },
+        ],
+      };
     }
 
     if (content) {
@@ -898,6 +939,22 @@ async function* streamResponse(providerKey, res, model) {
           {
             index: 0,
             delta: { content },
+            finish_reason: null,
+          },
+        ],
+      };
+    }
+
+    if (tool_calls) {
+      yield {
+        id: `chatcmpl-${randomUUID()}`,
+        object: "chat.completion.chunk",
+        created: Math.floor(Date.now() / 1000),
+        model,
+        choices: [
+          {
+            index: 0,
+            delta: { tool_calls },
             finish_reason: null,
           },
         ],
@@ -1126,6 +1183,12 @@ async function nonStreamResponse(providerKey, res, model) {
     case "frenix":
       try {
         const j = JSON.parse(text);
+        const choice = j.choices?.[0];
+        if (choice && choice.message) {
+          if (choice.message.reasoning && !choice.message.reasoning_content) {
+            choice.message.reasoning_content = choice.message.reasoning;
+          }
+        }
         return j;
       } catch {
         return createOpenAIResponse(model, text);
