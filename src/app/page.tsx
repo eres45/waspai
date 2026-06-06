@@ -42,7 +42,7 @@ export default async function RootLandingPage() {
             items={[
               { label: "Home", href: "/" },
               { label: "Features", href: "#features" },
-              { label: "Pricing", href: "#pricing" },
+              { label: "Pricing", href: "/subscription" },
               { label: "Contact", href: "/contact" },
               ...(session
                 ? [{ label: "Chat", href: "/chat" }]

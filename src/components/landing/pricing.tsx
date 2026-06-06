@@ -21,7 +21,7 @@ const plans = [
     icon: Sparkles,
     price: { monthly: "0", annual: "0" },
     description:
-      "Essential features for casual AI users and developers testing the waters.",
+      "Access to standard models and limited premium features to get started.",
     features: [
       "Unlimited use of all Free models",
       "Limited image generations",
@@ -30,7 +30,7 @@ const plans = [
       "Limited file uploads",
       "Community support",
     ],
-    cta: "Get Started",
+    cta: "Get Started Free",
     highlighted: false,
   },
   {
@@ -40,13 +40,13 @@ const plans = [
     price: { monthly: "10", annual: "100" },
     period: "/mo",
     description:
-      "The complete AI toolkit for power users and professional developers.",
+      "Access to most top AIs and features. Suitable for the majority of users.",
     features: [
-      "Access to advanced Pro models",
-      "All Free models with faster speed & limits",
+      "Access to all advanced Pro models",
+      "All Free models with faster speed & higher limits",
       "Pro image generation & advanced image editing",
-      "Unlimited web search, code execution & tools",
-      "Unlimited file, PDF, & document uploads",
+      "Unlimited web search, code execution & tool uses",
+      "Unlimited file, PDF & document uploads",
       "MCP Servers & custom HTTP workflows",
       "Limited workflows, projects, skills & storage",
       "Limited agent creation",
@@ -62,14 +62,13 @@ const plans = [
     icon: Crown,
     price: { monthly: "32", annual: "320" },
     period: "/mo",
-    description:
-      "The ultimate frontier models for heavy production and complex orchestration.",
+    description: "Maximum power and limits for heavy users and professionals.",
     features: [
-      "Access to all premium Frontier & Reasoning models (Top Priority)",
-      "All image models, tools & Video generation",
+      "All premium Frontier & Reasoning models (Top Priority)",
+      "All image generation models, tools & Video generation",
       "Web access & unlimited advanced search",
-      "Unlimited workflows, projects, skills & agents",
-      "Unlimited storage & custom MCP integrations",
+      "Unlimited Workflows, Skills & custom agents",
+      "Unlimited projects, storage & MCP integrations",
       "Priority support & dedicated assistance",
       "Early access to new features",
     ],
@@ -204,7 +203,13 @@ export function Pricing() {
           })}
         </div>
 
-        <div className="text-center mt-12">
+        <div className="text-center mt-12 space-y-3">
+          <Link
+            href="/subscription"
+            className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors duration-200 underline underline-offset-4"
+          >
+            View full pricing details & compare plans →
+          </Link>
           <p className="text-xs text-white/30">
             <Link
               href="/usage-limit-best-practices"
