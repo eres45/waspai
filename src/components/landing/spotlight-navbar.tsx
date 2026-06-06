@@ -254,21 +254,38 @@ export function SpotlightNavbar({
                   href={item.href}
                   data-index={idx}
                   onClick={(e) => {
-                    if (item.href.startsWith("#")) {
+                    const isHashLink = item.href.includes("#");
+                    const targetPath = item.href.split("#")[0] || "/";
+                    const hasTargetHash = isHashLink
+                      ? item.href.split("#")[1]
+                      : null;
+
+                    // Normalize target path (remove leading/trailing slashes)
+                    const normTargetPath = targetPath === "" ? "/" : targetPath;
+                    const normPathname = pathname === "" ? "/" : pathname;
+
+                    const isSamePage =
+                      normPathname === normTargetPath ||
+                      (normPathname === "/" && normTargetPath === "/");
+
+                    if (isSamePage) {
                       e.preventDefault();
                       handleItemClick(item, idx);
-                      const element = document.getElementById(
-                        item.href.slice(1),
-                      );
-                      if (element) {
-                        element.scrollIntoView({ behavior: "smooth" });
+
+                      if (hasTargetHash) {
+                        const element = document.getElementById(hasTargetHash);
+                        if (element) {
+                          element.scrollIntoView({ behavior: "smooth" });
+                        }
+                      } else {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
                       }
-                    } else if (item.href === "/") {
+                    } else {
+                      // Navigate client-side to different pages
                       e.preventDefault();
                       handleItemClick(item, idx);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      router.push(item.href);
                     }
-                    // Otherwise allow default navigation
                   }}
                   className={cn(
                     "px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full",
