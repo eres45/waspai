@@ -61,7 +61,6 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
                     e.preventDefault();
                     setOpenMobile(false);
                     router.push(`/chat`);
-                    router.refresh();
                   }}
                 >
                   <WriteIcon className="size-4" />

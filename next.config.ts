@@ -41,7 +41,6 @@ export default () => {
     },
     experimental: {
       taint: true,
-      authInterrupts: true,
     },
     images: {
       remotePatterns: [
