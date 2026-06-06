@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authClient } from "@/lib/auth/client";
 import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export interface NavItem {
   label: string;
@@ -44,11 +44,53 @@ export function SpotlightNavbar({
 }: SpotlightNavbarProps) {
   const navRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const [activeIndex, setActiveIndex] = useState(defaultActiveIndex);
   const [hoverX, setHoverX] = useState<number | null>(null);
 
   const spotlightX = useRef(0);
   const ambienceX = useRef(0);
+
+  // Auto-detect and set active index based on route pathname and hash
+  useEffect(() => {
+    if (typeof window === "undefined" || !pathname) return;
+
+    const hash = window.location.hash;
+    const currentPathWithHash = pathname + hash;
+
+    // 1. Try exact match (including hash, e.g. /#features or /contact)
+    let matchedIndex = items.findIndex(
+      (item) => item.href === currentPathWithHash,
+    );
+
+    // 2. Try match with hash only (e.g. #features when pathname is /)
+    if (matchedIndex === -1 && pathname === "/") {
+      matchedIndex = items.findIndex(
+        (item) => item.href === hash || item.href === `/${hash}`,
+      );
+    }
+
+    // 3. Try match with pathname only (e.g. /contact or /subscription)
+    if (matchedIndex === -1) {
+      matchedIndex = items.findIndex((item) => {
+        // Remove trailing slash for comparison
+        const normItemHref = item.href.replace(/\/$/, "");
+        const normPathname = pathname.replace(/\/$/, "");
+        return normItemHref === normPathname || item.href === pathname;
+      });
+    }
+
+    // 4. Default fallback to "/" (Home)
+    if (matchedIndex === -1 && pathname === "/") {
+      matchedIndex = items.findIndex(
+        (item) => item.href === "/" || item.href === "",
+      );
+    }
+
+    if (matchedIndex !== -1) {
+      setActiveIndex(matchedIndex);
+    }
+  }, [pathname, items]);
 
   useEffect(() => {
     if (!navRef.current) return;
