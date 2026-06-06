@@ -81,10 +81,13 @@ export function ContactChat() {
   // suggestions removed for minimalist UI
 
   return (
-    <Card className="w-full mx-auto h-[700px] flex flex-col overflow-hidden border-white/10 bg-[#161618] shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative rounded-[32px]">
+    <Card className="w-full mx-auto h-[700px] flex flex-col overflow-hidden border border-white/[0.08] bg-[#111112]/90 shadow-[0_24px_60px_rgba(0,0,0,0.8)] relative rounded-[32px] backdrop-blur-md">
+      {/* Decorative Top Glow */}
+      <div className="absolute top-0 left-1/4 right-1/4 h-[150px] bg-blue-500/10 blur-[100px] pointer-events-none z-0" />
+
       {/* Sleek Dark Header */}
-      <div className="relative border-b border-white/[0.05] bg-white/[0.02] p-6 shrink-0 backdrop-blur-md">
-        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-600/30 via-indigo-500/30 to-purple-600/30" />
+      <div className="relative border-b border-white/[0.05] bg-white/[0.02] p-6 shrink-0 backdrop-blur-md z-10">
+        <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-90" />
         <div className="flex items-center justify-between relative z-10">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -97,14 +100,17 @@ export function ContactChat() {
                   WA
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute top-0 -right-1 size-3 bg-green-500 border-2 border-[#161618] rounded-full shadow-sm"></div>
+              <div className="absolute bottom-0 right-0 size-3 flex items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500 border border-[#111112]"></span>
+              </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold text-white tracking-tight">
                   Wasp AI
                 </span>
-                <span className="size-1.5 bg-green-500 rounded-full"></span>
+                <span className="size-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></span>
               </div>
               <div className="text-sm font-medium text-white/40">
                 Support Assistant
@@ -133,7 +139,8 @@ export function ContactChat() {
       {/* Messages Area - Dark Glassmorphism */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar scroll-smooth overscroll-contain"
+        data-lenis-prevent
+        className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar scroll-smooth overscroll-contain bg-gradient-to-b from-transparent via-white/[0.003] to-transparent z-10"
       >
         <AnimatePresence initial={false}>
           {messages.map((m) => (
@@ -148,16 +155,16 @@ export function ContactChat() {
             >
               <div
                 className={cn(
-                  "max-w-[80%] px-6 py-4 rounded-[24px] text-[15px] leading-[1.6] shadow-2xl",
+                  "max-w-[85%] md:max-w-[80%] px-6 py-4 rounded-[24px] text-[15px] leading-[1.6] shadow-2xl transition-all duration-300",
                   m.role === "user"
-                    ? "bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-br-none shadow-blue-500/10"
-                    : "bg-white/[0.03] border border-white/[0.08] text-white/90 rounded-bl-none backdrop-blur-xl",
+                    ? "bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 text-white rounded-br-[4px] shadow-[0_8px_30px_rgba(79,70,229,0.25)] border border-white/10"
+                    : "bg-gradient-to-b from-white/[0.04] to-white/[0.02] border border-white/[0.08] text-white/90 rounded-bl-[4px] backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] hover:border-white/[0.12] hover:bg-white/[0.05]",
                 )}
               >
                 {m.parts.map((part, i) => (
                   <div
                     key={i}
-                    className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/30 prose-pre:border prose-pre:border-white/5"
+                    className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/45 prose-pre:border prose-pre:border-white/5"
                   >
                     {part.type === "text" ? (
                       <Markdown>{enhanceMessageText(part.text)}</Markdown>
@@ -174,9 +181,9 @@ export function ContactChat() {
           <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex justify-start"
+            className="flex justify-start z-10"
           >
-            <div className="bg-white/[0.03] border border-white/[0.08] px-6 py-4 rounded-[24px] rounded-bl-none backdrop-blur-md shadow-lg">
+            <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.02] border border-white/[0.08] px-6 py-4 rounded-[24px] rounded-bl-[4px] backdrop-blur-md shadow-lg">
               <div className="flex gap-2 items-center">
                 <span className="size-1.5 bg-blue-500/60 rounded-full animate-bounce"></span>
                 <span className="size-1.5 bg-blue-500/60 rounded-full animate-bounce [animation-delay:0.2s]"></span>
@@ -188,14 +195,14 @@ export function ContactChat() {
       </div>
 
       {/* Sleek Dark Input Section */}
-      <div className="p-8 border-t border-white/[0.05] bg-white/[0.01] backdrop-blur-xl shrink-0">
+      <div className="p-8 border-t border-white/[0.05] bg-white/[0.01] backdrop-blur-xl shrink-0 z-10">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="relative group">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Wasp AI a question..."
-              className="w-full bg-white/[0.03] border border-white/10 rounded-[20px] px-6 py-5 pr-20 text-[15px] text-white focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all placeholder:text-white/20 shadow-inner"
+              className="w-full bg-white/[0.02] border border-white/10 rounded-[20px] px-6 py-5 pr-24 text-[15px] text-white focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.04] focus:shadow-[0_0_15px_rgba(99,102,241,0.15)] transition-all placeholder:text-white/20 shadow-inner"
             />
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
               <Button
@@ -209,7 +216,7 @@ export function ContactChat() {
               <Button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="size-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+                className="size-10 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 hover:shadow-indigo-500/20 hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
               >
                 <Send className="grow-0 size-5" />
               </Button>

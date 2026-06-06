@@ -1515,6 +1515,60 @@
     display: none !important;
   }
 
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Custom styling for markdown tables inside prose */
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .prose th {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    letter-spacing: 0.02em;
+  }
+  .prose td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .prose tr {
+    transition: background-color 0.2s ease;
+  }
+  .prose tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+  }
+  .prose thead {
+    border-bottom: none;
+  }
+  .prose tbody tr:last-child td {
+    border-bottom: none;
+  }
+
   .mention {
     color: #0070f3;
     font-weight: 700;
