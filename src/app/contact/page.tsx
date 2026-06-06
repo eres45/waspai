@@ -34,7 +34,7 @@ export default async function ContactPage() {
   const navItems = [
     { label: "Home", href: "/" },
     { label: "Features", href: "/#features" },
-    { label: "Pricing", href: "/#pricing" },
+    { label: "Pricing", href: "/subscription" },
     { label: "Contact", href: "/contact" },
     ...(session
       ? [{ label: "Dashboard", href: "/chat" }]
