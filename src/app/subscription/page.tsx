@@ -10,8 +10,17 @@ import {
   CardTitle,
 } from "ui/card";
 import { Badge } from "ui/badge";
-import { Check, Sparkles, Zap, Crown, Globe, ArrowLeft } from "lucide-react";
+import {
+  Check,
+  Sparkles,
+  Zap,
+  Crown,
+  Globe,
+  ArrowLeft,
+  ChevronDown,
+} from "lucide-react";
 import { useState, useEffect } from "react";
+import { Footer } from "@/components/landing/footer";
 import {
   Select,
   SelectContent,
@@ -461,77 +470,7 @@ export default function SubscriptionPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="border-t border-border/50 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <h2 className="text-4xl font-bold text-foreground mb-12 text-center">
-            Frequently Asked Questions
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                Is usage truly unlimited?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Yes! We offer unlimited conversational turns without daily or
-                monthly caps. We only enforce standard per-minute and per-hour
-                request limits to prevent automated abuse, which automatically
-                reset after a short duration.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                Can I change plans anytime?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Yes! Upgrade or downgrade anytime. Changes take effect
-                immediately, and we&apos;ll pro-rate your billing.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                What payment methods do you accept?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                We accept all major credit cards, UPI (India), PayPal, and other
-                popular payment methods.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                Do you offer refunds?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Yes! We offer a 30-day money-back guarantee if you&apos;re not
-                satisfied with your purchase.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                Why are you so much cheaper?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Our client-side processing and multi-provider architecture keeps
-                costs low. We pass those savings directly to you!
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-foreground">
-                How do I contact support?
-              </h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Email us at support@example.com or use live chat (Pro/Ultra).
-                Free users can access community forums.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <FAQSection />
 
       {/* CTA Section */}
       <div className="border-t border-border/50 bg-gradient-to-b from-muted/20 to-muted/40">
@@ -557,6 +496,97 @@ export default function SubscriptionPage() {
             <Button size="lg" variant="outline" className="min-w-[200px]">
               Start Free
             </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+}
+
+// ─── FAQ Accordion ────────────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  {
+    q: "Is usage truly unlimited?",
+    a: "We offer unlimited conversational turns with no daily or monthly caps. Fair-use rate limits (per-minute / per-hour) apply to prevent automated abuse — they reset automatically within minutes and are rarely noticeable during normal use.",
+  },
+  {
+    q: "Can I change plans anytime?",
+    a: "Yes. Upgrade or downgrade at any time. Changes take effect immediately, and your billing is pro-rated so you only ever pay for what you use.",
+  },
+  {
+    q: "What payment methods do you accept?",
+    a: "We accept all major credit & debit cards, UPI (India), PayPal, and other popular regional payment methods. Secure checkout is powered by Razorpay.",
+  },
+  {
+    q: "Do you offer refunds?",
+    a: "Yes — we offer a 7-day money-back guarantee. If you are not satisfied with your purchase, contact support within 7 days and we will issue a full refund, no questions asked.",
+  },
+  {
+    q: "Why are you so much cheaper than competitors?",
+    a: "Our multi-provider architecture and efficient infrastructure keep operational costs low. We pass those savings directly to you — no investor-funded subsidies, just honest pricing.",
+  },
+  {
+    q: "How do I contact support?",
+    a: "Pro & Ultra subscribers get priority email support and live chat. Free users can reach us via community forums or our contact page. We typically respond within a few hours.",
+  },
+];
+
+function FAQSection() {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  const toggle = (idx: number) =>
+    setOpenIdx((prev) => (prev === idx ? null : idx));
+
+  return (
+    <div className="border-t border-border/50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        {/* Two-column layout: label left, accordion right */}
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
+          {/* Left label */}
+          <div className="lg:w-56 flex-shrink-0">
+            <h2 className="text-3xl font-bold text-foreground">FAQ</h2>
+          </div>
+
+          {/* Right accordion in a dark rounded card */}
+          <div className="flex-1 rounded-2xl border border-border/60 bg-muted/20 overflow-hidden divide-y divide-border/50">
+            {FAQ_ITEMS.map((item, idx) => {
+              const isOpen = openIdx === idx;
+              return (
+                <div key={idx}>
+                  <button
+                    onClick={() => toggle(idx)}
+                    className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left group hover:bg-muted/30 transition-colors duration-150"
+                  >
+                    <span
+                      className={`text-sm font-medium transition-colors duration-150 ${
+                        isOpen
+                          ? "text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground"
+                      }`}
+                    >
+                      {item.q}
+                    </span>
+                    <ChevronDown
+                      className={`size-4 flex-shrink-0 text-muted-foreground transition-transform duration-300 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      isOpen ? "max-h-48" : "max-h-0"
+                    }`}
+                  >
+                    <p className="px-6 pb-5 text-sm text-muted-foreground leading-relaxed">
+                      {item.a}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
