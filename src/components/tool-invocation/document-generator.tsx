@@ -271,30 +271,57 @@ export function DocumentGeneratorToolInvocation({
 
     setIsExporting(true);
 
-    // Helper to sanitize oklch styles to prevent html2canvas parsing crash
+    // Helper to sanitize oklch/oklab styles to prevent html2canvas parsing crash
     const sanitizeOklchStyles = async () => {
+      const styleElements = Array.from(document.querySelectorAll("style"));
       const linkElements = Array.from(
         document.querySelectorAll("link[rel='stylesheet']"),
       ) as HTMLLinkElement[];
-      const styleElements = Array.from(
-        document.querySelectorAll("style"),
-      ) as HTMLStyleElement[];
-      const disabledElements: (HTMLLinkElement | HTMLStyleElement)[] = [];
+      const originalNodes: {
+        node: HTMLElement;
+        parent: Node;
+        nextSibling: Node | null;
+      }[] = [];
       const tempStyleElements: HTMLStyleElement[] = [];
+
+      // Helper to temporarily remove a node from DOM
+      const removeNodeTemporarily = (node: HTMLElement) => {
+        const parent = node.parentNode;
+        if (parent) {
+          const nextSibling = node.nextSibling;
+          originalNodes.push({ node, parent, nextSibling });
+          parent.removeChild(node);
+        }
+      };
 
       // Process style tags
       for (const el of styleElements) {
         try {
-          const text = el.textContent || "";
-          if (text.includes("oklch(") || text.includes("oklab(")) {
-            el.disabled = true;
-            disabledElements.push(el);
+          let cssText = el.textContent || "";
+          if (!cssText && el.sheet) {
+            try {
+              cssText = Array.from(el.sheet.cssRules)
+                .map((rule) => rule.cssText)
+                .join("\n");
+            } catch (_e) {
+              // Ignore cssRules access restriction
+            }
+          }
+
+          if (cssText.includes("oklch") || cssText.includes("oklab")) {
+            removeNodeTemporarily(el);
 
             const tempEl = document.createElement("style");
-            tempEl.textContent = text.replace(
-              /oklch\([^)]+\)|oklab\([^)]+\)/g,
-              "rgb(100, 116, 139)",
-            );
+            tempEl.setAttribute("data-temp-sanitized-style", "true");
+            tempEl.textContent = cssText
+              .replace(
+                /oklch\((?:[^()]+|\([^()]*\))*\)/gi,
+                "rgb(100, 116, 139)",
+              )
+              .replace(
+                /oklab\((?:[^()]+|\([^()]*\))*\)/gi,
+                "rgb(100, 116, 139)",
+              );
             document.head.appendChild(tempEl);
             tempStyleElements.push(tempEl);
           }
@@ -308,40 +335,99 @@ export function DocumentGeneratorToolInvocation({
         if (el.href) {
           try {
             const res = await fetch(el.href);
-            const text = await res.text();
-            if (text.includes("oklch(") || text.includes("oklab(")) {
-              el.disabled = true;
-              disabledElements.push(el);
+            const cssText = await res.text();
+            if (cssText.includes("oklch") || cssText.includes("oklab")) {
+              removeNodeTemporarily(el);
 
               const tempEl = document.createElement("style");
-              tempEl.textContent = text.replace(
-                /oklch\([^)]+\)|oklab\([^)]+\)/g,
-                "rgb(100, 116, 139)",
-              );
+              tempEl.setAttribute("data-temp-sanitized-style", "true");
+              tempEl.textContent = cssText
+                .replace(
+                  /oklch\((?:[^()]+|\([^()]*\))*\)/gi,
+                  "rgb(100, 116, 139)",
+                )
+                .replace(
+                  /oklab\((?:[^()]+|\([^()]*\))*\)/gi,
+                  "rgb(100, 116, 139)",
+                );
               document.head.appendChild(tempEl);
               tempStyleElements.push(tempEl);
             }
           } catch (e) {
             console.warn(
-              "Failed to fetch and sanitize stylesheet, disabling temporarily:",
+              "Failed to fetch and sanitize stylesheet, removing temporarily to prevent crash:",
               el.href,
               e,
             );
-            // Fallback: disable temporarily so html2canvas doesn't crash on it
-            el.disabled = true;
-            disabledElements.push(el);
+            // Fallback: remove temporarily so html2canvas doesn't crash on it
+            removeNodeTemporarily(el);
           }
         }
       }
 
-      return () => {
-        // Restore original styleheets
-        for (const el of disabledElements) {
-          el.disabled = false;
+      // Handle adoptedStyleSheets if supported
+      let originalAdopted: readonly CSSStyleSheet[] = [];
+      const hasAdoptedSheets =
+        typeof window !== "undefined" &&
+        "adoptedStyleSheets" in document &&
+        Array.isArray(document.adoptedStyleSheets);
+
+      if (hasAdoptedSheets) {
+        originalAdopted = document.adoptedStyleSheets;
+        try {
+          const sanitizedAdopted: CSSStyleSheet[] = [];
+          for (const sheet of originalAdopted) {
+            let cssText = "";
+            try {
+              cssText = Array.from(sheet.cssRules)
+                .map((r) => r.cssText)
+                .join("\n");
+            } catch (_e) {}
+
+            if (cssText.includes("oklch") || cssText.includes("oklab")) {
+              const newSheet = new CSSStyleSheet();
+              const sanitized = cssText
+                .replace(
+                  /oklch\((?:[^()]+|\([^()]*\))*\)/gi,
+                  "rgb(100, 116, 139)",
+                )
+                .replace(
+                  /oklab\((?:[^()]+|\([^()]*\))*\)/gi,
+                  "rgb(100, 116, 139)",
+                );
+              await newSheet.replace(sanitized);
+              sanitizedAdopted.push(newSheet);
+            } else {
+              sanitizedAdopted.push(sheet);
+            }
+          }
+          document.adoptedStyleSheets = sanitizedAdopted;
+        } catch (e) {
+          console.warn(
+            "Failed to sanitize adoptedStyleSheets, clearing temporarily:",
+            e,
+          );
+          document.adoptedStyleSheets = [];
         }
-        // Remove temporary sanitized styleheets
+      }
+
+      return () => {
+        // Restore original elements to the DOM
+        for (let i = originalNodes.length - 1; i >= 0; i--) {
+          const { node, parent, nextSibling } = originalNodes[i];
+          if (nextSibling) {
+            parent.insertBefore(node, nextSibling);
+          } else {
+            parent.appendChild(node);
+          }
+        }
+        // Remove temporary sanitized stylesheets
         for (const el of tempStyleElements) {
           el.remove();
+        }
+        // Restore adoptedStyleSheets
+        if (hasAdoptedSheets && originalAdopted) {
+          document.adoptedStyleSheets = originalAdopted as any;
         }
       };
     };
