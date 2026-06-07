@@ -35,6 +35,8 @@ import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
 import { capitalizeFirstLetter, cn, fetcher } from "lib/utils";
 import { authClient } from "auth/client";
 import { useTranslations } from "next-intl";
+import { signOutAction } from "@/app/api/auth/actions";
+
 import useSWR from "swr";
 import { getLocaleAction } from "@/i18n/get-locale";
 import { Suspense, useCallback } from "react";
@@ -59,10 +61,15 @@ export function AppSidebarUserInner(props: {
   const appStoreMutate = appStore((state) => state.mutate);
   const t = useTranslations("Layout");
 
-  const logout = () => {
-    authClient.signOut().finally(() => {
+  const logout = async () => {
+    try {
+      await signOutAction();
+      await authClient.signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    } finally {
       window.location.href = "/sign-in";
-    });
+    }
   };
 
   if (!user) return null;

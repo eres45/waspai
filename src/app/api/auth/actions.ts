@@ -209,3 +209,16 @@ export async function signInWithGoogleAction() {
     };
   }
 }
+
+export async function signOutAction() {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete("auth-user");
+    cookieStore.delete("better-auth.session_token");
+    cookieStore.delete("__Secure-better-auth.session_token");
+    return { success: true };
+  } catch (error) {
+    logger.error("Sign out action error:", error);
+    return { success: false, error: "Failed to sign out" };
+  }
+}
