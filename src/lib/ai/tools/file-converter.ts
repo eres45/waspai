@@ -2,15 +2,14 @@ import { tool as createTool } from "ai";
 import z from "zod";
 import logger from "logger";
 import { serverFileStorage } from "lib/file-storage";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
 
 /**
  * Helper to fetch file bytes from a URL.
  * Supports relative, Telegram, and standard URLs.
  */
-async function downloadFile(url: string): Promise<Buffer> {
+async function downloadFile(
+  url: string,
+): Promise<{ buffer: Buffer; contentType: string }> {
   try {
     let finalUrl = url;
 
@@ -31,14 +30,85 @@ async function downloadFile(url: string): Promise<Buffer> {
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
+    const contentType = res.headers?.get("content-type") || "";
     const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    return {
+      buffer: Buffer.from(arrayBuffer),
+      contentType,
+    };
   } catch (error) {
     logger.error(`File Converter: Download failed for ${url}`, error);
     throw new Error(
       `Failed to download source file: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+function getExtensionFromMime(mime: string): string | null {
+  const m = mime.toLowerCase();
+  if (m.includes("pdf")) return "pdf";
+  if (m.includes("wordprocessingml") || m.includes("docx")) return "docx";
+  if (m.includes("spreadsheetml") || m.includes("xlsx")) return "xlsx";
+  if (m.includes("ms-excel") || m.includes("xls")) return "xls";
+  if (m.includes("csv")) return "csv";
+  if (m.includes("text/plain") || m.includes("txt")) return "txt";
+  if (m.includes("png")) return "png";
+  if (m.includes("jpeg") || m.includes("jpg")) return "jpg";
+  if (m.includes("webp")) return "webp";
+  if (m.includes("gif")) return "gif";
+  if (m.includes("avif")) return "avif";
+  if (m.includes("tiff")) return "tiff";
+  return null;
+}
+
+function getExtensionFromMagicBytes(buf: Buffer): string | null {
+  if (buf.length < 4) return null;
+  // PDF: %PDF
+  if (
+    buf[0] === 0x25 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x44 &&
+    buf[3] === 0x46
+  ) {
+    return "pdf";
+  }
+  // PNG: 89 50 4E 47
+  if (
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47
+  ) {
+    return "png";
+  }
+  // JPEG: FF D8 FF
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+    return "jpg";
+  }
+  // GIF: GIF8
+  if (
+    buf[0] === 0x47 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x38
+  ) {
+    return "gif";
+  }
+  // WEBP: RIFF....WEBP
+  if (
+    buf.length >= 12 &&
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 && // RIFF
+    buf[8] === 0x57 &&
+    buf[9] === 0x45 &&
+    buf[10] === 0x42 &&
+    buf[11] === 0x50 // WEBP
+  ) {
+    return "webp";
+  }
+  return null;
 }
 
 /**
@@ -143,7 +213,8 @@ export const fileConverterTool = createTool({
     );
 
     try {
-      const sourceBuffer = await downloadFile(fileUrl);
+      const { buffer: sourceBuffer, contentType: responseMime } =
+        await downloadFile(fileUrl);
 
       // Determine original filename from URL
       const urlPath = new URL(
@@ -152,11 +223,26 @@ export const fileConverterTool = createTool({
       const originalFilename = decodeURIComponent(
         urlPath.split("/").pop() || "file",
       );
-      const originalNameWithoutExt =
-        originalFilename.substring(0, originalFilename.lastIndexOf(".")) ||
-        originalFilename;
-      const sourceExtension =
-        originalFilename.split(".").pop()?.toLowerCase() || "";
+      const originalNameWithoutExt = originalFilename.includes(".")
+        ? originalFilename.substring(0, originalFilename.lastIndexOf("."))
+        : originalFilename;
+
+      // Deduce the source extension
+      let sourceExtension = "";
+      if (originalFilename.includes(".")) {
+        sourceExtension =
+          originalFilename.split(".").pop()?.toLowerCase() || "";
+      }
+      if (!sourceExtension) {
+        sourceExtension = getExtensionFromMagicBytes(sourceBuffer) || "";
+      }
+      if (!sourceExtension && responseMime) {
+        sourceExtension = getExtensionFromMime(responseMime) || "";
+      }
+      // If we still can't determine, fallback based on targetFormat
+      if (!sourceExtension) {
+        sourceExtension = targetFormat === "docx" ? "pdf" : "txt";
+      }
 
       const outputName = filename || originalNameWithoutExt;
       const outputFilename = `${outputName}.${targetFormat}`;
@@ -237,7 +323,8 @@ export const fileConverterTool = createTool({
       }
       // --- Category 3: PDF to Word (.docx) / TXT ---
       else if (sourceExtension === "pdf" && targetFormat === "docx") {
-        const pdfParser = require("pdf-parse-fork");
+        const pdfParserModule = await import("pdf-parse-fork");
+        const pdfParser = pdfParserModule.default || pdfParserModule;
         const pdfData = await pdfParser(sourceBuffer);
         const text = pdfData.text || "";
 
@@ -256,7 +343,8 @@ export const fileConverterTool = createTool({
         contentType =
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       } else if (sourceExtension === "pdf" && targetFormat === "txt") {
-        const pdfParser = require("pdf-parse-fork");
+        const pdfParserModule = await import("pdf-parse-fork");
+        const pdfParser = pdfParserModule.default || pdfParserModule;
         const pdfData = await pdfParser(sourceBuffer);
         outputBuffer = Buffer.from(pdfData.text || "", "utf-8");
         contentType = "text/plain";
