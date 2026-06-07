@@ -2,9 +2,13 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { authClient } from "@/lib/auth/client";
 import { ArrowUpRight } from "lucide-react";
 
 export const Footer = () => {
+  const { data: session } = authClient.useSession();
+  const getStartedHref = session ? "/chat" : "/sign-up";
+
   const footerLinks = [
     {
       title: "Product",
@@ -64,7 +68,7 @@ export const Footer = () => {
                 Wasp AI.
               </p>
               <Link
-                href="/auth"
+                href={getStartedHref}
                 className="group inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-white/90 transition-all duration-300"
               >
                 Get Started
