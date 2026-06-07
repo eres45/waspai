@@ -405,6 +405,13 @@ Every section below is MANDATORY — do not skip any, do not write TODOs.
 | UI Screens | draw/render all 3 screens with proper styling | 40 |
 | **TOTAL** | | **640+ lines** |
 
+### 🎮 Critical Game Subsystem Checklist (Must Be Fully Coded):
+1. **State Machine & UI Screens**: Real, visually styled CSS overlays for \`MENU\`, \`PLAYING\`, \`PAUSED\`, and \`GAME_OVER\`. Clicking buttons must transition states immediately.
+2. **Complete Physics**: Real velocity-based kinematics (v = v + a * dt), gravity, friction, bounding box (AABB) or radius-based collision check, resolution/bounce.
+3. **Web Audio Synth**: Create a helper function \`playSound(type)\` using \`new AudioContext()\` to synthesize sound effects (oscillators with envelope gain for Jump, Collect, Hit, Win, Game Over). No external files.
+4. **Dual Controls**: Register event listeners for keyboard keys AND render fully styled, absolute-positioned touch control buttons on-screen for mobile devices.
+5. **No stubs/sketched code**: Every rendering loop (\`ctx.clearRect\`, \`ctx.drawImage\` or primitive drawing), entity updating array, difficulty progression factor, and local high score record saving must be fully coded and functional.
+
 ---
 
 ## ⚠️ RULE 4 — MANDATORY TASK PLANNING BEFORE CODING
