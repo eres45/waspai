@@ -138,16 +138,13 @@ export function Connect() {
                       scale your AI development.
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      <Link
-                        href={"https://cal.com/aliimam/designali"}
-                        target="_blank"
-                      >
+                      <Link href="/contact">
                         <Button className="rounded-full px-8 py-6 font-bold bg-white text-black hover:bg-white/90">
-                          Book a call
+                          Contact us
                         </Button>
                       </Link>
                       <Link
-                        href="mailto:contact@designali.in"
+                        href="mailto:support@waspai.in"
                         target="_blank"
                         className={cn(
                           buttonVariants({
