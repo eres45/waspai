@@ -570,7 +570,9 @@ export async function POST(request: Request) {
 
     messages.push(message);
 
-    const supportToolCall = !isToolCallUnsupportedModel(model);
+    const supportToolCall = !isToolCallUnsupportedModel(
+      modelToUse?.model || "",
+    );
 
     if (agent?.instructions?.mentions) {
       mentions.push(...agent.instructions.mentions);
@@ -1908,8 +1910,9 @@ Always be aware of these installed skills. If a user asks "how many skills do we
               model: currentConfig.model,
             };
 
-            const currentSupportToolCall =
-              !isToolCallUnsupportedModel(currentModel);
+            const currentSupportToolCall = !isToolCallUnsupportedModel(
+              currentConfig.model || "",
+            );
             const currentIsToolCallAllowed =
               currentSupportToolCall && toolChoice !== "none";
             const currentVercelAITooles = currentIsToolCallAllowed
