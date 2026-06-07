@@ -934,6 +934,17 @@ const WriteSiteFileCard = dynamic(
   },
 );
 
+const FileConverterCard = dynamic(
+  () =>
+    import("./tool-invocation/file-converter-card").then(
+      (mod) => mod.FileConverterCard,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 // Local shortcuts for tool invocation approval/rejection
 const approveToolInvocationShortcut: Shortcut = {
   description: "approveToolInvocation",
@@ -1176,6 +1187,10 @@ export const ToolMessagePart = memo(
           return <PresentationGeneratorToolInvocation part={part} />;
         }
         return <DocumentGeneratorToolInvocation part={part} />;
+      }
+
+      if (toolName === "convert-file") {
+        return <FileConverterCard part={part} />;
       }
 
       if (

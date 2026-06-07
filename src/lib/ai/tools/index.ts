@@ -47,6 +47,7 @@ export enum DefaultToolName {
   GeneratePDF = "generate-pdf",
   GeneratePresentation = "generate-presentation",
   ProcessPPT = "process-ppt",
+  ConvertFile = "convert-file",
   // Media
   VideoGen = "video-gen",
   // QR Code

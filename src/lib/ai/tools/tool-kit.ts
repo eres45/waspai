@@ -36,6 +36,7 @@ import {
   textFileTool,
 } from "./document-generator";
 import { pdfGeneratorTool } from "./pdf-generator";
+import { fileConverterTool } from "./file-converter";
 import { presentationGeneratorTool } from "./presentation-generator";
 import { pptProcessorTool } from "./ppt-processor";
 import { videoGenTool } from "./image/video-gen";
@@ -110,6 +111,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.GeneratePDF]: pdfGeneratorTool,
     [DefaultToolName.GeneratePresentation]: presentationGeneratorTool,
     [DefaultToolName.ProcessPPT]: pptProcessorTool,
+    [DefaultToolName.ConvertFile]: fileConverterTool,
   },
   [AppDefaultToolkit.QRCode]: {
     [DefaultToolName.GenerateQRCode]: qrCodeGeneratorTool,

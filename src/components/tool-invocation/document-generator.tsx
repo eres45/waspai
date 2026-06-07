@@ -1,7 +1,16 @@
 "use client";
 
 import { ToolUIPart } from "ai";
-import { FileIcon, Download, Loader2, Eye, EyeOff, Layout } from "lucide-react";
+import {
+  FileIcon,
+  Download,
+  Loader2,
+  Eye,
+  EyeOff,
+  Layout,
+  FileText,
+  FileSpreadsheet,
+} from "lucide-react";
 import { useMemo, useState, useRef, forwardRef } from "react";
 import { Button } from "ui/button";
 import { Badge } from "ui/badge";
@@ -231,6 +240,23 @@ const DocumentTemplate = forwardRef<
 });
 DocumentTemplate.displayName = "DocumentTemplate";
 
+function formatSize(bytes?: number): string {
+  if (bytes === undefined || bytes === null) return "";
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+function getFileIcon(ext?: string) {
+  if (!ext) return FileIcon;
+  const lower = ext.toLowerCase();
+  if (["csv", "xlsx", "xls"].includes(lower)) return FileSpreadsheet;
+  if (["docx", "doc", "pdf", "txt", "md"].includes(lower)) return FileText;
+  return FileIcon;
+}
+
 export function DocumentGeneratorToolInvocation({
   part,
 }: DocumentGeneratorProps) {
@@ -346,6 +372,47 @@ export function DocumentGeneratorToolInvocation({
         <span>
           {t("Common.error")}: {t("Chat.Tool.failedToGenerateDocument")}
         </span>
+      </div>
+    );
+  }
+
+  // Handle direct file downloads (like DOCX, CSV, TXT generated on the server)
+  if ("downloadUrl" in result) {
+    const downloadUrl = (result as any).downloadUrl;
+    const filename = (result as any).filename || "document";
+    const size = (result as any).size;
+    const ext = filename.split(".").pop()?.toUpperCase() || "FILE";
+    const Icon = getFileIcon(ext);
+
+    return (
+      <div className="group/file my-4 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="rounded-2xl border border-border/80 p-4 shadow-sm backdrop-blur-sm bg-card/60 hover:bg-card hover:border-primary/20 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 rounded-xl p-3 bg-primary/10 group-hover/file:bg-primary/20 transition-colors duration-300">
+              <Icon className="size-6 text-primary" />
+            </div>
+
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="text-sm font-semibold truncate text-foreground group-hover/file:text-primary transition-colors duration-300">
+                {filename}
+              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+                {ext} File {size ? `• ${formatSize(size)}` : ""}
+              </p>
+            </div>
+
+            <Button
+              size="sm"
+              className="h-8 gap-2 bg-primary hover:bg-primary/90"
+              asChild
+            >
+              <a href={downloadUrl} download={filename}>
+                <Download className="size-3.5" />
+                Download
+              </a>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
