@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
+import type { JSX } from "react";
 import { ToolUIPart } from "ai";
 import {
   FileCode2,
@@ -14,6 +15,13 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "lib/utils";
+import {
+  bundledLanguages,
+  codeToHast,
+  type BundledLanguage,
+} from "shiki/bundle/web";
+import { jsx, jsxs } from "react/jsx-runtime";
+import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 
 interface WriteSiteFileCardProps {
   part: ToolUIPart;
@@ -50,6 +58,63 @@ function getLanguage(path: string) {
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+interface CodeHighlighterProps {
+  code: string;
+  lang: string;
+}
+
+function CodeHighlighter({ code, lang }: CodeHighlighterProps) {
+  const [highlighted, setHighlighted] = useState<JSX.Element | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const parsedLang = (
+      bundledLanguages[lang as BundledLanguage] ? lang : "txt"
+    ) as BundledLanguage;
+
+    codeToHast(code, {
+      lang: parsedLang,
+      theme: "dark-plus",
+    })
+      .then((hast) => {
+        if (!active) return;
+        const rendered = toJsxRuntime(hast, {
+          Fragment,
+          jsx,
+          jsxs,
+          components: {
+            pre: (props) => (
+              <pre
+                className="p-3 text-[11px] leading-relaxed font-mono whitespace-pre overflow-x-auto !bg-transparent"
+                style={props.style}
+              >
+                {props.children}
+              </pre>
+            ),
+          },
+        }) as JSX.Element;
+        setHighlighted(rendered);
+      })
+      .catch((err) => {
+        console.error("Shiki highlight error:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [code, lang]);
+
+  if (!highlighted) {
+    return (
+      <pre className="p-3 text-[11px] leading-relaxed font-mono text-muted-foreground whitespace-pre overflow-x-auto bg-transparent">
+        <code>{code}</code>
+      </pre>
+    );
+  }
+
+  return highlighted;
 }
 
 export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
@@ -187,12 +252,7 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
               </div>
               {/* Code content */}
               <div className="max-h-[320px] overflow-y-auto">
-                <pre
-                  className="p-3 text-[11px] leading-relaxed font-mono text-emerald-300/90 whitespace-pre overflow-x-auto"
-                  data-language={lang}
-                >
-                  <code>{previewLines}</code>
-                </pre>
+                <CodeHighlighter code={previewLines} lang={lang} />
               </div>
             </div>
           </motion.div>
