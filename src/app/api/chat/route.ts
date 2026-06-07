@@ -1992,12 +1992,50 @@ Always be aware of these installed skills. If a user asks "how many skills do we
 
                   const finalMessages = [...historyMessages, currentMessage];
 
+                  // 3.5. Sanitize tool call arguments to be valid JSON objects for strict providers (like Sarvam)
+                  const sanitizedMessages = finalMessages.map((msg) => {
+                    if (!msg.parts || !Array.isArray(msg.parts)) return msg;
+                    return {
+                      ...msg,
+                      parts: msg.parts.map((part: any) => {
+                        if (part.type === "tool-call") {
+                          let cleanArgs = part.args;
+                          if (cleanArgs === null || cleanArgs === undefined) {
+                            cleanArgs = {};
+                          } else if (typeof cleanArgs === "string") {
+                            try {
+                              const parsed = JSON.parse(cleanArgs);
+                              if (
+                                parsed &&
+                                typeof parsed === "object" &&
+                                !Array.isArray(parsed)
+                              ) {
+                                cleanArgs = parsed;
+                              } else {
+                                cleanArgs = {};
+                              }
+                            } catch {
+                              cleanArgs = {};
+                            }
+                          } else if (
+                            typeof cleanArgs !== "object" ||
+                            Array.isArray(cleanArgs)
+                          ) {
+                            cleanArgs = {};
+                          }
+                          return { ...part, args: cleanArgs };
+                        }
+                        return part;
+                      }),
+                    };
+                  });
+
                   // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
                   if (isImageInputUnsupportedModel(currentModel)) {
                     logger.info(
                       `Sanitizing messages for non-vision model: ${modelId}`,
                     );
-                    return finalMessages.map((msg) => {
+                    return sanitizedMessages.map((msg) => {
                       const textParts = msg.parts.filter(
                         (p: any) => p.type === "text",
                       );
@@ -2012,7 +2050,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
                     });
                   }
 
-                  return finalMessages;
+                  return sanitizedMessages;
                 })(),
               ),
               experimental_transform: smoothStream({ chunking: "word" }),
