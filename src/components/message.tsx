@@ -14,7 +14,6 @@ import {
   FileMessagePart,
   SourceUrlMessagePart,
   GroupedWebSearchToolInvocation,
-  GroupedSiteFileToolInvocation,
 } from "./message-parts";
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -69,43 +68,6 @@ function groupWebSearchParts(parts: any[]) {
   if (currentGroup.length > 0) {
     grouped.push({
       type: "grouped-web-search",
-      parts: currentGroup,
-      id: currentGroup.map((p) => p.toolCallId).join("-"),
-    });
-  }
-
-  return grouped;
-}
-
-function groupSiteFileParts(parts: any[]) {
-  const grouped: any[] = [];
-  let currentGroup: any[] = [];
-
-  for (const part of parts) {
-    const isFileOp =
-      isToolUIPart(part) &&
-      (getToolName(part) === "write_site_file" ||
-        getToolName(part) === "edit_site_file" ||
-        getToolName(part) === "read_site_file");
-
-    if (isFileOp) {
-      currentGroup.push(part);
-    } else {
-      if (currentGroup.length > 0) {
-        grouped.push({
-          type: "grouped-site-file",
-          parts: currentGroup,
-          id: currentGroup.map((p) => p.toolCallId).join("-"),
-        });
-        currentGroup = [];
-      }
-      grouped.push(part);
-    }
-  }
-
-  if (currentGroup.length > 0) {
-    grouped.push({
-      type: "grouped-site-file",
       parts: currentGroup,
       id: currentGroup.map((p) => p.toolCallId).join("-"),
     });
@@ -210,7 +172,7 @@ const PurePreviewMessage = ({
       displayParts = processedParts;
     }
 
-    return groupSiteFileParts(groupWebSearchParts(displayParts));
+    return groupWebSearchParts(displayParts);
   }, [message.parts, modelId, message.role]);
 
   if (message.role == "system") {
@@ -281,12 +243,6 @@ const PurePreviewMessage = ({
             if (part.type === "grouped-web-search") {
               return (
                 <GroupedWebSearchToolInvocation key={key} parts={part.parts} />
-              );
-            }
-
-            if (part.type === "grouped-site-file") {
-              return (
-                <GroupedSiteFileToolInvocation key={key} parts={part.parts} />
               );
             }
 

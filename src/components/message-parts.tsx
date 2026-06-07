@@ -821,17 +821,6 @@ export const GroupedWebSearchToolInvocation = dynamic(
   },
 );
 
-export const GroupedSiteFileToolInvocation = dynamic(
-  () =>
-    import("./tool-invocation/write-site-file-card").then(
-      (mod) => mod.GroupedSiteFileToolInvocation,
-    ),
-  {
-    ssr: false,
-    loading,
-  },
-);
-
 const CodeExecutor = dynamic(
   () =>
     import("./tool-invocation/code-executor").then((mod) => mod.CodeExecutor),
