@@ -975,6 +975,8 @@ async function* streamResponse(providerKey, res, model) {
   const decoder = new TextDecoder();
   let buffer = "";
   let hasYieldedContent = false; // Track if we've actually streamed any text
+  let isThinking = false;
+  let hasSentThinkStart = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -1029,6 +1031,23 @@ async function* streamResponse(providerKey, res, model) {
                   if (delta.reasoning && !delta.reasoning_content) {
                     delta.reasoning_content = delta.reasoning;
                   }
+
+                  // Intercept reasoning and wrap it in `<think>` tags so the frontend client parses it natively.
+                  const reasoningChunk =
+                    delta.reasoning_content || delta.reasoning;
+                  if (reasoningChunk) {
+                    let wrappedContent = reasoningChunk;
+                    if (!hasSentThinkStart) {
+                      wrappedContent = `<think>${wrappedContent}`;
+                      hasSentThinkStart = true;
+                      isThinking = true;
+                    }
+                    delta.content = (delta.content || "") + wrappedContent;
+                  } else if (isThinking && delta.content) {
+                    delta.content = `</think>${delta.content}`;
+                    isThinking = false;
+                  }
+
                   // Normalize tool calls to include index
                   if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
                     delta.tool_calls = delta.tool_calls.map((tc, idx) => {
@@ -1116,6 +1135,25 @@ async function* streamResponse(providerKey, res, model) {
         };
       }
     }
+  }
+
+  // If the stream finished and we are still in thinking mode, close the think tag.
+  if (isThinking) {
+    yield {
+      id: `chatcmpl-${randomUUID()}`,
+      object: "chat.completion.chunk",
+      created: Math.floor(Date.now() / 1000),
+      model,
+      choices: [
+        {
+          index: 0,
+          delta: { content: "</think>" },
+          finish_reason: null,
+        },
+      ],
+    };
+    hasYieldedContent = true;
+    isThinking = false;
   }
 
   // If the model returned tool calls or an empty response (no text content at all),

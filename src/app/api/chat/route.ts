@@ -281,12 +281,23 @@ export async function POST(request: Request) {
 
     logger.info(`Getting model: ${modelToUse?.provider}/${modelToUse?.model}`);
     let model;
+    let initialModelLoadFailed = false;
     try {
       model = customModelProvider.getModel(modelToUse);
       logger.info(`Model retrieved successfully`);
     } catch (modelError) {
-      logger.error(`Failed to get model:`, modelError);
-      throw modelError;
+      logger.error(
+        `Failed to get model initially, will fallback inside stream:`,
+        modelError,
+      );
+      initialModelLoadFailed = true;
+      try {
+        modelToUse = { provider: "OpenAI", model: "openai/gpt-oss-120b" };
+        model = customModelProvider.getModel(modelToUse);
+      } catch (innerError) {
+        logger.error(`Failed to load default fallback model:`, innerError);
+        throw modelError;
+      }
     }
 
     if (!thread) {
@@ -1854,137 +1865,217 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           // But log this critical error for debugging
         }
 
-        const result = streamText({
-          model,
-          system: systemPrompt,
-          // Dynamic Context Window Strategy
-          // maximize history based on model's specific limits instead of hardcoded 10 messages
-          messages: convertToModelMessages(
-            (() => {
-              const modelId = modelToUse?.model || "frenix-gemma-3-12b";
-              const maxContextChars = getModelContextLimit(modelId);
-
-              // 1. Prepare Current Message (User) with Enriched + Truncated Content
-              let currentMessage = messages[messages.length - 1];
-              if (currentMessage.role === "user") {
-                const truncatedContent = truncateTextToLimit(
-                  enrichedMessageText,
-                  modelId,
-                );
-                currentMessage = {
-                  ...currentMessage,
-                  parts: currentMessage.parts.map((p) =>
-                    p.type === "text" ? { ...p, text: truncatedContent } : p,
-                  ),
-                };
-              }
-
-              // 2. Estimate Size & Calculate Budget
-              const estimateSize = (m: any) => {
-                // Rough char count logic
-                return (
-                  m.parts.reduce((acc: number, p: any) => {
-                    let partSize = 0;
-                    if (p.type === "text") {
-                      partSize = p.text?.length || 0;
-                    } else if (p.type === "tool-call") {
-                      partSize = JSON.stringify(p.args).length + 200;
-                    } else if (p.type === "tool-result") {
-                      partSize = JSON.stringify(p.result).length + 200;
-                    } else if (p.type === "image") {
-                      partSize = 500; // Average for image metadata
-                    }
-                    return acc + partSize + 100;
-                  }, 0) + 100
-                );
-              };
-
-              const currentMsgSize = estimateSize(currentMessage);
-              const systemPromptSize = systemPrompt.length + 1000; // Buffer
-              let remainingChars =
-                maxContextChars - currentMsgSize - systemPromptSize;
-
-              if (remainingChars < 0) remainingChars = 0; // Should not happen due to truncation, but safety first
-
-              // 3. Fill History Backwards
-              const historyMessages: any[] = [];
-              const pastMessages = messages.slice(0, -1).reverse();
-
-              for (const msg of pastMessages) {
-                const size = estimateSize(msg);
-                if (remainingChars >= size) {
-                  historyMessages.unshift(msg);
-                  remainingChars -= size;
-                } else {
-                  break; // Stop if next message doesn't fit
-                }
-              }
-
-              logger.info(
-                `Context Strategy: Model=${modelId}, Limit=${maxContextChars}, History=${historyMessages.length} msgs, Remaining=${remainingChars}`,
-              );
-
-              const finalMessages = [...historyMessages, currentMessage];
-
-              // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
-              // If the model doesn't support images, we MUST ensure the content is a string
-              // Groq specifically throws 400 "content must be a string" for non-vision models
-              if (isImageInputUnsupportedModel(model)) {
-                logger.info(
-                  `Sanitizing messages for non-vision model: ${modelId}`,
-                );
-                return finalMessages.map((msg) => {
-                  // Filter for text parts and join them
-                  const textParts = msg.parts.filter(
-                    (p: any) => p.type === "text",
-                  );
-                  const combinedText = textParts
-                    .map((p: any) => p.text)
-                    .join("\n\n");
-
-                  return {
-                    ...msg,
-                    parts: [{ type: "text", text: combinedText }],
-                  };
-                });
-              }
-
-              return finalMessages;
-            })(),
-          ),
-          experimental_transform: smoothStream({ chunking: "word" }),
-          experimental_continueOnLimit: true,
-          maxTokens: 8192,
-          maxSteps: 15,
-          maxRetries: 3,
-          tools: isToolCallAllowed ? (vercelAITooles as any) : undefined,
-          stopWhen: stepCountIs(
-            useImageTool &&
-              !isSiteCreationRequest &&
-              !isGameCreationRequest &&
-              !combinedSkillContents.some((c) =>
-                /\b(game-creator|site-creator|Game Creator|Site Creator)\b/.test(
-                  c,
-                ),
-              )
-              ? 3
-              : 15,
-          ),
-          toolChoice: isToolCallAllowed ? "auto" : undefined,
-          abortSignal: request.signal,
-        } as any);
-        result.consumeStream();
-        dataStream.merge(
-          result.toUIMessageStream({
-            sendReasoning: true,
-            messageMetadata: ({ part }) => {
-              if (part.type == "finish") {
-                metadata.usage = part.totalUsage;
-                return metadata;
-              }
-            },
-          }),
+        const fallbackModels = [
+          initialModelLoadFailed
+            ? null
+            : {
+                provider: modelToUse?.provider,
+                model: modelToUse?.model,
+                instance: model,
+              },
+          { provider: "OpenAI", model: "openai/gpt-oss-120b" },
+          { provider: "Sarvam", model: "sarvam-105b" },
+        ].filter(
+          (item): item is { provider: string; model: string; instance?: any } =>
+            item !== null,
         );
+
+        let lastError: any = null;
+        let success = false;
+
+        for (let attempt = 0; attempt < fallbackModels.length; attempt++) {
+          const currentConfig = fallbackModels[attempt];
+          let currentModel = currentConfig.instance;
+
+          if (!currentModel) {
+            try {
+              currentModel = customModelProvider.getModel(currentConfig);
+              logger.info(
+                `Fallback Attempt ${attempt + 1}: retrieved model ${currentConfig.provider}/${currentConfig.model}`,
+              );
+            } catch (err) {
+              logger.error(
+                `Fallback Attempt ${attempt + 1}: failed to retrieve model:`,
+                err,
+              );
+              lastError = err;
+              continue;
+            }
+          }
+
+          try {
+            // Update metadata to reflect actual model used
+            metadata.chatModel = {
+              provider: currentConfig.provider,
+              model: currentConfig.model,
+            };
+
+            const currentSupportToolCall =
+              !isToolCallUnsupportedModel(currentModel);
+            const currentIsToolCallAllowed =
+              currentSupportToolCall && toolChoice !== "none";
+            const currentVercelAITooles = currentIsToolCallAllowed
+              ? vercelAITooles
+              : undefined;
+
+            logger.info(
+              `Executing chat stream Attempt ${attempt + 1} with model: ${currentConfig.provider}/${currentConfig.model}`,
+            );
+
+            const result = streamText({
+              model: currentModel,
+              system: systemPrompt,
+              messages: convertToModelMessages(
+                (() => {
+                  const modelId = currentConfig.model || "frenix-gemma-3-12b";
+                  const maxContextChars = getModelContextLimit(modelId);
+
+                  // 1. Prepare Current Message (User) with Enriched + Truncated Content
+                  let currentMessage = messages[messages.length - 1];
+                  if (currentMessage.role === "user") {
+                    const truncatedContent = truncateTextToLimit(
+                      enrichedMessageText,
+                      modelId,
+                    );
+                    currentMessage = {
+                      ...currentMessage,
+                      parts: currentMessage.parts.map((p) =>
+                        p.type === "text"
+                          ? { ...p, text: truncatedContent }
+                          : p,
+                      ),
+                    };
+                  }
+
+                  // 2. Estimate Size & Calculate Budget
+                  const estimateSize = (m: any) => {
+                    // Rough char count logic
+                    return (
+                      m.parts.reduce((acc: number, p: any) => {
+                        let partSize = 0;
+                        if (p.type === "text") {
+                          partSize = p.text?.length || 0;
+                        } else if (p.type === "tool-call") {
+                          partSize = JSON.stringify(p.args).length + 200;
+                        } else if (p.type === "tool-result") {
+                          partSize = JSON.stringify(p.result).length + 200;
+                        } else if (p.type === "image") {
+                          partSize = 500; // Average for image metadata
+                        }
+                        return acc + partSize + 100;
+                      }, 0) + 100
+                    );
+                  };
+
+                  const currentMsgSize = estimateSize(currentMessage);
+                  const systemPromptSize = systemPrompt.length + 1000; // Buffer
+                  let remainingChars =
+                    maxContextChars - currentMsgSize - systemPromptSize;
+
+                  if (remainingChars < 0) remainingChars = 0; // Safety first
+
+                  // 3. Fill History Backwards
+                  const historyMessages: any[] = [];
+                  const pastMessages = messages.slice(0, -1).reverse();
+
+                  for (const msg of pastMessages) {
+                    const size = estimateSize(msg);
+                    if (remainingChars >= size) {
+                      historyMessages.unshift(msg);
+                      remainingChars -= size;
+                    } else {
+                      break; // Stop if next message doesn't fit
+                    }
+                  }
+
+                  logger.info(
+                    `Context Strategy: Model=${modelId}, Limit=${maxContextChars}, History=${historyMessages.length} msgs, Remaining=${remainingChars}`,
+                  );
+
+                  const finalMessages = [...historyMessages, currentMessage];
+
+                  // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
+                  if (isImageInputUnsupportedModel(currentModel)) {
+                    logger.info(
+                      `Sanitizing messages for non-vision model: ${modelId}`,
+                    );
+                    return finalMessages.map((msg) => {
+                      const textParts = msg.parts.filter(
+                        (p: any) => p.type === "text",
+                      );
+                      const combinedText = textParts
+                        .map((p: any) => p.text)
+                        .join("\n\n");
+
+                      return {
+                        ...msg,
+                        parts: [{ type: "text", text: combinedText }],
+                      };
+                    });
+                  }
+
+                  return finalMessages;
+                })(),
+              ),
+              experimental_transform: smoothStream({ chunking: "word" }),
+              experimental_continueOnLimit: true,
+              maxTokens: 8192,
+              maxSteps: 15,
+              maxRetries: 3,
+              tools: currentVercelAITooles as any,
+              stopWhen: stepCountIs(
+                useImageTool &&
+                  !isSiteCreationRequest &&
+                  !isGameCreationRequest &&
+                  !combinedSkillContents.some((c) =>
+                    /\b(game-creator|site-creator|Game Creator|Site Creator)\b/.test(
+                      c,
+                    ),
+                  )
+                  ? 3
+                  : 15,
+              ),
+              toolChoice: currentIsToolCallAllowed ? "auto" : undefined,
+              abortSignal: request.signal,
+            } as any);
+            result.consumeStream();
+            dataStream.merge(
+              result.toUIMessageStream({
+                sendReasoning: true,
+                messageMetadata: ({ part }) => {
+                  if (part.type == "finish") {
+                    metadata.usage = part.totalUsage;
+                    return metadata;
+                  }
+                },
+              }),
+            );
+
+            // Wait for completion to detect any stream failures
+            await result.text;
+
+            success = true;
+            logger.info(`Stream execution succeeded on Attempt ${attempt + 1}`);
+            break;
+          } catch (err) {
+            logger.error(
+              `Stream execution failed on Attempt ${attempt + 1}:`,
+              err,
+            );
+            lastError = err;
+            if (request.signal?.aborted) {
+              throw err;
+            }
+          }
+        }
+
+        if (!success) {
+          logger.error(`All retry attempts failed. Propagating error.`);
+          throw (
+            lastError ||
+            new Error("All fallback models failed to generate response.")
+          );
+        }
       },
 
       generateId: generateUUID,
