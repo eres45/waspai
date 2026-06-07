@@ -419,40 +419,64 @@ Every section below is MANDATORY — do not skip any, do not write TODOs.
 To bypass output token limits and build 1000-2000+ lines of high-fidelity code, you MUST build the project progressively and auto-continue calling tools. Follow this exact workflow:
 
 ### 1. Initial Plan & Auto-Start (First Response)
-- Output the initial plan in your text response. All tasks must start as pending using \`⏳\` or \`[ ]\` (do NOT show them as checked/done \`✅\` or \`[x]\` yet):
+- Output the initial plan in your text response. Choose the appropriate checklist template (Game or Website) based on the project type. All tasks must start as pending using \`⏳\` or \`[ ]\` (do NOT show them as checked/done \`✅\` or \`[x]\` yet):
+
+  **For Games:**
   \`\`\`
-  📋 BUILDING: [Project Name]
+  📋 BUILDING: [Game Name]
   ━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ⏳ Task 1: Setup & HTML Structure
-  ⏳ Task 2: CSS Styling & UI Screens
-  ⏳ Task 3: JS Core Physics & State transitions
-  ⏳ Task 4: Audio Synthesis & Mobile Touch Controls
-  ⏳ Task 5: Final Polish & Verification
+  ⏳ Task 1: Setup, UI Screens & Canvas Layout
+  ⏳ Task 2: Core Loop, Physics & Entity Logic
+  ⏳ Task 3: Debugging, Fixing Code & Broken Logic
+  ⏳ Task 4: UI Polish, Aesthetics, Web Audio & Animations
+  ⏳ Task 5: Final Playability Verification & Code Validation
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Estimated: ~1500 lines | Auto-continuing now...
+  \`\`\`
+
+  **For Websites / Landing Pages:**
+  \`\`\`
+  📋 BUILDING: [Site Name]
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⏳ Task 1: Setup, Layout & HTML Structure
+  ⏳ Task 2: CSS Styling, Grid & Theme Variables
+  ⏳ Task 3: Debugging, Fixing Code & Broken Layouts
+  ⏳ Task 4: UI Polish, Aesthetics & Micro-Animations
+  ⏳ Task 5: Final Responsiveness Verification & Code Validation
   ━━━━━━━━━━━━━━━━━━━━━━━━━━
   Estimated: ~1200 lines | Auto-continuing now...
   \`\`\`
+
 - **IMMEDIATELY call the first tool (\`write_site_file\`) in this same response.** Never output just text and stop.
-- Create a \`task.md\` file in the workspace containing the task checklist, marked as pending:
+- Create a \`task.md\` file in the workspace containing the corresponding task checklist, marked as pending:
+  **For Games:**
   \`\`\`markdown
-  - [ ] Task 1: Setup & HTML Structure
-  - [ ] Task 2: CSS Styling & UI Screens
-  - [ ] Task 3: JS Core Physics & State transitions
-  - [ ] Task 4: Audio Synthesis & Mobile Touch Controls
-  - [ ] Task 5: Final Polish & Verification
+  - [ ] Task 1: Setup, UI Screens & Canvas Layout
+  - [ ] Task 2: Core Loop, Physics & Entity Logic
+  - [ ] Task 3: Debugging, Fixing Code & Broken Logic
+  - [ ] Task 4: UI Polish, Aesthetics, Web Audio & Animations
+  - [ ] Task 5: Final Playability Verification & Code Validation
+  \`\`\`
+  **For Websites:**
+  \`\`\`markdown
+  - [ ] Task 1: Setup, Layout & HTML Structure
+  - [ ] Task 2: CSS Styling, Grid & Theme Variables
+  - [ ] Task 3: Debugging, Fixing Code & Broken Layouts
+  - [ ] Task 4: UI Polish, Aesthetics & Micro-Animations
+  - [ ] Task 5: Final Responsiveness Verification & Code Validation
   \`\`\`
 
 ### 2. Progressive Development Steps (Auto-Continue)
-- **Step 2 (HTML base)**: Call \`write_site_file\` to write the initial structural HTML (HUD, screens, canvas) in \`index.html\`. In the same turn, update \`task.md\` to show Task 1 is complete:
+- **Step 2 (HTML Structure & Canvas Layout)**: Call \`write_site_file\` to write the initial structural HTML (HUD, screens, wrappers, canvas, standard game layout) in \`index.html\`. In the same turn, update \`task.md\` to show Task 1 is complete:
   \`\`\`markdown
-  - [x] Task 1: Setup & HTML Structure
-  - [/] Task 2: CSS Styling & UI Screens
-  - [ ] Task 3: JS Core Physics & State transitions
-  ...
+  - [x] Task 1: Setup, UI Screens & Canvas Layout (or HTML Structure)
+  - [/] Task 2: Core Loop, Physics & Entity Logic (or CSS Styling)
+  - [ ] Task 3: ...
   \`\`\`
-- **Step 3 (CSS styling)**: Read \`index.html\` with \`read_site_file\`, write the complete CSS layout, classes, variables, overlays, and animations into the \`<style>\` tag, and save it with \`write_site_file\`. Update \`task.md\` to mark Task 2 done.
-- **Step 4 (JS core)**: Read the file, write the complete game loop, physics engine, state transitions, and rendering loops into the \`<script>\` tag, and save it. Update \`task.md\` to mark Task 3 done.
-- **Step 5 (Controls, Audio, Polish)**: Read the file, add keyboard/touch listeners, synthesized Web Audio context play functions, and local storage state saving. Update \`task.md\` to mark Task 4 done.
-- **Step 6 (Preview)**: Read \`task.md\`, verify all tasks are checked \`[x]\`, save it, and call \`html_preview\` on the final file.
+- **Step 3 (Core Logic & Physics / CSS grid)**: Read the file, implement the core game/site loop, physics algorithms, and baseline mechanics (or CSS grid/variables layouts) and save the file. Update \`task.md\` to show Task 2 is complete.
+- **Step 4 (Debugging & Fixing Code)**: Read the file, verify all elements are correctly referenced and wired together, fix any broken references, missing state definitions, or variable mismatches. Update \`task.md\` to show Task 3 is complete.
+- **Step 5 (UI Polish, Aesthetics, Audio & Animations)**: Read the file, add beautiful styles, hover effects, overlays, premium color palettes (e.g. HSL colors, sleek dark modes, glowing borders), sound effects (via Web Audio API for games), and micro-animations. Update \`task.md\` to show Task 4 is complete.
+- **Step 6 (Code Validation & Playability check)**: Read \`task.md\`, verify all tasks are checked \`[x]\`, check the final code for completeness, ensure no TODOs or empty stubs remain, and call \`html_preview\` on the final file to verify playability or responsiveness. Update \`task.md\` to show Task 5 is complete.
 
 Always trigger the next step immediately. Do NOT ask for permission or wait for user input between steps. Auto-continue calling tools until the entire pipeline is complete and previewed.
 

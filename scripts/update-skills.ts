@@ -56,29 +56,37 @@ To bypass output token limits and build 1000-2000+ lines of high-fidelity code, 
 ### 1. Initial Plan & Auto-Start (First Response)
 - Output the initial plan in your text response. All tasks must start as pending using \`⏳\` or \`[ ]\` (do NOT show them as checked/done \`✅\` or \`[x]\` yet):
   \`\`\`
-  📋 BUILDING: [Project Name]
+  📋 BUILDING: [Site Name]
   ━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ⏳ Task 1: Setup & HTML Structure
-  ⏳ Task 2: CSS Styling & UI Screens
-  ⏳ Task 3: JS Core Logic & Interactivity
-  ⏳ Task 4: Final Polish & Verification
+  ⏳ Task 1: Setup, Layout & HTML Structure
+  ⏳ Task 2: CSS Styling, Grid & Theme Variables
+  ⏳ Task 3: Debugging, Fixing Code & Broken Layouts
+  ⏳ Task 4: UI Polish, Aesthetics & Micro-Animations
+  ⏳ Task 5: Final Responsiveness Verification & Code Validation
   ━━━━━━━━━━━━━━━━━━━━━━━━━━
   Estimated: ~1200 lines | Auto-continuing now...
   \`\`\`
 - **IMMEDIATELY call the first tool (\`write_site_file\`) in this same response.** Never output just text and stop.
 - Create a \`task.md\` file in the workspace containing the task checklist, marked as pending:
   \`\`\`markdown
-  - [ ] Task 1: Setup & HTML Structure
-  - [ ] Task 2: CSS Styling & UI Screens
-  - [ ] Task 3: JS Core Logic & Interactivity
-  - [ ] Task 4: Final Polish & Verification
+  - [ ] Task 1: Setup, Layout & HTML Structure
+  - [ ] Task 2: CSS Styling, Grid & Theme Variables
+  - [ ] Task 3: Debugging, Fixing Code & Broken Layouts
+  - [ ] Task 4: UI Polish, Aesthetics & Micro-Animations
+  - [ ] Task 5: Final Responsiveness Verification & Code Validation
   \`\`\`
 
 ### 2. Progressive Development Steps (Auto-Continue)
-- **Step 2 (HTML base)**: Call \`write_site_file\` to write the initial structural HTML in \`index.html\`. In the same turn, update \`task.md\` to show Task 1 is complete.
-- **Step 3 (CSS styling)**: Read \`index.html\` with \`read_site_file\`, write the complete CSS layout and animations into the \`<style>\` tag, and save it with \`write_site_file\`. Update \`task.md\` to mark Task 2 done.
-- **Step 4 (JS core)**: Read the file, write the core logic into the \`<script>\` tag, and save it. Update \`task.md\` to mark Task 3 done.
-- **Step 5 (Polish & Preview)**: Read \`task.md\`, verify all tasks are checked \`[x]\`, save it, and call \`html_preview\` on the final file.
+- **Step 2 (HTML base)**: Call \`write_site_file\` to write the initial structural HTML (nav, sections, layouts, divs) in \`index.html\`. In the same turn, update \`task.md\` to show Task 1 is complete:
+  \`\`\`markdown
+  - [x] Task 1: Setup, Layout & HTML Structure
+  - [/] Task 2: CSS Styling, Grid & Theme Variables
+  - [ ] Task 3: ...
+  \`\`\`
+- **Step 3 (CSS grid & layout)**: Read \`index.html\` with \`read_site_file\`, write the complete CSS layout, typography styles, grid setups, and CSS custom properties inside \`<style>\`, and save it. Update \`task.md\` to show Task 2 is complete.
+- **Step 4 (Debugging & Fixing Code)**: Read the file, verify all elements are referenced correctly, ensure script logic elements are wired to elements, and fix any broken references or JavaScript bugs. Update \`task.md\` to show Task 3 is complete.
+- **Step 5 (UI Polish & Aesthetics)**: Read the file, add micro-animations, button hover shimmer, pulsing elements, glassmorphism cards, premium color gradients, and nice SVG icons. Update \`task.md\` to show Task 4 is complete.
+- **Step 6 (Responsiveness & Code Validation)**: Read \`task.md\`, verify all tasks are checked \`[x]\`, check the final code for responsiveness across mobile/desktop, ensure zero stubs or empty blocks, and call \`html_preview\` on the final file. Update \`task.md\` to show Task 5 is complete.
 
 Always trigger the next step immediately. Do NOT ask for permission or wait for user input between steps. Auto-continue calling tools until the entire pipeline is complete and previewed.
 
