@@ -166,6 +166,40 @@ export async function POST(request: Request) {
       videoGenModel,
     } = parsedBody;
 
+    // Prepare deduplicated user message parts (including attachments) for database persistence.
+    // We capture this early before any OCR updates or file stripping are made to the message parts
+    // so the massive extracted text is not written into the user's message bubble in the UI.
+    const userParts = [
+      ...message.parts.map(convertToSavePart),
+      ...attachments.map(
+        (att) =>
+          ({
+            type: "file",
+            url: att.url,
+            filename: att.filename,
+            mediaType: att.mediaType,
+            // Legacy fallbacks:
+            name: att.filename,
+            mimeType: att.mediaType,
+          }) as any,
+      ),
+    ];
+
+    const seenUrls = new Set<string>();
+    const uniqueUserPartsForDb: any[] = [];
+    for (const part of userParts) {
+      if (part.type === "text") {
+        uniqueUserPartsForDb.push(part);
+      } else if (part.url) {
+        if (!seenUrls.has(part.url)) {
+          uniqueUserPartsForDb.push(part);
+          seenUrls.add(part.url);
+        }
+      } else {
+        uniqueUserPartsForDb.push(part);
+      }
+    }
+
     // Sync backend message history cleanup: if editing or regenerating a message,
     // delete all subsequent messages in the database synchronous to prevent Next.js client-side revalidation glitches.
     if (message?.id) {
@@ -621,40 +655,6 @@ export async function POST(request: Request) {
 
     // Allow tool calls whenever the model supports them — AI decides when to use them
     const isToolCallAllowed = supportToolCall && toolChoice !== "none";
-
-    // Prepare deduplicated user message parts (including attachments) for database persistence.
-    // This must be declared outside createUIMessageStream so it is in scope for both the
-    // execute stream writer and the onFinish database sync callback.
-    const userParts = [
-      ...message.parts.map(convertToSavePart),
-      ...attachments.map(
-        (att) =>
-          ({
-            type: "file",
-            url: att.url,
-            filename: att.filename,
-            mediaType: att.mediaType,
-            // Legacy fallbacks:
-            name: att.filename,
-            mimeType: att.mediaType,
-          }) as any,
-      ),
-    ];
-
-    const seenUrls = new Set<string>();
-    const uniqueUserPartsForDb: any[] = [];
-    for (const part of userParts) {
-      if (part.type === "text") {
-        uniqueUserPartsForDb.push(part);
-      } else if (part.url) {
-        if (!seenUrls.has(part.url)) {
-          uniqueUserPartsForDb.push(part);
-          seenUrls.add(part.url);
-        }
-      } else {
-        uniqueUserPartsForDb.push(part);
-      }
-    }
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {

@@ -286,13 +286,13 @@ export function DocumentGeneratorToolInvocation({
       for (const el of styleElements) {
         try {
           const text = el.textContent || "";
-          if (text.includes("oklch(")) {
+          if (text.includes("oklch(") || text.includes("oklab(")) {
             el.disabled = true;
             disabledElements.push(el);
 
             const tempEl = document.createElement("style");
             tempEl.textContent = text.replace(
-              /oklch\([^)]+\)/g,
+              /oklch\([^)]+\)|oklab\([^)]+\)/g,
               "rgb(100, 116, 139)",
             );
             document.head.appendChild(tempEl);
@@ -309,13 +309,13 @@ export function DocumentGeneratorToolInvocation({
           try {
             const res = await fetch(el.href);
             const text = await res.text();
-            if (text.includes("oklch(")) {
+            if (text.includes("oklch(") || text.includes("oklab(")) {
               el.disabled = true;
               disabledElements.push(el);
 
               const tempEl = document.createElement("style");
               tempEl.textContent = text.replace(
-                /oklch\([^)]+\)/g,
+                /oklch\([^)]+\)|oklab\([^)]+\)/g,
                 "rgb(100, 116, 139)",
               );
               document.head.appendChild(tempEl);
