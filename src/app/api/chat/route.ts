@@ -292,7 +292,7 @@ export async function POST(request: Request) {
       );
       initialModelLoadFailed = true;
       try {
-        modelToUse = { provider: "OpenAI", model: "openai/gpt-oss-120b" };
+        modelToUse = { provider: "OpenAI", model: "gpt-oss-120b-p2" };
         model = customModelProvider.getModel(modelToUse);
       } catch (innerError) {
         logger.error(`Failed to load default fallback model:`, innerError);
@@ -1873,7 +1873,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
                 model: modelToUse?.model,
                 instance: model,
               },
-          { provider: "OpenAI", model: "openai/gpt-oss-120b" },
+          { provider: "OpenAI", model: "gpt-oss-120b-p2" },
           { provider: "Sarvam", model: "sarvam-105b" },
         ].filter(
           (item): item is { provider: string; model: string; instance?: any } =>
