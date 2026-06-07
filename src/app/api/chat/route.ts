@@ -622,6 +622,40 @@ export async function POST(request: Request) {
     // Allow tool calls whenever the model supports them — AI decides when to use them
     const isToolCallAllowed = supportToolCall && toolChoice !== "none";
 
+    // Prepare deduplicated user message parts (including attachments) for database persistence.
+    // This must be declared outside createUIMessageStream so it is in scope for both the
+    // execute stream writer and the onFinish database sync callback.
+    const userParts = [
+      ...message.parts.map(convertToSavePart),
+      ...attachments.map(
+        (att) =>
+          ({
+            type: "file",
+            url: att.url,
+            filename: att.filename,
+            mediaType: att.mediaType,
+            // Legacy fallbacks:
+            name: att.filename,
+            mimeType: att.mediaType,
+          }) as any,
+      ),
+    ];
+
+    const seenUrls = new Set<string>();
+    const uniqueUserPartsForDb: any[] = [];
+    for (const part of userParts) {
+      if (part.type === "text") {
+        uniqueUserPartsForDb.push(part);
+      } else if (part.url) {
+        if (!seenUrls.has(part.url)) {
+          uniqueUserPartsForDb.push(part);
+          seenUrls.add(part.url);
+        }
+      } else {
+        uniqueUserPartsForDb.push(part);
+      }
+    }
+
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
         const mcpClients = await mcpClientsManager.getClients();
@@ -1901,37 +1935,6 @@ Always be aware of these installed skills. If a user asks "how many skills do we
         // CRITICAL: Save user message BEFORE calling streamText
         // This ensures that even if streamText fails, the user message is preserved in the thread
         // This prevents thread corruption where subsequent messages can't load history
-        const userParts = [
-          ...message.parts.map(convertToSavePart),
-          ...attachments.map(
-            (att) =>
-              ({
-                type: "file",
-                url: att.url,
-                filename: att.filename,
-                mediaType: att.mediaType,
-                // Legacy fallbacks:
-                name: att.filename,
-                mimeType: att.mediaType,
-              }) as any,
-          ),
-        ];
-
-        const seenUrls = new Set<string>();
-        const uniqueUserPartsForDb: any[] = [];
-        for (const part of userParts) {
-          if (part.type === "text") {
-            uniqueUserPartsForDb.push(part);
-          } else if (part.url) {
-            if (!seenUrls.has(part.url)) {
-              uniqueUserPartsForDb.push(part);
-              seenUrls.add(part.url);
-            }
-          } else {
-            uniqueUserPartsForDb.push(part);
-          }
-        }
-
         try {
           logger.info(
             `Saving user message to thread before streamText: ${message.id}`,
