@@ -1745,12 +1745,55 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           "generate-qr-code-with-logo": qrCodeWithLogoTool,
           "analyze-image": scopedAnalyzeImageTool,
           html_preview: htmlPreviewTool,
-          // ALWAYS include site deployment and skill creation tools
-          deploy_site: deploySiteTool,
+          deploy_site: {
+            ...deploySiteTool,
+            execute: async (args: any, options: any) => {
+              return deploySiteTool.execute!(
+                {
+                  ...args,
+                  threadId: args.threadId || thread!.id,
+                },
+                options,
+              );
+            },
+          },
           create_skill: createSkillTool,
-          write_site_file: writeSiteFileTool,
-          read_site_file: readSiteFileTool,
-          edit_site_file: editSiteFileTool,
+          write_site_file: {
+            ...writeSiteFileTool,
+            execute: async (args: any, options: any) => {
+              return writeSiteFileTool.execute!(
+                {
+                  ...args,
+                  threadId: args.threadId || thread!.id,
+                },
+                options,
+              );
+            },
+          },
+          read_site_file: {
+            ...readSiteFileTool,
+            execute: async (args: any, options: any) => {
+              return readSiteFileTool.execute!(
+                {
+                  ...args,
+                  threadId: args.threadId || thread!.id,
+                },
+                options,
+              );
+            },
+          },
+          edit_site_file: {
+            ...editSiteFileTool,
+            execute: async (args: any, options: any) => {
+              return editSiteFileTool.execute!(
+                {
+                  ...args,
+                  threadId: args.threadId || thread!.id,
+                },
+                options,
+              );
+            },
+          },
 
           // Conditionally include export tool
           ...(isChatExportRequest
