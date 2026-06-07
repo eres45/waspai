@@ -70,11 +70,11 @@ export async function POST(request: Request) {
 
     if (isReasoningModel) {
       logger.info(
-        `Reasoning model detected for title generation. Overriding to frenix-gemma-3-12b.`,
+        `Reasoning model detected for title generation. Overriding to gemini-2.5-flash.`,
       );
       modelToUse = {
         provider: "google",
-        model: "frenix-gemma-3-12b",
+        model: "gemini-2.5-flash",
       };
     }
 
@@ -82,10 +82,10 @@ export async function POST(request: Request) {
     try {
       model = customModelProvider.getModel(modelToUse);
     } catch (_e) {
-      logger.warn("Title Model not found, falling back to frenix-gemma-3-12b");
+      logger.warn("Title Model not found, falling back to gemini-2.5-flash");
       model = customModelProvider.getModel({
         provider: "google",
-        model: "frenix-gemma-3-12b",
+        model: "gemini-2.5-flash",
       });
     }
 
