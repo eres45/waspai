@@ -5,8 +5,6 @@ import {
   FileIcon,
   Download,
   Loader2,
-  Eye,
-  EyeOff,
   Layout,
   FileText,
   FileSpreadsheet,
