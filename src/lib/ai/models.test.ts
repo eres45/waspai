@@ -218,3 +218,89 @@ describe("getModelProvider", () => {
     expect(getModelProvider("frenix-llama-3.1-70b")).toBe("Meta");
   });
 });
+
+describe("sanitizeMessageToolCalls", () => {
+  it("sanitizes null args and missing inputs in message parts to empty objects", () => {
+    const { sanitizeMessageToolCalls } = modelsModule;
+    const messages = [
+      {
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-call",
+            toolCallId: "call-1",
+            toolName: "getWeather",
+            args: null,
+          },
+        ],
+      },
+    ];
+
+    const result = sanitizeMessageToolCalls(messages);
+    expect(result[0].parts[0].args).toEqual({});
+    expect(result[0].parts[0].input).toEqual({});
+  });
+
+  it("sanitizes invalid JSON strings in message parts to empty objects", () => {
+    const { sanitizeMessageToolCalls } = modelsModule;
+    const messages = [
+      {
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-call",
+            toolCallId: "call-2",
+            toolName: "getWeather",
+            args: "invalid-json",
+          },
+        ],
+      },
+    ];
+
+    const result = sanitizeMessageToolCalls(messages);
+    expect(result[0].parts[0].args).toEqual({});
+    expect(result[0].parts[0].input).toEqual({});
+  });
+
+  it("parses valid JSON strings in message parts to objects", () => {
+    const { sanitizeMessageToolCalls } = modelsModule;
+    const messages = [
+      {
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-call",
+            toolCallId: "call-3",
+            toolName: "getWeather",
+            args: '{"city":"Berlin"}',
+          },
+        ],
+      },
+    ];
+
+    const result = sanitizeMessageToolCalls(messages);
+    expect(result[0].parts[0].args).toEqual({ city: "Berlin" });
+    expect(result[0].parts[0].input).toEqual({ city: "Berlin" });
+  });
+
+  it("sanitizes client-side toolInvocations correctly", () => {
+    const { sanitizeMessageToolCalls } = modelsModule;
+    const messages = [
+      {
+        role: "assistant",
+        toolInvocations: [
+          {
+            state: "result",
+            toolCallId: "call-4",
+            toolName: "getWeather",
+            args: null,
+            result: "done",
+          },
+        ],
+      },
+    ];
+
+    const result = sanitizeMessageToolCalls(messages);
+    expect(result[0].toolInvocations[0].args).toEqual({});
+  });
+});

@@ -5,7 +5,7 @@ import {
   smoothStream,
   streamText,
 } from "ai";
-import { customModelProvider } from "lib/ai/models";
+import { customModelProvider, sanitizeMessageToolCalls } from "lib/ai/models";
 import globalLogger from "logger";
 import { buildUserSystemPrompt } from "lib/ai/prompts";
 import { getUserPreferences } from "lib/user/server";
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       system: `${buildUserSystemPrompt(session.user, userPreferences)} ${
         instructions ? `\n\n${instructions}` : ""
       }`.trim(),
-      messages: convertToModelMessages(messages),
+      messages: convertToModelMessages(sanitizeMessageToolCalls(messages)),
       experimental_transform: smoothStream({ chunking: "word" }),
       experimental_continueOnLimit: true,
       maxTokens: 8192,

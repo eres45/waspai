@@ -32,6 +32,28 @@ const sarvamProvider = createOpenAICompatible({
   headers: {
     "api-subscription-key": process.env.SARVAM_API_KEY || "",
   },
+  fetch: async (url, options) => {
+    if (options?.body) {
+      try {
+        const parsedBody = JSON.parse(options.body as string);
+        console.log(
+          "[DEBUG Sarvam Request Body] Messages count:",
+          parsedBody.messages?.length,
+        );
+        parsedBody.messages?.forEach((msg: any, idx: number) => {
+          if (msg.tool_calls) {
+            console.log(
+              `[DEBUG Sarvam Request Body] Message ${idx} tool_calls:`,
+              JSON.stringify(msg.tool_calls),
+            );
+          }
+        });
+      } catch (e) {
+        console.error("[DEBUG Sarvam Request Body] Parse error:", e);
+      }
+    }
+    return fetch(url, options);
+  },
 });
 
 // ─── Vision / image-input heuristic ──────────────────────────────────────────
@@ -714,5 +736,92 @@ export const customModelProvider = {
     return creativeProvider(modelId) as unknown as LanguageModel;
   },
 };
+
+export function sanitizeMessageToolCalls<
+  T extends { parts?: any; toolInvocations?: any },
+>(messages: T[]): T[] {
+  return messages.map((msg) => {
+    if (!msg.parts || !Array.isArray(msg.parts)) {
+      if (
+        (msg as any).toolInvocations &&
+        Array.isArray((msg as any).toolInvocations)
+      ) {
+        return {
+          ...msg,
+          toolInvocations: (msg as any).toolInvocations.map((inv: any) => {
+            let cleanArgs = inv.args;
+            if (cleanArgs === null || cleanArgs === undefined) {
+              cleanArgs = {};
+            } else if (typeof cleanArgs === "string") {
+              try {
+                const parsed = JSON.parse(cleanArgs);
+                if (
+                  parsed &&
+                  typeof parsed === "object" &&
+                  !Array.isArray(parsed)
+                ) {
+                  cleanArgs = parsed;
+                } else {
+                  cleanArgs = {};
+                }
+              } catch {
+                cleanArgs = {};
+              }
+            } else if (
+              typeof cleanArgs !== "object" ||
+              Array.isArray(cleanArgs)
+            ) {
+              cleanArgs = {};
+            }
+            return { ...inv, args: cleanArgs };
+          }),
+        };
+      }
+      return msg;
+    }
+
+    return {
+      ...msg,
+      parts: msg.parts.map((part: any) => {
+        if (
+          part.type === "tool-call" ||
+          part.type === "dynamic-tool" ||
+          part.type?.startsWith("tool-")
+        ) {
+          let cleanArgs = part.args !== undefined ? part.args : part.input;
+          if (cleanArgs === null || cleanArgs === undefined) {
+            cleanArgs = {};
+          } else if (typeof cleanArgs === "string") {
+            try {
+              const parsed = JSON.parse(cleanArgs);
+              if (
+                parsed &&
+                typeof parsed === "object" &&
+                !Array.isArray(parsed)
+              ) {
+                cleanArgs = parsed;
+              } else {
+                cleanArgs = {};
+              }
+            } catch {
+              cleanArgs = {};
+            }
+          } else if (
+            typeof cleanArgs !== "object" ||
+            Array.isArray(cleanArgs)
+          ) {
+            cleanArgs = {};
+          }
+          return {
+            ...part,
+            args: cleanArgs,
+            input: cleanArgs,
+          };
+        }
+        return part;
+      }),
+    };
+  });
+}
 
 export { unifiedProvider };

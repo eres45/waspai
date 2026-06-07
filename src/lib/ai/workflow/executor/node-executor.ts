@@ -1,4 +1,4 @@
-import { customModelProvider } from "lib/ai/models";
+import { customModelProvider, sanitizeMessageToolCalls } from "lib/ai/models";
 import {
   ConditionNodeData,
   OutputNodeData,
@@ -117,7 +117,9 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
     while (continuations < maxContinuations) {
       const response = await generateText({
         model,
-        messages: convertToModelMessages(currentMessages),
+        messages: convertToModelMessages(
+          sanitizeMessageToolCalls(currentMessages) as any,
+        ),
       });
 
       fullAnswer += response.text;
@@ -162,7 +164,7 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
 
   const response = await generateObject({
     model,
-    messages: convertToModelMessages(messages),
+    messages: convertToModelMessages(sanitizeMessageToolCalls(messages) as any),
     schema: jsonSchemaToZod(node.outputSchema.properties.answer),
     maxRetries: 3,
   });
