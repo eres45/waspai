@@ -1647,11 +1647,10 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           2. Use the "File Content" blocks to fulfill the user's request.
           3. Base your answers strictly on the extracted text provided.`,
 
-          // Tool Calling Format Reinforcement (fixes some models leaking XML)
+          // Tool Calling Format Reinforcement (fixes some models leaking XML or JSON)
           `[TOOL USE STANDARD]
-           1. Use the standard OpenAI tool calling format (JSON in tool_calls field).
-           2. DO NOT output XML tags like <invoke>, <tool_code>, <minimax:tool_call>, <tool_call>, <function>, or <parameter> in your text response.
-           3. If you want to call a tool, generate the tool call object, do not write code to call it.`,
+           1. DO NOT output XML tags like <invoke>, <tool_code>, <minimax:tool_call>, <tool_call>, <function>, or <parameter> in your text response.
+           2. Use the native tool call/function call feature to invoke tools. NEVER print raw JSON strings or JSON objects representing tool calls in your conversational text output.`,
 
           // NOTE: Visualization, Memory, Browser, and Tool Knowledge blocks
           // are already covered by buildUserSystemPrompt() in prompts.ts
