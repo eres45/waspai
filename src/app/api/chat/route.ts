@@ -1750,7 +1750,10 @@ Always be aware of these installed skills. If a user asks "how many skills do we
               return deploySiteTool.execute!(
                 {
                   ...args,
-                  threadId: args.threadId || thread!.id,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
                 },
                 options,
               );
@@ -1763,7 +1766,10 @@ Always be aware of these installed skills. If a user asks "how many skills do we
               return writeSiteFileTool.execute!(
                 {
                   ...args,
-                  threadId: args.threadId || thread!.id,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
                 },
                 options,
               );
@@ -1775,7 +1781,10 @@ Always be aware of these installed skills. If a user asks "how many skills do we
               return readSiteFileTool.execute!(
                 {
                   ...args,
-                  threadId: args.threadId || thread!.id,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
                 },
                 options,
               );
@@ -1787,7 +1796,10 @@ Always be aware of these installed skills. If a user asks "how many skills do we
               return editSiteFileTool.execute!(
                 {
                   ...args,
-                  threadId: args.threadId || thread!.id,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
                 },
                 options,
               );

@@ -23,6 +23,7 @@ export const editSiteFileTool = createTool({
       .describe("The new code/text to replace the targetContent with."),
     threadId: z
       .string()
+      .optional()
       .describe("Current thread/chat ID to locate the project draft"),
   }),
   execute: async ({ path, targetContent, replacementContent, threadId }) => {
@@ -31,6 +32,14 @@ export const editSiteFileTool = createTool({
 
     if (!userId) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    if (!threadId || threadId === "current") {
+      return {
+        success: false,
+        error:
+          "A valid chat thread ID is required to locate the project draft.",
+      };
     }
 
     try {

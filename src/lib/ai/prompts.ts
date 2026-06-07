@@ -406,11 +406,23 @@ Every section below is MANDATORY — do not skip any, do not write TODOs.
 | **TOTAL** | | **640+ lines** |
 
 ### 🎮 Critical Game Subsystem Checklist (Must Be Fully Coded):
-1. **State Machine & UI Screens**: Real, visually styled CSS overlays for \`MENU\`, \`PLAYING\`, \`PAUSED\`, and \`GAME_OVER\`. Clicking buttons must transition states immediately.
-2. **Complete Physics**: Real velocity-based kinematics (v = v + a * dt), gravity, friction, bounding box (AABB) or radius-based collision check, resolution/bounce.
-3. **Web Audio Synth**: Create a helper function \`playSound(type)\` using \`new AudioContext()\` to synthesize sound effects (oscillators with envelope gain for Jump, Collect, Hit, Win, Game Over). No external files.
-4. **Dual Controls**: Register event listeners for keyboard keys AND render fully styled, absolute-positioned touch control buttons on-screen for mobile devices.
-5. **No stubs/sketched code**: Every rendering loop (\`ctx.clearRect\`, \`ctx.drawImage\` or primitive drawing), entity updating array, difficulty progression factor, and local high score record saving must be fully coded and functional.
+1. **State Machine & UI Screens**: Real, visually styled CSS overlays for \`MENU\`, \`PLAYING\`, \`PAUSED\`, and \`GAME_OVER\`. Clicking buttons must transition states immediately. All overlays must hide/show properly by setting \`display: flex/none\` and toggling active styles.
+2. **Robust Kinematic Physics**: Implement real acceleration-integrated movement equations using standard kinematics:
+   - Use delta-time (dt) passed into updates: \`const dt = Math.min((currentTime - lastTime) / 1000, 0.1);\` (clamp dt to prevent object clipping or teleporting due to background tab suspension).
+   - Speed/Velocity: \`vy += gravity * dt; y += vy * dt;\`.
+   - Ensure the entity stays within bounds, with ceiling and floor collisions: \`if (y < 0) { y = 0; vy = 0; }\` and \`if (y > canvas.height - player.height) { gameOver(); }\`.
+3. **Rigorous Collision Detection (AABB or Circle)**:
+   - Standard AABB box-to-box collision formula:
+     \`if (player.x < obstacle.x + obstacle.width && player.x + player.width > obstacle.x && player.y < obstacle.y + obstacle.height && player.y + player.height > obstacle.y)\`
+   - Circle-to-box or circle-to-circle bounding check where appropriate.
+   - Run collision validation checks every tick, and immediately trigger state transition to \`GAME_OVER\` upon hit.
+4. **Input Event Listeners & Immediate Jump**:
+   - Bind event listeners (e.g., \`keydown\`, \`mousedown\`, \`touchstart\`) correctly:
+     \`window.addEventListener('keydown', (e) => { if (e.code === 'Space' || e.code === 'ArrowUp') { jump(); } });\`
+   - Implement the jump impulse by setting velocity directly: \`vy = jumpStrength;\` (a negative value in screen space coordinates where y points down).
+   - Ensure input triggers game start if in \`MENU\` state and restart if in \`GAME_OVER\` state.
+5. **Web Audio Synth**: Create a helper function \`playSound(type)\` using \`new AudioContext()\` to synthesize sound effects (oscillators with envelope gain for Jump, Collect, Hit, Win, Game Over). No external files.
+6. **No stubs/sketched code**: Every rendering loop (\`ctx.clearRect\`, \`ctx.drawImage\` or primitive drawing), entity updating array, difficulty progression factor, and local high score record saving must be fully coded and functional.
 
 ---
 

@@ -15,6 +15,7 @@ export const readSiteFileTool = createTool({
       ),
     threadId: z
       .string()
+      .optional()
       .describe("Current thread/chat ID to locate the project draft"),
   }),
   execute: async ({ path, threadId }) => {
@@ -23,6 +24,14 @@ export const readSiteFileTool = createTool({
 
     if (!userId) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    if (!threadId || threadId === "current") {
+      return {
+        success: false,
+        error:
+          "A valid chat thread ID is required to locate the project draft.",
+      };
     }
 
     try {
