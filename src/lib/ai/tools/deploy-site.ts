@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "auth/server";
 import { siteRepository, archiveRepository } from "lib/db/repository";
 import { nanoid } from "nanoid";
+import { resolveImageRefs } from "./image-cache";
 
 const RESERVED_SLUGS = new Set([
   "www",
@@ -95,16 +96,23 @@ Ensure that the entrypoint HTML page is located at "index.html".`,
     }
 
     try {
-      // Calculate total payload size
+      // Resolve wsp-img:// tokens → real base64 data URIs
+      const resolvedHtml = html ? resolveImageRefs(html) : undefined;
+      const resolvedFiles = files?.map((f) => ({
+        ...f,
+        content: resolveImageRefs(f.content),
+      }));
+
       const defaultHtml =
-        html ||
-        files?.find((f) => f.path === "index.html" || f.path === "/index.html")
-          ?.content ||
+        resolvedHtml ||
+        resolvedFiles?.find(
+          (f) => f.path === "index.html" || f.path === "/index.html",
+        )?.content ||
         "";
 
       let totalBytes = Buffer.byteLength(defaultHtml, "utf-8");
-      if (files && files.length > 0) {
-        totalBytes = files.reduce(
+      if (resolvedFiles && resolvedFiles.length > 0) {
+        totalBytes = resolvedFiles.reduce(
           (acc, f) => acc + Buffer.byteLength(f.content, "utf-8"),
           0,
         );
@@ -171,8 +179,8 @@ Ensure that the entrypoint HTML page is located at "index.html".`,
       });
 
       // Save files to the database
-      if (files && files.length > 0) {
-        await siteRepository.upsertSiteFiles(deployedSite.id, files);
+      if (resolvedFiles && resolvedFiles.length > 0) {
+        await siteRepository.upsertSiteFiles(deployedSite.id, resolvedFiles);
       } else {
         await siteRepository.upsertSiteFiles(deployedSite.id, [
           { path: "index.html", content: defaultHtml },
