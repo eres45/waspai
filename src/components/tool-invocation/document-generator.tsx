@@ -14,8 +14,6 @@ import { Button } from "ui/button";
 import { cn } from "lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "ui/dialog";
-
 interface DocumentGeneratorProps {
   part: ToolUIPart;
 }
