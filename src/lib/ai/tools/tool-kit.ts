@@ -45,6 +45,7 @@ import { htmlPreviewTool } from "./html-preview";
 import { chatExportTool } from "./chat-export";
 import { createSkillTool } from "./skill-tools";
 import { deploySiteTool } from "./deploy-site";
+import { fetchImageAsBase64Tool } from "./fetch-image-as-base64";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -79,6 +80,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.GetTempEmailMessages]: getTempEmailMessagesTool,
     [DefaultToolName.SendEmail]: sendEmailTool,
     [DefaultToolName.HtmlPreview]: htmlPreviewTool,
+    [DefaultToolName.FetchImageAsBase64]: fetchImageAsBase64Tool,
     [DefaultToolName.ExportChat]: chatExportTool,
     [DefaultToolName.ListSmsNumbers]: listSmsNumbersTool,
     [DefaultToolName.GetSmsMessages]: getSmsMessagesTool,

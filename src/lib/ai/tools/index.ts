@@ -56,6 +56,7 @@ export enum DefaultToolName {
   AnalyzeImage = "analyze-image",
   // Other
   HtmlPreview = "html_preview",
+  FetchImageAsBase64 = "fetch_image_as_base64",
   ExportChat = "export-chat-messages",
   ListSmsNumbers = "list-sms-numbers",
   GetSmsMessages = "get-sms-messages",
