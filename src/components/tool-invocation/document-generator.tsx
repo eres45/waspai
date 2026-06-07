@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useMemo, useState, useRef, forwardRef } from "react";
 import { Button } from "ui/button";
-import { Badge } from "ui/badge";
 import { cn } from "lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
