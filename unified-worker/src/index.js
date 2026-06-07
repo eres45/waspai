@@ -922,7 +922,7 @@ async function* streamResponse(providerKey, res, model) {
         choices: [
           {
             index: 0,
-            delta: { reasoning_content },
+            delta: { content: `<think>${reasoning_content}</think>` },
             finish_reason: null,
           },
         ],
@@ -946,6 +946,15 @@ async function* streamResponse(providerKey, res, model) {
     }
 
     if (tool_calls) {
+      const normalizedToolCalls = Array.isArray(tool_calls)
+        ? tool_calls.map((tc, idx) => {
+            if (tc.index === undefined) {
+              return { ...tc, index: idx };
+            }
+            return tc;
+          })
+        : tool_calls;
+
       yield {
         id: `chatcmpl-${randomUUID()}`,
         object: "chat.completion.chunk",
@@ -954,7 +963,7 @@ async function* streamResponse(providerKey, res, model) {
         choices: [
           {
             index: 0,
-            delta: { tool_calls },
+            delta: { tool_calls: normalizedToolCalls },
             finish_reason: null,
           },
         ],
