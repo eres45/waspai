@@ -340,7 +340,7 @@ export async function extractTextFromDocuments(
           const res = await fetchFile(link);
           if (res && res.ok) {
             const content = await res.text();
-            extractedContent += `\n\n[File Content: ${displayName}]\n${content}\n`;
+            extractedContent += `\n\n[File Content: ${displayName} (URL: ${link})]\n${content}\n`;
             continue; // Handled locally
           }
         }
@@ -361,7 +361,7 @@ export async function extractTextFromDocuments(
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const result = await mammoth.extractRawText({ buffer });
-            extractedContent += `\n\n[Document Content: ${displayName}]\n${result.value}\n`;
+            extractedContent += `\n\n[Document Content: ${displayName} (URL: ${link})]\n${result.value}\n`;
             continue;
           }
         }
@@ -382,7 +382,7 @@ export async function extractTextFromDocuments(
             const pdf = require("pdf-parse-fork");
             const data = await pdf(buffer);
             if (data.text && data.text.trim().length > 0) {
-              extractedContent += `\n\n[Document Content: ${displayName}]\n${data.text}\n`;
+              extractedContent += `\n\n[Document Content: ${displayName} (URL: ${link})]\n${data.text}\n`;
               continue;
             } else {
               // PDF has no extractable text (scanned/image PDF), fall through to vision AI
@@ -414,7 +414,7 @@ export async function extractTextFromDocuments(
             const arrayBuffer = await res.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const result = await officeparser.parseOfficeAsync(buffer);
-            extractedContent += `\n\n[Document Content: ${displayName}]\n${result}\n`;
+            extractedContent += `\n\n[Document Content: ${displayName} (URL: ${link})]\n${result}\n`;
             continue;
           }
         }
@@ -458,7 +458,7 @@ export async function extractTextFromDocuments(
             const text = await extractTextFromImageViaAI(link, imageData);
 
             if (text) {
-              return `\n\n[Document Content: ${displayName}]\n${text}`;
+              return `\n\n[Document Content: ${displayName} (URL: ${link})]\n${text}`;
             }
           } catch (err) {
             console.error(`OCR extraction error for ${link}:`, err);

@@ -95,6 +95,7 @@ import { createSkillTool } from "@/lib/ai/tools/skill-tools";
 import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
 import { readSiteFileTool } from "@/lib/ai/tools/read-site-file";
 import { editSiteFileTool } from "@/lib/ai/tools/edit-site-file";
+import { fileConverterTool } from "@/lib/ai/tools/file-converter";
 import { exaSearchTool as webSearchTool } from "@/lib/ai/tools/web/web-search";
 import {
   listSmsNumbersTool,
@@ -1738,6 +1739,26 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           "generate-word-document": wordDocumentTool,
           "generate-csv": csvGeneratorTool,
           "generate-text-file": textFileTool,
+          "convert-file": {
+            ...fileConverterTool,
+            execute: async (args: any, context: any) => {
+              const isPlaceholder =
+                !args.fileUrl ||
+                args.fileUrl.includes("placeholder") ||
+                (!args.fileUrl.startsWith("http") &&
+                  !args.fileUrl.startsWith("data:"));
+              if (isPlaceholder) {
+                const foundUrl = fileUrls[0] || imageUrl;
+                if (foundUrl) {
+                  logger.info(
+                    `File Converter Scoped: Overriding placeholder "${args.fileUrl}" with actual URL: ${foundUrl}`,
+                  );
+                  args.fileUrl = foundUrl;
+                }
+              }
+              return fileConverterTool.execute!(args, context);
+            },
+          },
 
           // ALWAYS include QR tools
           "generate-qr-code": qrCodeGeneratorTool,
