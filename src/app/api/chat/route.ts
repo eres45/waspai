@@ -1901,6 +1901,37 @@ Always be aware of these installed skills. If a user asks "how many skills do we
         // CRITICAL: Save user message BEFORE calling streamText
         // This ensures that even if streamText fails, the user message is preserved in the thread
         // This prevents thread corruption where subsequent messages can't load history
+        const userParts = [
+          ...message.parts.map(convertToSavePart),
+          ...attachments.map(
+            (att) =>
+              ({
+                type: "file",
+                url: att.url,
+                filename: att.filename,
+                mediaType: att.mediaType,
+                // Legacy fallbacks:
+                name: att.filename,
+                mimeType: att.mediaType,
+              }) as any,
+          ),
+        ];
+
+        const seenUrls = new Set<string>();
+        const uniqueUserPartsForDb: any[] = [];
+        for (const part of userParts) {
+          if (part.type === "text") {
+            uniqueUserPartsForDb.push(part);
+          } else if (part.url) {
+            if (!seenUrls.has(part.url)) {
+              uniqueUserPartsForDb.push(part);
+              seenUrls.add(part.url);
+            }
+          } else {
+            uniqueUserPartsForDb.push(part);
+          }
+        }
+
         try {
           logger.info(
             `Saving user message to thread before streamText: ${message.id}`,
@@ -1908,21 +1939,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           await chatRepository.upsertMessage({
             threadId: thread!.id,
             role: message.role,
-            parts: [
-              ...message.parts.map(convertToSavePart),
-              ...attachments.map(
-                (att) =>
-                  ({
-                    type: "file",
-                    url: att.url,
-                    filename: att.filename,
-                    mediaType: att.mediaType,
-                    // Legacy fallbacks:
-                    name: att.filename,
-                    mimeType: att.mediaType,
-                  }) as any,
-              ),
-            ],
+            parts: uniqueUserPartsForDb,
             id: message.id,
           });
           logger.info(`User message saved successfully: ${message.id}`);
@@ -2069,12 +2086,26 @@ Always be aware of these installed skills. If a user asks "how many skills do we
                   const sanitizedMessages =
                     sanitizeMessageToolCalls(finalMessages);
 
+                  // 3.6. Filter out unsupported file types from all messages in the context
+                  // to prevent model API errors (e.g. sending PDF/DOCX to non-supporting vision models)
+                  const cleanedMessagesForModel = sanitizedMessages.map(
+                    (msg) => ({
+                      ...msg,
+                      parts: msg.parts.filter((part: any) => {
+                        if (part.type === "file" && part.mediaType) {
+                          return supportedFileTypes.includes(part.mediaType);
+                        }
+                        return true;
+                      }),
+                    }),
+                  );
+
                   // 4. SANITIZE FOR NON-VISION MODELS (Groq/OpenAI compatible without vision)
                   if (isImageInputUnsupportedModel(currentModel)) {
                     logger.info(
                       `Sanitizing messages for non-vision model: ${modelId}`,
                     );
-                    return sanitizedMessages.map((msg) => {
+                    return cleanedMessagesForModel.map((msg) => {
                       const textParts = msg.parts.filter(
                         (p: any) => p.type === "text",
                       );
@@ -2089,7 +2120,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
                     });
                   }
 
-                  return sanitizedMessages;
+                  return cleanedMessagesForModel;
                 })(),
               ),
               experimental_transform: smoothStream({ chunking: "word" }),
@@ -2212,7 +2243,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
             await chatRepository.upsertMessage({
               threadId: thread!.id,
               role: message.role,
-              parts: message.parts.map(convertToSavePart),
+              parts: uniqueUserPartsForDb,
               id: message.id,
               metadata: message.metadata as any, // Persist user message metadata (isVoice, etc.)
             });
