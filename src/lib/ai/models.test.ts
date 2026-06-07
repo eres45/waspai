@@ -236,7 +236,7 @@ describe("sanitizeMessageToolCalls", () => {
       },
     ];
 
-    const result = sanitizeMessageToolCalls(messages);
+    const result = sanitizeMessageToolCalls(messages as any);
     expect(result[0].parts[0].args).toEqual({});
     expect(result[0].parts[0].input).toEqual({});
   });
@@ -257,7 +257,7 @@ describe("sanitizeMessageToolCalls", () => {
       },
     ];
 
-    const result = sanitizeMessageToolCalls(messages);
+    const result = sanitizeMessageToolCalls(messages as any);
     expect(result[0].parts[0].args).toEqual({});
     expect(result[0].parts[0].input).toEqual({});
   });
@@ -278,7 +278,7 @@ describe("sanitizeMessageToolCalls", () => {
       },
     ];
 
-    const result = sanitizeMessageToolCalls(messages);
+    const result = sanitizeMessageToolCalls(messages as any);
     expect(result[0].parts[0].args).toEqual({ city: "Berlin" });
     expect(result[0].parts[0].input).toEqual({ city: "Berlin" });
   });
