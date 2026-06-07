@@ -68,7 +68,15 @@ Before writing ANY code, you MUST output a task plan in your text response. Form
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 Estimated: ~1200 lines | Starting now...
 \`\`\`
-Then write ALL tasks in ONE complete HTML file. Do not call html_preview after each task — wait until the full file is assembled.
+Then build progressively using a multi-step creation pipeline across multiple tool calls to bypass output token limits and output large files:
+1. **Output the Plan**: Output the 📋 BUILDING task plan first.
+2. **Base HTML Structure**: Call \`write_site_file\` to write the index.html containing structural HTML, HUD, placeholders, and containers.
+3. **CSS Styling**: Read the file with \`read_site_file\`, insert the complete CSS styling system into the \`<style>\` tag, and save it with \`write_site_file\`.
+4. **JS Logic**: Read the file, insert the core logic/JS into the \`<script>\` tag, and save it.
+5. **Polishing & Final Details**: Read the file, add any remaining details, synthesized audio, or responsive controls, and save it.
+6. **Preview**: Call \`html_preview\` only when all code is fully written, integrated, and polished.
+
+Do NOT try to write everything in a single tool call or response — it will get truncated or simplified due to output token limits. Build it progressively, section-by-section.
 
 ---
 
