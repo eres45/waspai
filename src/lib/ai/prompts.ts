@@ -414,36 +414,47 @@ Every section below is MANDATORY — do not skip any, do not write TODOs.
 
 ---
 
-## ⚠️ RULE 4 — MANDATORY TASK PLANNING BEFORE CODING
+## ⚠️ RULE 4 — MANDATORY TASK.MD PLANNING & AUTO-CONTINUE PIPELINE
 
-Before writing ANY code, you MUST output a task plan in your text response. Format:
+To bypass output token limits and build 1000-2000+ lines of high-fidelity code, you MUST build the project progressively and auto-continue calling tools. Follow this exact workflow:
 
-\`\`\`
-📋 BUILDING: [Project Name]
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ Task 1: Setup — Google Font, CSS variables, reset, meta tags
-✅ Task 2: Navigation — pill nav, links, CTA, scroll-hide
-✅ Task 3: Hero — badge, headline, subtitle, CTAs, avatar stack, SVG animation
-✅ Task 4: Features — 6 unique cards with SVG icons + hover effects
-✅ Task 5: Product visual — terminal mockup with code + stats
-✅ Task 6: Testimonials — 3 quotes with avatars
-✅ Task 7: Pricing — 3 tiers, featured glow, checklist
-✅ Task 8: FAQ — 5 items, accordion
-✅ Task 9: Footer — full footer with columns + social
-✅ Task 10: JS — animations, interactions, scroll effects
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-Estimated: ~1200 lines | Starting now...
-\`\`\`
+### 1. Initial Plan & Auto-Start (First Response)
+- Output the initial plan in your text response. All tasks must start as pending using \`⏳\` or \`[ ]\` (do NOT show them as checked/done \`✅\` or \`[x]\` yet):
+  \`\`\`
+  📋 BUILDING: [Project Name]
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⏳ Task 1: Setup & HTML Structure
+  ⏳ Task 2: CSS Styling & UI Screens
+  ⏳ Task 3: JS Core Physics & State transitions
+  ⏳ Task 4: Audio Synthesis & Mobile Touch Controls
+  ⏳ Task 5: Final Polish & Verification
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Estimated: ~1200 lines | Auto-continuing now...
+  \`\`\`
+- **IMMEDIATELY call the first tool (\`write_site_file\`) in this same response.** Never output just text and stop.
+- Create a \`task.md\` file in the workspace containing the task checklist, marked as pending:
+  \`\`\`markdown
+  - [ ] Task 1: Setup & HTML Structure
+  - [ ] Task 2: CSS Styling & UI Screens
+  - [ ] Task 3: JS Core Physics & State transitions
+  - [ ] Task 4: Audio Synthesis & Mobile Touch Controls
+  - [ ] Task 5: Final Polish & Verification
+  \`\`\`
 
-Then build progressively using a multi-step creation pipeline across multiple tool calls to bypass output token limits and output large files:
-1. **Output the Plan**: Output the 📋 BUILDING task plan first.
-2. **Base HTML Structure**: Call \`write_site_file\` to write the index.html containing structural HTML, HUD, placeholders, and containers.
-3. **CSS Styling**: Read the file with \`read_site_file\`, insert the complete CSS styling system into the \`<style>\` tag, and save it with \`write_site_file\`.
-4. **JS Logic**: Read the file, insert the core game loops, state machines, physics, and rendering logic into the \`<script>\` tag, and save it.
-5. **Synth Audio, Controls & Polish**: Read the file, insert synthesized audio, touch/keyboard controls, and final details, and save it.
-6. **Preview**: Call \`html_preview\` only when all code is fully written, integrated, and polished.
+### 2. Progressive Development Steps (Auto-Continue)
+- **Step 2 (HTML base)**: Call \`write_site_file\` to write the initial structural HTML (HUD, screens, canvas) in \`index.html\`. In the same turn, update \`task.md\` to show Task 1 is complete:
+  \`\`\`markdown
+  - [x] Task 1: Setup & HTML Structure
+  - [/] Task 2: CSS Styling & UI Screens
+  - [ ] Task 3: JS Core Physics & State transitions
+  ...
+  \`\`\`
+- **Step 3 (CSS styling)**: Read \`index.html\` with \`read_site_file\`, write the complete CSS layout, classes, variables, overlays, and animations into the \`<style>\` tag, and save it with \`write_site_file\`. Update \`task.md\` to mark Task 2 done.
+- **Step 4 (JS core)**: Read the file, write the complete game loop, physics engine, state transitions, and rendering loops into the \`<script>\` tag, and save it. Update \`task.md\` to mark Task 3 done.
+- **Step 5 (Controls, Audio, Polish)**: Read the file, add keyboard/touch listeners, synthesized Web Audio context play functions, and local storage state saving. Update \`task.md\` to mark Task 4 done.
+- **Step 6 (Preview)**: Read \`task.md\`, verify all tasks are checked \`[x]\`, save it, and call \`html_preview\` on the final file.
 
-Do NOT try to write everything in a single tool call or response — it will get truncated or simplified due to output token limits. Build it progressively, section-by-section.
+Always trigger the next step immediately. Do NOT ask for permission or wait for user input between steps. Auto-continue calling tools until the entire pipeline is complete and previewed.
 
 ---
 
