@@ -12,6 +12,8 @@ import {
   ChevronRight,
   CheckCircle2,
   Loader2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "lib/utils";
@@ -22,6 +24,7 @@ import {
 } from "shiki/bundle/web";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { useCopy } from "@/hooks/use-copy";
 
 interface WriteSiteFileCardProps {
   part: ToolUIPart;
@@ -120,6 +123,8 @@ function CodeHighlighter({ code, lang }: CodeHighlighterProps) {
 export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
   const { state, output, input, toolName } = part as any;
   const [expanded, setExpanded] = useState(false);
+  const [showFull, setShowFull] = useState(false);
+  const { copied, copy } = useCopy();
 
   const isLoading = !state?.startsWith("output");
   const isEditing = toolName === "edit_site_file";
@@ -152,12 +157,17 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
   // Show only the filename (not full path) in the header
   const fileName = filePath.split("/").pop() ?? filePath;
 
-  // Truncate content for preview (first 60 lines max)
+  // Truncate content for preview (first 60 lines max) unless showFull is true
   const previewLines = useMemo(() => {
+    if (showFull) return fileContent;
     const lines = fileContent.split("\n");
+    if (lines.length <= 60) return fileContent;
     const shown = lines.slice(0, 60);
-    return shown.join("\n") + (lines.length > 60 ? "\n…" : "");
-  }, [fileContent]);
+    return (
+      shown.join("\n") +
+      "\n\n/* ... more lines (click 'Show full' in header to expand) ... */"
+    );
+  }, [fileContent, showFull]);
 
   return (
     <motion.div
@@ -240,15 +250,45 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
           >
             <div className="mx-3 mb-2 rounded-lg border border-border/30 overflow-hidden bg-[#0d0d0d]">
               {/* Code header bar */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#141414] border-b border-border/20">
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+              <div className="flex items-center justify-between px-3 py-1.5 bg-[#141414] border-b border-border/20">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+                  </div>
+                  <span className="font-mono text-[10px] text-muted-foreground ml-1">
+                    {filePath}
+                  </span>
                 </div>
-                <span className="font-mono text-[10px] text-muted-foreground ml-1">
-                  {filePath}
-                </span>
+
+                <div className="flex items-center gap-2">
+                  {fileContent.split("\n").length > 60 && (
+                    <button
+                      onClick={() => setShowFull((v) => !v)}
+                      className="text-[10px] font-medium text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/20 hover:bg-muted/40 transition-colors"
+                    >
+                      {showFull ? "Show less" : "Show full"}
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => copy(fileContent)}
+                    className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/20 hover:bg-muted/40 transition-colors"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="size-2.5 text-emerald-500" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="size-2.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               {/* Code content */}
               <div className="max-h-[320px] overflow-y-auto">
