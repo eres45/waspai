@@ -261,7 +261,6 @@ export function DocumentGeneratorToolInvocation({
   part,
 }: DocumentGeneratorProps) {
   const t = useTranslations();
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -278,29 +277,76 @@ export function DocumentGeneratorToolInvocation({
     setIsExporting(true);
 
     // Helper to sanitize oklch styles to prevent html2canvas parsing crash
-    const sanitizeOklchStyles = () => {
-      const styleElements = Array.from(document.querySelectorAll("style"));
-      const restoredStyles: {
-        element: HTMLStyleElement;
-        originalText: string;
-      }[] = [];
+    const sanitizeOklchStyles = async () => {
+      const linkElements = Array.from(
+        document.querySelectorAll("link[rel='stylesheet']"),
+      ) as HTMLLinkElement[];
+      const styleElements = Array.from(
+        document.querySelectorAll("style"),
+      ) as HTMLStyleElement[];
+      const disabledElements: (HTMLLinkElement | HTMLStyleElement)[] = [];
+      const tempStyleElements: HTMLStyleElement[] = [];
 
+      // Process style tags
       for (const el of styleElements) {
-        const text = el.textContent || "";
-        if (text.includes("oklch(")) {
-          restoredStyles.push({ element: el, originalText: text });
-          // Replace oklch(...) color values with standard slate color fallback
-          const sanitizedText = text.replace(
-            /oklch\([^)]+\)/g,
-            "rgb(100, 116, 139)",
-          );
-          el.textContent = sanitizedText;
+        try {
+          const text = el.textContent || "";
+          if (text.includes("oklch(")) {
+            el.disabled = true;
+            disabledElements.push(el);
+
+            const tempEl = document.createElement("style");
+            tempEl.textContent = text.replace(
+              /oklch\([^)]+\)/g,
+              "rgb(100, 116, 139)",
+            );
+            document.head.appendChild(tempEl);
+            tempStyleElements.push(tempEl);
+          }
+        } catch (err) {
+          console.warn("Failed to sanitize style element:", err);
+        }
+      }
+
+      // Process link tags (fetch same-origin stylesheet content and sanitize)
+      for (const el of linkElements) {
+        if (el.href) {
+          try {
+            const res = await fetch(el.href);
+            const text = await res.text();
+            if (text.includes("oklch(")) {
+              el.disabled = true;
+              disabledElements.push(el);
+
+              const tempEl = document.createElement("style");
+              tempEl.textContent = text.replace(
+                /oklch\([^)]+\)/g,
+                "rgb(100, 116, 139)",
+              );
+              document.head.appendChild(tempEl);
+              tempStyleElements.push(tempEl);
+            }
+          } catch (e) {
+            console.warn(
+              "Failed to fetch and sanitize stylesheet, disabling temporarily:",
+              el.href,
+              e,
+            );
+            // Fallback: disable temporarily so html2canvas doesn't crash on it
+            el.disabled = true;
+            disabledElements.push(el);
+          }
         }
       }
 
       return () => {
-        for (const { element, originalText } of restoredStyles) {
-          element.textContent = originalText;
+        // Restore original styleheets
+        for (const el of disabledElements) {
+          el.disabled = false;
+        }
+        // Remove temporary sanitized styleheets
+        for (const el of tempStyleElements) {
+          el.remove();
         }
       };
     };
@@ -341,7 +387,7 @@ export function DocumentGeneratorToolInvocation({
       };
 
       // Temporarily sanitize styles, print PDF, then immediately restore styles
-      const restoreStyles = sanitizeOklchStyles();
+      const restoreStyles = await sanitizeOklchStyles();
       try {
         await html2pdf().set(opt).from(element).save();
         toast.success("PDF generated successfully!");
@@ -438,25 +484,6 @@ export function DocumentGeneratorToolInvocation({
           <div className="flex gap-2">
             <Button
               size="sm"
-              variant="outline"
-              className="h-8 gap-2 border-primary/20 hover:bg-primary/5"
-              onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-            >
-              {isPreviewOpen ? (
-                <>
-                  <EyeOff className="size-3.5" />
-                  Hide Preview
-                </>
-              ) : (
-                <>
-                  <Eye className="size-3.5" />
-                  Preview
-                </>
-              )}
-            </Button>
-
-            <Button
-              size="sm"
               className="h-8 gap-2 bg-primary hover:bg-primary/90"
               disabled={isExporting}
               onClick={handleExport}
@@ -476,43 +503,6 @@ export function DocumentGeneratorToolInvocation({
       <div className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none w-[210mm] max-w-none">
         <DocumentTemplate ref={reportRef} result={result} theme={theme} />
       </div>
-
-      {/* Professional Document Preview Container */}
-      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-slate-50 border-border/50 shadow-2xl h-[90vh] flex flex-col">
-          <DialogHeader className="px-4 py-3 border-b border-border/50 flex flex-row items-center justify-between sticky top-0 bg-slate-50 z-10">
-            <DialogTitle className="text-xs font-bold uppercase tracking-widest text-slate-500 m-0">
-              Document Preview ({result.theme})
-            </DialogTitle>
-            <div className="flex items-center gap-4">
-              <Badge
-                variant="outline"
-                className="text-[10px] bg-primary/5 text-primary border-primary/20"
-              >
-                A4 Format
-              </Badge>
-              <Button
-                size="sm"
-                className="h-8 gap-2 bg-primary hover:bg-primary/90"
-                disabled={isExporting}
-                onClick={handleExport}
-              >
-                {isExporting ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Download className="size-3.5" />
-                )}
-                Export PDF
-              </Button>
-            </div>
-          </DialogHeader>
-
-          {/* Scrollable Container for the Document */}
-          <div className="flex-1 overflow-y-auto w-full flex justify-center bg-slate-100 p-4 sm:p-8">
-            <DocumentTemplate result={result} theme={theme} />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
