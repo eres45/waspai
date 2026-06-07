@@ -137,14 +137,12 @@ export async function POST(request: Request) {
     );
 
     const session = await getSession();
-
-    if (!session?.user.id) {
+    if (!session?.user) {
       return new Response("Unauthorized", {
         status: 401,
         headers: corsHeaders,
       });
     }
-
     const userId = session.user.id;
 
     let parsedBody;
@@ -698,12 +696,12 @@ export async function POST(request: Request) {
         const userPreferences = thread?.userPreferences || undefined;
 
         // Start fetching memories and MCP customizations in parallel
-        const memoriesPromise = memoryRepository.list(session.user.id, 50);
+        const memoriesPromise = memoryRepository.list(userId, 50);
         const mcpPromise = safe()
           .map(() => {
             if (Object.keys(MCP_TOOLS ?? {}).length === 0)
               throw new Error("No tools found");
-            return rememberMcpServerCustomizationsAction(session.user.id);
+            return rememberMcpServerCustomizationsAction(userId);
           })
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
@@ -1670,7 +1668,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           // Character roleplay tool override also disabled.
           // characterContext && (useImageTool || ...) && `[CHARACTER ROLEPLAY OVERRIDE ...]`,
           buildUserSystemPrompt(
-            session.user,
+            session?.user || undefined,
             userPreferences,
             agent,
             ["meta", "openai", "qwen", "moonshot", "canopy"].includes(
@@ -2155,7 +2153,7 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           );
 
           if (agent) {
-            agentRepository.updateAgent(agent.id, session.user.id, {
+            agentRepository.updateAgent(agent.id, userId, {
               updatedAt: new Date(),
             } as any);
           }
