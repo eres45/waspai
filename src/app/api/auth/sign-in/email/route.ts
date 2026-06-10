@@ -2,9 +2,18 @@ import { signInWithEmail } from "@/lib/auth/supabase-auth";
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import logger from "@/lib/logger";
 import { cookies } from "next/headers";
+import { getAuthConfig } from "lib/auth/config";
 
 export async function POST(request: Request) {
   try {
+    const { emailAndPasswordEnabled } = getAuthConfig();
+    if (!emailAndPasswordEnabled) {
+      return Response.json(
+        { error: "Email authentication is disabled" },
+        { status: 400 },
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 

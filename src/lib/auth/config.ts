@@ -102,14 +102,18 @@ function parseSocialAuthConfigs() {
 }
 
 export function getAuthConfig(): AuthConfig {
+  const socialConfigs = parseSocialAuthConfigs();
+
+  // Filter only google and github to fulfill "let only google and git"
+  const socialAuthenticationProviders = {
+    ...(socialConfigs.github && { github: socialConfigs.github }),
+    ...(socialConfigs.google && { google: socialConfigs.google }),
+  };
+
   const rawConfig = {
-    emailAndPasswordEnabled: process.env.DISABLE_EMAIL_SIGN_IN
-      ? !parseEnvBoolean(process.env.DISABLE_EMAIL_SIGN_IN)
-      : true,
-    signUpEnabled: process.env.DISABLE_SIGN_UP
-      ? !parseEnvBoolean(process.env.DISABLE_SIGN_UP)
-      : true,
-    socialAuthenticationProviders: parseSocialAuthConfigs(),
+    emailAndPasswordEnabled: false,
+    signUpEnabled: false,
+    socialAuthenticationProviders,
   };
 
   const result = AuthConfigSchema.safeParse(rawConfig);

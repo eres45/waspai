@@ -10,6 +10,7 @@ import {
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import logger from "@/lib/logger";
 import { cookies, headers } from "next/headers";
+import { getAuthConfig } from "lib/auth/config";
 
 export async function existsByEmailAction(email: string) {
   try {
@@ -30,6 +31,14 @@ export async function signUpAction(data: {
   name: string;
   password: string;
 }): Promise<SignUpActionResponse> {
+  const { emailAndPasswordEnabled } = getAuthConfig();
+  if (!emailAndPasswordEnabled) {
+    return {
+      success: false,
+      message: "Email registration is disabled",
+    };
+  }
+
   const { success, data: parsedData } = UserZodSchema.safeParse(data);
   if (!success) {
     return {

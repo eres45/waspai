@@ -192,7 +192,7 @@ export default function SignIn({
               </div>
             </>
           )}
-          {signUpEnabled && (
+          {signUpEnabled && emailAndPasswordEnabled && (
             <div className="my-8 text-center text-sm text-muted-foreground">
               {t("noAccount")}
               <Link href="/sign-up" className="underline-offset-4 text-primary">

@@ -7,7 +7,7 @@ import { ArrowUpRight } from "lucide-react";
 
 export const Footer = () => {
   const { data: session } = authClient.useSession();
-  const getStartedHref = session ? "/chat" : "/sign-up";
+  const getStartedHref = session ? "/chat" : "/sign-in";
 
   const footerLinks = [
     {
