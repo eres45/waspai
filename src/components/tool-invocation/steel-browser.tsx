@@ -10,6 +10,7 @@ import { memo, useMemo, useState, useCallback, useEffect } from "react";
 import { TextShimmer } from "ui/text-shimmer";
 import { Button } from "ui/button";
 import { cn } from "@/lib/utils";
+import { appStore } from "@/app/store";
 
 export const SteelBrowserPreview = memo(function SteelBrowserPreview({
   part,
@@ -28,6 +29,7 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
         sessionUrl?: string;
         message?: string;
         sessionId?: string;
+        error?: string;
       };
     }
     return null;
@@ -42,6 +44,17 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
   }, [output, isInteractive]);
 
   const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    if (output?.error === "weekly_limit_exceeded") {
+      appStore.getState().mutate({
+        openUpgrade: true,
+        upgradeReason:
+          output.message ||
+          "You have reached your weekly limit for the Cloud Browser.",
+      });
+    }
+  }, [output]);
 
   useEffect(() => {
     if (!sessionUrl) return;
@@ -65,6 +78,39 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
         <TextShimmer className="text-sm">
           Spinning up cloud browser...
         </TextShimmer>
+      </div>
+    );
+  }
+
+  if (output?.error === "weekly_limit_exceeded") {
+    return (
+      <div className="flex flex-col gap-4 p-5 bg-destructive/5 rounded-2xl border border-destructive/20 my-4 max-w-xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-start gap-3 text-left">
+          <div className="p-2 bg-destructive/10 rounded-xl border border-destructive/20 text-destructive shrink-0">
+            <LockIcon className="size-5" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              Weekly Limit Exceeded
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {output.message}
+            </p>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="w-fit h-8 rounded-lg text-xs gap-2 px-3 self-end active:scale-95 transition-all shadow-md"
+          onClick={() => {
+            appStore.getState().mutate({
+              openUpgrade: true,
+              upgradeReason: output.message,
+            });
+          }}
+        >
+          Upgrade Plan
+        </Button>
       </div>
     );
   }

@@ -745,3 +745,24 @@ export const SystemErrorTable = pgTable(
 );
 
 export type SystemErrorEntity = typeof SystemErrorTable.$inferSelect;
+
+export const BrowserUsageTable = pgTable(
+  "browser_usage",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    sessionId: text("session_id").notNull().unique(),
+    allocatedDuration: integer("allocated_duration").notNull().default(120),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("browser_usage_user_id_idx").on(table.userId),
+    index("browser_usage_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type BrowserUsageEntity = typeof BrowserUsageTable.$inferSelect;

@@ -32,6 +32,7 @@ const plans = [
     description: "Essential features for casual AI users",
     features: [
       "Unlimited use of all Free models",
+      "Limited Cloud Browser use",
       "Limited image generations",
       "Limited memory & indexing",
       "Limited web searches",
@@ -51,6 +52,7 @@ const plans = [
     features: [
       "Access to advanced Pro models",
       "All Free models with faster speed & limits",
+      "Limited Cloud Browser",
       "Pro image generation & advanced image editing",
       "Unlimited web search, code execution & tools",
       "Unlimited file, PDF, & document uploads",
@@ -72,6 +74,7 @@ const plans = [
     description: "Maximum power for heavy users",
     features: [
       "Access to all premium Frontier & Reasoning models (Top Priority)",
+      "Priority Cloud Browser",
       "All image models, tools & Video generation",
       "Web access & unlimited advanced search",
       "Unlimited workflows, projects, skills & agents",

@@ -127,6 +127,7 @@ export default function SubscriptionPage() {
         {
           category: "Limits",
           items: [
+            "Limited Cloud Browser use",
             "Limited image generations",
             "Limited memory & indexing",
             "Limited web searches",
@@ -156,12 +157,13 @@ export default function SubscriptionPage() {
         {
           category: "Pro Features",
           items: [
+            "Limited Cloud Browser",
             "Pro image generation & advanced image editing",
             "Unlimited file, PDF, & document uploads",
             "Unlimited web search, code execution & tool uses",
             "MCP Servers & custom HTTP workflows",
             "Long-term memory & YouTube transcript analysis",
-            "Limited custom characters & agent creation",
+            "Limited agent creation",
             "Limited workflows, projects, skills & storage",
             "Unlimited social media downloads",
           ],
@@ -196,7 +198,8 @@ export default function SubscriptionPage() {
           category: "Ultra Studio & Features",
           items: [
             "All image generation models & advanced editing tools",
-            "Video & Music generation",
+            "Priority Cloud Browser",
+            "Video generation",
             "Web access & unlimited advanced search",
           ],
         },

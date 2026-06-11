@@ -24,6 +24,7 @@ const plans = [
       "Access to standard models and limited premium features to get started.",
     features: [
       "Unlimited use of all Free models",
+      "Limited Cloud Browser use",
       "Limited image generations",
       "Limited memory & indexing",
       "Limited web searches",
@@ -44,6 +45,7 @@ const plans = [
     features: [
       "Access to all advanced Pro models",
       "All Free models with faster speed & higher limits",
+      "Limited Cloud Browser",
       "Pro image generation & advanced image editing",
       "Unlimited web search, code execution & tool uses",
       "Unlimited file, PDF & document uploads",
@@ -65,6 +67,7 @@ const plans = [
     description: "Maximum power and limits for heavy users and professionals.",
     features: [
       "All premium Frontier & Reasoning models (Top Priority)",
+      "Priority Cloud Browser",
       "All image generation models, tools & Video generation",
       "Web access & unlimited advanced search",
       "Unlimited Workflows, Skills & custom agents",

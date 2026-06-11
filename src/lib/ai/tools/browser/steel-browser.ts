@@ -2,6 +2,15 @@ import { Tool } from "ai";
 import { z } from "zod";
 import Steel from "steel-sdk";
 import { chromium, type Page } from "playwright";
+import { userRepository } from "lib/db/repository";
+import { supabaseRest } from "lib/db/supabase-rest";
+import { getSession } from "auth/server";
+
+const TIER_LIMITS_SECONDS: Record<string, number> = {
+  free: 5 * 60, // 300 seconds (5 minutes)
+  pro: 30 * 60, // 1800 seconds (30 minutes)
+  ultra: 120 * 60, // 7200 seconds (2 hours)
+};
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -190,8 +199,77 @@ export const steelBrowserTool: Tool = {
       steelAPIKey: apiKey,
     });
 
+    const sessionObj = await getSession();
+    const userId =
+      sessionObj?.user?.id || "d3b07384-d113-4ec5-a559-6e0d68b668d1";
+
     let session;
     let actionMessage = "";
+
+    const checkLimitAndCreateSession = async () => {
+      // 1. Fetch user tier
+      const user = await userRepository.getUserById(userId);
+      const userTier = user?.tier ?? "free";
+      const limit = TIER_LIMITS_SECONDS[userTier] ?? TIER_LIMITS_SECONDS.free;
+
+      // 2. Query used duration in last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      let usedDuration = 0;
+      try {
+        const { data, error } = await supabaseRest
+          .from("browser_usage")
+          .select("allocated_duration")
+          .eq("user_id", userId)
+          .gte("created_at", sevenDaysAgo.toISOString());
+
+        if (error && error.code !== "PGRST205") {
+          console.error("[Steel Browser] Error querying browser usage:", error);
+        } else if (data) {
+          usedDuration = data.reduce(
+            (sum: number, row: any) => sum + (row.allocated_duration || 0),
+            0,
+          );
+        }
+      } catch (err) {
+        console.error("[Steel Browser] Failed to query browser usage:", err);
+      }
+
+      // 3. Check limit
+      if (usedDuration + 120 > limit) {
+        const limitMin = limit / 60;
+        const usedMin = Math.round(usedDuration / 60);
+        throw new Error(
+          `weekly_limit_exceeded: You have reached your weekly Cloud Browser limit. You have used ${usedMin} minutes out of your weekly allowance of ${limitMin} minutes on the ${userTier.toUpperCase()} tier. Please upgrade your plan for more usage.`,
+        );
+      }
+
+      // 4. Create new session
+      const newSession = await client.sessions.create({ timeout: 120000 });
+
+      // 5. Insert record in database
+      try {
+        const { error: insertError } = await supabaseRest
+          .from("browser_usage")
+          .insert({
+            user_id: userId,
+            session_id: newSession.id,
+            allocated_duration: 120,
+          });
+        if (insertError && insertError.code !== "PGRST205") {
+          console.error(
+            "[Steel Browser] Failed to insert usage record:",
+            insertError,
+          );
+        }
+      } catch (err) {
+        console.error("[Steel Browser] Failed to insert usage record:", err);
+      }
+
+      return newSession;
+    };
+
     try {
       if (sessionId) {
         try {
@@ -199,7 +277,7 @@ export const steelBrowserTool: Tool = {
           if (session.status !== "live") {
             actionMessage =
               "(Note: Previous session closed due to 2 minutes of inactivity. Starting a fresh one.) ";
-            session = await client.sessions.create({ timeout: 120000 });
+            session = await checkLimitAndCreateSession();
           }
         } catch (_retrieveError) {
           // Fallback to discovery if retrieval fails
@@ -211,7 +289,7 @@ export const steelBrowserTool: Tool = {
             }
           }
           if (!session) {
-            session = await client.sessions.create({ timeout: 120000 });
+            session = await checkLimitAndCreateSession();
           }
         }
       } else {
@@ -226,7 +304,7 @@ export const steelBrowserTool: Tool = {
         if (session) {
           actionMessage = "(Re-attached to active session) ";
         } else {
-          session = await client.sessions.create({ timeout: 120000 });
+          session = await checkLimitAndCreateSession();
         }
       }
 
@@ -344,6 +422,12 @@ export const steelBrowserTool: Tool = {
       return result;
     } catch (error: any) {
       console.error(`[Steel Browser V2] Error:`, error);
+      if (error.message && error.message.includes("weekly_limit_exceeded")) {
+        return {
+          error: "weekly_limit_exceeded",
+          message: error.message.replace("weekly_limit_exceeded: ", ""),
+        };
+      }
       let friendlyMessage = error.message;
       if (error.message.includes("502 Bad Gateway")) {
         friendlyMessage =
