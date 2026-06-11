@@ -17,5 +17,6 @@ ON "user_daily_usage" ("user_id", "action_type", "created_at");
 ALTER TABLE "user_daily_usage" ENABLE ROW LEVEL SECURITY;
 
 -- 4. Enable service role full access bypass policy
-CREATE POLICY IF NOT EXISTS "service_role_user_daily_usage_all" ON "user_daily_usage"
+DROP POLICY IF EXISTS "service_role_user_daily_usage_all" ON "user_daily_usage";
+CREATE POLICY "service_role_user_daily_usage_all" ON "user_daily_usage"
   FOR ALL TO service_role USING (true) WITH CHECK (true);
