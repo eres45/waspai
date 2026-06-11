@@ -10,7 +10,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const uploadLimit = await checkDailyUploadLimitRest(session.user.id);
+    const userTier = (session.user as any).tier ?? "free";
+    const uploadLimit = await checkDailyUploadLimitRest(
+      session.user.id,
+      userTier,
+    );
 
     return NextResponse.json({
       remaining: uploadLimit.remaining,
@@ -34,7 +38,8 @@ export async function HEAD() {
       return new NextResponse(null, { status: 401 });
     }
 
-    await checkDailyUploadLimitRest(session.user.id);
+    const userTier = (session.user as any).tier ?? "free";
+    await checkDailyUploadLimitRest(session.user.id, userTier);
     return new NextResponse(null, { status: 200 });
   } catch (error) {
     console.error("Failed to check upload limit:", error);

@@ -16,8 +16,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const userTier = (session.user as any).tier ?? "free";
+
   // Check daily upload limit
-  const uploadLimit = await checkDailyUploadLimitRest(session.user.id);
+  const uploadLimit = await checkDailyUploadLimitRest(
+    session.user.id,
+    userTier,
+  );
   if (!uploadLimit.allowed) {
     return NextResponse.json(
       {

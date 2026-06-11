@@ -6,12 +6,24 @@ const DAILY_UPLOAD_LIMIT = 5;
 /**
  * Check if user has reached daily upload limit (REST API version)
  */
-export async function checkDailyUploadLimitRest(userId: string): Promise<{
+export async function checkDailyUploadLimitRest(
+  userId: string,
+  userTier: string = "free",
+): Promise<{
   allowed: boolean;
   remaining: number;
   limit: number;
   resetTime: Date;
 }> {
+  if (userTier !== "free") {
+    return {
+      allowed: true,
+      remaining: 999,
+      limit: 999,
+      resetTime: getResetTime(),
+    };
+  }
+
   try {
     // Get today's start time (UTC)
     const today = new Date();
