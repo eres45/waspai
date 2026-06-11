@@ -56,7 +56,7 @@ export function UpgradePopup() {
         {/* Benefits list */}
         <div className="w-full my-5 space-y-3 text-left">
           {[
-            "Full access to advanced Pro AIs (GPT-4o, Claude 3.5 Sonnet, etc.)",
+            "Full access to advanced Pro models",
             "Unlimited web search, tools, and custom HTTP workflows",
             "Pro image generation and document/file converters",
             "MCP servers integration & priority generation speeds",
