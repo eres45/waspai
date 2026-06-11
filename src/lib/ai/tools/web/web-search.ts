@@ -28,9 +28,9 @@ export const freeContentsSchema = z.object({
     .describe("List of URLs to extract text content from"),
 });
 
-// --- Generic Search Interfaces (Exa Compatible) ---
+// --- Generic Search Interfaces ---
 
-export interface ExaSearchResult {
+export interface WebSearchResult {
   id: string;
   title: string;
   url: string;
@@ -42,22 +42,22 @@ export interface ExaSearchResult {
   score?: number;
 }
 
-export interface ExaSearchResponse {
+export interface WebSearchResponse {
   requestId: string;
-  results: ExaSearchResult[];
+  results: WebSearchResult[];
 }
 
-export interface ExaSearchRequest {
+export interface WebSearchRequest {
   query: string;
   numResults?: number;
 }
 
-export interface ExaContentsRequest {
+export interface WebContentRequest {
   urls: string[];
 }
 
-export const exaSearchSchema = freeSearchSchema;
-export const exaContentsSchema = freeContentsSchema;
+export const webSearchSchema = freeSearchSchema;
+export const webContentSchema = freeContentsSchema;
 
 const getFaviconUrl = (url: string): string | undefined => {
   try {
@@ -71,7 +71,7 @@ const getFaviconUrl = (url: string): string | undefined => {
 async function fetchFreeSearch(
   query: string,
   numResults: number = 30,
-): Promise<ExaSearchResponse> {
+): Promise<WebSearchResponse> {
   const url = new URL("https://freewebsearch.onrender.com/api/search");
   url.searchParams.append("q", query);
   url.searchParams.append("n", numResults.toString());
@@ -85,7 +85,7 @@ async function fetchFreeSearch(
 
     const data = await searchResponse.json();
 
-    const results: ExaSearchResult[] = (data.results || []).map(
+    const results: WebSearchResult[] = (data.results || []).map(
       (result: any, index: number) => {
         const resultUrl = result.url || result.href || "";
         const favicon = getFaviconUrl(resultUrl);
@@ -133,9 +133,9 @@ const scrapeWebpage = async (url: string) => {
   }
 };
 
-// Exporting with 'exa' names to maintain backwards compatibility with tool-kit.ts
+// Exporting tools using generic web search names
 
-export const exaSearchToolForWorkflow = createTool({
+export const webSearchToolForWorkflow = createTool({
   description:
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
   inputSchema: freeSearchSchema,
@@ -162,7 +162,7 @@ export const exaSearchToolForWorkflow = createTool({
   },
 });
 
-export const exaContentsToolForWorkflow = createTool({
+export const webContentToolForWorkflow = createTool({
   description:
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
   inputSchema: freeContentsSchema,
@@ -174,7 +174,7 @@ export const exaContentsToolForWorkflow = createTool({
   },
 });
 
-export const exaSearchTool = createTool({
+export const webSearchTool = createTool({
   description:
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
   inputSchema: freeSearchSchema,
@@ -241,7 +241,7 @@ export const exaSearchTool = createTool({
   },
 });
 
-export const exaContentsTool = createTool({
+export const webContentTool = createTool({
   description:
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
   inputSchema: freeContentsSchema,

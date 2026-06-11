@@ -1,7 +1,7 @@
 "use client";
 
 import { ToolUIPart } from "ai";
-import { ExaSearchResponse } from "lib/ai/tools/web/web-search";
+import { WebSearchResponse } from "lib/ai/tools/web/web-search";
 import equal from "lib/equal";
 import { notify } from "lib/notify";
 import { toAny, cn } from "lib/utils";
@@ -24,7 +24,7 @@ function PureWebSearchToolInvocation({ part }: WebSearchToolInvocationProps) {
 
   const result = useMemo(() => {
     if (!part.state.startsWith("output")) return null;
-    return part.output as ExaSearchResponse & {
+    return part.output as WebSearchResponse & {
       isError: boolean;
       error?: string;
     };
@@ -146,7 +146,7 @@ function PureWebSearchToolInvocation({ part }: WebSearchToolInvocationProps) {
               {result.error || "Error"}
             </p>
           ) : (
-            (result as ExaSearchResponse)?.results?.map((result, i) => {
+            (result as WebSearchResponse)?.results?.map((result, i) => {
               const domain = result.url ? new URL(result.url).hostname : "";
               return (
                 <HoverCard key={i} openDelay={100} closeDelay={0}>
@@ -412,7 +412,7 @@ export function PureGroupedWebSearchToolInvocation({
         <div className="mt-4 flex flex-col gap-4 border-t pt-4 animate-in fade-in slide-in-from-top-1 duration-200">
           {parts.map((part, index) => {
             const result = part.state.startsWith("output")
-              ? (part.output as ExaSearchResponse & {
+              ? (part.output as WebSearchResponse & {
                   isError: boolean;
                   error?: string;
                 })

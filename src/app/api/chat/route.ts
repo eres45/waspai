@@ -96,7 +96,7 @@ import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
 import { readSiteFileTool } from "@/lib/ai/tools/read-site-file";
 import { editSiteFileTool } from "@/lib/ai/tools/edit-site-file";
 import { fileConverterTool } from "@/lib/ai/tools/file-converter";
-import { exaSearchTool as webSearchTool } from "@/lib/ai/tools/web/web-search";
+import { webSearchTool } from "@/lib/ai/tools/web/web-search";
 import {
   listSmsNumbersTool,
   getSmsMessagesTool,
