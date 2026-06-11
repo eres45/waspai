@@ -27,11 +27,9 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { Loader } from "lucide-react";
-import { safe } from "ts-safe";
 import { z } from "zod";
 
 import { DBWorkflow, WorkflowIcon } from "app-types/workflow";
-import { handleErrorWithToast } from "ui/shared-toast";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn, createDebounce } from "lib/utils";
@@ -112,58 +110,53 @@ export function EditWorkflowPopup({
 
   const handleSubmit = async () => {
     setLoading(true);
-    toast.promise(
-      safe(() => zodSchema.parse(config))
-        .map(async (body) => {
-          const response = await fetch("/api/workflow", {
-            method: "POST",
-            body: JSON.stringify(body),
-          });
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-              errorData.error || errorData.message || "Failed to save workflow",
-            );
-          }
-          const data = await response.json();
-          return data as DBWorkflow;
-        })
-        .ifOk((workflow) => {
-          onOpenChange?.(false);
-          mutate("/api/workflow");
-          if (submitAfterRoute) {
-            router.push(`/workflow/${workflow.id}`);
-          }
-          onSave?.(workflow);
-        })
-        .ifFail((err) => {
-          const errMsg = err.message || "";
-          const isWorkflowProGate =
-            errMsg.includes("Workflows are a Pro/Ultra feature") ||
-            errMsg.includes(
-              "upgrade your subscription to create custom workflows",
-            );
-          const isWorkflowUltraGate =
-            errMsg.includes("limit of 5 workflows") ||
-            errMsg.includes("upgrade to Ultra for unlimited workflows");
+    const toastId = toast.loading(t("Common.saving"));
+    try {
+      const body = zodSchema.parse(config);
 
-          if (isWorkflowProGate || isWorkflowUltraGate) {
-            onOpenChange?.(false);
-            appStore.getState().mutate({
-              openUpgrade: true,
-              upgradeReason: errMsg,
-            });
-          } else {
-            handleErrorWithToast(err);
-          }
-        })
-        .watch(() => setLoading(false))
-        .unwrap(),
-      {
-        success: t("Common.success"),
-        loading: t("Common.saving"),
-      },
-    );
+      const response = await fetch("/api/workflow", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || errorData.message || "Failed to save workflow",
+        );
+      }
+
+      const workflow = (await response.json()) as DBWorkflow;
+
+      toast.success(t("Common.success"), { id: toastId });
+      onOpenChange?.(false);
+      mutate("/api/workflow");
+      if (submitAfterRoute) {
+        router.push(`/workflow/${workflow.id}`);
+      }
+      onSave?.(workflow);
+    } catch (err: any) {
+      const errMsg = err.message || "";
+      const isWorkflowProGate =
+        errMsg.includes("Workflows are a Pro/Ultra feature") ||
+        errMsg.includes("upgrade your subscription to create custom workflows");
+      const isWorkflowUltraGate =
+        errMsg.includes("limit of 5 workflows") ||
+        errMsg.includes("upgrade to Ultra for unlimited workflows");
+
+      if (isWorkflowProGate || isWorkflowUltraGate) {
+        toast.dismiss(toastId);
+        onOpenChange?.(false);
+        appStore.getState().mutate({
+          openUpgrade: true,
+          upgradeReason: errMsg,
+        });
+      } else {
+        toast.error(errMsg || "Failed to save workflow", { id: toastId });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
