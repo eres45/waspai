@@ -73,6 +73,45 @@ export default function AboutPage() {
             ))}
           </section>
 
+          {/* Values Section */}
+          <section className="mb-32">
+            <h2 className="text-3xl font-bold mb-12 text-center uppercase tracking-widest">
+              Our Values & How We Act
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {[
+                {
+                  title: "Put the Mission First",
+                  desc: "Democratizing access to advanced AI intelligence and remote sandboxes is our core goal. We align all engineering and product decisions to serve this mission first.",
+                },
+                {
+                  title: "Action & Momentum",
+                  desc: "We value execution over excessive discussion. We ship improvements daily, listen closely to our community, and maintain rapid product iteration.",
+                },
+                {
+                  title: "Radical Transparency",
+                  desc: "We act honestly and openly. No hidden subscription traps, no deceptive usage caps, and complete user ownership of prompts and generated data.",
+                },
+                {
+                  title: "Craftsmanship & Aesthetics",
+                  desc: "We refuse to build mediocre software. Every UI element, micro-animation, and background worker is crafted with state-of-the-art detail and speed.",
+                },
+              ].map((val, i) => (
+                <div
+                  key={i}
+                  className="p-8 rounded-3xl border border-white/5 bg-white/[0.01] hover:border-white/10 transition-colors"
+                >
+                  <h3 className="text-xl font-bold mb-4 tracking-wide text-white/90">
+                    {val.title}
+                  </h3>
+                  <p className="text-white/40 leading-relaxed text-base">
+                    {val.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* Legal Identity Section (Crucial for Razorpay) */}
           <section className="p-12 rounded-[2rem] border border-white/10 bg-gradient-to-b from-white/[0.05] to-transparent mb-32">
             <h2 className="text-2xl font-bold mb-8 text-center uppercase tracking-widest">
@@ -86,7 +125,7 @@ export default function AboutPage() {
               </p>
               <div className="pt-6 border-t border-white/5">
                 <p className="text-white font-bold text-xl uppercase tracking-widest">
-                  Ronit Bhavesh Shrimankar
+                  Eres
                 </p>
                 <p className="text-white/40 text-sm mt-2">
                   Founder & Sole Proprietor
@@ -146,7 +185,7 @@ export default function AboutPage() {
       {/* Basic Footer for Page */}
       <footer className="py-12 px-6 border-t border-white/5 text-center">
         <p className="text-white/20 text-xs tracking-widest uppercase">
-          © 2026 WASPAI. Owned & Operated by Ronit Bhavesh Shrimankar.
+          © 2026 WASPAI. Owned & Operated by Eres.
         </p>
       </footer>
     </div>

@@ -19,10 +19,10 @@ export default function PrivacyPage() {
           <p>
             Welcome to <strong>WASPAI</strong> (waspai.in) (&quot;we,&quot;
             &quot;our,&quot; or &quot;us&quot;), which is owned and operated by{" "}
-            <strong>Ronit Bhavesh Shrimankar</strong>. We respect your privacy
-            and are committed to protecting your personal data. This privacy
-            policy will inform you as to how we look after your personal data
-            when you visit our website (waspai.in) and use our AI services.
+            <strong>Eres</strong>. We respect your privacy and are committed to
+            protecting your personal data. This privacy policy will inform you
+            as to how we look after your personal data when you visit our
+            website (waspai.in) and use our AI services.
           </p>
         </section>
 
