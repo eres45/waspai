@@ -54,6 +54,33 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
+
+    const userTier = (session?.user as any)?.tier ?? "free";
+
+    if (userTier === "free") {
+      return Response.json(
+        {
+          error:
+            "Workflows are a Pro/Ultra feature. Please upgrade your subscription to create custom workflows.",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (userTier === "pro") {
+      const existingWorkflows = await workflowRepository.selectAll(
+        session.user.id,
+      );
+      if (existingWorkflows.length >= 5) {
+        return Response.json(
+          {
+            error:
+              "You have reached the limit of 5 workflows on the Pro plan. Please upgrade to Ultra for unlimited workflows.",
+          },
+          { status: 403 },
+        );
+      }
+    }
   }
 
   const workflow = await workflowRepository.save(

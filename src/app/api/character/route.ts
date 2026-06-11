@@ -20,6 +20,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userTier = (session?.user as any)?.tier ?? "free";
+
+    if (userTier === "free" || userTier === "pro") {
+      const existingCharacters =
+        await characterRepository.getCharactersByUserId(session.user.id);
+      const limit = userTier === "free" ? 2 : 7;
+      if (existingCharacters.length >= limit) {
+        return NextResponse.json(
+          {
+            error: "Limit reached",
+            message: `You have reached the limit of ${limit} custom agents on the ${
+              userTier === "free" ? "Free" : "Pro"
+            } plan. Please upgrade your subscription to create more agents.`,
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     const character = await characterRepository.createCharacter({
       id: generateUUID(),
       name,
