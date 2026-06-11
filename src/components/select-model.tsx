@@ -1,6 +1,7 @@
 "use client";
 
 import { appStore } from "@/app/store";
+import { authClient } from "auth/client";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
 import { ChatModel } from "app-types/chat";
 import { cn } from "lib/utils";
@@ -39,6 +40,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
   const { data: providers } = useChatModels();
   const [model, setModel] = useState(props.currentModel);
   const [filter, setFilter] = useState<"All" | "Free" | "Pro" | "Ultra">("All");
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const modelToUse = props.currentModel ?? appStore.getState().chatModel;
@@ -172,6 +174,16 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       disabled={!provider.hasAPIKey}
                       className="cursor-pointer"
                       onSelect={() => {
+                        const modelTier = (item as any).tier;
+                        const userTier = (session?.user as any)?.tier ?? "free";
+                        if (userTier === "free" && modelTier === "Pro") {
+                          setOpen(false);
+                          appStore
+                            .getState()
+                            .mutate({ openSubscription: true });
+                          return;
+                        }
+
                         setModel({
                           provider: provider.provider,
                           model: item.name,

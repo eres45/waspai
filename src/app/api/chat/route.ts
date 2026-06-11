@@ -15,6 +15,7 @@ import {
   isImageInputUnsupportedModel,
   buildDynamicModelsInfo,
   sanitizeMessageToolCalls,
+  getModelTier,
 } from "lib/ai/models";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
 
@@ -308,6 +309,19 @@ export async function POST(request: Request) {
     }
 
     logger.info(`Getting model: ${modelToUse?.provider}/${modelToUse?.model}`);
+    const userTier = (session?.user as any)?.tier ?? "free";
+    const modelTier = getModelTier(modelToUse?.model || "");
+    if (userTier === "free" && modelTier === "Pro") {
+      return new Response(
+        JSON.stringify({
+          error: "Upgrade Required",
+          message:
+            "You are on the Free tier. Please upgrade your plan to use Pro/Ultra models.",
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     let model;
     let initialModelLoadFailed = false;
     try {

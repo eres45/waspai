@@ -5,7 +5,11 @@ import {
   smoothStream,
   streamText,
 } from "ai";
-import { customModelProvider, sanitizeMessageToolCalls } from "lib/ai/models";
+import {
+  customModelProvider,
+  sanitizeMessageToolCalls,
+  getModelTier,
+} from "lib/ai/models";
 import globalLogger from "logger";
 import { buildUserSystemPrompt } from "lib/ai/prompts";
 import { getUserPreferences } from "lib/user/server";
@@ -34,6 +38,18 @@ export async function POST(request: Request) {
       instructions?: string;
     };
     logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
+    const userTier = (session.user as any).tier ?? "free";
+    const modelTier = getModelTier(chatModel?.model || "");
+    if (userTier === "free" && modelTier === "Pro") {
+      return new Response(
+        JSON.stringify({
+          error: "Upgrade Required",
+          message:
+            "You are on the Free tier. Please upgrade your plan to use Pro/Ultra models.",
+        }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
     const model = customModelProvider.getModel(chatModel);
     const userPreferences =
       (await getUserPreferences(session.user.id)) || undefined;
