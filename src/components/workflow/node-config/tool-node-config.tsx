@@ -24,7 +24,6 @@ import { useTranslations } from "next-intl";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { useMcpList } from "@/hooks/queries/use-mcp-list";
 
-import { exaSearchTool, exaContentsTool } from "lib/ai/tools/web/web-search";
 import { DefaultToolName } from "lib/ai/tools";
 
 export const ToolNodeDataConfig = memo(function ({
@@ -63,7 +62,8 @@ export const ToolNodeDataConfig = memo(function ({
       {
         type: "app-tool",
         id: DefaultToolName.WebSearch,
-        description: exaSearchTool.description!,
+        description:
+          'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
         parameterSchema: {
           type: "object",
           properties: {
@@ -86,7 +86,8 @@ export const ToolNodeDataConfig = memo(function ({
       {
         type: "app-tool",
         id: DefaultToolName.WebContent,
-        description: exaContentsTool.description!,
+        description:
+          "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
         parameterSchema: {
           type: "object",
           properties: {
