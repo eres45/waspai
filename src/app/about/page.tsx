@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Cpu, Shield, Zap } from "lucide-react";
+import { Footer } from "@/components/landing/footer";
 
 export const metadata: Metadata = {
   title: "About Us | WASPAI",
@@ -14,13 +15,14 @@ export default function AboutPage() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#0C0C0E]/80 backdrop-blur-xl transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a
             href="/"
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
             <span className="text-sm font-medium">Back to Home</span>
-          </Link>
+          </a>
           <div className="text-sm font-bold tracking-widest uppercase">
             WASPAI
           </div>
@@ -182,12 +184,7 @@ export default function AboutPage() {
         </div>
       </main>
 
-      {/* Basic Footer for Page */}
-      <footer className="py-12 px-6 border-t border-white/5 text-center">
-        <p className="text-white/20 text-xs tracking-widest uppercase">
-          © 2026 WASPAI. Owned & Operated by Eres.
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }
