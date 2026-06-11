@@ -3,6 +3,7 @@ import { createBarChartTool } from "./visualization/create-bar-chart";
 import { createLineChartTool } from "./visualization/create-line-chart";
 import { createTableTool } from "./visualization/create-table";
 import { webSearchTool, webContentTool } from "./web/web-search";
+import { scrapeWebPageTool } from "./web/scrape-web-page";
 import { AppDefaultToolkit, DefaultToolName } from ".";
 import { Tool } from "ai";
 import { httpFetchTool } from "./http/fetch";
@@ -61,6 +62,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   [AppDefaultToolkit.WebSearch]: {
     [DefaultToolName.WebSearch]: webSearchTool,
     [DefaultToolName.WebContent]: webContentTool,
+    [DefaultToolName.ScrapeWebPage]: scrapeWebPageTool,
     [DefaultToolName.YouTubeTranscript]: youtubeTranscriptTool,
   },
   [AppDefaultToolkit.Http]: {

@@ -1,0 +1,11 @@
+name = "superlight-scraper"
+main = "src/index.js"
+compatibility_date = "2026-06-11"
+
+[vars]
+JINA_ENABLED = "true"
+BROWSER_API_ENABLED = "false"
+
+[[kv_namespaces]]
+binding = "SCRAPE_CACHE"
+id = "8eefd28841a545269df64b13f64879a9"

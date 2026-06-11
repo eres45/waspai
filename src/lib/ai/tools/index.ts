@@ -18,6 +18,7 @@ export enum DefaultToolName {
   CreateTable = "createTable",
   WebSearch = "web-search",
   WebContent = "web-content",
+  ScrapeWebPage = "scrape-web-page",
   Http = "http",
   JavascriptExecution = "mini-javascript-execution",
   PythonExecution = "python-execution",
