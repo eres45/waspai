@@ -47,7 +47,13 @@ const createWithExample = async (exampleWorkflow: {
     }),
   });
 
-  if (!response.ok) return toast.error("Error creating workflow");
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMsg =
+      errorData.error || errorData.message || "Error creating workflow";
+    toast.error(errorMsg);
+    throw new Error(errorMsg);
+  }
   const workflow = await response.json();
   const structureResponse = await fetch(
     `/api/workflow/${workflow.id}/structure`,
@@ -59,7 +65,10 @@ const createWithExample = async (exampleWorkflow: {
       }),
     },
   );
-  if (!structureResponse.ok) return toast.error("Error creating workflow");
+  if (!structureResponse.ok) {
+    toast.error("Error creating workflow structure");
+    throw new Error("Error creating workflow structure");
+  }
   return workflow.id as string;
 };
 
@@ -97,9 +106,13 @@ export default function WorkflowListPage({
     nodes: Partial<DBNode>[];
     edges: Partial<DBEdge>[];
   }) => {
-    const workflowId = await createWithExample(exampleWorkflow);
-    mutate("/api/workflow");
-    router.push(`/workflow/${workflowId}`);
+    try {
+      const workflowId = await createWithExample(exampleWorkflow);
+      mutate("/api/workflow");
+      router.push(`/workflow/${workflowId}`);
+    } catch (error) {
+      console.error("Failed to create workflow example:", error);
+    }
   };
 
   const updateVisibility = async (

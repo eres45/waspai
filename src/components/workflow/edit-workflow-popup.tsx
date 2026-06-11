@@ -118,6 +118,12 @@ export function EditWorkflowPopup({
             method: "POST",
             body: JSON.stringify(body),
           });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error || errorData.message || "Failed to save workflow",
+            );
+          }
           const data = await response.json();
           return data as DBWorkflow;
         })

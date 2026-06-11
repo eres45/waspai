@@ -165,13 +165,16 @@ export default function EditCharacter({
         });
 
         if (!response.ok) {
-          throw new Error("Failed to save character");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || errorData.error || "Failed to save character",
+          );
         }
 
         toast.success("Character saved successfully");
         router.push("/characters");
-      } catch (error) {
-        toast.error("Failed to save character");
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to save character");
         console.error(error);
       } finally {
         setIsSaving(false);
