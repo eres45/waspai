@@ -694,3 +694,28 @@ export const DeployedSiteFileTable = pgTable(
 
 export type DeployedSiteEntity = typeof DeployedSiteTable.$inferSelect;
 export type DeployedSiteFileEntity = typeof DeployedSiteFileTable.$inferSelect;
+
+export const UserDailyUsageTable = pgTable(
+  "user_daily_usage",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => UserTable.id, { onDelete: "cascade" }),
+    actionType: varchar("action_type", {
+      enum: ["web_search", "image_gen"],
+    }).notNull(),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("user_daily_usage_user_action_date_idx").on(
+      table.userId,
+      table.actionType,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type UserDailyUsageEntity = typeof UserDailyUsageTable.$inferSelect;

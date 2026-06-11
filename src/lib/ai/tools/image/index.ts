@@ -4,6 +4,8 @@ import z from "zod";
 import { ImageToolName } from "..";
 import logger from "logger";
 import { generateImage } from "lib/ai/image/generate-image";
+import { getSession } from "auth/server";
+import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 
 export type ImageToolResult = {
   images: {
@@ -34,6 +36,31 @@ export const nanoBananaTool = createTool({
   }),
   execute: async ({ prompt, model }, { abortSignal, messages }) => {
     logger.info(`Image tool called with model: ${model}`);
+
+    const session = await getSession();
+    if (!session?.user?.id) {
+      throw new Error(
+        "Unauthorized: You must be logged in to generate images.",
+      );
+    }
+
+    const userId = session.user.id;
+    const userTier = (session.user as any).tier ?? "free";
+
+    // Enforce daily limit of 10 for Free tier users
+    if (userTier === "free") {
+      const usageCheck = await checkDailyUsageLimit(userId, "image_gen", 10);
+      if (!usageCheck.allowed) {
+        logger.info(`Daily image generation limit reached for user ${userId}`);
+        return {
+          images: [],
+          model,
+          mode: "create",
+          guide:
+            "LIMIT_EXCEEDED: You have reached your daily limit of 10 image generations on the Free plan. To generate more images, please upgrade your subscription or wait until tomorrow.",
+        };
+      }
+    }
 
     // Validate that a model was provided
     if (!model) {
@@ -114,6 +141,10 @@ export const nanoBananaTool = createTool({
 
       // Filter out failed uploads
       const successfulImages = resultImages.filter((img) => img.url);
+
+      if (successfulImages.length > 0) {
+        await recordDailyUsage(userId, "image_gen");
+      }
 
       return {
         images: successfulImages,

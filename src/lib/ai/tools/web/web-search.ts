@@ -2,6 +2,8 @@ import { tool as createTool } from "ai";
 import { z } from "zod";
 import { safe } from "ts-safe";
 import { load } from "cheerio";
+import { getSession } from "auth/server";
+import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 
 // --- FreeWebSearch API Integration ---
 
@@ -138,6 +140,24 @@ export const exaSearchToolForWorkflow = createTool({
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
   inputSchema: freeSearchSchema,
   execute: async (params) => {
+    const session = await getSession();
+    const userId = session?.user?.id;
+    const userTier = (session?.user as any)?.tier ?? "free";
+
+    if (userId && userTier === "free") {
+      const usageCheck = await checkDailyUsageLimit(userId, "web_search", 10);
+      if (!usageCheck.allowed) {
+        return {
+          requestId: params.query,
+          results: [],
+          guide:
+            "LIMIT_EXCEEDED: You have reached your daily limit of 10 web searches on the Free plan. To perform more web searches, please upgrade your subscription or wait until tomorrow.",
+          isLimitExceeded: true,
+        };
+      }
+      await recordDailyUsage(userId, "web_search");
+    }
+
     return fetchFreeSearch(params.query, params.numResults);
   },
 });
@@ -172,6 +192,24 @@ export const exaSearchTool = createTool({
 
       if (!queryStr) {
         throw new Error("Search query is missing or undefined.");
+      }
+
+      const session = await getSession();
+      const userId = session?.user?.id;
+      const userTier = (session?.user as any)?.tier ?? "free";
+
+      if (userId && userTier === "free") {
+        const usageCheck = await checkDailyUsageLimit(userId, "web_search", 10);
+        if (!usageCheck.allowed) {
+          return {
+            requestId: queryStr,
+            results: [],
+            guide:
+              "LIMIT_EXCEEDED: You have reached your daily limit of 10 web searches on the Free plan. To perform more web searches, please upgrade your subscription or wait until tomorrow.",
+            isLimitExceeded: true,
+          };
+        }
+        await recordDailyUsage(userId, "web_search");
       }
 
       const result = await fetchFreeSearch(queryStr, numRes);
