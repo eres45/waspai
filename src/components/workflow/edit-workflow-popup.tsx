@@ -138,17 +138,20 @@ export function EditWorkflowPopup({
         })
         .ifFail((err) => {
           const errMsg = err.message || "";
-          if (
+          const isWorkflowProGate =
             errMsg.includes("Workflows are a Pro/Ultra feature") ||
             errMsg.includes(
               "upgrade your subscription to create custom workflows",
-            )
-          ) {
+            );
+          const isWorkflowUltraGate =
+            errMsg.includes("limit of 5 workflows") ||
+            errMsg.includes("upgrade to Ultra for unlimited workflows");
+
+          if (isWorkflowProGate || isWorkflowUltraGate) {
             onOpenChange?.(false);
             appStore.getState().mutate({
               openUpgrade: true,
-              upgradeReason:
-                "Workflows are a Pro/Ultra feature. Please upgrade your subscription to create custom workflows.",
+              upgradeReason: errMsg,
             });
           } else {
             handleErrorWithToast(err);

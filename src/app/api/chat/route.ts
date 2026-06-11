@@ -311,12 +311,15 @@ export async function POST(request: Request) {
     logger.info(`Getting model: ${modelToUse?.provider}/${modelToUse?.model}`);
     const userTier = (session?.user as any)?.tier ?? "free";
     const modelTier = getModelTier(modelToUse?.model || "");
-    if (userTier === "free" && modelTier === "Pro") {
+    const isRestricted =
+      (modelTier === "Pro" && userTier === "free") ||
+      (modelTier === "Ultra" && (userTier === "free" || userTier === "pro"));
+
+    if (isRestricted) {
       return new Response(
         JSON.stringify({
           error: "Upgrade Required",
-          message:
-            "You are on the Free tier. Please upgrade your plan to use Pro/Ultra models.",
+          message: `You are on the ${userTier.toUpperCase()} tier. Please upgrade your plan to use ${modelTier} models.`,
         }),
         { status: 403, headers: { "Content-Type": "application/json" } },
       );

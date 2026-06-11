@@ -36,18 +36,18 @@ export function UpgradePopup() {
       open={openUpgrade}
       onOpenChange={(open) => appStoreMutate({ openUpgrade: open })}
     >
-      <DialogContent className="max-w-[420px] bg-[#0b0f19] border-[#27272a] text-[#fafafa] p-6 rounded-2xl shadow-2xl flex flex-col items-center text-center z-[100]">
+      <DialogContent className="max-w-[420px] p-6 rounded-2xl flex flex-col items-center text-center z-[100]">
         {/* Animated Premium Icon */}
-        <div className="relative size-16 rounded-2xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center mb-2">
-          <Zap className="size-8 text-blue-500 fill-blue-500 animate-[pulse_2s_infinite]" />
-          <Sparkles className="size-5 text-yellow-400 absolute -top-1.5 -right-1.5 animate-bounce" />
+        <div className="relative size-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-2">
+          <Zap className="size-8 text-primary fill-primary animate-[pulse_2s_infinite]" />
+          <Sparkles className="size-5 text-amber-500 absolute -top-1.5 -right-1.5 animate-bounce" />
         </div>
 
-        <DialogHeader className="space-y-1">
-          <DialogTitle className="text-xl font-bold text-white flex items-center justify-center gap-1.5">
+        <DialogHeader className="space-y-1 w-full flex flex-col items-center text-center">
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center justify-center gap-1.5">
             Upgrade to Pro
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#a1a1aa] max-w-sm">
+          <DialogDescription className="text-xs text-muted-foreground max-w-sm text-center">
             {upgradeReason ||
               "Access advanced reasoning models, image generation, and pro features."}
           </DialogDescription>
@@ -63,26 +63,28 @@ export function UpgradePopup() {
           ].map((benefit, idx) => (
             <div
               key={idx}
-              className="flex items-start gap-2.5 text-xs text-[#d4d4d8]"
+              className="flex items-start gap-2.5 text-xs text-foreground"
             >
-              <ShieldCheck className="size-4.5 text-green-500 shrink-0 mt-0.5" />
+              <ShieldCheck className="size-4.5 text-emerald-500 shrink-0 mt-0.5" />
               <span>{benefit}</span>
             </div>
           ))}
         </div>
 
         {/* Price & Savings Callout */}
-        <div className="w-full bg-[#18181b]/50 border border-[#27272a] rounded-xl p-3.5 flex items-center justify-between text-left mb-5">
+        <div className="w-full bg-muted/40 border border-border rounded-xl p-3.5 flex items-center justify-between text-left mb-5">
           <div>
-            <p className="text-[10px] uppercase font-bold text-[#a1a1aa] tracking-wider">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
               Pro Subscription
             </p>
-            <p className="text-xl font-black text-white mt-0.5">
+            <p className="text-xl font-black text-foreground mt-0.5">
               ₹830
-              <span className="text-xs font-normal text-[#a1a1aa]">/month</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                /month
+              </span>
             </p>
           </div>
-          <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-full shrink-0">
+          <span className="text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded-full shrink-0">
             60% cheaper than competition
           </span>
         </div>
@@ -91,14 +93,14 @@ export function UpgradePopup() {
         <div className="w-full space-y-2">
           <Button
             onClick={handleUpgradePro}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-all shadow-lg hover:shadow-blue-500/10"
+            className="w-full font-semibold py-2.5 rounded-xl transition-all shadow-lg hover:shadow-primary/10"
           >
             Upgrade to Pro
           </Button>
           <Button
             variant="ghost"
             onClick={handleViewAllPlans}
-            className="w-full text-xs text-[#a1a1aa] hover:text-white hover:bg-[#27272a]/40 py-2 transition-colors flex items-center justify-center gap-1"
+            className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors flex items-center justify-center gap-1"
           >
             Compare other plans (Ultra / Free){" "}
             <ChevronRight className="size-3" />

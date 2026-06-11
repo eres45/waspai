@@ -52,14 +52,17 @@ const createWithExample = async (exampleWorkflow: {
     const errorData = await response.json().catch(() => ({}));
     const errorMsg =
       errorData.error || errorData.message || "Error creating workflow";
-    if (
+    const isWorkflowProGate =
       errorMsg.includes("Workflows are a Pro/Ultra feature") ||
-      errorMsg.includes("upgrade your subscription to create custom workflows")
-    ) {
+      errorMsg.includes("upgrade your subscription to create custom workflows");
+    const isWorkflowUltraGate =
+      errorMsg.includes("limit of 5 workflows") ||
+      errorMsg.includes("upgrade to Ultra for unlimited workflows");
+
+    if (isWorkflowProGate || isWorkflowUltraGate) {
       appStore.getState().mutate({
         openUpgrade: true,
-        upgradeReason:
-          "Workflows are a Pro/Ultra feature. Please upgrade your subscription to create custom workflows.",
+        upgradeReason: errorMsg,
       });
     } else {
       toast.error(errorMsg);
