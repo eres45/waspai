@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { customModelProvider, buildDynamicModelsInfo } from "@/lib/ai/models";
 import { supabaseRest } from "@/lib/db/supabase-rest";
+import { getAdminSession } from "@/lib/admin-panel/auth";
 import { streamText } from "ai";
 
 // Test a single model with a simple prompt
@@ -259,8 +260,17 @@ export async function GET() {
   }
 }
 
-// POST - Run tests (called manually from UI)
+// POST - Run tests (called manually from UI or GitHub Action)
 export async function POST(_request: NextRequest) {
+  // 1. Secure endpoint: only allow either a valid admin session OR the workflow bearer token
+  const adminEmail = await getAdminSession();
+  const authHeader = _request.headers.get("Authorization");
+  const isWorkflowTrigger = authHeader === "Bearer waspai2024status";
+
+  if (!adminEmail && !isWorkflowTrigger) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const modelsToTest = await buildDynamicModelsInfo();
     const allModelsToTest = modelsToTest.flatMap((p) =>

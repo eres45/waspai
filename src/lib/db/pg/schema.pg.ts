@@ -719,3 +719,29 @@ export const UserDailyUsageTable = pgTable(
 );
 
 export type UserDailyUsageEntity = typeof UserDailyUsageTable.$inferSelect;
+
+export const SystemErrorTable = pgTable(
+  "system_error",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    userId: uuid("user_id").references(() => UserTable.id, {
+      onDelete: "set null",
+    }),
+    errorName: text("error_name").notNull(),
+    errorMessage: text("error_message").notNull(),
+    errorStack: text("error_stack"),
+    path: text("path"),
+    method: text("method"),
+    statusCode: integer("status_code"),
+    metadata: json("metadata"),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("system_error_created_at_idx").on(table.createdAt),
+    index("system_error_error_name_idx").on(table.errorName),
+  ],
+);
+
+export type SystemErrorEntity = typeof SystemErrorTable.$inferSelect;
