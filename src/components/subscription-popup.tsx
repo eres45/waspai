@@ -3,104 +3,297 @@
 import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerPortal,
+  DrawerTitle,
+} from "ui/drawer";
 import { Button } from "ui/button";
-import { Sparkles, Zap, ShieldCheck, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { X, Sparkles, Zap, Crown } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "ui/card";
+import { Badge } from "ui/badge";
+import { Check } from "lucide-react";
+
+// Simple pricing data (INR default for popup)
+const plans = [
+  {
+    id: "free",
+    name: "Free",
+    icon: Sparkles,
+    price: "₹0",
+    description: "Essential features for casual AI users",
+    features: [
+      "Unlimited use of all Free models",
+      "Limited image generations",
+      "Limited memory & indexing",
+      "Limited web searches",
+      "Limited file uploads",
+      "Community support",
+    ],
+    cta: "Current Plan",
+    highlighted: false,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    icon: Zap,
+    price: "₹830",
+    period: "/month",
+    description: "Access to most top AIs and features",
+    features: [
+      "Access to advanced Pro models",
+      "All Free models with faster speed & limits",
+      "Pro image generation & advanced image editing",
+      "Unlimited web search, code execution & tools",
+      "Unlimited file, PDF, & document uploads",
+      "MCP Servers & custom HTTP workflows",
+      "Limited workflows, projects, skills & storage",
+      "Limited agent creation",
+      "24/7 Priority email support",
+    ],
+    cta: "Upgrade to Pro",
+    highlighted: true,
+    savings: "60% cheaper than competitors",
+  },
+  {
+    id: "ultra",
+    name: "Ultra",
+    icon: Crown,
+    price: "₹2,660",
+    period: "/month",
+    description: "Maximum power for heavy users",
+    features: [
+      "Access to all premium Frontier & Reasoning models (Top Priority)",
+      "All image models, tools & Video generation",
+      "Web access & unlimited advanced search",
+      "Unlimited workflows, projects, skills & agents",
+      "Unlimited storage & custom MCP integrations",
+      "Priority support & dedicated assistance",
+      "Early access to new features",
+    ],
+    cta: "Upgrade to Ultra",
+    highlighted: false,
+  },
+];
 
 export function SubscriptionPopup() {
   const [openSubscription, appStoreMutate] = appStore(
     useShallow((state) => [state.openSubscription, state.mutate]),
   );
 
-  const handleUpgradePro = () => {
+  const handleClose = () => {
     appStoreMutate({ openSubscription: false });
-    window.location.href = "/checkout/pro";
   };
 
-  const handleViewAllPlans = () => {
-    appStoreMutate({ openSubscription: false });
-    window.location.href = "/subscription";
+  const handleUpgrade = (planId: string) => {
+    if (planId === "pro") {
+      window.location.href = "/checkout/pro";
+    } else if (planId === "ultra") {
+      window.location.href = "/checkout/ultra";
+    } else {
+      // Redirect to full plans page
+      window.location.href = "/subscription";
+    }
   };
 
   return (
-    <Dialog
+    <Drawer
+      handleOnly
       open={openSubscription}
+      direction="top"
       onOpenChange={(open) => appStoreMutate({ openSubscription: open })}
     >
-      <DialogContent className="max-w-[420px] bg-[#0b0f19] border-[#27272a] text-[#fafafa] p-6 rounded-2xl shadow-2xl flex flex-col items-center text-center">
-        {/* Animated Premium Icon */}
-        <div className="relative size-16 rounded-2xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center mb-2">
-          <Zap className="size-8 text-blue-500 fill-blue-500 animate-[pulse_2s_infinite]" />
-          <Sparkles className="size-5 text-yellow-400 absolute -top-1.5 -right-1.5 animate-bounce" />
-        </div>
-
-        <DialogHeader className="space-y-1">
-          <DialogTitle className="text-xl font-bold text-white flex items-center justify-center gap-1.5">
-            Upgrade to Pro
-          </DialogTitle>
-          <DialogDescription className="text-xs text-[#a1a1aa] max-w-sm">
-            Access advanced reasoning models, image generation, and pro
-            features.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Benefits list */}
-        <div className="w-full my-5 space-y-3 text-left">
-          {[
-            "Full access to advanced Pro AIs (GPT-4o, Claude 3.5 Sonnet, etc.)",
-            "Unlimited web search, tools, and custom HTTP workflows",
-            "Pro image generation and document/file converters",
-            "MCP servers integration & priority generation speeds",
-          ].map((benefit, idx) => (
-            <div
-              key={idx}
-              className="flex items-start gap-2.5 text-xs text-[#d4d4d8]"
-            >
-              <ShieldCheck className="size-4.5 text-green-500 shrink-0 mt-0.5" />
-              <span>{benefit}</span>
+      <DrawerPortal>
+        <DrawerContent
+          style={{
+            userSelect: "text",
+          }}
+          className="max-h-[100vh]! w-full h-full rounded-none flex flex-col overflow-hidden p-4 md:p-6"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <DrawerTitle className="text-2xl flex items-center gap-2">
+                Choose Your Plan
+                <Badge variant="secondary" className="text-xs">
+                  60% cheaper
+                </Badge>
+              </DrawerTitle>
+              <DrawerDescription>
+                Unlimited usage with rate limits. Premium features. Unbeatable
+                value.
+              </DrawerDescription>
             </div>
-          ))}
-        </div>
-
-        {/* Price & Savings Callout */}
-        <div className="w-full bg-[#18181b]/50 border border-[#27272a] rounded-xl p-3.5 flex items-center justify-between text-left mb-5">
-          <div>
-            <p className="text-[10px] uppercase font-bold text-[#a1a1aa] tracking-wider">
-              Pro Subscription
-            </p>
-            <p className="text-xl font-black text-white mt-0.5">
-              ₹830
-              <span className="text-xs font-normal text-[#a1a1aa]">/month</span>
-            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              data-testid="close-subscription-button"
+            >
+              <X />
+            </Button>
           </div>
-          <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-full shrink-0">
-            60% cheaper than competition
-          </span>
-        </div>
 
-        {/* Buttons */}
-        <div className="w-full space-y-2">
-          <Button
-            onClick={handleUpgradePro}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-all shadow-lg hover:shadow-blue-500/10"
-          >
-            Upgrade to Pro
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={handleViewAllPlans}
-            className="w-full text-xs text-[#a1a1aa] hover:text-white hover:bg-[#27272a]/40 py-2 transition-colors flex items-center justify-center gap-1"
-          >
-            Compare other plans (Ultra / Free){" "}
-            <ChevronRight className="size-3" />
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+            <div className="grid md:grid-cols-3 gap-6 pb-6">
+              {plans.map((plan) => {
+                const Icon = plan.icon;
+                return (
+                  <Card
+                    key={plan.id}
+                    className={`relative flex flex-col transition-all ${
+                      plan.highlighted
+                        ? "border-primary shadow-lg ring-1 ring-primary/20"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {plan.highlighted && (
+                      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                        <Badge className="bg-gradient-to-r from-primary to-primary/80 text-xs">
+                          Most Popular
+                        </Badge>
+                      </div>
+                    )}
+
+                    <CardHeader className="pb-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Icon className="size-5 text-primary" />
+                        </div>
+                        {plan.savings && (
+                          <Badge variant="secondary" className="text-xs">
+                            {plan.savings}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {plan.description}
+                      </CardDescription>
+
+                      <div className="mt-4">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold">
+                            {plan.price}
+                          </span>
+                          {plan.period && (
+                            <span className="text-muted-foreground text-sm">
+                              {plan.period}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 flex flex-col">
+                      <div className="space-y-2 flex-1">
+                        {plan.features.map((feature) => (
+                          <div key={feature} className="flex items-start gap-2">
+                            <Check className="size-4 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-xs text-foreground leading-relaxed">
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        onClick={() => handleUpgrade(plan.id)}
+                        variant={plan.highlighted ? "default" : "outline"}
+                        size="sm"
+                        className={`w-full mt-4 ${
+                          plan.highlighted
+                            ? "bg-gradient-to-r from-primary to-primary/90"
+                            : ""
+                        }`}
+                        disabled={plan.id === "free"}
+                      >
+                        {plan.cta}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* View Full Details Link */}
+            <div className="text-center pt-4 border-t border-border flex flex-col items-center gap-2">
+              <Button
+                variant="link"
+                onClick={() => (window.location.href = "/subscription")}
+                className="text-sm h-auto p-0"
+              >
+                View full pricing details & features →
+              </Button>
+              <p className="text-[10px] text-muted-foreground/60">
+                <Link
+                  href="/usage-limit-best-practices"
+                  className="underline hover:text-primary transition-colors"
+                >
+                  *Usage limits apply
+                </Link>
+                . Prices and plans are subject to change at Anthropic&apos;s
+                discretion.
+              </p>
+            </div>
+
+            {/* Compact FAQ */}
+            <div className="border-t border-border pt-6 mt-2">
+              <h3 className="text-lg font-bold text-foreground mb-4">
+                Quick FAQ
+              </h3>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    Can I change plans anytime?
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Yes! Upgrade or downgrade anytime. Changes take effect
+                    immediately.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    What payment methods?
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Credit cards, UPI (India), PayPal, and more.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    Do you offer refunds?
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    30-day money-back guarantee if not satisfied.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">
+                    Why so cheap?
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Client-side processing and multi-provider architecture keep
+                    costs low!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </DrawerPortal>
+    </Drawer>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { appStore } from "@/app/store";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import {
   Dialog,
@@ -135,7 +136,24 @@ export function EditWorkflowPopup({
           }
           onSave?.(workflow);
         })
-        .ifFail(handleErrorWithToast)
+        .ifFail((err) => {
+          const errMsg = err.message || "";
+          if (
+            errMsg.includes("Workflows are a Pro/Ultra feature") ||
+            errMsg.includes(
+              "upgrade your subscription to create custom workflows",
+            )
+          ) {
+            onOpenChange?.(false);
+            appStore.getState().mutate({
+              openUpgrade: true,
+              upgradeReason:
+                "Workflows are a Pro/Ultra feature. Please upgrade your subscription to create custom workflows.",
+            });
+          } else {
+            handleErrorWithToast(err);
+          }
+        })
         .watch(() => setLoading(false))
         .unwrap(),
       {

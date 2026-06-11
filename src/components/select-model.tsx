@@ -174,13 +174,20 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       disabled={!provider.hasAPIKey}
                       className="cursor-pointer"
                       onSelect={() => {
-                        const modelTier = (item as any).tier;
+                        const modelTier = (item as any).tier || "Free";
                         const userTier = (session?.user as any)?.tier ?? "free";
-                        if (userTier === "free" && modelTier === "Pro") {
+                        const isRestricted =
+                          (modelTier === "Pro" && userTier === "free") ||
+                          (modelTier === "Ultra" &&
+                            (userTier === "free" || userTier === "pro"));
+
+                        if (isRestricted) {
                           setOpen(false);
-                          appStore
-                            .getState()
-                            .mutate({ openSubscription: true });
+                          const cleanName = cleanModelDisplayName(item.name);
+                          appStore.getState().mutate({
+                            openUpgrade: true,
+                            upgradeReason: `Access advanced reasoning models like ${cleanName}, image generation, and pro features.`,
+                          });
                           return;
                         }
 

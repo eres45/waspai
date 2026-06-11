@@ -1,4 +1,5 @@
 "use client";
+import { appStore } from "@/app/store";
 import { EditWorkflowPopup } from "@/components/workflow/edit-workflow-popup";
 import { authClient } from "auth/client";
 import { canCreateWorkflow } from "lib/auth/client-permissions";
@@ -51,7 +52,18 @@ const createWithExample = async (exampleWorkflow: {
     const errorData = await response.json().catch(() => ({}));
     const errorMsg =
       errorData.error || errorData.message || "Error creating workflow";
-    toast.error(errorMsg);
+    if (
+      errorMsg.includes("Workflows are a Pro/Ultra feature") ||
+      errorMsg.includes("upgrade your subscription to create custom workflows")
+    ) {
+      appStore.getState().mutate({
+        openUpgrade: true,
+        upgradeReason:
+          "Workflows are a Pro/Ultra feature. Please upgrade your subscription to create custom workflows.",
+      });
+    } else {
+      toast.error(errorMsg);
+    }
     throw new Error(errorMsg);
   }
   const workflow = await response.json();

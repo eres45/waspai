@@ -78,6 +78,8 @@ export interface AppState {
   openChatPreferences: boolean;
   openUserSettings: boolean;
   openSubscription: boolean;
+  openUpgrade: boolean;
+  upgradeReason?: string;
   mcpCustomizationPopup?: MCPServerInfo & { id: string };
   temporaryChat: {
     isOpen: boolean;
@@ -123,6 +125,8 @@ const initialState: AppState = {
   allowedMcpServers: undefined,
   openUserSettings: false,
   openSubscription: false,
+  openUpgrade: false,
+  upgradeReason: undefined,
   allowedAppDefaultToolkit: [
     AppDefaultToolkit.Code,
     AppDefaultToolkit.Visualization,

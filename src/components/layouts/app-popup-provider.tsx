@@ -69,6 +69,13 @@ const SubscriptionPopup = dynamic(
   },
 );
 
+const UpgradePopup = dynamic(
+  () => import("@/components/upgrade-popup").then((mod) => mod.UpgradePopup),
+  {
+    ssr: false,
+  },
+);
+
 export function AppPopupProvider() {
   return (
     <>
@@ -76,6 +83,7 @@ export function AppPopupProvider() {
       <ChatPreferencesPopup />
       <UserSettingsPopup />
       <SubscriptionPopup />
+      <UpgradePopup />
       <ChatBotVoice />
       <ChatBotTemporary />
       <McpCustomizationPopup />
