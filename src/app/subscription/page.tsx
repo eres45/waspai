@@ -475,34 +475,6 @@ export default function SubscriptionPage() {
       {/* FAQ Section */}
       <FAQSection />
 
-      {/* CTA Section */}
-      <div className="border-t border-border/50 bg-gradient-to-b from-muted/20 to-muted/40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center space-y-8">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Ready to get started?
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Join users enjoying{" "}
-            <span className="text-primary font-semibold">
-              premium AI at unbeatable prices
-            </span>
-            . Start free, upgrade anytime.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
-              size="lg"
-              onClick={() => handleUpgrade("pro")}
-              className="min-w-[200px]"
-            >
-              Upgrade to Pro
-            </Button>
-            <Button size="lg" variant="outline" className="min-w-[200px]">
-              Start Free
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Footer */}
       <Footer />
     </div>
