@@ -79,8 +79,7 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
         <div className="flex items-center gap-2 text-xs font-semibold text-foreground/80">
           <MonitorIcon className="size-3.5 text-blue-500" />
           <span>
-            Steel Cloud Browser ({isInteractive ? "User Control" : "AI Control"}
-            )
+            Cloud Browser ({isInteractive ? "User Control" : "AI Control"})
           </span>
         </div>
       </div>
@@ -133,7 +132,7 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
               "w-full h-full border-0 transition-opacity",
               (!isInteractive || isExpired) && "opacity-90 grayscale-[0.2]",
             )}
-            title="Steel Browser Preview"
+            title="Cloud Browser Preview"
             allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
           />
           {!isInteractive && !isExpired && (
