@@ -155,10 +155,10 @@ export default function AboutPage() {
             <h2 className="text-3xl font-bold mb-8">Our Journey</h2>
             <div className="text-white/50 space-y-6 text-lg leading-relaxed">
               <p>
-                Founded in 2026, WASPAI (formerly known as Better Chatbot) began
-                as a mission to bridge the gap between complex AI models and
-                user-friendly interfaces. We believe that intelligence
-                shouldn&apos;t be gated by technical complexity.
+                Founded in 2026, WASPAI began as a mission to bridge the gap
+                between complex AI models and user-friendly interfaces. We
+                believe that intelligence shouldn&apos;t be gated by technical
+                complexity.
               </p>
               <p>
                 Today, WASPAI supports dozens of specialized models for coding,

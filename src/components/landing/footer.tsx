@@ -27,7 +27,7 @@ export const Footer = () => {
         { label: "API Reference", href: "/api" },
         {
           label: "GitHub",
-          href: "https://github.com/cgoinglove/better-chatbot",
+          href: "https://github.com/eres45/waspai",
           external: true,
         },
         {
