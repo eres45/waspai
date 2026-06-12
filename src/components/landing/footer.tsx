@@ -16,7 +16,7 @@ export const Footer = () => {
         { label: "Features", href: "#features" },
         { label: "Workflows", href: "#workflows" },
         { label: "Agents", href: "#agents" },
-        { label: "Pricing", href: "#pricing" },
+        { label: "Pricing", href: "/subscription" },
         { label: "Changelog", href: "/changelog" },
       ],
     },
@@ -38,12 +38,22 @@ export const Footer = () => {
       ],
     },
     {
+      title: "Legal & Status",
+      links: [
+        { label: "System Status", href: "/status" },
+        { label: "Privacy Policy", href: "/privacy" },
+        { label: "Terms of Service", href: "/terms" },
+        { label: "Refund Policy", href: "/refund" },
+        { label: "Shipping Policy", href: "/shipping" },
+      ],
+    },
+    {
       title: "Company",
       links: [
-        { label: "About", href: "/about" },
+        { label: "About Us", href: "/about" },
+        { label: "Contact Support", href: "/contact" },
         { label: "Blog", href: "/blog" },
         { label: "Careers", href: "/careers" },
-        { label: "Contact", href: "/contact" },
       ],
     },
   ];
@@ -51,9 +61,9 @@ export const Footer = () => {
   return (
     <footer className="relative w-full bg-[#161618] pt-32 pb-12 px-6 overflow-hidden border-t border-white/5">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 mb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-24">
           {/* Left Column: CTA */}
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -78,10 +88,10 @@ export const Footer = () => {
           </div>
 
           {/* Right Column: Links */}
-          <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-3 gap-12">
+          <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-12">
             {footerLinks.map((column, idx) => (
               <div key={idx} className="flex flex-col">
-                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6">
+                <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6 text-xs">
                   {column.title}
                 </h4>
                 <ul className="space-y-4">
@@ -135,18 +145,21 @@ export const Footer = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-8">
-            {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(
-              (legal) => (
-                <Link
-                  key={legal}
-                  href="#"
-                  className="text-[13px] text-white/30 hover:text-white/60 transition-colors font-medium"
-                >
-                  {legal}
-                </Link>
-              ),
-            )}
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            {[
+              { label: "Privacy Policy", href: "/privacy" },
+              { label: "Terms of Service", href: "/terms" },
+              { label: "Refund Policy", href: "/refund" },
+              { label: "Shipping Policy", href: "/shipping" },
+            ].map((legal) => (
+              <Link
+                key={legal.label}
+                href={legal.href}
+                className="text-[13px] text-white/30 hover:text-white/60 transition-colors font-medium"
+              >
+                {legal.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
