@@ -9,7 +9,18 @@ export const Footer = () => {
   const { data: session } = authClient.useSession();
   const getStartedHref = session ? "/chat" : "/sign-in";
 
-  const footerLinks = [
+  interface FooterLink {
+    label: string;
+    href: string;
+    external?: boolean;
+  }
+
+  interface FooterColumn {
+    title: string;
+    links: FooterLink[];
+  }
+
+  const footerLinks: FooterColumn[] = [
     {
       title: "Product",
       links: [
