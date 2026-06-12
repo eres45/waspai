@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +23,8 @@ import {
   RefreshCw,
   FlaskConical,
   CloudSun,
+  Zap,
+  Globe,
 } from "lucide-react";
 
 /* ─── Node type data (Unified, Clean Styling) ──────────────── */
@@ -164,15 +166,424 @@ const FAQS = [
   },
 ];
 
-/* ─── Modern Blueprint Canvas (Spline 3D Integration) ─────── */
+/* ─── Modern Blueprint Canvas (Interactive Playground Simulation) ─────── */
 function BlueprintCanvas() {
+  const [activeNode, setActiveNode] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("Claude 3.5");
+  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [logs, setLogs] = useState<string[]>([
+    "Console ready. Click 'Run Execution' to test pipeline.",
+  ]);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const consoleEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    consoleEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+
+  const runSimulation = () => {
+    if (isRunning) return;
+    setIsRunning(true);
+    setLogs(["[16:00:00] 🔄 Initializing workflow pipeline..."]);
+    setActiveNode("trigger");
+
+    setTimeout(() => {
+      setLogs((prev) => [
+        ...prev,
+        `[16:00:01] ⚡ Event trigger received payload: "user_message"`,
+      ]);
+    }, 800);
+
+    setTimeout(() => {
+      setActiveNode("model");
+      setLogs((prev) => [
+        ...prev,
+        `[16:00:02] 🤖 Routing state context to ${selectedModel}...`,
+        `[16:00:02] 🧠 Loading prompt templates & system guidelines`,
+      ]);
+    }, 2000);
+
+    setTimeout(() => {
+      setActiveNode("tool");
+      setLogs((prev) => [
+        ...prev,
+        `[16:00:03] 🔍 Invoked Google Search Tool`,
+        `[16:00:03] 🌐 site:waspai.in query: "API workflows release"`,
+      ]);
+    }, 3200);
+
+    setTimeout(() => {
+      setActiveNode("output");
+      setLogs((prev) => [
+        ...prev,
+        `[16:00:04] 💾 Synthesizing results and enforcing JSON schema...`,
+      ]);
+    }, 4500);
+
+    setTimeout(() => {
+      setActiveNode(null);
+      const outputJson = `{
+  "status": 200,
+  "elapsed_ms": 1420,
+  "data": {
+    "query": "release updates",
+    "engine": "${selectedModel}",
+    "complete": true,
+    "response": "Workflow successfully ran and structured output was compiled."
+  }
+}`;
+      setLogs((prev) => [
+        ...prev,
+        `[16:00:05] ✅ Execution completed successfully.`,
+        outputJson,
+      ]);
+      setIsRunning(false);
+    }, 5800);
+  };
+
+  const isPathActive = (from: string, to: string) => {
+    if (!isRunning) return false;
+    if (from === "trigger" && to === "model") {
+      return (
+        activeNode === "model" ||
+        activeNode === "tool" ||
+        activeNode === "output"
+      );
+    }
+    if (from === "trigger" && to === "tool") {
+      return activeNode === "tool" || activeNode === "output";
+    }
+    if (from === "model" && to === "output") {
+      return activeNode === "output";
+    }
+    if (from === "tool" && to === "output") {
+      return activeNode === "output";
+    }
+    return false;
+  };
+
+  const getNodeStyle = (nodeId: string) => {
+    if (!isRunning)
+      return {
+        border: "border-white/5 bg-[#121214]/60",
+        icon: "text-white/40",
+        badge: "bg-white/5 text-white/40 border-white/5",
+      };
+    if (activeNode === nodeId) {
+      return {
+        border:
+          "border-purple-500/40 bg-purple-500/[0.04] shadow-[0_0_20px_rgba(167,139,250,0.15)]",
+        icon: "text-purple-400 animate-pulse",
+        badge: "bg-purple-500/10 text-purple-300 border-purple-500/25",
+      };
+    }
+    // Check if completed
+    const isCompleted =
+      (nodeId === "trigger" &&
+        (activeNode === "model" ||
+          activeNode === "tool" ||
+          activeNode === "output")) ||
+      (nodeId === "model" &&
+        (activeNode === "tool" || activeNode === "output")) ||
+      (nodeId === "tool" && activeNode === "output");
+
+    if (isCompleted) {
+      return {
+        border: "border-emerald-500/20 bg-emerald-500/[0.02]",
+        icon: "text-emerald-400",
+        badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+      };
+    }
+
+    return {
+      border: "border-white/5 bg-[#121214]/60 opacity-40",
+      icon: "text-white/20",
+      badge: "bg-white/5 text-white/20 border-white/5",
+    };
+  };
+
+  const triggerStyle = getNodeStyle("trigger");
+  const modelStyle = getNodeStyle("model");
+  const toolStyle = getNodeStyle("tool");
+  const outputStyle = getNodeStyle("output");
+
   return (
-    <div className="relative w-full h-[320px] md:h-[450px] overflow-hidden rounded-2xl border border-white/5 bg-[#0d0d0f] shadow-2xl">
-      <iframe
-        src="https://my.spline.design/3ddiagram-QwZc5rZkQqOVNtikZLmNxwqc/"
-        className="absolute w-[calc(100%+160px)] h-[calc(100%+60px)] -bottom-[30px] -right-[120px] pointer-events-auto select-none"
-        style={{ border: "none" }}
+    <div className="w-full bg-[#121214] border border-white/5 rounded-2xl p-6 md:p-8 shadow-2xl relative">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes flow-animation {
+          to {
+            stroke-dashoffset: -20;
+          }
+        }
+        .animate-flow {
+          animation: flow-animation 0.8s linear infinite;
+        }
+      `,
+        }}
       />
+
+      {/* Grid backdrop */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff01_1px,transparent_1px),linear-gradient(to_bottom,#ffffff01_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-2xl" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10">
+        {/* Interactive Visual Canvas */}
+        <div className="lg:col-span-8 flex flex-col justify-center bg-[#09090b]/40 rounded-xl border border-white/5 p-4 min-h-[300px] md:min-h-[350px] relative overflow-hidden select-none">
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            viewBox="0 0 550 320"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Background static cables */}
+            <path
+              d="M 130 160 C 170 160, 170 60, 210 60"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.04)"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M 130 160 C 170 160, 170 260, 210 260"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.04)"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M 340 60 C 370 60, 370 160, 400 160"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.04)"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M 340 260 C 370 260, 370 160, 400 160"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.04)"
+              strokeWidth="1.5"
+            />
+
+            {/* Glowing active cables */}
+            {isPathActive("trigger", "model") && (
+              <path
+                d="M 130 160 C 170 160, 170 60, 210 60"
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth="1.5"
+                strokeDasharray="5, 5"
+                className="animate-flow"
+              />
+            )}
+            {isPathActive("trigger", "tool") && (
+              <path
+                d="M 130 160 C 170 160, 170 260, 210 260"
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth="1.5"
+                strokeDasharray="5, 5"
+                className="animate-flow"
+              />
+            )}
+            {isPathActive("model", "output") && (
+              <path
+                d="M 340 60 C 370 60, 370 160, 400 160"
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth="1.5"
+                strokeDasharray="5, 5"
+                className="animate-flow"
+              />
+            )}
+            {isPathActive("tool", "output") && (
+              <path
+                d="M 340 260 C 370 260, 370 160, 400 160"
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth="1.5"
+                strokeDasharray="5, 5"
+                className="animate-flow"
+              />
+            )}
+
+            {/* Trigger Node */}
+            <foreignObject x={20} y={120} width={110} height={80}>
+              <div
+                className={`w-full h-full flex flex-col justify-between p-3 rounded-xl border ${triggerStyle.border} transition-all duration-300`}
+              >
+                <div className="flex items-center justify-between">
+                  <Zap className={`w-4 h-4 ${triggerStyle.icon}`} />
+                  <span
+                    className={`text-[8px] font-mono font-semibold px-1.5 py-0.5 rounded border ${triggerStyle.badge} uppercase tracking-wider`}
+                  >
+                    Trigger
+                  </span>
+                </div>
+                <div className="text-left mt-1.5">
+                  <h4 className="text-[10px] font-bold text-white leading-none">
+                    Webhook
+                  </h4>
+                  <p className="text-[8px] text-white/40 font-mono mt-0.5 truncate">
+                    chat.create
+                  </p>
+                </div>
+              </div>
+            </foreignObject>
+
+            {/* Model Node */}
+            <foreignObject x={210} y={20} width={130} height={80}>
+              <div
+                className={`w-full h-full flex flex-col justify-between p-3 rounded-xl border ${modelStyle.border} transition-all duration-300 relative`}
+              >
+                <div className="flex items-center justify-between">
+                  <Bot className={`w-4 h-4 ${modelStyle.icon}`} />
+                  <span
+                    className={`text-[8px] font-mono font-semibold px-1.5 py-0.5 rounded border ${modelStyle.badge} uppercase tracking-wider`}
+                  >
+                    LLM Step
+                  </span>
+                </div>
+                <div className="text-left mt-1.5 relative">
+                  <div className="relative inline-block">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDropdown(!showDropdown);
+                      }}
+                      disabled={isRunning}
+                      className={`flex items-center gap-1 text-[10px] font-bold text-white hover:text-purple-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5 transition-all leading-none ${
+                        isRunning
+                          ? "pointer-events-none"
+                          : "pointer-events-auto"
+                      }`}
+                    >
+                      {selectedModel}
+                      <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                    </button>
+                    {showDropdown && !isRunning && (
+                      <div className="absolute left-0 top-full mt-1 w-28 bg-[#18181b] border border-white/10 rounded-lg p-1 shadow-2xl z-50 pointer-events-auto">
+                        {["Claude 3.5", "GPT-4o", "Gemini 1.5"].map((model) => (
+                          <button
+                            key={model}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedModel(model);
+                              setShowDropdown(false);
+                            }}
+                            className="w-full text-left px-2 py-1.5 rounded text-[9px] text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                          >
+                            {model}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[8px] text-white/40 font-mono mt-1">
+                    temp: 0.7
+                  </p>
+                </div>
+              </div>
+            </foreignObject>
+
+            {/* Tool Node */}
+            <foreignObject x={210} y={220} width={130} height={80}>
+              <div
+                className={`w-full h-full flex flex-col justify-between p-3 rounded-xl border ${toolStyle.border} transition-all duration-300`}
+              >
+                <div className="flex items-center justify-between">
+                  <Globe className={`w-4 h-4 ${toolStyle.icon}`} />
+                  <span
+                    className={`text-[8px] font-mono font-semibold px-1.5 py-0.5 rounded border ${toolStyle.badge} uppercase tracking-wider`}
+                  >
+                    Search Tool
+                  </span>
+                </div>
+                <div className="text-left mt-1.5">
+                  <h4 className="text-[10px] font-bold text-white leading-none">
+                    Google Search
+                  </h4>
+                  <p className="text-[8px] text-white/40 font-mono mt-0.5 truncate">
+                    query: &quot;weather...&quot;
+                  </p>
+                </div>
+              </div>
+            </foreignObject>
+
+            {/* Output Node */}
+            <foreignObject x={400} y={120} width={130} height={80}>
+              <div
+                className={`w-full h-full flex flex-col justify-between p-3 rounded-xl border ${outputStyle.border} transition-all duration-300`}
+              >
+                <div className="flex items-center justify-between">
+                  <FileText className={`w-4 h-4 ${outputStyle.icon}`} />
+                  <span
+                    className={`text-[8px] font-mono font-semibold px-1.5 py-0.5 rounded border ${outputStyle.badge} uppercase tracking-wider`}
+                  >
+                    Output
+                  </span>
+                </div>
+                <div className="text-left mt-1.5">
+                  <h4 className="text-[10px] font-bold text-white leading-none">
+                    Structured Schema
+                  </h4>
+                  <p className="text-[8px] text-white/40 font-mono mt-0.5 truncate">
+                    format: JSON
+                  </p>
+                </div>
+              </div>
+            </foreignObject>
+          </svg>
+        </div>
+
+        {/* Live Terminal Console Control Panel */}
+        <div className="lg:col-span-4 flex flex-col border border-white/5 rounded-xl bg-[#09090b]/80 backdrop-blur-md overflow-hidden min-h-[300px]">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-white/5 bg-[#121214] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${isRunning ? "bg-amber-400 animate-pulse" : "bg-emerald-400"} shadow-sm`}
+              />
+              <span className="text-[10px] font-mono font-bold tracking-wider text-white/70 uppercase">
+                System Console
+              </span>
+            </div>
+            <button
+              onClick={runSimulation}
+              disabled={isRunning}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                isRunning
+                  ? "bg-white/5 border border-white/5 text-white/20 pointer-events-none"
+                  : "bg-white text-black hover:bg-neutral-200 border border-transparent shadow-md hover:shadow-white/5"
+              }`}
+            >
+              <Play className="w-3 h-3 fill-current" />
+              Run Execution
+            </button>
+          </div>
+
+          {/* Logs Body */}
+          <div className="flex-1 p-4 overflow-y-auto max-h-[300px] font-mono bg-[#070708] border-none select-text">
+            {logs.map((log, idx) => {
+              if (log.startsWith("{")) {
+                return (
+                  <pre
+                    key={idx}
+                    className="text-purple-300 font-mono text-[9px] leading-relaxed mt-2 bg-purple-500/5 p-2 rounded-lg border border-purple-500/10 overflow-x-auto"
+                  >
+                    {log}
+                  </pre>
+                );
+              }
+              return (
+                <div
+                  key={idx}
+                  className="font-mono text-[10px] leading-normal mb-1.5 text-white/60"
+                >
+                  {log}
+                </div>
+              );
+            })}
+            <div ref={consoleEndRef} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
