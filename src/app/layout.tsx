@@ -22,6 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://waspai.in"),
   title: {
     default: "Wasp AI | Advanced Multi-Model AI Assistant",
     template: "%s | Wasp AI",
