@@ -19,7 +19,6 @@ import {
   Wrench,
   Zap,
   Package,
-  AlertCircle,
   RefreshCw,
   Star,
 } from "lucide-react";
@@ -791,33 +790,6 @@ export default function ChangelogPage() {
                 ))}
               </div>
             </div>
-
-            {/* Bottom note */}
-            {!activeFilter && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                className="mt-16 text-center"
-              >
-                <div className="inline-flex items-center gap-2 text-[13px] text-white/25">
-                  <AlertCircle className="w-4 h-4" />
-                  This changelog covers v1.10.0 and later. Earlier history is in
-                  our GitHub repo.
-                </div>
-                <div className="mt-4">
-                  <a
-                    href="https://github.com/eres45/waspai"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group inline-flex items-center gap-1.5 text-[13px] text-white/40 hover:text-white transition-colors"
-                  >
-                    View full history on GitHub
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </a>
-                </div>
-              </motion.div>
-            )}
           </div>
         </section>
 

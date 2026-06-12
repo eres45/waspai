@@ -43,10 +43,15 @@ export const Footer = () => {
       ],
     },
     {
-      title: "Company",
+      title: "Company & Community",
       links: [
         { label: "About Us", href: "/about" },
         { label: "Contact Support", href: "/contact" },
+        {
+          label: "Discord Community",
+          href: "https://discord.gg/gCRu69Upnp",
+          external: true,
+        },
       ],
     },
   ];
@@ -108,7 +113,7 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Main Branding: WASPAI */}
+        {/* Main Branding: Wasp AI */}
         <div className="relative mt-20 mb-16 select-none pointer-events-none">
           <motion.h1
             initial={{ opacity: 0, y: 100 }}
@@ -123,18 +128,26 @@ export const Footer = () => {
               WebkitTextFillColor: "transparent",
             }}
           >
-            WASPAI
+            WASP AI
           </motion.h1>
         </div>
 
         {/* Sub-Footer */}
         <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-6">
-            <span className="text-sm font-bold text-white tracking-widest uppercase">
-              WASPAI
+          <div className="flex items-center gap-3">
+            <img
+              src="/wasp-ai-logo.png"
+              alt="Wasp AI Logo"
+              width={24}
+              height={24}
+              className="rounded-md shadow-md"
+            />
+            <span className="text-sm font-bold text-white tracking-tight">
+              Wasp AI
             </span>
+            <span className="text-white/10">|</span>
             <p className="text-[13px] text-white/30 font-medium">
-              © 2026 WaspAI Inc. All rights reserved.
+              © 2026 Wasp AI Inc. All rights reserved.
             </p>
           </div>
 
