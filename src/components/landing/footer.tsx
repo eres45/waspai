@@ -14,7 +14,7 @@ export const Footer = () => {
       title: "Product",
       links: [
         { label: "Features", href: "#features" },
-        { label: "Workflows", href: "#workflows" },
+        { label: "Workflows", href: "/workflows" },
         { label: "Agents", href: "#agents" },
         { label: "Pricing", href: "/subscription" },
         { label: "Changelog", href: "/changelog" },
