@@ -164,88 +164,15 @@ const FAQS = [
   },
 ];
 
-/* ─── Modern Blueprint Canvas (Monochrome Accents) ─────────── */
+/* ─── Modern Blueprint Canvas (Spline 3D Integration) ─────── */
 function BlueprintCanvas() {
-  const nodes = [
-    { x: 12, y: 32, label: "Input Node", delay: 0 },
-    { x: 38, y: 18, label: "LLM Node", delay: 0.1 },
-    { x: 38, y: 50, label: "HTTP Node", delay: 0.2 },
-    { x: 64, y: 32, label: "Condition", delay: 0.3 },
-    { x: 88, y: 18, label: "LLM Node", delay: 0.4 },
-    { x: 88, y: 50, label: "Output Node", delay: 0.5 },
-  ];
-  const edges = [
-    { x1: 18, y1: 32, x2: 36, y2: 20 },
-    { x1: 18, y1: 33, x2: 36, y2: 49 },
-    { x1: 44, y1: 20, x2: 62, y2: 32 },
-    { x1: 44, y1: 49, x2: 62, y2: 33 },
-    { x1: 70, y1: 32, x2: 86, y2: 20 },
-    { x1: 70, y1: 33, x2: 86, y2: 49 },
-  ];
-
   return (
-    <div className="relative w-full h-60 md:h-72 select-none pointer-events-none overflow-hidden rounded-2xl border border-white/5 bg-[#121214] shadow-2xl">
-      {/* Blueprint Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px]" />
-
-      <svg
-        className="absolute inset-0 w-full h-full"
-        viewBox="0 0 100 65"
-        preserveAspectRatio="none"
-      >
-        {edges.map((e, i) => (
-          <motion.line
-            key={i}
-            x1={e.x1}
-            y1={e.y1}
-            x2={e.x2}
-            y2={e.y2}
-            stroke="rgba(255, 255, 255, 0.05)"
-            strokeWidth="0.5"
-            strokeDasharray="2 2"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 + i * 0.05 }}
-          />
-        ))}
-        {edges.map((e, i) => (
-          <motion.circle
-            key={`dot-${i}`}
-            r="0.6"
-            fill="rgba(167, 139, 250, 0.4)"
-            initial={{ x: e.x1, y: e.y1, opacity: 0 }}
-            animate={{ x: [e.x1, e.x2], y: [e.y1, e.y2], opacity: [0, 1, 0] }}
-            transition={{
-              duration: 2.2,
-              delay: 0.8 + i * 0.25,
-              repeat: Infinity,
-              repeatDelay: 1.2,
-            }}
-          />
-        ))}
-      </svg>
-
-      {nodes.map((n, i) => (
-        <motion.div
-          key={i}
-          className="absolute flex flex-col items-center gap-1.5"
-          style={{
-            left: `${n.x}%`,
-            top: `${n.y}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: n.delay + 0.1 }}
-        >
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#18181b] border border-white/15 shadow-xl">
-            <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(167,139,250,0.6)]" />
-          </div>
-          <span className="text-[9px] font-mono text-white/50 tracking-tight font-medium">
-            {n.label}
-          </span>
-        </motion.div>
-      ))}
+    <div className="relative w-full h-[320px] md:h-[450px] overflow-hidden rounded-2xl border border-white/5 bg-[#0d0d0f] shadow-2xl">
+      <iframe
+        src="https://my.spline.design/3ddiagram-QwZc5rZkQqOVNtikZLmNxwqc/"
+        className="absolute w-[calc(100%+160px)] h-[calc(100%+60px)] -bottom-[30px] -right-[120px] pointer-events-auto select-none"
+        style={{ border: "none" }}
+      />
     </div>
   );
 }
@@ -398,7 +325,7 @@ export default function WorkflowsPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="w-full max-w-2xl px-4"
+            className="w-full max-w-4xl px-4"
           >
             <BlueprintCanvas />
           </motion.div>
