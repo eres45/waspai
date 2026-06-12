@@ -615,15 +615,62 @@ export default function WorkflowsPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#121214] p-12 md:p-16 text-center"
+              className="relative overflow-hidden rounded-2xl border border-white/5 hover:border-purple-500/20 bg-[#121214] p-12 md:p-16 text-center shadow-2xl transition-all duration-300 group"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015)_0%,transparent_70%)]" />
+              {/* Grid backdrop */}
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:20px_20px]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(167,139,250,0.035)_0%,transparent_60%)]" />
+              <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-transparent via-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+              {/* Faint connecting pipeline line */}
+              <svg
+                className="absolute inset-0 w-full h-full opacity-[0.06] pointer-events-none hidden md:block"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M 8 65 Q 18 20 28 18 T 68 72 T 92 25"
+                  fill="none"
+                  stroke="rgb(167, 139, 250)"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
+                />
+              </svg>
+
+              {/* Mock Nodes floating in background */}
+              <div className="absolute left-[8%] top-[65%] -translate-y-1/2 hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-white/5 bg-[#18181b]/60 backdrop-blur-sm opacity-25 select-none pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                <span className="text-[9px] font-mono text-white/50 tracking-wider uppercase">
+                  Input
+                </span>
+              </div>
+
+              <div className="absolute left-[28%] top-[18%] -translate-y-1/2 hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-white/5 bg-[#18181b]/60 backdrop-blur-sm opacity-25 select-none pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                <span className="text-[9px] font-mono text-white/50 tracking-wider uppercase">
+                  LLM
+                </span>
+              </div>
+
+              <div className="absolute right-[22%] bottom-[20%] -translate-y-1/2 hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-white/5 bg-[#18181b]/60 backdrop-blur-sm opacity-25 select-none pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                <span className="text-[9px] font-mono text-white/50 tracking-wider uppercase">
+                  Tool
+                </span>
+              </div>
+
+              <div className="absolute right-[8%] top-[25%] -translate-y-1/2 hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-white/5 bg-[#18181b]/60 backdrop-blur-sm opacity-25 select-none pointer-events-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                <span className="text-[9px] font-mono text-white/50 tracking-wider uppercase">
+                  Output
+                </span>
+              </div>
 
               <div className="relative z-10 flex flex-col items-center">
-                <div className="w-12 h-12 rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center mb-6 text-purple-300">
-                  <Play className="w-5 h-5 fill-purple-400" />
+                <div className="w-14 h-14 rounded-xl bg-purple-500/5 border border-purple-500/20 flex items-center justify-center mb-6 text-purple-300 shadow-[0_0_20px_rgba(167,139,250,0.15)] group-hover:scale-105 group-hover:border-purple-500/40 transition-all duration-300">
+                  <Play className="w-6 h-6 fill-purple-400/80 text-purple-400" />
                 </div>
-                <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent mb-4">
+                <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent mb-4">
                   Deploy custom pipelines.
                 </h2>
                 <p className="text-neutral-400 text-sm md:text-base font-light mb-8 max-w-sm">
@@ -633,14 +680,14 @@ export default function WorkflowsPage() {
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link
                     href="/sign-in"
-                    className="group inline-flex items-center gap-1.5 bg-white text-black px-6 py-3 rounded-lg font-semibold text-xs hover:bg-white/90 transition-all"
+                    className="group/btn inline-flex items-center gap-2 bg-white hover:bg-neutral-100 text-black px-6 py-3 rounded-xl font-bold text-xs shadow-lg shadow-white/5 hover:shadow-white/10 transition-all duration-200"
                   >
                     Start Designing
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5" />
                   </Link>
                   <Link
                     href="/subscription"
-                    className="inline-flex items-center border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] text-neutral-300 px-6 py-3 rounded-lg font-semibold text-xs transition-all"
+                    className="inline-flex items-center border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 text-neutral-200 px-6 py-3 rounded-xl font-bold text-xs transition-all duration-200"
                   >
                     Compare Plans
                   </Link>
