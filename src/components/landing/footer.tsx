@@ -52,6 +52,11 @@ export const Footer = () => {
           href: "https://discord.gg/gCRu69Upnp",
           external: true,
         },
+        {
+          label: "LinkedIn",
+          href: "https://www.linkedin.com/company/officialwaspai/",
+          external: true,
+        },
       ],
     },
   ];
