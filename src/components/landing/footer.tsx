@@ -20,23 +20,7 @@ export const Footer = () => {
         { label: "Changelog", href: "/changelog" },
       ],
     },
-    {
-      title: "Resources",
-      links: [
-        { label: "Documentation", href: "/docs" },
-        { label: "API Reference", href: "/api" },
-        {
-          label: "GitHub",
-          href: "https://github.com/eres45/waspai",
-          external: true,
-        },
-        {
-          label: "Discord",
-          href: "https://discord.gg/gCRu69Upnp",
-          external: true,
-        },
-      ],
-    },
+
     {
       title: "Legal & Status",
       links: [
@@ -88,7 +72,7 @@ export const Footer = () => {
           </div>
 
           {/* Right Column: Links */}
-          <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-12">
+          <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-12">
             {footerLinks.map((column, idx) => (
               <div key={idx} className="flex flex-col">
                 <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-6 text-xs">
