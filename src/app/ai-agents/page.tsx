@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   Bot,
   Brain,
   ChevronDown,
@@ -31,60 +31,46 @@ import {
   Layers,
 } from "lucide-react";
 
-/* ─── Agent examples ─────────────────────────────────────── */
+/* ─── Agent examples (Clean, Uniform Data) ───────────────── */
 const AGENTS = [
   {
     emoji: "🔬",
     name: "Research Analyst",
     role: "Deep Research",
     description:
-      "Searches the web, reads full pages, pulls YouTube transcripts, and synthesises a structured research report in minutes.",
+      "Searches the web, scrapes target documents, extracts YouTube video transcripts, and structures comprehensive markdown reports.",
     tools: ["Web Search", "Web Scrape", "YouTube", "Memory"],
-    gradient: "from-blue-500/15 via-indigo-500/5 to-transparent",
-    border: "border-blue-500/20",
-    tagColor: "bg-blue-500/15 text-blue-300",
   },
   {
     emoji: "💻",
     name: "Code Reviewer",
     role: "Engineering Assistant",
     description:
-      "Reviews code, executes it live in JavaScript or Python, identifies bugs, and suggests fixes with inline explanations.",
+      "Inspects source code, runs executions live in sandbox JavaScript/Python layers, detects errors, and outputs contextual diffs.",
     tools: ["JS Execution", "Python", "Web Search", "HTML Preview"],
-    gradient: "from-emerald-500/15 via-teal-500/5 to-transparent",
-    border: "border-emerald-500/20",
-    tagColor: "bg-emerald-500/15 text-emerald-300",
   },
   {
     emoji: "📊",
     name: "Data Analyst",
     role: "Analytics Expert",
     description:
-      "Reads CSV files, runs analysis in Python, builds bar, line, and pie charts, then explains the insights in plain English.",
+      "Ingests CSV records, calculates aggregates via custom Python execution, plots data trends, and summarizes quantitative insights.",
     tools: ["Python", "Bar Chart", "Pie Chart", "CSV Export"],
-    gradient: "from-amber-500/15 via-orange-500/5 to-transparent",
-    border: "border-amber-500/20",
-    tagColor: "bg-amber-500/15 text-amber-300",
   },
   {
     emoji: "📝",
     name: "Content Writer",
     role: "Creative & Marketing",
     description:
-      "Drafts blog posts, social copy, and reports — then exports finished content directly to Word, PDF, or Presentation files.",
+      "Generates marketing materials, copy drafts, and documentation templates — then exports the outputs directly into Word or PDF.",
     tools: ["Word Doc", "PDF", "Presentation", "Web Search"],
-    gradient: "from-purple-500/15 via-pink-500/5 to-transparent",
-    border: "border-purple-500/20",
-    tagColor: "bg-purple-500/15 text-purple-300",
   },
 ];
 
-/* ─── Tool categories ────────────────────────────────────── */
+/* ─── Tool categories (Unified styling tags) ─────────────── */
 const TOOL_GROUPS = [
   {
-    category: "🌐 Web",
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/20",
+    category: "🌐 Web Integration",
     tools: [
       { icon: Search, name: "Web Search" },
       { icon: Globe, name: "Web Scrape" },
@@ -92,9 +78,7 @@ const TOOL_GROUPS = [
     ],
   },
   {
-    category: "💻 Code",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10 border-emerald-500/20",
+    category: "💻 Code Execution",
     tools: [
       { icon: Terminal, name: "JavaScript" },
       { icon: Code2, name: "Python" },
@@ -102,9 +86,7 @@ const TOOL_GROUPS = [
     ],
   },
   {
-    category: "🎨 Creative",
-    color: "text-pink-400",
-    bg: "bg-pink-500/10 border-pink-500/20",
+    category: "🎨 Creative Tools",
     tools: [
       { icon: ImageIcon, name: "Image Enhance" },
       { icon: Sparkles, name: "Remove Background" },
@@ -112,9 +94,7 @@ const TOOL_GROUPS = [
     ],
   },
   {
-    category: "📄 Files",
-    color: "text-amber-400",
-    bg: "bg-amber-500/10 border-amber-500/20",
+    category: "📄 File Suite",
     tools: [
       { icon: FileText, name: "PDF / Word" },
       { icon: Database, name: "CSV Export" },
@@ -123,18 +103,14 @@ const TOOL_GROUPS = [
   },
   {
     category: "📧 Communication",
-    color: "text-rose-400",
-    bg: "bg-rose-500/10 border-rose-500/20",
     tools: [
       { icon: Mail, name: "Send Email" },
       { icon: MessageSquare, name: "Temp Email" },
-      { icon: Share2, name: "SMS" },
+      { icon: Share2, name: "SMS Numbers" },
     ],
   },
   {
-    category: "🧠 Memory",
-    color: "text-violet-400",
-    bg: "bg-violet-500/10 border-violet-500/20",
+    category: "🧠 Profile Memory",
     tools: [
       { icon: MemoryStick, name: "Save Memory" },
       { icon: Brain, name: "Recall Memory" },
@@ -142,9 +118,7 @@ const TOOL_GROUPS = [
     ],
   },
   {
-    category: "🖥 Browser",
-    color: "text-cyan-400",
-    bg: "bg-cyan-500/10 border-cyan-500/20",
+    category: "🖥 Cloud Browser",
     tools: [
       { icon: Globe, name: "Cloud Browser" },
       { icon: Search, name: "Visual Scrape" },
@@ -152,9 +126,7 @@ const TOOL_GROUPS = [
     ],
   },
   {
-    category: "⚙️ Workflows",
-    color: "text-indigo-400",
-    bg: "bg-indigo-500/10 border-indigo-500/20",
+    category: "⚙️ Custom Workflows",
     tools: [
       { icon: Workflow, name: "Run Workflow" },
       { icon: Layers, name: "Chain Steps" },
@@ -170,78 +142,80 @@ const LAYERS = [
     icon: Sparkles,
     title: "Identity",
     description:
-      "Give your agent a name, a custom emoji icon with a background colour, and a one-line role title. It feels like a real team member.",
-    color: "text-amber-400",
-    glow: "bg-amber-500/10 border-amber-500/20",
+      "Define your agent name, character emoji, and primary role title to introduce a structured teammate into your workspace.",
   },
   {
     number: "02",
     icon: MessageSquare,
     title: "Instructions",
     description:
-      "Write a system prompt that defines exactly how the agent thinks, what it focuses on, and how it responds. Mention other agents or skills inline.",
-    color: "text-blue-400",
-    glow: "bg-blue-500/10 border-blue-500/20",
+      "Write a specialized system prompt configuring exactly how the agent evaluates problems, files, and queries.",
   },
   {
     number: "03",
     icon: Wrench,
     title: "Tools",
     description:
-      "Arm the agent with any combination of 30+ built-in tools — web search, code execution, image editing, file generation, email, memory, and more.",
-    color: "text-emerald-400",
-    glow: "bg-emerald-500/10 border-emerald-500/20",
+      "Grant permission to utilize 30+ native tools including code runtimes, file outputs, browser nodes, and persistent memory states.",
   },
   {
     number: "04",
     icon: Workflow,
     title: "Workflows",
     description:
-      "Attach your custom Wasp AI Workflows so the agent can trigger full automated pipelines mid-conversation, on demand.",
-    color: "text-purple-400",
-    glow: "bg-purple-500/10 border-purple-500/20",
+      "Attach custom node canvas workflows so the agent can execute multi-step automated sequences autonomously.",
   },
 ];
 
 /* ─── Comparison rows ────────────────────────────────────── */
 const COMPARISON = [
-  { feature: "Remembers your preferences", chat: false, agent: true },
-  { feature: "Custom personality & tone", chat: false, agent: true },
-  { feature: "Pre-loaded tools ready to use", chat: false, agent: true },
-  { feature: "Can trigger your workflows", chat: false, agent: true },
-  { feature: "Shareable with your team", chat: false, agent: true },
-  { feature: "One-off questions", chat: true, agent: true },
-  { feature: "Multi-model switching", chat: true, agent: true },
+  {
+    feature: "Remembers preferences across sessions",
+    chat: false,
+    agent: true,
+  },
+  {
+    feature: "Custom instructions & operational tone",
+    chat: false,
+    agent: true,
+  },
+  {
+    feature: "Access to 30+ pre-configured workspace tools",
+    chat: false,
+    agent: true,
+  },
+  {
+    feature: "Trigger multi-node workflows mid-chat",
+    chat: false,
+    agent: true,
+  },
+  { feature: "Shareable via link with teammates", chat: false, agent: true },
+  { feature: "One-off generic model queries", chat: true, agent: true },
+  { feature: "Real-time model swapping in-flight", chat: true, agent: true },
 ];
 
-/* ─── Plans ──────────────────────────────────────────────── */
+/* ─── Plan Limits ────────────────────────────────────────── */
 const PLANS = [
   {
     name: "Free",
-    border: "border-white/10",
-    badge: "bg-white/5 text-white/40",
-    agents: "Limited agent creation",
-    note: "Can chat with shared agents",
-    cta: "Get Started",
+    agents: "Limited Agent Creation",
+    note: "Interact with publicly shared agents",
+    cta: "Get Started Free",
     href: "/sign-in",
     highlight: false,
   },
   {
     name: "Pro",
-    border: "border-indigo-500/40",
-    badge: "bg-indigo-500/20 text-indigo-300",
-    agents: "Full agent creation",
-    note: "All tools + workflow triggers",
+    agents: "Full Agent Creation",
+    note: "Access to all tools & workflow triggers",
     cta: "Upgrade to Pro",
     href: "/subscription",
     highlight: true,
   },
   {
     name: "Ultra",
-    border: "border-purple-500/40",
-    badge: "bg-purple-500/20 text-purple-300",
-    agents: "Unlimited agents",
-    note: "Priority execution + all features",
+    agents: "Unlimited Agents",
+    note: "Priority model priority & max limits",
     cta: "Upgrade to Ultra",
     href: "/subscription",
     highlight: false,
@@ -251,24 +225,24 @@ const PLANS = [
 /* ─── FAQs ───────────────────────────────────────────────── */
 const FAQS = [
   {
-    q: "What's the difference between an agent and a character?",
-    a: "Characters are personalities for roleplay or creative chats — they have a persona but limited capabilities. Agents are functional AI assistants: they have tools, memory, workflow triggers, and are built to get real work done.",
+    q: "What is an AI Agent?",
+    a: "An AI Agent is a customized assistant equipped with system prompts, memory integrations, and a specific set of tools. They can operate independently to research, compute, execute scripts, and trigger automations.",
   },
   {
-    q: "Can agents remember things between chats?",
-    a: "Yes. Equip your agent with Memory tools and it will save important facts, preferences, and context across every conversation. The next time you chat, it picks up right where you left off.",
+    q: "Can agents remember context across conversations?",
+    a: "Yes. Using memory tools, an agent saves user preferences, decisions, and files. They will recall this information in future chats without needing you to restate it.",
   },
   {
-    q: "Can I share an agent with my team?",
-    a: "Absolutely. Set an agent's visibility to Public (anyone can chat with it) or ReadOnly (they can see and use it but not edit). Private keeps it just for you.",
+    q: "Can I share agents with others?",
+    a: "Yes. You can publish your custom agents to the community, share read-only links with teammates, or keep them completely private to your account.",
   },
   {
-    q: "Can an agent run my workflows automatically?",
-    a: "Yes — just attach a workflow to the agent during setup. The agent will call that workflow mid-conversation whenever it determines it's needed, passing the right inputs automatically.",
+    q: "How do agents trigger workflows?",
+    a: "By attaching a custom workflow to your agent, the assistant will automatically parse your prompt requests and trigger the sequence when appropriate, passing arguments on your behalf.",
   },
   {
-    q: "Can I have multiple agents for different tasks?",
-    a: "Yes. Pro users can create up to 5 agents; Ultra users get unlimited. You can have a Research agent, a Coding agent, a Writing agent — each with its own tools, tone, and memory.",
+    q: "How many agents can I create?",
+    a: "Free accounts can create a limited number of agents. Pro users can build up to 5 agents, while Ultra tier accounts have access to unlimited agent creations.",
   },
 ];
 
@@ -277,22 +251,22 @@ function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
   const [open, setOpen] = useState(false);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.4, delay: idx * 0.07 }}
-      className="border border-white/8 rounded-2xl overflow-hidden"
+      transition={{ duration: 0.4, delay: idx * 0.05 }}
+      className="border border-white/5 bg-[#121214] rounded-xl overflow-hidden"
     >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/[0.03] transition-colors"
+        className="w-full flex items-center justify-between px-6 py-4.5 text-left hover:bg-white/[0.02] transition-colors"
       >
-        <span className="text-[15px] font-semibold text-white/90">{q}</span>
+        <span className="text-sm font-semibold text-white/90">{q}</span>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0 ml-4" />
+          <ChevronDown className="w-4 h-4 text-white/30" />
         </motion.div>
       </button>
       <AnimatePresence>
@@ -301,10 +275,10 @@ function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <p className="px-6 pb-5 text-[14px] text-white/40 leading-relaxed">
+            <p className="px-6 pb-5 text-sm text-neutral-400 leading-relaxed font-light">
               {a}
             </p>
           </motion.div>
@@ -314,7 +288,7 @@ function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
   );
 }
 
-/* ─── Floating Agent Avatars (hero background) ───────────── */
+/* ─── Floating Agent Emojis (Monochrome Cards) ───────────── */
 function FloatingAgents() {
   const items = [
     { emoji: "🔬", x: "8%", y: "20%", delay: 0, size: "w-14 h-14" },
@@ -331,16 +305,16 @@ function FloatingAgents() {
       {items.map((item, i) => (
         <motion.div
           key={i}
-          className={`absolute ${item.size} rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xl backdrop-blur-sm`}
+          className={`absolute ${item.size} rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-center text-xl backdrop-blur-sm shadow-xl`}
           style={{ left: item.x, top: item.y }}
-          initial={{ opacity: 0, scale: 0.5, y: 20 }}
+          initial={{ opacity: 0, scale: 0.85, y: 15 }}
           animate={{
-            opacity: [0, 0.7, 0.5, 0.7],
+            opacity: [0, 0.6, 0.4, 0.6],
             scale: 1,
-            y: [20, 0, -8, 0],
+            y: [15, 0, -6, 0],
           }}
           transition={{
-            duration: 4,
+            duration: 4.5,
             delay: item.delay,
             repeat: Infinity,
             repeatType: "reverse",
@@ -354,116 +328,102 @@ function FloatingAgents() {
   );
 }
 
-/* ─── Page ───────────────────────────────────────────────── */
 export default function AiAgentsPage() {
   return (
-    <div className="min-h-screen bg-[#0d0d0f] text-white selection:bg-white/10 overflow-x-hidden">
-      {/* ── Nav ── */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#0d0d0f]/80 backdrop-blur-xl">
+    <div className="min-h-screen bg-[#0d0d0f] text-white selection:bg-purple-500/20 overflow-x-hidden font-sans antialiased">
+      {/* Top Fixed Navbar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0d0f]/85 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span className="text-sm font-medium">Home</span>
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-all duration-300">
+              W
+            </div>
+            <span className="font-bold tracking-tight text-white group-hover:text-purple-400 transition-colors">
+              WASPAI
+            </span>
           </Link>
-          <div className="text-sm font-bold tracking-widest uppercase">
-            WASPAI
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="text-sm text-neutral-400 hover:text-white transition-colors"
+            >
+              Back to Home
+            </Link>
+            <Link
+              href="/sign-in"
+              className="text-sm bg-white text-black hover:bg-white/90 font-semibold px-4 py-1.5 rounded-lg transition-all duration-200"
+            >
+              Get Started
+            </Link>
           </div>
-          <Link
-            href="/sign-in"
-            className="text-sm font-semibold px-4 py-2 rounded-full bg-white text-black hover:bg-white/90 transition-all"
-          >
-            Get Started
-          </Link>
         </div>
-      </nav>
+      </header>
 
-      <main className="pt-24">
+      <main className="pt-16">
         {/* ══════════════════════════════════════════════════════
-            HERO
+            HERO SECTION
         ══════════════════════════════════════════════════════ */}
-        <section className="relative px-6 pt-20 pb-36 flex flex-col items-center text-center overflow-hidden min-h-[680px]">
-          {/* Background glows */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-indigo-600/10 rounded-full blur-[80px] pointer-events-none" />
+        <section className="relative px-6 pt-24 pb-36 flex flex-col items-center text-center overflow-hidden min-h-[640px]">
+          {/* Faint ambient glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-purple-600/[0.03] rounded-full blur-[100px] pointer-events-none" />
 
           <FloatingAgents />
 
           <div className="relative z-10 flex flex-col items-center">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-[13px] font-medium text-violet-300"
+              transition={{ duration: 0.4 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-purple-500/15 bg-purple-500/5 px-4.5 py-1 text-[13px] font-medium text-purple-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
             >
               <Bot className="w-3.5 h-3.5" />
               Pro &amp; Ultra Feature
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="max-w-4xl font-extrabold leading-[1.05] tracking-[-0.04em] mb-6"
-              style={{ fontSize: "clamp(40px, 7vw, 96px)" }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="max-w-4xl font-extrabold leading-[1.08] tracking-[-0.03em] mb-6"
+              style={{ fontSize: "clamp(38px, 6.5vw, 84px)" }}
             >
-              <span
-                style={{
-                  display: "block",
-                  background:
-                    "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.75) 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
+              <span className="block bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent">
                 Your AI. Your Rules.
               </span>
-              <span
-                style={{
-                  display: "block",
-                  background:
-                    "linear-gradient(180deg, rgba(167,139,250,0.95) 0%, rgba(139,92,246,0.65) 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                }}
-              >
+              <span className="block bg-gradient-to-b from-white/60 to-white/20 bg-clip-text text-transparent">
                 Your Agents.
               </span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="max-w-xl text-[17px] text-white/40 leading-relaxed mb-10"
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="max-w-lg text-[16px] text-neutral-400 font-light leading-relaxed mb-10"
             >
-              Build specialised AI assistants with custom identities,
-              instructions, 30+ tools, and the power to trigger your own
-              workflows — all from a single chat.
+              Build specialized AI assistants configured with custom system
+              prompts, persistent memory nodes, and workflows to automate daily
+              workflows.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
               className="flex flex-wrap items-center justify-center gap-4"
             >
               <Link
                 href="/sign-in"
-                className="group inline-flex items-center gap-2 bg-white text-black px-7 py-3.5 rounded-full font-bold text-[15px] hover:bg-white/90 transition-all"
+                className="group inline-flex items-center gap-1.5 bg-white text-black px-6 py-3 rounded-lg font-semibold text-[14px] hover:bg-white/90 transition-all shadow-lg"
               >
                 Create Your First Agent
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <a
                 href="#examples"
-                className="inline-flex items-center gap-2 border border-white/10 text-white/60 hover:text-white hover:border-white/20 px-7 py-3.5 rounded-full font-medium text-[15px] transition-all"
+                className="inline-flex items-center border border-white/5 bg-[#161618] hover:bg-[#1c1c1f] hover:border-white/10 text-neutral-300 px-6 py-3 rounded-lg font-medium text-[14px] transition-all"
               >
-                See examples
+                Explore Presets
               </a>
             </motion.div>
           </div>
@@ -472,51 +432,43 @@ export default function AiAgentsPage() {
         {/* ══════════════════════════════════════════════════════
             4 LAYERS
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-32 bg-[#0a0a0c]">
+        <section className="px-6 py-28 border-y border-white/5 bg-[#0d0d0f] relative">
           <div className="max-w-6xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-20"
+              className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                How Agents Work
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                System Structure
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5">
-                Built in four layers.
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                Built in four layers
               </h2>
-              <p className="text-white/40 text-lg max-w-xl mx-auto">
-                Every agent is made of four components that work together to
-                create a truly intelligent, purposeful assistant.
-              </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
               {LAYERS.map((layer, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 28 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.12 }}
-                  className={`relative p-7 rounded-2xl border ${layer.glow} flex flex-col gap-4 group hover:scale-[1.02] transition-transform duration-300`}
+                  transition={{ duration: 0.4, delay: i * 0.1 }}
+                  className="flex flex-col gap-4 p-6.5 rounded-xl border border-white/5 bg-[#121214] hover:border-white/10 transition-all duration-200"
                 >
-                  <div
-                    className={`w-12 h-12 rounded-2xl ${layer.glow} border flex items-center justify-center`}
-                  >
-                    <layer.icon className={`w-5 h-5 ${layer.color}`} />
+                  <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center text-purple-300">
+                    <layer.icon className="w-4.5 h-4.5" />
                   </div>
-                  <span
-                    className={`text-xs font-black tracking-widest uppercase ${layer.color}`}
-                  >
-                    {layer.number}
-                  </span>
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-2">
+                    <span className="text-[10px] font-mono font-bold text-neutral-500 tracking-wider">
+                      LAYER {layer.number}
+                    </span>
+                    <h3 className="text-lg font-bold text-white mt-1 mb-2">
                       {layer.title}
                     </h3>
-                    <p className="text-[13px] text-white/40 leading-relaxed">
+                    <p className="text-sm text-neutral-400 leading-relaxed font-light">
                       {layer.description}
                     </p>
                   </div>
@@ -529,48 +481,46 @@ export default function AiAgentsPage() {
         {/* ══════════════════════════════════════════════════════
             TOOL ARSENAL
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-32">
+        <section className="px-6 py-28 bg-[#0d0d0f]">
           <div className="max-w-6xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-20"
+              className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                Tool Arsenal
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Integrations Library
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5">
-                30+ tools at your agent&apos;s fingertips.
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent mb-4">
+                30+ tools for your agents
               </h2>
-              <p className="text-white/40 text-lg max-w-xl mx-auto">
-                Arm your agent with exactly what it needs. Mix and match from 8
-                categories of powerful capabilities.
+              <p className="text-neutral-400 text-sm md:text-base font-light max-w-md mx-auto">
+                Arm your custom assistant configurations with standard
+                operational tooling modules.
               </p>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {TOOL_GROUPS.map((group, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 15 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.07 }}
-                  className={`p-6 rounded-2xl border ${group.bg} group hover:scale-[1.02] transition-transform duration-300`}
+                  transition={{ duration: 0.35, delay: i * 0.05 }}
+                  className="p-6 rounded-xl border border-white/5 bg-[#121214] hover:border-white/10 transition-all duration-200"
                 >
-                  <h3
-                    className={`text-[13px] font-black uppercase tracking-widest mb-5 ${group.color}`}
-                  >
+                  <h3 className="text-[10px] font-mono font-bold uppercase tracking-widest text-purple-400 mb-5">
                     {group.category}
                   </h3>
                   <div className="flex flex-col gap-3">
                     {group.tools.map((tool, j) => (
                       <div key={j} className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                          <tool.icon className="w-3.5 h-3.5 text-white/50" />
+                        <div className="w-7 h-7 rounded bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0 text-neutral-400">
+                          <tool.icon className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-[13px] text-white/60 font-medium">
+                        <span className="text-xs text-neutral-300 font-medium">
                           {tool.name}
                         </span>
                       </div>
@@ -582,61 +532,61 @@ export default function AiAgentsPage() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            AGENT EXAMPLES
-        ══════════════════════════════════════════════════════ */}
-        <section id="examples" className="px-6 py-32 bg-[#0a0a0c]">
+        {/* ── Agent Examples (Unified Blueprint Style) ── */}
+        <section
+          id="examples"
+          className="px-6 py-28 border-t border-white/5 bg-[#121214]"
+        >
           <div className="max-w-6xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-20"
+              className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                Inspiration
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Preset Personas
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5">
-                Agents people actually build.
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent mb-4">
+                Pre-configured Agent layouts
               </h2>
-              <p className="text-white/40 text-lg max-w-xl mx-auto">
-                These are just starting points. Your agent can be anything you
-                need it to be.
+              <p className="text-neutral-400 text-sm md:text-base font-light max-w-md mx-auto">
+                Review structures configured by other developers to solve
+                analytical, creative, and code tasks.
               </p>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div className="grid sm:grid-cols-2 gap-5">
               {AGENTS.map((agent, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 28 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
-                  className={`relative p-7 rounded-2xl border ${agent.border} bg-gradient-to-br ${agent.gradient} hover:scale-[1.01] transition-transform duration-300 overflow-hidden`}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                  className="group relative p-6.5 rounded-xl border border-white/5 bg-[#0d0d0f] hover:border-white/10 transition-all duration-200"
                 >
-                  <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/[0.02] rounded-full blur-2xl" />
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center text-xl flex-shrink-0">
                       {agent.emoji}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white">
+                      <h3 className="text-base font-bold text-white">
                         {agent.name}
                       </h3>
-                      <p className="text-xs text-white/40 font-medium uppercase tracking-wider">
+                      <p className="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider">
                         {agent.role}
                       </p>
                     </div>
                   </div>
-                  <p className="text-[14px] text-white/40 leading-relaxed mb-5">
+                  <p className="text-[13px] text-neutral-400 leading-relaxed font-light mb-4">
                     {agent.description}
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {agent.tools.map((tool, j) => (
                       <span
                         key={j}
-                        className={`text-xs font-semibold px-3 py-1 rounded-full ${agent.tagColor}`}
+                        className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-white/[0.03] border border-white/5 text-neutral-400"
                       >
                         {tool}
                       </span>
@@ -647,89 +597,82 @@ export default function AiAgentsPage() {
             </div>
 
             <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
               className="mt-10 text-center"
             >
               <Link
                 href="/sign-in"
-                className="group inline-flex items-center gap-2 text-white/50 hover:text-white text-sm font-medium transition-colors"
+                className="group inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-white transition-colors"
               >
-                Sign in to build your own agent
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                Sign in to customize templates
+                <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </Link>
             </motion.div>
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            AGENTS vs. CHAT COMPARISON
-        ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-32">
+        {/* ── Comparison Table (Neutral Slate Style) ── */}
+        <section className="px-6 py-28 bg-[#0d0d0f]">
           <div className="max-w-3xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                Comparison
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Capability comparison
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5">
-                Chat is great. Agents are better.
+              <h2 className="text-3xl font-bold bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                Chat vs Agents
               </h2>
-              <p className="text-white/40 text-lg max-w-md mx-auto">
-                See exactly where agents unlock capabilities that plain chat
-                conversations can&apos;t match.
-              </p>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="rounded-2xl border border-white/8 overflow-hidden"
+              className="rounded-xl border border-white/5 bg-[#121214] overflow-hidden shadow-2xl"
             >
               {/* Header */}
-              <div className="grid grid-cols-3 border-b border-white/8 bg-white/[0.02]">
-                <div className="px-6 py-4 text-[13px] font-bold text-white/40 uppercase tracking-widest">
+              <div className="grid grid-cols-3 border-b border-white/5 bg-white/[0.01]">
+                <div className="px-6 py-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest">
                   Feature
                 </div>
-                <div className="px-6 py-4 text-[13px] font-bold text-white/60 uppercase tracking-widest text-center border-l border-white/8">
+                <div className="px-6 py-4 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-widest text-center border-l border-white/5">
                   Plain Chat
                 </div>
-                <div className="px-6 py-4 text-[13px] font-bold text-violet-400 uppercase tracking-widest text-center border-l border-white/8">
-                  Agent
+                <div className="px-6 py-4 text-[10px] font-mono font-bold text-purple-400 uppercase tracking-widest text-center border-l border-white/5">
+                  AI Agent
                 </div>
               </div>
               {/* Rows */}
               {COMPARISON.map((row, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -6 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.06 }}
-                  className="grid grid-cols-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                  transition={{ delay: i * 0.05 }}
+                  className="grid grid-cols-3 border-b border-white/5 last:border-0 hover:bg-white/[0.01] transition-colors"
                 >
-                  <div className="px-6 py-4 text-[14px] text-white/60 font-medium">
+                  <div className="px-6 py-4 text-xs sm:text-sm text-neutral-300 font-light">
                     {row.feature}
                   </div>
-                  <div className="px-6 py-4 flex items-center justify-center border-l border-white/5">
+                  <div className="px-6 py-4 flex items-center justify-center border-l border-white/5 text-xs">
                     {row.chat ? (
-                      <span className="text-emerald-400 text-lg">✓</span>
+                      <span className="text-emerald-400 font-bold">✓</span>
                     ) : (
-                      <span className="text-white/15 text-lg">✕</span>
+                      <span className="text-neutral-600 font-bold">✕</span>
                     )}
                   </div>
-                  <div className="px-6 py-4 flex items-center justify-center border-l border-white/5">
+                  <div className="px-6 py-4 flex items-center justify-center border-l border-white/5 text-xs">
                     {row.agent ? (
-                      <span className="text-violet-400 text-lg">✓</span>
+                      <span className="text-purple-400 font-bold">✓</span>
                     ) : (
-                      <span className="text-white/15 text-lg">✕</span>
+                      <span className="text-neutral-600 font-bold">✕</span>
                     )}
                   </div>
                 </motion.div>
@@ -738,63 +681,59 @@ export default function AiAgentsPage() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════════════
-            PLAN COMPARISON
-        ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-32 bg-[#0a0a0c]">
+        {/* ── Subscription limits ── */}
+        <section className="px-6 py-28 bg-[#121214] border-t border-white/5">
           <div className="max-w-4xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                Plans
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Subscription limits
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-5">
-                Pick your power level.
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                Agent Limits
               </h2>
-              <p className="text-white/40 text-lg max-w-lg mx-auto">
-                Free users can chat with shared agents. Creators need Pro or
-                Ultra.
-              </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-5">
               {PLANS.map((plan, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={{ opacity: 0, y: 15 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: i * 0.12 }}
-                  className={`relative p-7 rounded-2xl border ${plan.border} flex flex-col gap-4 ${plan.highlight ? "bg-indigo-500/5" : "bg-white/[0.02]"}`}
+                  transition={{ duration: 0.3, delay: i * 0.08 }}
+                  className={`relative p-6.5 rounded-xl border flex flex-col gap-4 bg-[#0d0d0f] ${
+                    plan.highlight
+                      ? "border-purple-500/30 shadow-[0_0_15px_rgba(167,139,250,0.02)]"
+                      : "border-white/5"
+                  }`}
                 >
                   {plan.highlight && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-indigo-500 text-[11px] font-bold text-white tracking-wide">
-                      POPULAR
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-purple-500 text-[10px] font-bold text-white uppercase tracking-wider">
+                      Most Popular
                     </div>
                   )}
-                  <span
-                    className={`self-start text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${plan.badge}`}
-                  >
+                  <span className="self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.04] border border-white/10 text-neutral-400">
                     {plan.name}
                   </span>
                   <div>
-                    <p className="text-xl font-bold text-white">
+                    <p className="text-lg font-bold text-white">
                       {plan.agents}
                     </p>
-                    <p className="text-[13px] text-white/40 mt-1">
+                    <p className="text-[12.5px] text-neutral-400 font-light mt-1">
                       {plan.note}
                     </p>
                   </div>
                   <Link
                     href={plan.href}
-                    className={`mt-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[14px] font-semibold transition-all ${
+                    className={`mt-auto inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-xs font-semibold transition-all ${
                       plan.highlight
-                        ? "bg-indigo-500 hover:bg-indigo-600 text-white"
-                        : "border border-white/10 text-white/60 hover:text-white hover:border-white/20"
+                        ? "bg-white text-black hover:bg-white/90"
+                        : "border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] text-neutral-300"
                     }`}
                   >
                     {plan.cta}
@@ -802,41 +741,25 @@ export default function AiAgentsPage() {
                 </motion.div>
               ))}
             </div>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="mt-8 text-center text-[13px] text-white/25"
-            >
-              All plans can chat with publicly shared agents.{" "}
-              <Link
-                href="/subscription"
-                className="underline hover:text-white/50 transition-colors"
-              >
-                View full pricing →
-              </Link>
-            </motion.p>
           </div>
         </section>
 
         {/* ══════════════════════════════════════════════════════
             FAQ
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-32">
+        <section className="px-6 py-28 bg-[#0d0d0f]">
           <div className="max-w-3xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                FAQ
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Common Questions
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-                Common questions.
+              <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                Agent FAQ
               </h2>
             </motion.div>
 
@@ -851,53 +774,41 @@ export default function AiAgentsPage() {
         {/* ══════════════════════════════════════════════════════
             CTA BANNER
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 pb-32">
-          <div className="max-w-5xl mx-auto">
+        <section className="px-6 pb-28 bg-[#0d0d0f]">
+          <div className="max-w-4xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 32 }}
+              initial={{ opacity: 0, y: 25 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="relative overflow-hidden rounded-3xl border border-white/8 bg-gradient-to-br from-violet-600/20 via-indigo-600/10 to-transparent p-16 text-center"
+              transition={{ duration: 0.6 }}
+              className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#121214] p-12 md:p-16 text-center"
             >
-              <div className="absolute -top-20 -left-20 w-72 h-72 bg-violet-600/20 rounded-full blur-[80px] pointer-events-none" />
-              <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-indigo-600/20 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015)_0%,transparent_70%)]" />
 
-              <div className="relative z-10">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-500/20 border border-violet-500/30 mb-8">
-                  <Bot className="w-8 h-8 text-violet-400" />
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-12 h-12 rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center mb-6 text-purple-300">
+                  <Bot className="w-5 h-5" />
                 </div>
-                <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-5">
-                  Build your first agent
-                  <br />
-                  <span
-                    style={{
-                      background: "linear-gradient(90deg, #a78bfa, #818cf8)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    in 60 seconds.
-                  </span>
+                <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent mb-4">
+                  Deploy custom agents.
                 </h2>
-                <p className="text-white/40 text-lg mb-10 max-w-md mx-auto">
-                  Give it a name, write its instructions, pick its tools.
-                  That&apos;s all it takes to have a custom AI working for you.
+                <p className="text-neutral-400 text-sm md:text-base font-light mb-8 max-w-sm">
+                  Introduce autonomous, tool-armed AI assistants to your Wasp AI
+                  chats.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-4">
+                <div className="flex flex-wrap justify-center gap-3">
                   <Link
                     href="/sign-in"
-                    className="group inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-bold text-[16px] hover:bg-white/90 transition-all"
+                    className="group inline-flex items-center gap-1.5 bg-white text-black px-6 py-3 rounded-lg font-semibold text-xs hover:bg-white/90 transition-all"
                   >
-                    Create an Agent Now
-                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                    Build an Agent
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
-                    href="/workflows"
-                    className="inline-flex items-center gap-2 border border-white/15 text-white/60 hover:text-white hover:border-white/25 px-8 py-4 rounded-full font-medium text-[16px] transition-all"
+                    href="/subscription"
+                    className="inline-flex items-center border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] text-neutral-300 px-6 py-3 rounded-lg font-semibold text-xs transition-all"
                   >
-                    Explore Workflows
+                    Compare Plans
                   </Link>
                 </div>
               </div>
@@ -905,27 +816,27 @@ export default function AiAgentsPage() {
           </div>
         </section>
 
-        {/* ── Mini footer ── */}
-        <div className="border-t border-white/5 px-6 py-8">
+        {/* ── Sub-Footer ── */}
+        <div className="border-t border-white/5 px-6 py-8 bg-[#0d0d0f]">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-xs font-bold tracking-widest uppercase text-white/30">
+            <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-600 font-mono">
               WASPAI
             </span>
-            <p className="text-xs text-white/20">
-              © 2026 WaspAI Inc. All rights reserved.
+            <p className="text-xs text-neutral-500">
+              © 2026 WaspAI. All rights reserved.
             </p>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 justify-center flex-wrap">
               {[
+                { label: "Agents", href: "/ai-agents" },
+                { label: "Workflows", href: "/workflows" },
+                { label: "Pricing", href: "/subscription" },
                 { label: "Privacy", href: "/privacy" },
                 { label: "Terms", href: "/terms" },
-                { label: "Pricing", href: "/subscription" },
-                { label: "Workflows", href: "/workflows" },
-                { label: "Contact", href: "/contact" },
               ].map((l) => (
                 <Link
                   key={l.label}
                   href={l.href}
-                  className="text-xs text-white/30 hover:text-white/60 transition-colors"
+                  className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
                 >
                   {l.label}
                 </Link>
