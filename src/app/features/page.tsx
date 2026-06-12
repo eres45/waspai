@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { Footer } from "@/components/landing/footer";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -792,34 +793,7 @@ export default function FeaturesPage() {
           </div>
         </section>
 
-        {/* ── Sub-Footer ── */}
-        <div className="border-t border-white/5 px-6 py-8 bg-[#0d0d0f]">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-600 font-mono">
-              WASPAI
-            </span>
-            <p className="text-xs text-neutral-500">
-              © 2026 WaspAI. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6 justify-center flex-wrap">
-              {[
-                { label: "Agents", href: "/ai-agents" },
-                { label: "Workflows", href: "/workflows" },
-                { label: "Pricing", href: "/subscription" },
-                { label: "Privacy", href: "/privacy" },
-                { label: "Terms", href: "/terms" },
-              ].map((l) => (
-                <Link
-                  key={l.label}
-                  href={l.href}
-                  className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
+        <Footer />
       </main>
     </div>
   );

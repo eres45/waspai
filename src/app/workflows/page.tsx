@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { Footer } from "@/components/landing/footer";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -159,34 +160,6 @@ const FAQS = [
   {
     q: "Which subscription tier supports workflows?",
     a: "Workflow creation and editor access require a Pro or Ultra subscription. Free tier accounts can execute workflows that have been shared with them.",
-  },
-];
-
-/* ─── Plan Tiers ───────────────────────────────────────────── */
-const TIERS = [
-  {
-    name: "Free",
-    workflows: "No Creation",
-    note: "Exclusively execute shared workflows",
-    cta: "Get Started Free",
-    href: "/sign-in",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    workflows: "Up to 5 Workflows",
-    note: "Full creation, sharing, and editor tools",
-    cta: "Upgrade to Pro",
-    href: "/subscription",
-    highlight: true,
-  },
-  {
-    name: "Ultra",
-    workflows: "Unlimited Workflows",
-    note: "Priority runs, unlimited canvas, and templates",
-    cta: "Upgrade to Ultra",
-    href: "/subscription",
-    highlight: false,
   },
 ];
 
@@ -601,71 +574,6 @@ export default function WorkflowsPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════
-            PRICING TIER SECTION
-        ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-28 bg-[#0d0d0f]">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
-                Subscription limits
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
-                Workflow Limits
-              </h2>
-            </motion.div>
-
-            <div className="grid md:grid-cols-3 gap-5">
-              {TIERS.map((tier, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: i * 0.08 }}
-                  className={`relative p-6.5 rounded-xl border flex flex-col gap-4 bg-[#121214] ${
-                    tier.highlight
-                      ? "border-purple-500/30 shadow-[0_0_15px_rgba(167,139,250,0.02)]"
-                      : "border-white/5"
-                  }`}
-                >
-                  {tier.highlight && (
-                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-purple-500 text-[10px] font-bold text-white uppercase tracking-wider">
-                      Most Popular
-                    </div>
-                  )}
-                  <span className="self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/[0.04] border border-white/10 text-neutral-400">
-                    {tier.name}
-                  </span>
-                  <div>
-                    <p className="text-lg font-bold text-white">
-                      {tier.workflows}
-                    </p>
-                    <p className="text-[12.5px] text-neutral-400 font-light mt-1">
-                      {tier.note}
-                    </p>
-                  </div>
-                  <Link
-                    href={tier.href}
-                    className={`mt-auto inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-xs font-semibold transition-all ${
-                      tier.highlight
-                        ? "bg-white text-black hover:bg-white/90"
-                        : "border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] text-neutral-300"
-                    }`}
-                  >
-                    {tier.cta}
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════
             FAQ
         ══════════════════════════════════════════════════════ */}
         <section className="px-6 py-28 border-t border-white/5 bg-[#121214]">
@@ -737,33 +645,7 @@ export default function WorkflowsPage() {
           </div>
         </section>
 
-        {/* ── Sub-Footer ── */}
-        <div className="border-t border-white/5 px-6 py-8 bg-[#0d0d0f]">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-600 font-mono">
-              WASPAI
-            </span>
-            <p className="text-xs text-neutral-500">
-              © 2026 WaspAI. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              {[
-                { label: "Privacy", href: "/privacy" },
-                { label: "Terms", href: "/terms" },
-                { label: "Pricing", href: "/subscription" },
-                { label: "Contact", href: "/contact" },
-              ].map((l) => (
-                <Link
-                  key={l.label}
-                  href={l.href}
-                  className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
-                >
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
+        <Footer />
       </main>
     </div>
   );
