@@ -47,8 +47,6 @@ export const Footer = () => {
       links: [
         { label: "About Us", href: "/about" },
         { label: "Contact Support", href: "/contact" },
-        { label: "Blog", href: "/blog" },
-        { label: "Careers", href: "/careers" },
       ],
     },
   ];
