@@ -1,10 +1,11 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Wasp AI",
   description:
-    "Privacy Policy for WASPAI. Learn how we collect, use, and protect your data.",
+    "Privacy Policy for Wasp AI. Learn how we collect, use, and protect your data.",
 };
 
 const TOC = [
@@ -28,11 +29,15 @@ export default function PrivacyPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0d0f]/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-all duration-300">
-              W
-            </div>
+            <Image
+              src="/wasp-ai-logo.png"
+              alt="Wasp AI Logo"
+              width={32}
+              height={32}
+              className="rounded-md shadow-md group-hover:scale-105 transition-transform duration-300"
+            />
             <span className="font-bold tracking-tight text-white group-hover:text-purple-400 transition-colors">
-              WASPAI
+              Wasp AI
             </span>
           </Link>
           <div className="flex items-center gap-4">
@@ -110,7 +115,7 @@ export default function PrivacyPage() {
                 </div>
                 <div className="text-neutral-400 leading-relaxed space-y-4">
                   <p>
-                    Welcome to <strong>WASPAI</strong> (waspai.in)
+                    Welcome to <strong>Wasp AI</strong> (waspai.in)
                     (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;), which
                     is owned and operated by <strong>Eres</strong>. We are
                     committed to safeguarding your personal data and respecting

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/landing/footer";
 import {
@@ -299,11 +300,15 @@ export default function WorkflowsPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0d0f]/85 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-all duration-300">
-              W
-            </div>
+            <Image
+              src="/wasp-ai-logo.png"
+              alt="Wasp AI Logo"
+              width={32}
+              height={32}
+              className="rounded-md shadow-md group-hover:scale-105 transition-transform duration-300"
+            />
             <span className="font-bold tracking-tight text-white group-hover:text-purple-400 transition-colors">
-              WASPAI
+              Wasp AI
             </span>
           </Link>
           <div className="flex items-center gap-4">
