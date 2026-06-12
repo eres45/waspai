@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Bot,
@@ -27,13 +26,13 @@ import {
   VideoIcon,
   Workflow,
   Wrench,
-  Zap,
-  SplitIcon,
+  Split,
   Database,
   Shield,
   Cpu,
   PenTool,
   Share2,
+  Zap,
 } from "lucide-react";
 
 /* ─── Feature categories (hero stat bar) ─────────────────── */
@@ -44,7 +43,7 @@ const STATS = [
   { value: "∞", label: "Possibilities" },
 ];
 
-/* ─── All features grouped ───────────────────────────────── */
+/* ─── All features grouped (Clean, Uniform Layout Data) ───── */
 const FEATURE_GROUPS = [
   {
     id: "ai-models",
@@ -52,11 +51,6 @@ const FEATURE_GROUPS = [
     headline: "Every top model. One interface.",
     subhead:
       "Stop switching between apps. Access GPT, Claude, Gemini, Grok, DeepSeek, Mistral, Llama and 20+ models from one unified chat experience.",
-    color: "indigo",
-    gradient: "from-indigo-500/15 via-blue-500/5 to-transparent",
-    border: "border-indigo-500/20",
-    iconColor: "text-indigo-400",
-    iconBg: "bg-indigo-500/15 border-indigo-500/25",
     icon: Cpu,
     features: [
       {
@@ -97,11 +91,6 @@ const FEATURE_GROUPS = [
     headline: "Custom agents built for your work.",
     subhead:
       "Create specialised AI assistants with a name, emoji, system prompt, and a full toolkit. Attach workflows for end-to-end automation.",
-    color: "violet",
-    gradient: "from-violet-500/15 via-purple-500/5 to-transparent",
-    border: "border-violet-500/20",
-    iconColor: "text-violet-400",
-    iconBg: "bg-violet-500/15 border-violet-500/25",
     icon: Bot,
     features: [
       {
@@ -142,11 +131,6 @@ const FEATURE_GROUPS = [
     headline: "Visual automation for any process.",
     subhead:
       "Chain AI models, HTTP calls, code blocks, and conditional logic into reusable no-code pipelines on an infinite canvas.",
-    color: "emerald",
-    gradient: "from-emerald-500/15 via-teal-500/5 to-transparent",
-    border: "border-emerald-500/20",
-    iconColor: "text-emerald-400",
-    iconBg: "bg-emerald-500/15 border-emerald-500/25",
     icon: Workflow,
     features: [
       {
@@ -165,7 +149,7 @@ const FEATURE_GROUPS = [
         desc: "Fetch any external REST API — weather, databases, webhooks, and more.",
       },
       {
-        icon: SplitIcon,
+        icon: Split,
         title: "Condition Node",
         desc: "Branch your flow with if/else logic based on any output value.",
       },
@@ -187,11 +171,6 @@ const FEATURE_GROUPS = [
     headline: "Create. Edit. Transform. Instantly.",
     subhead:
       "Generate stunning images with Flux and Stable Diffusion, then edit them with 8 professional AI tools — all without leaving the chat.",
-    color: "pink",
-    gradient: "from-pink-500/15 via-rose-500/5 to-transparent",
-    border: "border-pink-500/20",
-    iconColor: "text-pink-400",
-    iconBg: "bg-pink-500/15 border-pink-500/25",
     icon: ImageIcon,
     features: [
       {
@@ -232,11 +211,6 @@ const FEATURE_GROUPS = [
     headline: "Write, run, and debug in real time.",
     subhead:
       "Execute JavaScript and Python in a live sandbox. Build data pipelines, run scripts, render HTML previews — directly in your chat.",
-    color: "amber",
-    gradient: "from-amber-500/15 via-orange-500/5 to-transparent",
-    border: "border-amber-500/20",
-    iconColor: "text-amber-400",
-    iconBg: "bg-amber-500/15 border-amber-500/25",
     icon: Code2,
     features: [
       {
@@ -277,11 +251,6 @@ const FEATURE_GROUPS = [
     headline: "Create any document with a prompt.",
     subhead:
       "Generate Word documents, PDFs, PowerPoint presentations, CSVs, text files, and QR codes — then download instantly.",
-    color: "blue",
-    gradient: "from-blue-500/15 via-sky-500/5 to-transparent",
-    border: "border-blue-500/20",
-    iconColor: "text-blue-400",
-    iconBg: "bg-blue-500/15 border-blue-500/25",
     icon: FileText,
     features: [
       {
@@ -319,14 +288,9 @@ const FEATURE_GROUPS = [
   {
     id: "web",
     category: "🌐 Web & Research",
-    headline: "The whole web at your AI's fingertips.",
+    headline: "The web at your AI's fingertips.",
     subhead:
       "Search the live web, scrape pages, fetch YouTube transcripts, and browse interactively with a cloud browser — all from chat.",
-    color: "cyan",
-    gradient: "from-cyan-500/15 via-blue-500/5 to-transparent",
-    border: "border-cyan-500/20",
-    iconColor: "text-cyan-400",
-    iconBg: "bg-cyan-500/15 border-cyan-500/25",
     icon: Globe,
     features: [
       {
@@ -367,11 +331,6 @@ const FEATURE_GROUPS = [
     headline: "AI that remembers who you are.",
     subhead:
       "Save preferences, past decisions, and key facts so every conversation builds on the last. No more repeating yourself.",
-    color: "rose",
-    gradient: "from-rose-500/15 via-pink-500/5 to-transparent",
-    border: "border-rose-500/20",
-    iconColor: "text-rose-400",
-    iconBg: "bg-rose-500/15 border-rose-500/25",
     icon: Brain,
     features: [
       {
@@ -412,11 +371,6 @@ const FEATURE_GROUPS = [
     headline: "Send emails and messages, right from chat.",
     subhead:
       "Draft, send, and receive emails and SMS directly through your AI. Temp email inboxes, real SMTP sending, and SMS — all built in.",
-    color: "teal",
-    gradient: "from-teal-500/15 via-emerald-500/5 to-transparent",
-    border: "border-teal-500/20",
-    iconColor: "text-teal-400",
-    iconBg: "bg-teal-500/15 border-teal-500/25",
     icon: Mail,
     features: [
       {
@@ -494,22 +448,22 @@ function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
   const [open, setOpen] = useState(false);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.4, delay: idx * 0.07 }}
-      className="border border-white/8 rounded-2xl overflow-hidden"
+      transition={{ duration: 0.4, delay: idx * 0.05 }}
+      className="border border-white/5 bg-[#121214] rounded-xl overflow-hidden"
     >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/[0.03] transition-colors"
+        className="w-full flex items-center justify-between px-6 py-4.5 text-left hover:bg-white/[0.02] transition-colors"
       >
-        <span className="text-[15px] font-semibold text-white/90">{q}</span>
+        <span className="text-sm font-semibold text-white/90">{q}</span>
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0 ml-4" />
+          <ChevronDown className="w-4 h-4 text-white/30" />
         </motion.div>
       </button>
       <AnimatePresence>
@@ -518,10 +472,10 @@ function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <p className="px-6 pb-5 text-[14px] text-white/40 leading-relaxed">
+            <p className="px-6 pb-5 text-sm text-neutral-400 leading-relaxed font-light">
               {a}
             </p>
           </motion.div>
@@ -531,144 +485,116 @@ function FaqItem({ q, a, idx }: { q: string; a: string; idx: number }) {
   );
 }
 
-/* ─── Color map ──────────────────────────────────────────── */
-const COLOR_MAP: Record<string, string> = {
-  indigo: "text-indigo-400",
-  violet: "text-violet-400",
-  emerald: "text-emerald-400",
-  pink: "text-pink-400",
-  amber: "text-amber-400",
-  blue: "text-blue-400",
-  cyan: "text-cyan-400",
-  rose: "text-rose-400",
-  teal: "text-teal-400",
-};
-
-/* ─── Page ───────────────────────────────────────────────── */
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-[#0d0d0f] text-white selection:bg-white/10 overflow-x-hidden">
-      {/* ── Nav ── */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#0d0d0f]/80 backdrop-blur-xl">
+    <div className="min-h-screen bg-[#0d0d0f] text-white selection:bg-purple-500/20 overflow-x-hidden font-sans antialiased">
+      {/* Top Fixed Navbar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0d0d0f]/85 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span className="text-sm font-medium">Home</span>
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-all duration-300">
+              W
+            </div>
+            <span className="font-bold tracking-tight text-white group-hover:text-purple-400 transition-colors">
+              WASPAI
+            </span>
           </Link>
-          <div className="text-sm font-bold tracking-widest uppercase">
-            WASPAI
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="text-sm text-neutral-400 hover:text-white transition-colors"
+            >
+              Back to Home
+            </Link>
+            <Link
+              href="/sign-in"
+              className="text-sm bg-white text-black hover:bg-white/90 font-semibold px-4 py-1.5 rounded-lg transition-all duration-200"
+            >
+              Get Started
+            </Link>
           </div>
-          <Link
-            href="/sign-in"
-            className="text-sm font-semibold px-4 py-2 rounded-full bg-white text-black hover:bg-white/90 transition-all"
-          >
-            Get Started
-          </Link>
         </div>
-      </nav>
+      </header>
 
-      <main className="pt-24">
+      <main className="pt-16">
         {/* ══════════════════════════════════════════════════════
-            HERO
+            HERO SECTION
         ══════════════════════════════════════════════════════ */}
-        <section className="relative px-6 pt-20 pb-28 flex flex-col items-center text-center overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-white/[0.02] rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-indigo-600/8 rounded-full blur-[80px] pointer-events-none" />
+        <section className="relative px-6 pt-24 pb-28 flex flex-col items-center text-center overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-purple-600/[0.03] rounded-full blur-[100px] pointer-events-none" />
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-[13px] font-medium text-white/50"
+            transition={{ duration: 0.4 }}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4.5 py-1 text-[13px] font-medium text-neutral-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            Everything Wasp AI can do
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            Product Capability Grid
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="max-w-5xl font-extrabold leading-[1.04] tracking-[-0.04em] mb-6"
-            style={{ fontSize: "clamp(38px, 7vw, 96px)" }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="max-w-4xl font-extrabold leading-[1.08] tracking-[-0.03em] mb-6"
+            style={{ fontSize: "clamp(38px, 6.5vw, 84px)" }}
           >
-            <span
-              style={{
-                display: "block",
-                background:
-                  "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.75) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
+            <span className="block bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent">
               Every feature.
             </span>
-            <span
-              style={{
-                display: "block",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.18) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              One platform.
+            <span className="block bg-gradient-to-b from-white/60 to-white/20 bg-clip-text text-transparent">
+              One unified platform.
             </span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-xl text-[17px] text-white/40 leading-relaxed mb-10"
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="max-w-lg text-[16px] text-neutral-400 font-light leading-relaxed mb-10"
           >
-            From 20+ AI models to automated workflows, image generation, code
-            execution, and a full document suite — it&apos;s all here, in one
-            place.
+            Access foundational models, build custom workflows, design automated
+            agents, and invoke communication blocks natively from chat.
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
             className="flex flex-wrap items-center justify-center gap-4 mb-20"
           >
             <Link
               href="/sign-in"
-              className="group inline-flex items-center gap-2 bg-white text-black px-7 py-3.5 rounded-full font-bold text-[15px] hover:bg-white/90 transition-all"
+              className="group inline-flex items-center gap-1.5 bg-white text-black px-6 py-3 rounded-lg font-semibold text-[14px] hover:bg-white/90 transition-all"
             >
               Try Everything Free
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
               href="/subscription"
-              className="inline-flex items-center gap-2 border border-white/10 text-white/60 hover:text-white hover:border-white/20 px-7 py-3.5 rounded-full font-medium text-[15px] transition-all"
+              className="inline-flex items-center gap-1 border border-white/5 bg-[#161618] hover:bg-[#1c1c1f] hover:border-white/10 text-neutral-300 px-6 py-3 rounded-lg font-medium text-[14px] transition-all"
             >
               View Pricing
             </Link>
           </motion.div>
 
-          {/* Stats */}
+          {/* Stats Bar */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-px w-full max-w-3xl bg-white/5 rounded-2xl overflow-hidden border border-white/5"
+            className="grid grid-cols-2 md:grid-cols-4 gap-px w-full max-w-3xl bg-white/5 rounded-xl overflow-hidden border border-white/5 shadow-2xl"
           >
             {STATS.map((stat, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center py-6 px-4 bg-[#0d0d0f] gap-1"
+                className="flex flex-col items-center py-6 px-4 bg-[#121214] gap-1"
               >
-                <span className="text-3xl md:text-4xl font-black text-white">
+                <span className="text-2xl md:text-3xl font-extrabold text-white">
                   {stat.value}
                 </span>
-                <span className="text-[12px] text-white/35 font-medium uppercase tracking-widest">
+                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider font-mono">
                   {stat.label}
                 </span>
               </div>
@@ -677,75 +603,73 @@ export default function FeaturesPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════
-            FEATURE GROUPS
+            FEATURE GROUPS LIST
         ══════════════════════════════════════════════════════ */}
         {FEATURE_GROUPS.map((group, gi) => (
           <section
             key={group.id}
             id={group.id}
-            className={`px-6 py-28 ${gi % 2 === 1 ? "bg-[#0a0a0c]" : ""}`}
+            className={`px-6 py-28 border-t border-white/5 ${
+              gi % 2 === 1 ? "bg-[#121214]" : "bg-[#0d0d0f]"
+            }`}
           >
             <div className="max-w-6xl mx-auto">
-              {/* Section header */}
+              {/* Group Header */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 className="mb-16"
               >
-                <p
-                  className={`text-xs font-black tracking-[0.25em] uppercase mb-3 ${COLOR_MAP[group.color]}`}
-                >
+                <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-purple-400 mb-3 font-mono">
                   {group.category}
                 </p>
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                  <h2 className="text-3xl md:text-5xl font-bold tracking-tight max-w-2xl">
+                  <h2 className="text-2xl md:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent max-w-2xl">
                     {group.headline}
                   </h2>
                   {group.id === "agents" && (
                     <Link
                       href="/ai-agents"
-                      className="group inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors shrink-0"
+                      className="group inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-white transition-colors shrink-0"
                     >
-                      Full Agent Guide{" "}
+                      Full Agent Guide
                       <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </Link>
                   )}
                   {group.id === "workflows" && (
                     <Link
                       href="/workflows"
-                      className="group inline-flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors shrink-0"
+                      className="group inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-white transition-colors shrink-0"
                     >
-                      Full Workflows Guide{" "}
+                      Full Workflows Guide
                       <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </Link>
                   )}
                 </div>
-                <p className="mt-4 text-[16px] text-white/40 max-w-2xl leading-relaxed">
+                <p className="mt-4 text-sm md:text-base font-light text-neutral-400 max-w-2xl leading-relaxed">
                   {group.subhead}
                 </p>
               </motion.div>
 
-              {/* Feature cards grid */}
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Cards Grid (Monochrome and Premium borders) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {group.features.map((feat, fi) => (
                   <motion.div
                     key={fi}
-                    initial={{ opacity: 0, y: 24 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: fi * 0.07 }}
-                    className={`group p-6 rounded-2xl border ${group.border} bg-gradient-to-br ${group.gradient} hover:scale-[1.02] transition-transform duration-300`}
+                    transition={{ duration: 0.35, delay: fi * 0.05 }}
+                    className="group p-6 rounded-xl border border-white/5 bg-[#121214] hover:border-white/10 hover:bg-[#141417] transition-all duration-200"
                   >
-                    <div
-                      className={`w-10 h-10 rounded-xl border ${group.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
-                    >
-                      <feat.icon className={`w-4.5 h-4.5 ${group.iconColor}`} />
+                    <div className="w-10 h-10 rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center mb-4 text-neutral-400 group-hover:text-purple-300 group-hover:border-purple-500/20 transition-all duration-300">
+                      <feat.icon className="w-4.5 h-4.5" />
                     </div>
-                    <h3 className="text-[15px] font-bold text-white mb-1.5">
+                    <h3 className="text-sm font-bold text-white mb-2">
                       {feat.title}
                     </h3>
-                    <p className="text-[13px] text-white/40 leading-relaxed">
+                    <p className="text-[13px] text-neutral-400 leading-relaxed font-light">
                       {feat.desc}
                     </p>
                   </motion.div>
@@ -758,19 +682,19 @@ export default function FeaturesPage() {
         {/* ══════════════════════════════════════════════════════
             BONUS FEATURES STRIP
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-20 bg-[#0a0a0c] border-y border-white/5">
+        <section className="px-6 py-24 bg-[#121214] border-t border-white/5">
           <div className="max-w-6xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <p className="text-xs font-black tracking-[0.25em] uppercase text-white/30 mb-3">
-                And even more
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Extensible Tools
               </p>
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Plus these power features.
+              <h2 className="text-3xl font-bold bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                Additional capabilities
               </h2>
             </motion.div>
 
@@ -778,16 +702,16 @@ export default function FeaturesPage() {
               {QUICK_FEATURES.map((feat, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.07 }}
-                  className="flex items-center gap-3 p-4 rounded-xl border border-white/6 bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                  transition={{ delay: i * 0.05 }}
+                  className="group flex items-center gap-3.5 p-4 rounded-xl border border-white/5 bg-[#0d0d0f] hover:border-white/10 transition-all duration-200"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center flex-shrink-0">
-                    <feat.icon className="w-4 h-4 text-white/50" />
+                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 text-neutral-400 group-hover:text-purple-300 transition-colors">
+                    <feat.icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[13px] font-medium text-white/60">
+                  <span className="text-[13px] font-medium text-neutral-400 group-hover:text-neutral-200 transition-colors">
                     {feat.label}
                   </span>
                 </motion.div>
@@ -797,21 +721,21 @@ export default function FeaturesPage() {
         </section>
 
         {/* ══════════════════════════════════════════════════════
-            FAQ
+            FAQ ACCORDIONS
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 py-32">
+        <section className="px-6 py-28 bg-[#0d0d0f] border-t border-white/5">
           <div className="max-w-3xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <p className="text-xs font-bold tracking-[0.25em] uppercase text-white/30 mb-4">
-                FAQ
+              <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-neutral-500 mb-3 font-mono">
+                Common Questions
               </p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-                Common questions.
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                Platform FAQ
               </h2>
             </motion.div>
 
@@ -826,52 +750,39 @@ export default function FeaturesPage() {
         {/* ══════════════════════════════════════════════════════
             CTA BANNER
         ══════════════════════════════════════════════════════ */}
-        <section className="px-6 pb-32">
-          <div className="max-w-5xl mx-auto">
+        <section className="px-6 pb-28 bg-[#0d0d0f]">
+          <div className="max-w-4xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, y: 32 }}
+              initial={{ opacity: 0, y: 25 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="relative overflow-hidden rounded-3xl border border-white/8 bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-transparent p-16 text-center"
+              transition={{ duration: 0.6 }}
+              className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#121214] p-12 md:p-16 text-center"
             >
-              <div className="absolute -top-20 -left-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-[80px] pointer-events-none" />
-              <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-purple-600/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015)_0%,transparent_70%)]" />
 
-              <div className="relative z-10">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 mb-8">
-                  <Sparkles className="w-8 h-8 text-white/70" />
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-12 h-12 rounded-lg bg-white/[0.03] border border-white/10 flex items-center justify-center mb-6 text-purple-300">
+                  <Sparkles className="w-5 h-5" />
                 </div>
-                <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-5">
+                <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-b from-white to-white/80 bg-clip-text text-transparent mb-4">
                   Experience every feature.
-                  <br />
-                  <span
-                    style={{
-                      background:
-                        "linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0.25))",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    Start for free.
-                  </span>
                 </h2>
-                <p className="text-white/40 text-lg mb-10 max-w-md mx-auto">
-                  No credit card needed. Explore 20+ models, tools, and
-                  automation — free forever on the base plan.
+                <p className="text-neutral-400 text-sm md:text-base font-light mb-8 max-w-sm">
+                  Access advanced workspace tooling, models, and custom
+                  automations for free.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-4">
+                <div className="flex flex-wrap justify-center gap-3">
                   <Link
                     href="/sign-in"
-                    className="group inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-full font-bold text-[16px] hover:bg-white/90 transition-all"
+                    className="group inline-flex items-center gap-1.5 bg-white text-black px-6 py-3 rounded-lg font-semibold text-xs hover:bg-white/90 transition-all"
                   >
                     Get Started Free
-                    <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
                     href="/subscription"
-                    className="inline-flex items-center gap-2 border border-white/15 text-white/60 hover:text-white hover:border-white/25 px-8 py-4 rounded-full font-medium text-[16px] transition-all"
+                    className="inline-flex items-center border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] text-neutral-300 px-6 py-3 rounded-lg font-semibold text-xs transition-all"
                   >
                     Compare Plans
                   </Link>
@@ -881,27 +792,27 @@ export default function FeaturesPage() {
           </div>
         </section>
 
-        {/* ── Mini footer ── */}
-        <div className="border-t border-white/5 px-6 py-8">
+        {/* ── Sub-Footer ── */}
+        <div className="border-t border-white/5 px-6 py-8 bg-[#0d0d0f]">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-xs font-bold tracking-widest uppercase text-white/30">
+            <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-600 font-mono">
               WASPAI
             </span>
-            <p className="text-xs text-white/20">
-              © 2026 WaspAI Inc. All rights reserved.
+            <p className="text-xs text-neutral-500">
+              © 2026 WaspAI. All rights reserved.
             </p>
-            <div className="flex flex-wrap items-center gap-6 justify-center">
+            <div className="flex items-center gap-6 justify-center flex-wrap">
               {[
                 { label: "Agents", href: "/ai-agents" },
                 { label: "Workflows", href: "/workflows" },
                 { label: "Pricing", href: "/subscription" },
-                { label: "About", href: "/about" },
-                { label: "Contact", href: "/contact" },
+                { label: "Privacy", href: "/privacy" },
+                { label: "Terms", href: "/terms" },
               ].map((l) => (
                 <Link
                   key={l.label}
                   href={l.href}
-                  className="text-xs text-white/30 hover:text-white/60 transition-colors"
+                  className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
                 >
                   {l.label}
                 </Link>
