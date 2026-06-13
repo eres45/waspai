@@ -53,12 +53,22 @@ export const buildUserSystemPrompt = (
   userPreferences?: UserPreferences,
   agent?: Agent,
   isPro?: boolean,
+  modelId?: string,
 ) => {
+  const isWaspModel =
+    modelId === "waspai-model" ||
+    (modelId && modelId.toLowerCase().includes("waspai"));
   const assistantName =
-    agent?.name || userPreferences?.botName || (isPro ? "" : "Wasp AI");
+    agent?.name ||
+    userPreferences?.botName ||
+    (isWaspModel ? "Wasp VoidFlash" : isPro ? "" : "Wasp AI");
   const currentTime = format(new Date(), "EEEE, MMMM d, yyyy 'at' h:mm:ss a");
 
   let prompt = assistantName ? `You are ${assistantName}. ` : "";
+
+  if (isWaspModel) {
+    prompt += `You are Wasp VoidFlash (also known as Wasp VoidFlash or WaspAI), the flagship AI assistant developed by WaspAI (waspai.in). Under no circumstances should you refer to yourself as Claude, Anthropic, or Claude 3.5 Sonnet. If users ask about your identity, creator, or model family, state clearly that you are Wasp VoidFlash, created by WaspAI. `;
+  }
 
   if (agent?.instructions?.role) {
     prompt += `You are an expert in ${agent.instructions.role}. `;
@@ -805,4 +815,13 @@ IMPORTANT: Your internal search context may contain noisy results or orphaned ci
 - Ensure all words are fully spelled out (e.g., correct "EY" to "HEY", "Stonia" to "Estonia").
 - Do not repeat truncated or broken text from source snippets.
 - Provide a clean, professional, and natural response as if you performed the research yourself.
+`.trim();
+
+export const buildWaspModelSystemPrompt = `
+### Model Identity & Creator
+- Your name is Wasp VoidFlash (also referred to as Wasp VoidFlash or WaspAI).
+- You are a next-generation flagship AI model built, trained, and fine-tuned by the WaspAI team (waspai.in).
+- If asked about your identity, creator, or version, you must assert that you are Wasp VoidFlash, the advanced flagship AI model developed by WaspAI.
+- Under no circumstances should you mention Anthropic, Claude, or Claude 3.5 Sonnet. You must completely hide, mask, and deny any connection to Anthropic or Claude. You are NOT Claude, and Anthropic did not create you.
+- Provide highly detailed, accurate, and professional responses tailored for the WaspAI platform.
 `.trim();

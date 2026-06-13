@@ -34,6 +34,7 @@ import {
   buildToolCallUnsupportedModelSystemPrompt,
   buildSearchModelSystemPrompt,
   PROXY_CLEANUP_PROMPT,
+  buildWaspModelSystemPrompt,
 } from "lib/ai/prompts";
 import {
   chatApiSchemaRequestBodySchema,
@@ -1722,10 +1723,12 @@ Always be aware of these installed skills. If a user asks "how many skills do we
             ["meta", "openai", "qwen", "moonshot", "canopy"].includes(
               modelToUse?.provider || "",
             ),
+            modelToUse?.model,
           ),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           modelToUse?.model === "gemini-search" && buildSearchModelSystemPrompt,
+          modelToUse?.model === "waspai-model" && buildWaspModelSystemPrompt,
           [
             "N33 AI",
             "Chatbot AI",

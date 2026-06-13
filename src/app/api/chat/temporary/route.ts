@@ -11,7 +11,10 @@ import {
   getModelTier,
 } from "lib/ai/models";
 import globalLogger from "logger";
-import { buildUserSystemPrompt } from "lib/ai/prompts";
+import {
+  buildUserSystemPrompt,
+  buildWaspModelSystemPrompt,
+} from "lib/ai/prompts";
 import { getUserPreferences } from "lib/user/server";
 
 import { colorize } from "consola/utils";
@@ -57,11 +60,21 @@ export async function POST(request: Request) {
     const userPreferences =
       (await getUserPreferences(session.user.id)) || undefined;
 
+    const systemPromptParts = [
+      buildUserSystemPrompt(
+        session.user,
+        userPreferences,
+        undefined,
+        undefined,
+        chatModel?.model,
+      ),
+      chatModel?.model === "waspai-model" && buildWaspModelSystemPrompt,
+      instructions ? instructions : undefined,
+    ].filter(Boolean);
+
     return streamText({
       model,
-      system: `${buildUserSystemPrompt(session.user, userPreferences)} ${
-        instructions ? `\n\n${instructions}` : ""
-      }`.trim(),
+      system: systemPromptParts.join("\n\n").trim(),
       messages: convertToModelMessages(sanitizeMessageToolCalls(messages)),
       experimental_transform: smoothStream({ chunking: "word" }),
       experimental_continueOnLimit: true,
