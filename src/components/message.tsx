@@ -112,7 +112,14 @@ const PurePreviewMessage = ({
         (/<think>|<thinking>|<reasoning>|```thinking/i.test(part.text) ||
           part.text.startsWith("<")),
     );
-    const isLeaky = isLeakyReasoningModel(modelId) || hasExplicitTags;
+    // If the backend already sent a native `reasoning` part, skip leaky
+    // extraction entirely — otherwise we'd render two reasoning blocks.
+    const hasNativeReasoningPart = partsList.some(
+      (part) => part.type === "reasoning",
+    );
+    const isLeaky =
+      !hasNativeReasoningPart &&
+      (isLeakyReasoningModel(modelId) || hasExplicitTags);
 
     let displayParts: typeof message.parts;
 

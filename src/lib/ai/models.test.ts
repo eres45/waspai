@@ -122,7 +122,7 @@ describe("customModelProvider file support metadata", () => {
 
 describe("WaspAI & LordRouter integrations", () => {
   it("cleans WaspAI display name correctly", () => {
-    expect(cleanModelDisplayName("waspai-model")).toBe("WaspAI model");
+    expect(cleanModelDisplayName("waspai-model")).toBe("Wasp VoidFlash");
   });
 
   it("supports tool calling for waspai-model, Sarvam, and GPT-OSS models", () => {
