@@ -12,6 +12,7 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   // Groq models
   "llama-3.3-70b-versatile": 100_000,
   "llama-3.1-8b-instant": 100_000,
+  "waspai-model": 800_000,
 };
 
 // Default: 200K chars (~50K tokens). Most modern LLMs support 128K+ token windows.

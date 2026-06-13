@@ -44,6 +44,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const ttsQueue = useRef<string[]>([]);
   const isPlayingQueue = useRef<boolean>(false);
   const sentenceBuffer = useRef<string>("");
+  const processedCleanTextLength = useRef<number>(0);
 
   // VAD state
   const lastSpeechTimeRef = useRef<number>(0);
@@ -238,23 +239,23 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
       recognitionRef.current.onresult = (event: any) => {
         let interimTranscript = "";
-        let finalTranscript = "";
+        let completeFinalTranscript = "";
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
+            completeFinalTranscript += transcript + " ";
           } else {
             interimTranscript += transcript;
           }
         }
 
         const combinedInterim = interimTranscript.trim();
-        const combinedFinal = finalTranscript.trim();
+        const combinedFinal = completeFinalTranscript.trim();
 
         if (combinedFinal || combinedInterim.length > 5) {
           lastSpeechTimeRef.current = Date.now();
-          currentTranscriptRef.current += finalTranscript;
+          currentTranscriptRef.current = completeFinalTranscript;
 
           if (
             isAssistantSpeakingRef.current &&
@@ -307,6 +308,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       if (!text.trim()) return;
 
       setIsLoading(true);
+      processedCleanTextLength.current = 0;
 
       const userMessage: UIMessageWithCompleted = {
         id: generateUUID(),
@@ -394,36 +396,52 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
               if (jsonStr === "[DONE]") continue;
               try {
                 const data = JSON.parse(jsonStr);
-                const content =
-                  data.delta ||
-                  data.choices?.[0]?.delta?.content ||
-                  data.choices?.[0]?.message?.content;
-                if (content) {
-                  assistantText += content;
-                  sentenceBuffer.current += content;
+                // Only process text-delta events (or undefined OpenAI choices) to prevent word doubling from reasoning-delta
+                if (!data.type || data.type === "text-delta") {
+                  const content =
+                    data.delta ||
+                    data.choices?.[0]?.delta?.content ||
+                    data.choices?.[0]?.message?.content;
+                  if (content) {
+                    assistantText += content;
 
-                  const sentenceMatch = sentenceBuffer.current.match(
-                    /[^.!?\n]+[.!?\n]+(?=\s|$)/,
-                  );
-                  if (sentenceMatch) {
-                    const sentence = sentenceMatch[0];
-                    sentenceBuffer.current = sentenceBuffer.current.slice(
-                      sentence.length,
+                    // Clean out unclosed/closed <think> blocks so reasoning is hidden from TTS and UI text
+                    const cleanText = assistantText.replace(
+                      /<think>[\s\S]*?(?:<\/think>|$)/gi,
+                      "",
                     );
-                    ttsQueue.current.push(sentence.trim());
-                    if (!isPlayingQueue.current) {
-                      playNextInQueue();
-                    }
-                  }
 
-                  setMessages((prev) => {
-                    const updated = [...prev];
-                    const lastMsg = updated[updated.length - 1];
-                    if (lastMsg && lastMsg.role === "assistant") {
-                      (lastMsg.parts[0] as TextPart).text = assistantText;
+                    const newCleanText = cleanText.slice(
+                      processedCleanTextLength.current,
+                    );
+                    if (newCleanText) {
+                      sentenceBuffer.current += newCleanText;
+                      processedCleanTextLength.current = cleanText.length;
+
+                      const sentenceMatch = sentenceBuffer.current.match(
+                        /[^.!?\n]+[.!?\n]+(?=\s|$)/,
+                      );
+                      if (sentenceMatch) {
+                        const sentence = sentenceMatch[0];
+                        sentenceBuffer.current = sentenceBuffer.current.slice(
+                          sentence.length,
+                        );
+                        ttsQueue.current.push(sentence.trim());
+                        if (!isPlayingQueue.current) {
+                          playNextInQueue();
+                        }
+                      }
                     }
-                    return updated;
-                  });
+
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const lastMsg = updated[updated.length - 1];
+                      if (lastMsg && lastMsg.role === "assistant") {
+                        (lastMsg.parts[0] as TextPart).text = cleanText;
+                      }
+                      return updated;
+                    });
+                  }
                 }
               } catch (_e) {}
             }
@@ -470,7 +488,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         const transcript = currentTranscriptRef.current.trim();
 
         // DYNAMIC SILENCE: Short sentence -> faster response, Long sentence -> let them pause
-        const silenceThreshold = transcript.length < 20 ? 1000 : 1800;
+        const silenceThreshold = transcript.length < 20 ? 600 : 1200;
 
         // If silence detected and we have a transcript, send it
         if (
