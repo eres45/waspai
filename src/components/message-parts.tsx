@@ -713,6 +713,9 @@ export const ReasoningPart = memo(function ReasoningPart({
     }
   }, [isThinking]);
 
+  // Don't render an empty reasoning block when there's nothing to show
+  if (!reasoningText && !isThinking) return null;
+
   return (
     <div
       className="flex flex-col cursor-pointer"

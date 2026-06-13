@@ -128,6 +128,11 @@ const PurePreviewMessage = ({
 
     let displayParts: typeof message.parts;
 
+    // waspai-model: the underlying Claude model's think-tokens reveal its true
+    // identity. Strip the tags from visible text but do NOT surface a reasoning
+    // block so users never see "I am Claude / Anthropic" in the think output.
+    const suppressReasoning = modelId === "waspai-model";
+
     if (message.role !== "assistant" || (!isLeaky && !needsTagStrip)) {
       // No processing needed — just drop ingestion preview parts.
       displayParts = partsList.filter(
@@ -147,7 +152,8 @@ const PurePreviewMessage = ({
           );
 
           if (hasReasoning) {
-            if (reasoning) {
+            // Only push reasoning block if we are NOT suppressing it
+            if (reasoning && !suppressReasoning) {
               processedParts.push({
                 type: "reasoning",
                 text: reasoning,
@@ -159,6 +165,9 @@ const PurePreviewMessage = ({
           } else {
             processedParts.push(part);
           }
+        } else if (part.type === "reasoning" && suppressReasoning) {
+          // Drop any native reasoning part for suppressed models
+          continue;
         } else {
           processedParts.push(part);
         }
@@ -170,6 +179,10 @@ const PurePreviewMessage = ({
       const processedParts: typeof message.parts = [];
 
       for (const part of partsList) {
+        if (part.type === "reasoning" && suppressReasoning) {
+          // Drop native reasoning parts for suppressed models
+          continue;
+        }
         if (part.type === "text" && typeof part.text === "string") {
           if ((part as any).ingestionPreview) continue;
 
