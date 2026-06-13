@@ -112,39 +112,34 @@ const PurePreviewMessage = ({
         (/<think>|<thinking>|<reasoning>|```thinking/i.test(part.text) ||
           part.text.startsWith("<")),
     );
-    // If the backend already sent a native `reasoning` part, skip leaky
-    // extraction entirely — otherwise we'd render two reasoning blocks.
+    // Whether the backend already sent a structured native reasoning part.
     const hasNativeReasoningPart = partsList.some(
       (part) => part.type === "reasoning",
     );
+    // Full leaky mode: extract think-tags into a reasoning block + clean text.
     const isLeaky =
       !hasNativeReasoningPart &&
+      (isLeakyReasoningModel(modelId) || hasExplicitTags);
+    // Strip-only mode: native reasoning block exists but text still leaks tags —
+    // remove the tags from the visible text without adding another reasoning block.
+    const needsTagStrip =
+      hasNativeReasoningPart &&
       (isLeakyReasoningModel(modelId) || hasExplicitTags);
 
     let displayParts: typeof message.parts;
 
-    // Only process assistant messages from leaky models or those with explicit reasoning tags
-    if (message.role !== "assistant" || !isLeaky) {
+    if (message.role !== "assistant" || (!isLeaky && !needsTagStrip)) {
+      // No processing needed — just drop ingestion preview parts.
       displayParts = partsList.filter(
         (part) => !(part.type === "text" && (part as any).ingestionPreview),
       );
-    } else {
-      console.log(
-        "[Reasoning Debug] Processing leaky model:",
-        modelId,
-        "isLeaky:",
-        isLeaky,
-      );
-
+    } else if (isLeaky) {
+      // Full leaky mode: extract think-tags → reasoning block + clean text.
       const processedParts: typeof message.parts = [];
 
       for (const part of partsList) {
-        // Only process text parts
         if (part.type === "text" && typeof part.text === "string") {
-          // Filter out ingestionPreview parts even if processing for reasoning
-          if ((part as any).ingestionPreview) {
-            continue;
-          }
+          if ((part as any).ingestionPreview) continue;
 
           const { reasoning, cleanText, hasReasoning } = stripReasoning(
             part.text,
@@ -152,27 +147,43 @@ const PurePreviewMessage = ({
           );
 
           if (hasReasoning) {
-            // Add reasoning part first (if extracted)
             if (reasoning) {
               processedParts.push({
                 type: "reasoning",
                 text: reasoning,
               } as any);
             }
-
-            // Always prefer the cleaned text when reasoning markers were detected
             if (cleanText.trim()) {
-              processedParts.push({
-                ...part,
-                text: cleanText,
-              });
+              processedParts.push({ ...part, text: cleanText });
             }
           } else {
-            // No reasoning detected, keep as-is
             processedParts.push(part);
           }
         } else {
-          // Non-text parts (tool calls, reasoning parts from backend, etc.)
+          processedParts.push(part);
+        }
+      }
+      displayParts = processedParts;
+    } else {
+      // Strip-only mode (needsTagStrip): native reasoning block already exists —
+      // just remove <think> tags from text parts, don't add another block.
+      const processedParts: typeof message.parts = [];
+
+      for (const part of partsList) {
+        if (part.type === "text" && typeof part.text === "string") {
+          if ((part as any).ingestionPreview) continue;
+
+          const { cleanText, hasReasoning } = stripReasoning(
+            part.text,
+            modelId,
+          );
+
+          // Use cleaned text if tags were found, otherwise keep original.
+          processedParts.push({
+            ...part,
+            text: hasReasoning ? cleanText : part.text,
+          });
+        } else {
           processedParts.push(part);
         }
       }
