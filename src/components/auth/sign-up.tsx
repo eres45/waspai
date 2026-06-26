@@ -16,17 +16,27 @@ import SocialProviders from "./social-providers";
 import { Mail } from "lucide-react";
 import { authClient } from "auth/client";
 import { toast } from "sonner";
-import { startTransition } from "react";
+import { startTransition, useEffect } from "react";
 
 export default function SignUpPage({
   emailAndPasswordEnabled,
   socialAuthenticationProviders,
   isFirstUser,
+  refCode,
 }: {
   emailAndPasswordEnabled: boolean;
   socialAuthenticationProviders: SocialAuthenticationProvider[];
   isFirstUser: boolean;
+  refCode?: string;
 }) {
+  useEffect(() => {
+    if (refCode) {
+      const secureFlag =
+        window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `wasp_ref=${refCode}; path=/; max-age=3600; SameSite=Lax${secureFlag}`;
+    }
+  }, [refCode]);
+
   const t = useTranslations();
   const handleSocialSignIn = (provider: SocialAuthenticationProvider) => {
     startTransition(async () => {

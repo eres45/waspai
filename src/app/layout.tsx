@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s | Wasp AI",
   },
   description:
-    "Access the future of AI for free. Use GPT-5 Pro, Gemini 3, Claude 4.5, DeepSeek R1, and Grok 4 in one unified interface. Generate images, videos, and code with the world's most advanced models on Wasp AI—completely free with no credit card required.",
+    "The ultimate all-in-one AI companion. Unlock next-generation intelligence to chat, generate code, write, analyze files, and build projects in a single unified workspace.",
   keywords: [
     "Free AI Chatbot",
     "Free AI Models",
@@ -85,7 +85,7 @@ export const metadata: Metadata = {
     siteName: "Wasp AI",
     title: "Wasp AI | Advanced Multi-Model AI Assistant",
     description:
-      "Access the future of AI: GPT-5 Pro, Gemini 3, Claude 4.5, and Grok 4 in one professional interface. Generate images, videos, and code with the world's most advanced models on Wasp AI.",
+      "Unlock the ultimate all-in-one AI companion. Chat, generate code, write, analyze files, and build projects with the world's most advanced AI models in a single workspace.",
     images: [
       {
         url: "https://waspai.in/wasp-ai-logo.png",
@@ -99,7 +99,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Wasp AI | Advanced Multi-Model AI Assistant",
     description:
-      "Access the world's best AI models (GPT-4, Gemini, Claude, DeepSeek) in one professional interface.",
+      "Unlock the ultimate all-in-one AI companion. Chat, generate code, write, analyze files, and build projects with the world's most advanced AI models in a single workspace.",
     creator: "@waspai",
     images: ["https://waspai.in/wasp-ai-logo.png"],
   },
