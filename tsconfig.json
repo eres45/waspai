@@ -45,5 +45,12 @@
     "drizzle.config.ts",
     "tests/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts/**/*", "dist/**/*", ".next/**/*"]
+  "exclude": [
+    "node_modules",
+    "scripts/**/*",
+    "dist/**/*",
+    ".next/**/*",
+    "WaspAI app/**/*",
+    "backup_waspai/**/*"
+  ]
 }

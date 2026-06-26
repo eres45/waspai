@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { chatRepository } from "@/lib/db/repository";
 import { supabaseAuth } from "@/lib/auth/supabase-auth";
+import { supabaseRest } from "@/lib/db/supabase-rest";
 import logger from "@/lib/logger";
 import { generateUUID } from "@/lib/utils";
-import { UIMessage } from "ai";
 
 export async function POST(
   req: Request,
@@ -58,20 +58,21 @@ export async function POST(
     }
 
     // Ensure thread exists
-    await chatRepository.saveThread({
+    await chatRepository.upsertThread({
       id: threadId,
       title: title || "New Chat",
       userId: user.id,
-      createdAt: new Date(),
     });
 
     // Delete existing messages for this thread to replace with the synced ones
     // (This handles edits, deletions, and additions from mobile)
-    await chatRepository.deleteMessagesByThreadId(threadId);
+    await supabaseRest.from("chat_message").delete().eq("thread_id", threadId);
+
+    const messagesToInsert: any[] = [];
 
     // Map mobile messages to Web AI SDK format
     for (const msg of messages) {
-      const parts: UIMessage["parts"] = [];
+      const parts: any[] = [];
 
       if (msg.text) {
         parts.push({ type: "text", text: msg.text });
@@ -83,13 +84,17 @@ export async function POST(
         // Custom mappings
       }
 
-      await chatRepository.saveMessage({
+      messagesToInsert.push({
         id: msg.id?.toString() || generateUUID(),
         threadId: threadId,
-        role: msg.role === "user" ? "user" : "assistant",
+        role: (msg.role === "user" ? "user" : "assistant") as any,
         parts: parts.length > 0 ? parts : [{ type: "text", text: " " }],
         createdAt: new Date(msg.timestamp || Date.now()),
       });
+    }
+
+    if (messagesToInsert.length > 0) {
+      await chatRepository.insertMessages(messagesToInsert);
     }
 
     return NextResponse.json({ success: true, mappedThreadId: threadId });

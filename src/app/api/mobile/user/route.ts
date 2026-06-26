@@ -24,17 +24,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const webUser = await userRepository.getUserById(user.id);
+    const webUser = (await userRepository.getUserById(user.id)) as any;
     if (!webUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Fetch user memory
-    const userMemories = await memoryRepository.getMemories(user.id);
+    const userMemories = await memoryRepository.list(user.id);
     // Mobile expects a single core memory string for the Vault feature. We'll join them.
     const coreMemoryString = userMemories.map((m) => m.content).join("\n");
 
-    const prefs: UserPreferences = webUser.preferences || {};
+    const prefs: any = webUser.preferences || {};
 
     // Map Web preferences to Mobile format
     const mobileSettings = {
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const webUser = await userRepository.getUserById(user.id);
+    const webUser = (await userRepository.getUserById(user.id)) as any;
     if (!webUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -110,13 +110,13 @@ export async function POST(req: Request) {
       instructions: body.pers_custom_instructions || existingPrefs.instructions,
     };
 
-    await userRepository.updateUserPreferences(user.id, updatedPrefs);
+    await userRepository.updatePreferences(user.id, updatedPrefs);
 
     // If memory is updated from mobile, we might overwrite or append.
     // For now, if body.memory exists, we just create a new memory entry if it doesn't match the last one.
     // In a full implementation, we'd sync the Vault JSON array properly.
     if (body.memory) {
-      await memoryRepository.createMemory(user.id, body.memory);
+      await memoryRepository.create(user.id, body.memory);
     }
 
     return NextResponse.json({ success: true });

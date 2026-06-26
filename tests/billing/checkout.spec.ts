@@ -53,7 +53,7 @@ test.describe("Razorpay Subscription Flow E2E", () => {
 
     // 5. Inject the mock window.Razorpay SDK into the browser context
     await page.evaluate(() => {
-      window.Razorpay = function (options: any) {
+      const MockRazorpay = function (this: any, options: any) {
         this.open = async () => {
           // Generate a fake payment ID
           const paymentId =
@@ -74,6 +74,7 @@ test.describe("Razorpay Subscription Flow E2E", () => {
         };
         this.on = () => {};
       };
+      (window as any).Razorpay = MockRazorpay;
     });
 
     // 6. Click the Pay button

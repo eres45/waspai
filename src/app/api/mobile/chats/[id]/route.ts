@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { chatRepository } from "@/lib/db/repository";
 import { supabaseAuth } from "@/lib/auth/supabase-auth";
 import logger from "@/lib/logger";
-import { UIMessage } from "ai";
 
 export async function GET(
   req: Request,
@@ -33,7 +32,7 @@ export async function GET(
     }
 
     // Security check: ensure the thread belongs to the user
-    const threads = await chatRepository.getThreadsByUserId(user.id);
+    const threads = await chatRepository.selectThreadsByUserId(user.id);
     const hasAccess = threads.some((t) => t.id === threadId);
     if (!hasAccess) {
       return NextResponse.json(
@@ -42,7 +41,7 @@ export async function GET(
       );
     }
 
-    const dbMessages = await chatRepository.getMessagesByThreadId(threadId);
+    const dbMessages = await chatRepository.selectMessagesByThreadId(threadId);
 
     // Map AI SDK `parts` format back into the flat format expected by the Mobile App
     // The mobile app expects: { id, role, text, type, is_user, prompt, image_url, video_url, attachments }
@@ -52,10 +51,10 @@ export async function GET(
       let prompt = null;
       let imageUrl = null;
       const videoUrl = null;
-      const attachments = [];
+      const attachments: any[] = [];
 
       // Extract content from parts array
-      const parts = msg.parts as UIMessage["parts"];
+      const parts = msg.parts as any;
       if (Array.isArray(parts)) {
         parts.forEach((part) => {
           if (part.type === "text") {

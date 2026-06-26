@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch user's chat threads
-    const threads = await chatRepository.getThreadsByUserId(user.id);
+    const threads = await chatRepository.selectThreadsByUserId(user.id);
 
     // Convert to mobile app format for easy parsing on frontend
     const mobileChats = threads.map((thread) => ({
