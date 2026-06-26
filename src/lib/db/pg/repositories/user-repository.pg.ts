@@ -4,6 +4,7 @@ import {
   UserPreferences,
   UserRepository,
 } from "app-types/user";
+import crypto from "crypto";
 import { pgDb as db, pgDb } from "../db.pg";
 import {
   AccountTable,
@@ -47,6 +48,7 @@ export const pgUserRepository: UserRepository = {
           email,
           name: !existingUser || isPlaceholder || !hasName ? name || "" : "",
           image: !existingUser || !hasImage ? avatarUrl || null : null,
+          referralCode: crypto.randomUUID(),
           updatedAt: new Date(),
         })
         .onConflictDoUpdate({
@@ -317,6 +319,60 @@ export const pgUserRepository: UserRepository = {
         `Failed to update welcome email status for ${userId}:`,
         error,
       );
+      throw error;
+    }
+  },
+  getUserByReferralCode: async (referralCode: string): Promise<User | null> => {
+    try {
+      const [result] = await db
+        .select()
+        .from(UserTable)
+        .where(eq(UserTable.referralCode, referralCode));
+
+      if (!result) return null;
+
+      return {
+        ...result,
+        preferences: (result.preferences as UserPreferences) || null,
+      };
+    } catch (error) {
+      logger.error(`[User PG] getUserByReferralCode error:`, error);
+      throw error;
+    }
+  },
+  updateReferralInfo: async (
+    userId: string,
+    data: Partial<{
+      referralCode: string;
+      referredBy: string | null;
+      referralCount: number;
+      referralRewardClaimed: string;
+      referralWidgetHidden: boolean;
+      tier: string;
+      tierExpiresAt: Date | null;
+      lastSignInIp: string | null;
+    }>,
+  ): Promise<User> => {
+    try {
+      const [result] = await db
+        .update(UserTable)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(UserTable.id, userId))
+        .returning();
+
+      if (!result) {
+        throw new Error(`User not found: ${userId}`);
+      }
+
+      return {
+        ...result,
+        preferences: (result.preferences as UserPreferences) || null,
+      };
+    } catch (error) {
+      logger.error(`[User PG] updateReferralInfo error:`, error);
       throw error;
     }
   },

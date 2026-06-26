@@ -81,6 +81,20 @@ export type UserRepository = {
     oauthProviders: string[];
   }>;
   setWelcomeEmailSent: (userId: string, sent: boolean) => Promise<User>;
+  getUserByReferralCode: (referralCode: string) => Promise<User | null>;
+  updateReferralInfo: (
+    userId: string,
+    data: Partial<{
+      referralCode: string;
+      referredBy: string | null;
+      referralCount: number;
+      referralRewardClaimed: string;
+      referralWidgetHidden: boolean;
+      tier: string;
+      tierExpiresAt: Date | null;
+      lastSignInIp: string | null;
+    }>,
+  ) => Promise<User>;
 };
 
 export const UserZodSchema = z.object({

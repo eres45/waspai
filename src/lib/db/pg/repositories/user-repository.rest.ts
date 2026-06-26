@@ -1,6 +1,7 @@
 import { supabaseRest } from "../../supabase-rest";
 import logger from "@/lib/logger";
-import { UserRepository, UserPreferences } from "app-types/user";
+import { UserRepository, UserPreferences, User } from "app-types/user";
+import crypto from "crypto";
 
 const mapUserToEntity = (data: any): any => {
   if (!data) return null;
@@ -12,6 +13,13 @@ const mapUserToEntity = (data: any): any => {
     preferences: data.preferences as UserPreferences,
     welcomeEmailSent: data.welcome_email_sent,
     tier: data.tier,
+    referralCode: data.referral_code,
+    referredBy: data.referred_by,
+    referralCount: data.referral_count,
+    referralRewardClaimed: data.referral_reward_claimed,
+    referralWidgetHidden: data.referral_widget_hidden,
+    tierExpiresAt: data.tier_expires_at ? new Date(data.tier_expires_at) : null,
+    lastSignInIp: data.last_sign_in_ip,
   };
 };
 
@@ -58,9 +66,10 @@ export const userRepositoryRest: UserRepository = {
         }
       }
 
-      // If it's a completely new user, set created_at
+      // If it's a completely new user, set created_at and referral_code
       if (!existingUser) {
         userData.created_at = new Date().toISOString();
+        userData.referral_code = crypto.randomUUID();
       }
 
       const { data, error } = await supabaseRest
@@ -387,6 +396,81 @@ export const userRepositoryRest: UserRepository = {
       return mapUserToEntity(data);
     } catch (error) {
       logger.error(`[User REST] setWelcomeEmailSent error:`, error);
+      throw error;
+    }
+  },
+
+  async getUserByReferralCode(referralCode: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabaseRest
+        .from("user")
+        .select()
+        .eq("referral_code", referralCode)
+        .maybeSingle();
+
+      if (error) {
+        logger.error(`[User REST] Error getting user by referral code:`, error);
+        return null;
+      }
+
+      return mapUserToEntity(data);
+    } catch (error) {
+      logger.error(`[User REST] getUserByReferralCode error:`, error);
+      throw error;
+    }
+  },
+
+  async updateReferralInfo(
+    userId: string,
+    data: Partial<{
+      referralCode: string;
+      referredBy: string | null;
+      referralCount: number;
+      referralRewardClaimed: string;
+      referralWidgetHidden: boolean;
+      tier: string;
+      tierExpiresAt: Date | null;
+      lastSignInIp: string | null;
+    }>,
+  ): Promise<User> {
+    try {
+      const payload: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (data.referralCode !== undefined)
+        payload.referral_code = data.referralCode;
+      if (data.referredBy !== undefined) payload.referred_by = data.referredBy;
+      if (data.referralCount !== undefined)
+        payload.referral_count = data.referralCount;
+      if (data.referralRewardClaimed !== undefined)
+        payload.referral_reward_claimed = data.referralRewardClaimed;
+      if (data.referralWidgetHidden !== undefined)
+        payload.referral_widget_hidden = data.referralWidgetHidden;
+      if (data.tier !== undefined) payload.tier = data.tier;
+      if (data.tierExpiresAt !== undefined) {
+        payload.tier_expires_at = data.tierExpiresAt
+          ? data.tierExpiresAt.toISOString()
+          : null;
+      }
+      if (data.lastSignInIp !== undefined)
+        payload.last_sign_in_ip = data.lastSignInIp;
+
+      const { data: updated, error } = await supabaseRest
+        .from("user")
+        .update(payload)
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error(`[User REST] Error updating referral info:`, error);
+        throw error;
+      }
+
+      return mapUserToEntity(updated);
+    } catch (error) {
+      logger.error(`[User REST] updateReferralInfo error:`, error);
       throw error;
     }
   },

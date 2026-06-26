@@ -7,6 +7,7 @@ import { getSession } from "lib/auth/server";
 import { COOKIE_KEY_SIDEBAR_STATE } from "lib/const";
 import { AppPopupProvider } from "@/components/layouts/app-popup-provider";
 import { SWRConfigProvider } from "./swr-config";
+import { ReferralInitializer } from "@/components/referral/referral-initializer";
 
 import { redirect } from "next/navigation";
 export const experimental_ppr = true;
@@ -24,6 +25,7 @@ export default async function ChatLayout({
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
       <SWRConfigProvider user={session.user}>
+        <ReferralInitializer />
         <AppPopupProvider />
         <AppSidebar user={session.user} />
         <main className="relative bg-background flex-1 min-w-0 flex flex-col h-dvh overflow-hidden">

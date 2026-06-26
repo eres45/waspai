@@ -114,6 +114,17 @@ export const UserTable = pgTable("user", {
   role: text("role").notNull().default("user"),
   tier: text("tier").notNull().default("free"),
   welcomeEmailSent: boolean("welcome_email_sent").default(false).notNull(),
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"),
+  referralCount: integer("referral_count").default(0).notNull(),
+  referralRewardClaimed: text("referral_reward_claimed")
+    .default("none")
+    .notNull(),
+  referralWidgetHidden: boolean("referral_widget_hidden")
+    .default(false)
+    .notNull(),
+  tierExpiresAt: timestamp("tier_expires_at"),
+  lastSignInIp: text("last_sign_in_ip"),
 });
 
 // Role tables removed - using Better Auth's built-in role system
