@@ -35,12 +35,12 @@ export default function CheckoutPage() {
   const PLAN_DETAILS = {
     pro: {
       name: "Pro Plan",
-      price: "₹830/mo",
+      price: "₹399/mo",
       features: ["Unlimited Tools", "Pro Models", "Priority Support"],
     },
     ultra: {
       name: "Ultra Plan",
-      price: "₹2,660/mo",
+      price: "₹999/mo",
       features: [
         "Everything in Pro",
         "Frontier Models",

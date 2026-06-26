@@ -78,7 +78,7 @@ export function UpgradePopup() {
               Pro Subscription
             </p>
             <p className="text-xl font-black text-foreground mt-0.5">
-              ₹830
+              ₹399
               <span className="text-xs font-normal text-muted-foreground">
                 /month
               </span>

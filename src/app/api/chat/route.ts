@@ -60,7 +60,7 @@ import {
   rememberAgentAction,
   rememberMcpServerCustomizationsAction,
 } from "./actions";
-import { getSession } from "auth/server";
+import { getUnifiedSession } from "lib/auth/unified-session";
 import { colorize } from "consola/utils";
 import { generateUUID } from "lib/utils";
 import {
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
       JSON.stringify(json, null, 2),
     );
 
-    const session = await getSession();
+    const session = await getUnifiedSession(request);
     const userId = session?.user?.id || "d3b07384-d113-4ec5-a559-6e0d68b668d1";
 
     let parsedBody;
@@ -2341,9 +2341,21 @@ Always be aware of these installed skills. If a user asks "how many skills do we
   }
 }
 
-export async function HEAD() {
+export async function DELETE(request: Request) {
   try {
-    const session = await getSession();
+    const session = await getUnifiedSession(request);
+    if (!session?.user.id) {
+      return new Response(null, { status: 401, headers: corsHeaders });
+    }
+    return new Response(null, { status: 200, headers: corsHeaders });
+  } catch (_error) {
+    return new Response(null, { status: 500, headers: corsHeaders });
+  }
+}
+
+export async function HEAD(request: Request) {
+  try {
+    const session = await getUnifiedSession(request);
     if (!session?.user.id) {
       return new Response(null, { status: 401, headers: corsHeaders });
     }

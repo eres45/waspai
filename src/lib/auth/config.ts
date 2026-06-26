@@ -111,8 +111,14 @@ export function getAuthConfig(): AuthConfig {
   };
 
   const rawConfig = {
-    emailAndPasswordEnabled: false,
-    signUpEnabled: false,
+    emailAndPasswordEnabled:
+      process.env.NODE_ENV === "test" ||
+      !!process.env.PLAYWRIGHT_TEST ||
+      parseEnvBoolean(process.env.ENABLE_EMAIL_PASS),
+    signUpEnabled:
+      process.env.NODE_ENV === "test" ||
+      !!process.env.PLAYWRIGHT_TEST ||
+      parseEnvBoolean(process.env.ENABLE_EMAIL_PASS),
     socialAuthenticationProviders,
   };
 

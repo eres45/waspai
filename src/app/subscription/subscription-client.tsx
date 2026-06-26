@@ -55,11 +55,11 @@ const CURRENCIES: Record<Currency, CurrencyConfig> = {
 const PRICING = {
   pro: {
     USD: { monthly: 10, annual: 100 },
-    INR: { monthly: 830, annual: 8300 },
+    INR: { monthly: 399, annual: 3990 },
   },
   ultra: {
     USD: { monthly: 32, annual: 320 },
-    INR: { monthly: 2660, annual: 26600 },
+    INR: { monthly: 999, annual: 9990 },
   },
 };
 

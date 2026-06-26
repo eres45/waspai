@@ -46,7 +46,7 @@ const plans = [
     id: "pro",
     name: "Pro",
     icon: Zap,
-    price: "₹830",
+    price: "₹399",
     period: "/month",
     description: "Access to most top AIs and features",
     features: [
@@ -69,7 +69,7 @@ const plans = [
     id: "ultra",
     name: "Ultra",
     icon: Crown,
-    price: "₹2,660",
+    price: "₹999",
     period: "/month",
     description: "Maximum power for heavy users",
     features: [

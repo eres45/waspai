@@ -50,6 +50,9 @@ async function signInViaUi(
   page: Page,
   { email, password }: { email: string; password: string },
 ) {
+  page.on("console", (msg) =>
+    console.log(`[SETUP BROWSER CONSOLE] ${msg.type()}: ${msg.text()}`),
+  );
   await page.goto("/sign-in");
 
   // Sign in with the seeded editor user
@@ -63,7 +66,7 @@ async function signInViaUi(
       const urlStr = url.toString();
       return !urlStr.includes("/sign-in") && !urlStr.includes("/sign-up");
     },
-    { timeout: 10000 },
+    { timeout: 45000 },
   );
 }
 

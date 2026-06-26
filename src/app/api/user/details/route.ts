@@ -25,6 +25,7 @@ export async function GET() {
       lastLogin: session.user.lastLogin || now,
       emailVerified: session.user.emailVerified || false,
       role: session.user.role || "user",
+      tier: (session.user as any).tier || "free",
     };
 
     return NextResponse.json(userData);

@@ -1,5 +1,5 @@
 import { skillRepository } from "lib/db/repository";
-import { getSession } from "auth/server";
+import { getUnifiedSession } from "lib/auth/unified-session";
 import { z } from "zod";
 import type { SkillCategory, SkillTier } from "@/types/skill";
 import { NextResponse } from "next/server";
@@ -53,7 +53,7 @@ const CreateSkillSchema = z.object({
 });
 
 export async function GET(request: Request) {
-  const session = await getSession();
+  const session = await getUnifiedSession(request);
   const url = new URL(request.url);
   const params = Object.fromEntries(url.searchParams);
 
@@ -86,7 +86,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getSession();
+  const session = await getUnifiedSession(request);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

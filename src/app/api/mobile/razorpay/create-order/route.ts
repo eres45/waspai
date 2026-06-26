@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
-import { getSessionCookie } from "better-auth/cookies";
+import { supabaseAuth } from "@/lib/auth/supabase-auth";
 
-// Initialize Razorpay
-// Using environment variables for security, but allow fallback for the user provided keys if env vars are missing
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_live_S4wK1foeOjf3GH",
   key_secret: process.env.RAZORPAY_KEY_SECRET || "aFwoz8pYgrF89xLrQhKP9LnO",
@@ -20,17 +18,27 @@ const SUBSCRIPTION_PLANS = {
   },
 };
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const bodyText = await req.text();
-    console.log("[DEBUG API create-order] Request body text:", bodyText);
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Missing authorization header" },
+        { status: 401 },
+      );
+    }
 
-    const session = getSessionCookie(req);
-    if (!session) {
+    const token = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error,
+    } = await supabaseAuth.auth.getUser(token);
+
+    if (error || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { plan, period = "monthly" } = bodyText ? JSON.parse(bodyText) : {};
+    const { plan, period = "monthly" } = await req.json();
 
     if (!plan || !SUBSCRIPTION_PLANS[plan as keyof typeof SUBSCRIPTION_PLANS]) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
@@ -48,21 +56,16 @@ export async function POST(req: NextRequest) {
       notes: {
         plan,
         period,
+        userId: user.id,
       },
     };
 
     const order = await razorpay.orders.create(options);
-
-    return NextResponse.json({
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      keyId: process.env.RAZORPAY_KEY_ID || "rzp_live_S4wK1foeOjf3GH", // Send key to client
-    });
+    return NextResponse.json(order);
   } catch (error) {
-    console.error("Razorpay Order Error:", error);
+    console.error("Razorpay order creation error:", error);
     return NextResponse.json(
-      { error: "Error creating order" },
+      { error: "Internal Server Error" },
       { status: 500 },
     );
   }

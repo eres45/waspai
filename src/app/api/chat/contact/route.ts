@@ -62,8 +62,8 @@ Wasp AI is a unified AI interface that gives users access to 20+ frontier models
 | Plan  | Price       | Key Highlights |
 |-------|-------------|----------------|
 | Free  | $0/mo       | All free-tier models, limited image gen, limited memory & web search, community support |
-| Pro   | $10/mo (USD) / ₹830/mo (INR) | All advanced Pro models, unlimited web search & code execution, unlimited file uploads, MCP Servers, long-term memory, limited agents & workflows, priority email support |
-| Ultra | $32/mo (USD) / ₹2,660/mo (INR) | All Frontier & Reasoning models (top priority), video & music generation, unlimited workflows/agents/storage, dedicated support, early feature access |
+| Pro   | $10/mo (USD) / ₹399/mo (INR) | All advanced Pro models, unlimited web search & code execution, unlimited file uploads, MCP Servers, long-term memory, limited agents & workflows, priority email support |
+| Ultra | $32/mo (USD) / ₹999/mo (INR) | All Frontier & Reasoning models (top priority), video & music generation, unlimited workflows/agents/storage, dedicated support, early feature access |
 
 Annual billing saves 17%. Currency auto-detected (USD / INR).
 

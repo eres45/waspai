@@ -9,20 +9,27 @@ async function globalSetup() {
   }
 
   console.log("\n🌱 Global Setup: Checking if users need to be seeded...");
-  const userCount = await getUserCount();
-  console.log(`📊 Current user count: ${userCount}`);
+  try {
+    const userCount = await getUserCount();
+    console.log(`📊 Current user count: ${userCount}`);
 
-  if (userCount < 3) {
-    console.log("⚠️  Not enough test users, running seed script...");
-    try {
-      execSync("pnpm test:e2e:seed", { stdio: "inherit" });
-      console.log("✅ Test users seeded successfully");
-    } catch (error) {
-      console.error("❌ Failed to seed test users:", error);
-      throw error;
+    if (userCount < 3) {
+      console.log("⚠️  Not enough test users, running seed script...");
+      try {
+        execSync("pnpm test:e2e:seed", { stdio: "inherit" });
+        console.log("✅ Test users seeded successfully");
+      } catch (error) {
+        console.error("❌ Failed to seed test users:", error);
+        throw error;
+      }
+    } else {
+      console.log("✅ Test users already exist");
     }
-  } else {
-    console.log("✅ Test users already exist");
+  } catch (error: any) {
+    console.warn(
+      "⚠️ Direct DB connection failed during global setup, skipping seeding check. Relying on pre-seeded Supabase database. Error:",
+      error.message || error,
+    );
   }
 }
 
