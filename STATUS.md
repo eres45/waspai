@@ -439,7 +439,39 @@ The underlying model (Claude via proxy) naturally reasons in its "true" Claude i
 
 ---
 
-## 17. Pending Tasks & Roadmap
+## 17. Dev Session: June 26, 2026 (Plan Pricing, E2E Checkout & Guest Access Fixes)
+
+### Completed Work
+- **Plan Pricing Updates:** Updated the subscription pricing configurations across the codebase from old variables to new rates:
+  - **Pro**: ₹399/mo (39900 paise) and ₹3,990/yr (399000 paise).
+  - **Ultra**: ₹999/mo (99900 paise) and ₹9,990/yr (999000 paise).
+  - Synchronized client-side components (`checkout`, `subscription-client`, `subscription-popup`, `upgrade-popup`, `contact` prompt assistant context).
+  - Synced mobile order creation configurations (`src/app/api/mobile/razorpay/create-order/route.ts`).
+- **Next.js 15 Stream Consumption Conflict:** Resolved Next.js 15 body stream consumption conflicts in `create-order/route.ts` by reading request body text (`req.text()`) first, prior to verifying session cookies.
+- **E2E Razorpay Verification:** Configured Playwright expected price assertions to match ₹399/mo and successfully ran the automated E2E subscription test suite (`checkout.spec.ts` completed with `5 passed`).
+- **Guest Access Whitelist:** Fixed an issue where guest users clicking "Pricing" or "Contact" on the landing page were forced to log in. Whitelisted `/subscription` and `/contact` paths in Next.js middleware, excluding them from `config.matcher`.
+- **Linter & Formatting Cleanups:** Updated `biome.json` ignores to exclude React Native and scratch directories. Fixed unused let declarations in `seed-supabase-rest.ts` to clear workspace build diagnostics.
+
+### Files Modified
+- `[MODIFY]` `src/app/api/razorpay/create-order/route.ts` — updated plan pricing; resolved body stream lock.
+- `[MODIFY]` `src/app/api/mobile/razorpay/create-order/route.ts` — updated plan pricing for mobile.
+- `[MODIFY]` `src/app/checkout/[plan]/page.tsx` — synced price selectors.
+- `[MODIFY]` `src/app/subscription/subscription-client.tsx` — updated INR subscription details.
+- `[MODIFY]` `src/components/subscription-popup.tsx` — updated popup pricing display.
+- `[MODIFY]` `src/components/upgrade-popup.tsx` — updated pricing modal display.
+- `[MODIFY]` `src/app/api/chat/contact/route.ts` — updated customer support chatbot context tables.
+- `[MODIFY]` `tests/billing/checkout.spec.ts` — updated Playwright expectation assertions.
+- `[MODIFY]` `src/middleware.ts` — whitelisted public pricing and contact routes.
+- `[MODIFY]` `biome.json` — excluded untracked and mobile projects from global linter checks.
+- `[MODIFY]` `scratch/seed-supabase-rest.ts` — fixed let-const variable declarations.
+
+### Git Commits
+- `8ef07a3` — `feat: update Razorpay plan pricing to ₹399/₹999 and fix E2E subscription checkout`
+- `a95cdcd` — `fix: make subscription and contact pages publicly accessible without auth redirect`
+
+---
+
+## 18. Pending Tasks & Roadmap
 - [ ] Add E2E tests covering the image generator tool loop and R2 upload mocks.
 - [ ] Test file persistence on page reload for all file types (images, PDFs, code files).
 - [ ] Consider tool call proxying in the creative worker for models that natively support function calling.
@@ -450,7 +482,7 @@ The underlying model (Claude via proxy) naturally reasons in its "true" Claude i
 
 ---
 
-## 18. Next Session Instructions
+## 19. Next Session Instructions
 1. Update this `STATUS.md` at the end of every dev session with what was done.
 2. Run `pnpm dev` to start the local Next.js dev server.
 3. Run `pnpm lint` + `pnpm check-types` before committing.
@@ -458,4 +490,5 @@ The underlying model (Claude via proxy) naturally reasons in its "true" Claude i
 5. Test voice chat (Sarvam) — confirm low latency and no reasoning leakage in voice mode.
 6. Test Free tier model gate — confirm upgrade popup appears when selecting Pro models.
 7. Verify sitemap and robots.txt at `/sitemap.xml` and `/robots.txt` in production.
+
 
