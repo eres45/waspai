@@ -451,6 +451,8 @@ The underlying model (Claude via proxy) naturally reasons in its "true" Claude i
 - **E2E Razorpay Verification:** Configured Playwright expected price assertions to match ₹399/mo and successfully ran the automated E2E subscription test suite (`checkout.spec.ts` completed with `5 passed`).
 - **Guest Access Whitelist:** Fixed an issue where guest users clicking "Pricing" or "Contact" on the landing page were forced to log in. Whitelisted `/subscription` and `/contact` paths in Next.js middleware, excluding them from `config.matcher`.
 - **Linter & Formatting Cleanups:** Updated `biome.json` ignores to exclude React Native and scratch directories. Fixed unused let declarations in `seed-supabase-rest.ts` to clear workspace build diagnostics.
+- **Resolved Mobile API Compile Failures:** Fixed compilation errors in `/api/mobile` routes by replacing outdated repository methods (`getThreadsByUserId`, `getMessagesByThreadId`, `saveThread`, `deleteMessagesByThreadId`, `saveMessage`, `getMemories`, `createMemory`, `updateUserPreferences`) with correct type-safe ones (`selectThreadsByUserId`, `selectMessagesByThreadId`, `upsertThread`, `insertMessages`, `list`, `create`, `updatePreferences`).
+- **TypeScript Exclusions:** Added `WaspAI app/**/*` and `backup_waspai/**/*` to `tsconfig.json`'s `exclude` list, and fixed mock Window types in `checkout.spec.ts` to solve compiler failures.
 
 ### Files Modified
 - `[MODIFY]` `src/app/api/razorpay/create-order/route.ts` — updated plan pricing; resolved body stream lock.
@@ -460,14 +462,20 @@ The underlying model (Claude via proxy) naturally reasons in its "true" Claude i
 - `[MODIFY]` `src/components/subscription-popup.tsx` — updated popup pricing display.
 - `[MODIFY]` `src/components/upgrade-popup.tsx` — updated pricing modal display.
 - `[MODIFY]` `src/app/api/chat/contact/route.ts` — updated customer support chatbot context tables.
-- `[MODIFY]` `tests/billing/checkout.spec.ts` — updated Playwright expectation assertions.
+- `[MODIFY]` `tests/billing/checkout.spec.ts` — updated Playwright expectation assertions and typed mock window.
 - `[MODIFY]` `src/middleware.ts` — whitelisted public pricing and contact routes.
 - `[MODIFY]` `biome.json` — excluded untracked and mobile projects from global linter checks.
 - `[MODIFY]` `scratch/seed-supabase-rest.ts` — fixed let-const variable declarations.
+- `[MODIFY]` `tsconfig.json` — excluded mobile sub-repositories from Web compilation.
+- `[MODIFY]` `src/app/api/mobile/chats/[id]/route.ts` — fixed repo method calls and parts castings.
+- `[MODIFY]` `src/app/api/mobile/chats/[id]/sync/route.ts` — fixed thread creation and converted message sync to bulk insertMessages.
+- `[MODIFY]` `src/app/api/mobile/chats/route.ts` — fixed repo method calls.
+- `[MODIFY]` `src/app/api/mobile/user/route.ts` — fixed user memory list/create and preference update methods.
 
 ### Git Commits
 - `8ef07a3` — `feat: update Razorpay plan pricing to ₹399/₹999 and fix E2E subscription checkout`
 - `a95cdcd` — `fix: make subscription and contact pages publicly accessible without auth redirect`
+- `3bdf37a` — `fix: resolve TypeScript compilation errors in mobile API routes and E2E test specs`
 
 ---
 
