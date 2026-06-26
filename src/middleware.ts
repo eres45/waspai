@@ -44,7 +44,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/users", request.url));
   }
 
-  if (pathname === "/" || pathname === "/landing" || pathname === "") {
+  if (
+    pathname === "/" ||
+    pathname === "/landing" ||
+    pathname === "" ||
+    pathname === "/subscription" ||
+    pathname === "/contact"
+  ) {
     return NextResponse.next();
   }
 
@@ -87,6 +93,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icon|wasp-ai-logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon|wasp-ai-logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing|subscription|contact).*)",
   ],
 };

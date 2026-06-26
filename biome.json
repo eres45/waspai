@@ -8,7 +8,17 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", ".next", "public", "docker", "dist/**", "*.d.ts"]
+    "ignore": [
+      "node_modules",
+      ".next",
+      "public",
+      "docker",
+      "dist/**",
+      "*.d.ts",
+      "WaspAI app/**",
+      "backup_waspai/**",
+      "scratch/**"
+    ]
   },
   "formatter": {
     "enabled": true,
