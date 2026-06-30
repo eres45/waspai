@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   AreaChart,
@@ -23,8 +23,11 @@ type User = {
   name: string;
   email: string;
   role: string;
+  tier?: string | null;
   createdAt: Date;
   banned: boolean | null;
+  referral_count?: number;
+  referred_by?: string | null;
 };
 
 type Stats = {
@@ -65,7 +68,6 @@ export default function AdminDashboard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [search, setSearch] = useState("");
   const [tab, setTab] = useState<
     "overview" | "users" | "analytics" | "errors" | "status"
   >("overview");
@@ -75,12 +77,6 @@ export default function AdminDashboard({
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const filteredUsers = stats.recentUsers.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()),
-  );
 
   async function handleLogout() {
     await fetch("/api/admin-panel/auth", { method: "DELETE" });
@@ -463,38 +459,7 @@ export default function AdminDashboard({
         )}
 
         {/* ── Users Tab ─────────────────────────────────────────────────── */}
-        {tab === "users" && (
-          <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5 animate-in fade-in duration-300">
-            {/* Search and Filters */}
-            <div className="flex items-center gap-2 bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2.5 mb-4">
-              <svg
-                className="w-4 h-4 text-[#a1a1aa] shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search registered users by name or email address..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-[#fafafa] placeholder:text-[#a1a1aa] outline-none"
-              />
-              <span className="text-xs text-[#a1a1aa] bg-[#27272a] px-2 py-0.5 rounded shrink-0">
-                {filteredUsers.length} matched / {stats.recentUsers.length}{" "}
-                total
-              </span>
-            </div>
-            <UsersTable users={filteredUsers} />
-          </div>
-        )}
+        {tab === "users" && <UsersManagement />}
 
         {/* ── Analytics Tab ─────────────────────────────────────────────── */}
         {tab === "analytics" && (
@@ -896,7 +861,10 @@ function UsersTable({ users }: { users: User[] }) {
               "Banned Status",
               "Joined Date",
             ].map((h) => (
-              <th key={h} className="pb-3 px-3 first:pl-0 font-medium">
+              <th
+                key={h}
+                className="pb-3 px-3 first:pl-0 font-medium whitespace-nowrap"
+              >
                 {h}
               </th>
             ))}
@@ -909,7 +877,7 @@ function UsersTable({ users }: { users: User[] }) {
                 colSpan={6}
                 className="text-center py-10 text-[#a1a1aa] text-sm font-medium"
               >
-                No users found matching query
+                No users found
               </td>
             </tr>
           ) : (
@@ -933,7 +901,7 @@ function UsersTable({ users }: { users: User[] }) {
                 </td>
                 <td className="py-3 px-3">
                   <span
-                    className="text-[#a1a1aa] truncate block max-w-[200px]"
+                    className="text-[#a1a1aa] truncate block max-w-[200px] text-xs"
                     title={u.email}
                   >
                     {u.email}
@@ -945,14 +913,14 @@ function UsersTable({ users }: { users: User[] }) {
                 <td className="py-3 px-3">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                      (u as any).tier?.toLowerCase() === "ultra"
+                      u.tier?.toLowerCase() === "ultra"
                         ? "bg-pink-500/10 text-pink-400 border border-pink-500/20"
-                        : (u as any).tier?.toLowerCase() === "pro"
+                        : u.tier?.toLowerCase() === "pro"
                           ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                           : "bg-[#27272a] text-[#a1a1aa] border border-transparent"
                     }`}
                   >
-                    {(u as any).tier || "free"}
+                    {u.tier || "free"}
                   </span>
                 </td>
                 <td className="py-3 px-3">
@@ -979,6 +947,462 @@ function UsersTable({ users }: { users: User[] }) {
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function UsersManagement() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("");
+  const [filterTier, setFilterTier] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    msg: string;
+    type: "ok" | "err";
+  } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
+  const limit = 20;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (search) params.set("search", search);
+      if (filterRole) params.set("role", filterRole);
+      if (filterTier) params.set("tier", filterTier);
+      if (filterStatus) params.set("status", filterStatus);
+      const res = await fetch(`/api/admin-panel/users?${params}`);
+      const data = await res.json();
+      setUsers(
+        (data.users || []).map((u: any) => ({
+          ...u,
+          createdAt: new Date(u.created_at),
+        })),
+      );
+      setTotal(data.total || 0);
+    } catch {
+      showToast("Failed to fetch users", "err");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, filterRole, filterTier, filterStatus]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchUsers(), search ? 400 : 0);
+    return () => clearTimeout(timer);
+  }, [fetchUsers, search, filterRole, filterTier, filterStatus]);
+
+  function showToast(msg: string, type: "ok" | "err") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  async function doAction(userId: string, action: string, value?: string) {
+    setActionLoading(`${userId}-${action}`);
+    try {
+      const res = await fetch("/api/admin-panel/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action, value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Action failed");
+      showToast(data.message || "Done", "ok");
+      await fetchUsers();
+    } catch (e: any) {
+      showToast(e.message || "Error", "err");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  return (
+    <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5 animate-in fade-in duration-300">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg border ${
+            toast.type === "ok"
+              ? "bg-green-500/10 border-green-500/30 text-green-400"
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}
+        >
+          {toast.type === "ok" ? "✓" : "✗"} {toast.msg}
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="text-base font-semibold text-[#fafafa] mb-1">
+              Delete User?
+            </h3>
+            <p className="text-sm text-[#a1a1aa] mb-5">
+              This will permanently delete{" "}
+              <span className="text-[#fafafa] font-medium">
+                {confirmDelete.email}
+              </span>{" "}
+              and all their data. This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 px-3 py-2 rounded-lg text-sm text-[#a1a1aa] bg-[#27272a] hover:bg-[#3f3f46] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const u = confirmDelete;
+                  setConfirmDelete(null);
+                  await doAction(u.id, "delete");
+                }}
+                className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Delete Permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header row */}
+      <div className="flex flex-col xl:flex-row gap-3 mb-4">
+        {/* Search */}
+        <div className="flex items-center gap-2 flex-1 bg-[#09090b] border border-[#27272a] rounded-lg px-3 py-2">
+          <svg
+            className="w-4 h-4 text-[#a1a1aa] shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="flex-1 bg-transparent text-sm text-[#fafafa] placeholder:text-[#a1a1aa] outline-none"
+          />
+          {search && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setPage(1);
+              }}
+              className="text-[#a1a1aa] hover:text-[#fafafa] text-sm font-bold"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Role Filter */}
+          <div className="flex items-center gap-1.5 bg-[#09090b] border border-[#27272a] rounded-lg px-2.5 py-1.5">
+            <span className="text-[11px] text-[#a1a1aa] uppercase font-semibold">
+              Role:
+            </span>
+            <select
+              value={filterRole}
+              onChange={(e) => {
+                setFilterRole(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-xs text-[#fafafa] outline-none cursor-pointer pr-1"
+            >
+              <option value="" className="bg-[#18181b]">
+                All
+              </option>
+              <option value="user" className="bg-[#18181b]">
+                User
+              </option>
+              <option value="editor" className="bg-[#18181b]">
+                Editor
+              </option>
+              <option value="admin" className="bg-[#18181b]">
+                Admin
+              </option>
+            </select>
+          </div>
+
+          {/* Tier Filter */}
+          <div className="flex items-center gap-1.5 bg-[#09090b] border border-[#27272a] rounded-lg px-2.5 py-1.5">
+            <span className="text-[11px] text-[#a1a1aa] uppercase font-semibold">
+              Tier:
+            </span>
+            <select
+              value={filterTier}
+              onChange={(e) => {
+                setFilterTier(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-xs text-[#fafafa] outline-none cursor-pointer pr-1"
+            >
+              <option value="" className="bg-[#18181b]">
+                All
+              </option>
+              <option value="free" className="bg-[#18181b]">
+                Free
+              </option>
+              <option value="pro" className="bg-[#18181b]">
+                Pro
+              </option>
+              <option value="ultra" className="bg-[#18181b]">
+                Ultra
+              </option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-1.5 bg-[#09090b] border border-[#27272a] rounded-lg px-2.5 py-1.5">
+            <span className="text-[11px] text-[#a1a1aa] uppercase font-semibold">
+              Status:
+            </span>
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-xs text-[#fafafa] outline-none cursor-pointer pr-1"
+            >
+              <option value="" className="bg-[#18181b]">
+                All
+              </option>
+              <option value="active" className="bg-[#18181b]">
+                Active
+              </option>
+              <option value="banned" className="bg-[#18181b]">
+                Banned
+              </option>
+            </select>
+          </div>
+
+          {/* Reset Filters button if any is active */}
+          {(filterRole || filterTier || filterStatus || search) && (
+            <button
+              onClick={() => {
+                setFilterRole("");
+                setFilterTier("");
+                setFilterStatus("");
+                setSearch("");
+                setPage(1);
+              }}
+              className="px-2.5 py-1.5 rounded-lg text-xs bg-[#27272a] text-[#fafafa] hover:bg-[#3f3f46] transition-colors"
+            >
+              Reset
+            </button>
+          )}
+
+          <span className="flex items-center text-xs text-[#a1a1aa] bg-[#27272a] px-3 py-1.5 rounded-lg whitespace-nowrap">
+            {total} matched
+          </span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-left">
+          <thead>
+            <tr className="border-b border-[#27272a] text-[#a1a1aa] text-xs uppercase tracking-wider">
+              {[
+                "User",
+                "Email",
+                "Role",
+                "Tier",
+                "Status",
+                "Joined",
+                "Actions",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="pb-3 px-2 first:pl-0 last:pr-0 font-medium whitespace-nowrap"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#27272a]">
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="w-6 h-6 rounded-full border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent animate-spin mx-auto" />
+                </td>
+              </tr>
+            ) : users.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="text-center py-10 text-[#a1a1aa] text-sm"
+                >
+                  No users found
+                </td>
+              </tr>
+            ) : (
+              users.map((u) => {
+                const busy = (key: string) =>
+                  actionLoading === `${u.id}-${key}`;
+                return (
+                  <tr
+                    key={u.id}
+                    className={`hover:bg-[#27272a]/20 transition-colors ${u.banned ? "opacity-60" : ""}`}
+                  >
+                    {/* Name */}
+                    <td className="py-3 px-2 first:pl-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 shrink-0">
+                          {u.name?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <span
+                          className="font-semibold text-[#fafafa] truncate max-w-[100px]"
+                          title={u.name}
+                        >
+                          {u.name}
+                        </span>
+                      </div>
+                    </td>
+                    {/* Email */}
+                    <td className="py-3 px-2">
+                      <span
+                        className="text-[#a1a1aa] truncate block max-w-[180px] text-xs"
+                        title={u.email}
+                      >
+                        {u.email}
+                      </span>
+                    </td>
+                    {/* Role */}
+                    <td className="py-3 px-2">
+                      <select
+                        value={u.role || "user"}
+                        disabled={!!actionLoading}
+                        onChange={(e) =>
+                          doAction(u.id, "setRole", e.target.value)
+                        }
+                        className="bg-[#27272a] text-xs text-[#fafafa] rounded px-2 py-1 border border-[#3f3f46] outline-none cursor-pointer hover:border-blue-500/50 transition-colors disabled:opacity-50"
+                      >
+                        <option value="user">user</option>
+                        <option value="editor">editor</option>
+                        <option value="admin">admin</option>
+                      </select>
+                    </td>
+                    {/* Tier */}
+                    <td className="py-3 px-2">
+                      <select
+                        value={(u.tier || "free").toLowerCase()}
+                        disabled={!!actionLoading}
+                        onChange={(e) =>
+                          doAction(u.id, "setTier", e.target.value)
+                        }
+                        className="bg-[#27272a] text-xs text-[#fafafa] rounded px-2 py-1 border border-[#3f3f46] outline-none cursor-pointer hover:border-blue-500/50 transition-colors disabled:opacity-50"
+                      >
+                        <option value="free">free</option>
+                        <option value="pro">pro</option>
+                        <option value="ultra">ultra</option>
+                      </select>
+                    </td>
+                    {/* Status */}
+                    <td className="py-3 px-2">
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs font-medium ${u.banned ? "text-red-400" : "text-green-500"}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {u.banned ? "Banned" : "Active"}
+                      </span>
+                    </td>
+                    {/* Joined */}
+                    <td className="py-3 px-2">
+                      <span className="text-[#a1a1aa] font-mono text-[10px]">
+                        {new Date(u.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </td>
+                    {/* Actions */}
+                    <td className="py-3 px-2 last:pr-0">
+                      <div className="flex items-center gap-1.5">
+                        {u.banned ? (
+                          <button
+                            onClick={() => doAction(u.id, "unban")}
+                            disabled={!!actionLoading}
+                            title="Unban user"
+                            className="px-2 py-1 rounded text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-40"
+                          >
+                            {busy("unban") ? "…" : "Unban"}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => doAction(u.id, "ban")}
+                            disabled={!!actionLoading}
+                            title="Ban user"
+                            className="px-2 py-1 rounded text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-colors disabled:opacity-40"
+                          >
+                            {busy("ban") ? "…" : "Ban"}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setConfirmDelete(u)}
+                          disabled={!!actionLoading}
+                          title="Delete user permanently"
+                          className="px-2 py-1 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#27272a]">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#27272a] text-[#a1a1aa] hover:text-[#fafafa] disabled:opacity-40 transition-colors"
+          >
+            ← Prev
+          </button>
+          <span className="text-xs text-[#a1a1aa]">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages || loading}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#27272a] text-[#a1a1aa] hover:text-[#fafafa] disabled:opacity-40 transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
