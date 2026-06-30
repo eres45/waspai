@@ -1,4 +1,9 @@
-import { notFound, redirect, unauthorized } from "next/navigation";
+import {
+  notFound,
+  redirect,
+  unauthorized,
+  unstable_rethrow,
+} from "next/navigation";
 import { getUserAccounts, getUser } from "lib/user/server";
 import { UserDetail } from "@/components/user/user-detail/user-detail";
 import {
@@ -18,7 +23,8 @@ export default async function UserDetailPage({ params }: PageProps) {
   const { id } = await params;
   try {
     await requireAdminPermission();
-  } catch (_error) {
+  } catch (error) {
+    unstable_rethrow(error);
     unauthorized();
   }
   const session = await getSession();

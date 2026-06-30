@@ -7,7 +7,7 @@ import {
 import { getAdminUsers } from "lib/admin/server";
 import { requireAdminPermission } from "auth/permissions";
 import { getSession } from "lib/auth/server";
-import { redirect, unauthorized } from "next/navigation";
+import { redirect, unauthorized, unstable_rethrow } from "next/navigation";
 
 // Force dynamic rendering to avoid static generation issues with session
 export const dynamic = "force-dynamic";
@@ -27,7 +27,8 @@ export default async function UserListPage({ searchParams }: PageProps) {
 
   try {
     await requireAdminPermission();
-  } catch (_error) {
+  } catch (error) {
+    unstable_rethrow(error);
     unauthorized();
   }
   const session = await getSession();
