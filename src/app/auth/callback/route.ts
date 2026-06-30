@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
           const avatarUrl = user.user_metadata?.avatar_url || null;
 
           // Create or update user in database with avatar
+          let dbUserRole: string | null = null;
           try {
             logger.info(
               `[AuthCallback] Attempting to sync user ${user.id} (${email}) with name "${name}" and avatar "${avatarUrl}"`,
@@ -63,8 +64,10 @@ export async function GET(request: NextRequest) {
               name,
               avatarUrl,
             );
+            // Capture role from DB so it can be included in the session cookie
+            dbUserRole = (dbUser as any)?.role ?? null;
             logger.info(
-              `[AuthCallback] GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
+              `[AuthCallback] User created/updated: ${email} with role: ${dbUserRole}`,
             );
 
             // Hook Into Welcome Email: Check if welcomeEmailSent is false
@@ -95,11 +98,13 @@ export async function GET(request: NextRequest) {
           cookieStore.delete("auth-user");
           cookieStore.delete("better-auth.session_token");
 
-          // Ensure user object has name and image from GitHub
+          // Ensure user object has name, image, and role from DB
           const enrichedUser = {
             ...data.user,
             name: name,
             image: avatarUrl,
+            // Include role from database so admin checks work correctly
+            role: dbUserRole ?? data.user.role ?? "user",
           };
 
           cookieStore.set("auth-user", JSON.stringify(enrichedUser), {

@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     const avatarUrl = user.user_metadata?.avatar_url || null;
 
     // Create or update user in database with avatar
+    let dbUserRole: string | null = null;
     try {
       const dbUser = await userRepositoryRest.createOrUpdateUser(
         user.id,
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
         name,
         avatarUrl,
       );
-      logger.info(
-        `GitHub user created/updated: ${email} with avatar: ${avatarUrl}`,
-      );
+      // Capture role from DB so it can be included in the session cookie
+      dbUserRole = (dbUser as any)?.role ?? null;
+      logger.info(`User created/updated: ${email} with role: ${dbUserRole}`);
 
       // Check if welcome email has not been sent yet
       if (dbUser && !dbUser.welcomeEmailSent) {
@@ -89,11 +90,13 @@ export async function POST(request: NextRequest) {
     cookieStore.delete("auth-user");
     cookieStore.delete("better-auth.session_token");
 
-    // Ensure user object has name and image from GitHub
+    // Ensure user object has name, image, and role from DB
     const enrichedUser = {
       ...data.user,
       name: name,
       image: avatarUrl,
+      // Include role from database so admin checks work correctly
+      role: dbUserRole ?? data.user.role ?? "user",
     };
 
     cookieStore.set("auth-user", JSON.stringify(enrichedUser), {
