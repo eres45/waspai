@@ -23,7 +23,7 @@ const plans = [
     description:
       "Access to standard models and limited premium features to get started.",
     features: [
-      "Unlimited use of all Free models",
+      "Limited use of all Free models",
       "Limited Cloud Browser use",
       "Limited image generations",
       "Limited memory & indexing",
@@ -44,7 +44,7 @@ const plans = [
       "Access to most top AIs and features. Suitable for the majority of users.",
     features: [
       "Access to all advanced Pro models",
-      "All Free models with faster speed & higher limits",
+      "Limited use of Free models with faster speed",
       "Limited Cloud Browser",
       "Pro image generation & advanced image editing",
       "Unlimited web search, code execution & tool uses",

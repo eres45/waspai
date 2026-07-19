@@ -122,7 +122,7 @@ export default function SubscriptionPage() {
       features: [
         {
           category: "Core Access",
-          items: ["Unlimited use of all Free models", "Community support"],
+          items: ["Limited use of all Free models", "Community support"],
         },
         {
           category: "Limits",
@@ -151,7 +151,7 @@ export default function SubscriptionPage() {
           category: "Model Access",
           items: [
             "Access to all advanced Pro models",
-            "All Free models with faster speed & higher limits",
+            "Limited use of Free models with faster speed",
           ],
         },
         {
