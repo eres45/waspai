@@ -25,6 +25,7 @@ function jsonResponse(data, status = 200) {
 // Default keys list (can be extended via env.CLAUDE_API_KEYS comma-separated)
 const DEFAULT_API_KEYS = [
   "sk-T2G09Cn2s87Y9V2RYnLDpmWcU6c4CwicIdvRmFxfJLrvTHn1",
+  "sk-mPC4hcl0UT1VRDIPQxTlCXDeQkdC9OwSyYfSFkXC8xgYyifQ",
 ];
 
 // Mapping incoming model aliases to upstream supported models
