@@ -11,6 +11,8 @@ export const UNIFIED_WORKER_URL = "https://nvidia-nim-worker.rutv.workers.dev";
 export const CREATIVE_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
 export const MULTIMODAL_WORKER_URL =
   "https://wasp-multimodal-worker.hhhlproxy.workers.dev";
+export const CLAUDE_WORKER_URL =
+  "https://wasp-claude-worker.hhhlproxy.workers.dev";
 
 // Single unified provider — every model routes through the worker
 const unifiedProvider = createOpenAICompatible({
@@ -31,6 +33,13 @@ const multimodalProvider = createOpenAICompatible({
   name: "Multimodal AI Worker",
   apiKey: "dummy",
   baseURL: `${MULTIMODAL_WORKER_URL}/v1`,
+});
+
+// Dedicated Claude AI Worker (Claude Sonnet 5, Opus 5, Fable 5 with Key Rotation)
+const claudeProvider = createOpenAICompatible({
+  name: "Claude AI Worker",
+  apiKey: "dummy",
+  baseURL: `${CLAUDE_WORKER_URL}/v1`,
 });
 
 // Sarvam AI provider
@@ -357,6 +366,35 @@ export async function buildDynamicModelsInfo() {
     ],
   });
 
+  // Claude via Dedicated Claude Worker (with Key Rotation)
+  result.push({
+    provider: "Anthropic",
+    hasAPIKey: true,
+    models: [
+      {
+        name: "claude-sonnet-5",
+        isToolCallUnsupported: false,
+        isImageInputUnsupported: false,
+        supportedFileMimeTypes: [],
+        tier: "Pro",
+      },
+      {
+        name: "claude-opus-5",
+        isToolCallUnsupported: false,
+        isImageInputUnsupported: false,
+        supportedFileMimeTypes: [],
+        tier: "Pro",
+      },
+      {
+        name: "claude-fable-5",
+        isToolCallUnsupported: false,
+        isImageInputUnsupported: false,
+        supportedFileMimeTypes: [],
+        tier: "Pro",
+      },
+    ],
+  });
+
   if (process.env.SARVAM_API_KEY) {
     result.push({
       provider: "Sarvam",
@@ -621,6 +659,11 @@ export const customModelProvider = {
       return multimodalProvider(
         "deepseek-v4-flash",
       ) as unknown as LanguageModel;
+    }
+
+    // Claude models routed via dedicated Claude AI Worker
+    if (model.provider === "Anthropic" || modelId.startsWith("claude-")) {
+      return claudeProvider(modelId) as unknown as LanguageModel;
     }
 
     if (modelId.startsWith("lordrouter-")) {

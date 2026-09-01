@@ -1,0 +1,10 @@
+{
+  "name": "wasp-claude-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker proxy for Claude AI with key rotation and model mapping (Sonnet 5, Opus 5, Fable 5)",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}
