@@ -463,25 +463,11 @@ export async function buildDynamicModelsInfo() {
       hasAPIKey: true,
       models: [
         {
-          name: "sarvam-30b",
-          isToolCallUnsupported: false,
-          isImageInputUnsupported: true,
-          supportedFileMimeTypes: [],
-          tier: "Sarvam",
-        },
-        {
           name: "sarvam-105b",
           isToolCallUnsupported: false,
           isImageInputUnsupported: true,
           supportedFileMimeTypes: [],
-          tier: "Sarvam",
-        },
-        {
-          name: "sarvam-m",
-          isToolCallUnsupported: true,
-          isImageInputUnsupported: true,
-          supportedFileMimeTypes: [],
-          tier: "Legacy",
+          tier: "Pro",
         },
       ],
     });
@@ -618,9 +604,9 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
-  // Sarvam models support tool calling (except the legacy sarvam-m)
+  // Sarvam models support tool calling (sarvam-105b is the only active model)
   if (modelId.startsWith("sarvam-")) {
-    return modelId === "sarvam-m";
+    return false;
   }
 
   // GPT-OSS models support tool calling
