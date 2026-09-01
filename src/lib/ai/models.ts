@@ -157,120 +157,19 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
 }
 
 const FREE_TIER_MODELS = new Set([
-  // Google Gemma
-  "gemma-4-31b-it",
-  "gemma-3n-e2b-it",
-  "frenix-gemma-4-31b",
-  "frenix-gemma-3n-e2b",
-  "frenix-gemma-3-12b",
-  "frenix-gemma-3-27b",
-  "frenix-gemini-3-flash-preview",
-
-  // Meta Llama
-  "llama-3.1-70b-instruct",
-  "llama-3.2-11b-vision-instruct",
-  "llama-3.3-70b-instruct",
-  "llama-4-maverick-17b-128e-instruct",
-  "frenix-llama-3.1-70b",
-  "frenix-llama-3.2-11b-vision",
-  "frenix-llama-3.3-70b",
-  "frenix-llama-4-maverick",
-
-  // Microsoft
-  "phi-4-multimodal-instruct",
-  "frenix-phi-4-multimodal",
-
-  // Mistral
-  "ministral-14b-instruct-2512",
-  "mistral-large-3-675b-instruct-2512",
-  "mistral-nemotron",
-  "mixtral-8x7b-instruct-v0.1",
-  "frenix-ministral-14b",
-  "frenix-mistral-large",
-  "frenix-mistral-nemotron",
-  "frenix-mixtral-8x7b",
-
-  // NVIDIA Nemotron (non-excluded)
-  "nemotron-mini-4b-instruct",
-  "nemotron-nano-12b-v2-vl",
-  "nvidia-nemotron-nano-9b-v2",
-  "riva-translate-4b-instruct-v1.1",
-  "frenix-nemotron-mini-4b",
-  "frenix-nemotron-nano-12b-vl",
-  "frenix-nemotron-nano-9b",
-  "frenix-riva-translate",
-
-  // OpenAI OSS
-  "gpt-oss-120b",
-  "gpt-oss-20b",
-
-  // Qwen
-  "qwen3-coder-480b-a35b-instruct",
-  "qwen3.5-122b-a10b",
-  "qwen3.5-397b-a17b",
-
-  // Others
-  "sarvam-m",
-  "step-3.5-flash",
-  "solar-10.7b-instruct",
-  "axion-1.5-pro",
-  "axion-1.5-pro:free",
-  "glm-5",
-  "glm-4.7",
-  "minimax-m2.5",
-  "MiniMax-M2.5",
-  "turbo",
-  "frenix-axion-1.5-pro",
-  "frenix-axion-1.5-pro-free",
-  "frenix-glm-5",
-  "frenix-glm-4.7",
-  "frenix-minimax-m2.5",
-  "frenix-turbo",
-  "frenix-qwen3-coder-480b",
-  "frenix-grok-4.1-fast",
-  "frenix-grok-4.3",
-  "frenix-grok-4.20-fast",
-  "waspai-model",
-
-  // LordRouter Models (Free Tier)
-  "lordrouter-gemini-2.5-pro",
-  "lordrouter-gemini-auto",
-  "lordrouter-gemini-flash-lite",
-  "lordrouter-liquid/lfm-2.5-1.2b-instruct:free",
-  "lordrouter-liquid/lfm-2.5-1.2b-thinking:free",
-  "lordrouter-poolside/laguna-m.1:free",
-  "lordrouter-poolside/laguna-xs.2:free",
-  "lordrouter-qwen-3-max",
-  "lordrouter-z-ai/glm-4.5-air:free",
-  "lordrouter-nvidia/nemotron-3-nano-30b-a3b:free",
-  "lordrouter-nvidia/nemotron-3-super-120b-a12b:free",
-  "lordrouter-nvidia/nemotron-nano-12b-v2-vl:free",
-  "lordrouter-nvidia/nemotron-nano-9b-v2:free",
+  // Groq worker models (all free for now)
+  "groqw-llama-3.1-8b",
+  "groqw-llama-3.3-70b",
+  "groqw-llama-4-scout",
+  "gpt-oss-120b-p2",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
   Array.from(FREE_TIER_MODELS).map((id) => id.toLowerCase()),
 );
 
-const LOWERCASE_EXCLUDED_MODELS = new Set([
-  "llama-3.1-8b-instruct",
-  "llama-3.2-3b-instruct",
-  "llama-3.2-90b-vision-instruct",
-  "llama-guard-4-12b",
-  "gemma-2-2b-it",
-  "gemma-2-9b-it",
-  "gemma-3n-e4b-it",
-  "gliner-pii",
-  "llama-3.1-nemoguard-8b-content-safety",
-  "llama-3.1-nemoguard-8b-topic-control",
-  "llama-3.1-nemotron-nano-8b-v1",
-  "llama-3.1-nemotron-nano-vl-8b-v1",
-  "llama-3.1-nemotron-safety-guard-8b-v3",
-  "llama-3.3-nemotron-super-49b-v1",
-  "llama-3.3-nemotron-super-49b-v1.5",
-  "nemotron-3-nano-30b-a3b",
-  "nemotron-content-safety-reasoning-4b",
-  "stockmark-2-100b-instruct",
+const LOWERCASE_EXCLUDED_MODELS = new Set<string>([
+  // No models currently excluded
 ]);
 
 function getBaseModelId(modelId: string): string {
@@ -356,44 +255,11 @@ export async function buildDynamicModelsInfo() {
     return true;
   });
 
-  // Filter out image, video, and audio models
+  // Keep only Groq-powered models
   const chatModels = workerModels.filter((m) => {
     const ownedBy = (m.owned_by ?? "").toLowerCase();
     const id = m.id.toLowerCase();
-
-    const imageVideoProviders = [
-      "pimage",
-      "cfimg",
-      "pollinations",
-      "genmyart",
-      "magicstudio",
-      "aiimages",
-      "imageworldking",
-      "runware",
-      "aitubo",
-      "raphaelai",
-      "swiftsora",
-    ];
-
-    if (imageVideoProviders.includes(ownedBy)) return false;
-
-    // Exclude image/video keywords in ID
-    if (
-      id.includes("flux") ||
-      id.includes("sdxl") ||
-      id.includes("sora") ||
-      id.includes("dreamshaper") ||
-      id.startsWith("gma-") ||
-      id.startsWith("ms-") ||
-      id.startsWith("ra-")
-    ) {
-      return false;
-    }
-
-    // Exclude speech/whisper models
-    if (id.includes("whisper")) return false;
-
-    return true;
+    return ownedBy === "groqworker" || id.startsWith("groqw-");
   });
 
   // Group by provider determined dynamically
@@ -480,6 +346,9 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
   if (id === "waspai-model") return "WaspAI";
   const raw = (ownedBy || "").toLowerCase();
+
+  // Groq worker models
+  if (raw === "groqworker" || id.startsWith("groqw-")) return "Groq";
 
   // Frenix-prefixed models: resolve to the correct vendor before broad pattern checks
   if (id.startsWith("frenix-llama")) return "Meta";
