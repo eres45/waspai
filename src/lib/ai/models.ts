@@ -161,7 +161,7 @@ const FREE_TIER_MODELS = new Set([
   "groqw-llama-3.1-8b",
   "groqw-llama-3.3-70b",
   "groqw-llama-4-scout",
-  "gpt-oss-120b-p2",
+  "gpt-oss-120b",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -256,11 +256,17 @@ export async function buildDynamicModelsInfo() {
   });
 
   // Keep only Groq-powered models
-  const chatModels = workerModels.filter((m) => {
-    const ownedBy = (m.owned_by ?? "").toLowerCase();
-    const id = m.id.toLowerCase();
-    return ownedBy === "groqworker" || id.startsWith("groqw-");
-  });
+  const chatModels = workerModels
+    .filter((m) => {
+      const ownedBy = (m.owned_by ?? "").toLowerCase();
+      const id = m.id.toLowerCase();
+      return ownedBy === "groqworker" || id.startsWith("groqw-");
+    })
+    .map((m) => ({
+      ...m,
+      // Normalize display IDs
+      id: m.id === "gpt-oss-120b-p2" ? "gpt-oss-120b" : m.id,
+    }));
 
   // Group by provider determined dynamically
   const grouped = new Map<string, WorkerModel[]>();
