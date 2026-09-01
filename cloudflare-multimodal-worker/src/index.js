@@ -37,27 +37,23 @@ function getRandomUsIp() {
 // DeepSeek Chat State & Handshake
 // ============================================================================
 
-let deepseekCsrf = null;
-let deepseekCookies = null;
-let deepseekLastHandshake = 0;
+let currentSession = null;
+let sessionUsageCount = 0;
 
 async function getDeepSeekSession(forceRefresh = false) {
-  const now = Date.now();
-  // Reuse handshake for up to 10 minutes
-  if (
-    !forceRefresh &&
-    deepseekCsrf &&
-    deepseekCookies &&
-    now - deepseekLastHandshake < 10 * 60 * 1000
-  ) {
-    return { csrfToken: deepseekCsrf, cookies: deepseekCookies };
+  // Rotate to a fresh IP and session every 5 requests to avoid the 10 msg/IP cap
+  if (!forceRefresh && currentSession && sessionUsageCount < 5) {
+    sessionUsageCount++;
+    return currentSession;
   }
 
+  const freshIp = getRandomUsIp();
   const pageRes = await fetch("https://deep-seek.ai/chat", {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
       Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "X-Forwarded-For": freshIp,
     },
   });
 
@@ -78,11 +74,10 @@ async function getDeepSeekSession(forceRefresh = false) {
     throw new Error("Failed to extract CSRF token from deep-seek.ai");
   }
 
-  deepseekCsrf = csrfToken;
-  deepseekCookies = cookies;
-  deepseekLastHandshake = now;
+  currentSession = { csrfToken, cookies, ip: freshIp };
+  sessionUsageCount = 1;
 
-  return { csrfToken, cookies };
+  return currentSession;
 }
 
 // ============================================================================
@@ -97,10 +92,36 @@ async function handleChatCompletions(request) {
     return jsonResponse({ error: { message: "Invalid JSON body" } }, 400);
   }
 
-  const messages = body.messages || [];
+  const incomingMessages = body.messages || [];
   const stream = !!body.stream;
   const requestedModel = body.model || "deepseek-v4-flash";
   const upstreamModel = "deepseek/deepseek-v4-flash";
+
+  // IMPORTANT: deep-seek.ai rejects 'system' role messages and redirects to an HTML error page!
+  // Sanitize by prepending system instructions into the first user message.
+  let systemInstructions = "";
+  const sanitizedMessages = [];
+  for (const m of incomingMessages) {
+    const content =
+      typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+    if (m.role === "system") {
+      systemInstructions += (systemInstructions ? "\n\n" : "") + content;
+    } else if (m.role === "user" && systemInstructions) {
+      sanitizedMessages.push({
+        role: "user",
+        content: `[System Instructions: ${systemInstructions}]\n\n${content}`,
+      });
+      systemInstructions = "";
+    } else {
+      sanitizedMessages.push({
+        role: m.role || "user",
+        content: content,
+      });
+    }
+  }
+  if (systemInstructions && sanitizedMessages.length === 0) {
+    sanitizedMessages.push({ role: "user", content: systemInstructions });
+  }
 
   let session;
   try {
@@ -124,19 +145,23 @@ async function handleChatCompletions(request) {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "X-CSRF-TOKEN": s.csrfToken,
         Cookie: s.cookies,
-        "X-Forwarded-For": getRandomUsIp(),
+        "X-Forwarded-For": s.ip,
       },
       body: JSON.stringify({
         model: upstreamModel,
-        messages: messages,
+        messages: sanitizedMessages,
       }),
     });
   };
 
   let upstreamRes = await makeCall(session);
 
-  // If token expired, refresh and retry once
-  if (upstreamRes.status === 419 || upstreamRes.status === 403) {
+  // If token expired or limit reached, get a fresh session and retry
+  if (
+    upstreamRes.status === 419 ||
+    upstreamRes.status === 403 ||
+    upstreamRes.status === 429
+  ) {
     session = await getDeepSeekSession(true);
     upstreamRes = await makeCall(session);
   }
