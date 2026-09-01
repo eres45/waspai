@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
     // Check for referral trial tier expiration
     let currentTier = dbUser.tier || "free";
     if (dbUser.tierExpiresAt && new Date(dbUser.tierExpiresAt) < new Date()) {
-      // Tier has expired! Downgrade back to free
       await userRepository.updateReferralInfo(dbUser.id, {
         tier: "free",
         tierExpiresAt: null,
@@ -48,12 +47,53 @@ export async function GET(request: NextRequest) {
       await userRepository.updateReferralInfo(dbUser.id, { referralCode });
     }
 
+    // ── Auto-repair missing_sync placeholder ──────────────────────────────────
+    // If the DB has a placeholder email from the FK-violation fallback but the
+    // session has the real OAuth email, patch the DB record right now so the
+    // user sees their correct name/email immediately and on every subsequent
+    // request.
+    const isPlaceholderEmail = dbUser.email?.startsWith("missing_sync_");
+    const sessionEmail = session.user.email || "";
+    const sessionName = (session.user as any).name || "";
+
+    if (
+      isPlaceholderEmail &&
+      sessionEmail &&
+      !sessionEmail.startsWith("missing_sync_")
+    ) {
+      logger.warn(
+        `[user/details] Repairing missing_sync placeholder for user ${dbUser.id}`,
+      );
+      try {
+        await userRepository.updateUserDetails({
+          userId: dbUser.id,
+          email: sessionEmail,
+          name: sessionName || dbUser.name || "",
+        });
+      } catch (repairErr) {
+        logger.error(
+          "[user/details] Failed to repair placeholder email:",
+          repairErr,
+        );
+      }
+    }
+
+    // Use real session values as immediate fallback (so UI is correct even
+    // before the DB write above completes on first hit).
+    const resolvedEmail =
+      isPlaceholderEmail && sessionEmail ? sessionEmail : dbUser.email || "";
+    const resolvedName =
+      (!dbUser.name || dbUser.name === "Synced User") && sessionName
+        ? sessionName
+        : dbUser.name || resolvedEmail.split("@")[0] || "User";
+    // ─────────────────────────────────────────────────────────────────────────
+
     const now = new Date().toISOString();
 
     const userData = {
       id: dbUser.id,
-      email: dbUser.email || "",
-      name: dbUser.name || dbUser.email?.split("@")[0] || "User",
+      email: resolvedEmail,
+      name: resolvedName,
       image: dbUser.image || null,
       createdAt: dbUser.createdAt || now,
       updatedAt: dbUser.updatedAt || now,
