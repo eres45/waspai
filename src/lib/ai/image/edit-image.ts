@@ -1,5 +1,5 @@
 import logger from "logger";
-import { CREATIVE_WORKER_URL } from "../models";
+import { CREATIVE_WORKER_URL, MULTIMODAL_WORKER_URL } from "../models";
 
 export interface EditImageOptions {
   prompt?: string;
@@ -13,7 +13,8 @@ export interface EditedImage {
   mimeType: string;
 }
 
-const EDIT_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/images/edits`;
+const PRIMARY_EDIT_ENDPOINT = `${MULTIMODAL_WORKER_URL}/v1/images/edits`;
+const FALLBACK_EDIT_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/images/edits`;
 
 /**
  * Resolves internal storage paths to publicly accessible URLs via the
@@ -58,12 +59,26 @@ async function callEditEndpoint(
     if (options.prompt) body.prompt = options.prompt;
     if (options.maskUrl) body.mask_url = options.maskUrl;
 
-    const response = await fetch(EDIT_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    let response: Response;
+    try {
+      response = await fetch(PRIMARY_EDIT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Primary returned ${response.status}`);
+    } catch (primaryErr) {
+      logger.warn(
+        `[Image Edit] Primary multimodal worker failed (${primaryErr}), falling back to creative worker`,
+      );
+      response = await fetch(FALLBACK_EDIT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    }
 
     clearTimeout(timeoutId);
 

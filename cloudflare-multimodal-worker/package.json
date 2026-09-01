@@ -1,0 +1,6 @@
+{
+  "name": "wasp-multimodal-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for DeepSeek and PicAI (GPT-Image-2)",
+  "main": "src/index.js"
+}

@@ -9,6 +9,8 @@ import { cleanModelDisplayName } from "./model-display-names";
 
 export const UNIFIED_WORKER_URL = "https://nvidia-nim-worker.rutv.workers.dev";
 export const CREATIVE_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
+export const MULTIMODAL_WORKER_URL =
+  "https://wasp-multimodal-worker.hhhlproxy.workers.dev";
 
 // Single unified provider — every model routes through the worker
 const unifiedProvider = createOpenAICompatible({
@@ -22,6 +24,13 @@ const creativeProvider = createOpenAICompatible({
   name: "Creative AI Worker",
   apiKey: "dummy",
   baseURL: `${CREATIVE_WORKER_URL}/v1`,
+});
+
+// Dedicated Multimodal Worker (DeepSeek Chat + PicAI GPT-Image-2/FLUX)
+const multimodalProvider = createOpenAICompatible({
+  name: "Multimodal AI Worker",
+  apiKey: "dummy",
+  baseURL: `${MULTIMODAL_WORKER_URL}/v1`,
 });
 
 // Sarvam AI provider
@@ -162,6 +171,10 @@ const FREE_TIER_MODELS = new Set([
   "groqw-llama-3.3-70b",
   "groqw-llama-4-scout",
   "gpt-oss-120b",
+
+  // DeepSeek via Multimodal Worker (Free Tier)
+  "deepseek-v4-flash",
+  "deepseek-chat",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -327,6 +340,21 @@ export async function buildDynamicModelsInfo() {
       hasAPIKey: true,
       models: uniqueModels,
     };
+  });
+
+  // DeepSeek via Multimodal Worker
+  result.push({
+    provider: "DeepSeek",
+    hasAPIKey: true,
+    models: [
+      {
+        name: "deepseek-v4-flash",
+        isToolCallUnsupported: true,
+        isImageInputUnsupported: true,
+        supportedFileMimeTypes: [],
+        tier: "Free",
+      },
+    ],
   });
 
   if (process.env.SARVAM_API_KEY) {
@@ -582,6 +610,17 @@ export const customModelProvider = {
 
     if (model.provider === "Sarvam" || modelId.startsWith("sarvam-")) {
       return sarvamProvider(modelId) as unknown as LanguageModel;
+    }
+
+    // DeepSeek routed via dedicated Multimodal Worker
+    if (
+      model.provider === "DeepSeek" ||
+      modelId.startsWith("deepseek-") ||
+      modelId === "deepseek-v4-flash"
+    ) {
+      return multimodalProvider(
+        "deepseek-v4-flash",
+      ) as unknown as LanguageModel;
     }
 
     if (modelId.startsWith("lordrouter-")) {

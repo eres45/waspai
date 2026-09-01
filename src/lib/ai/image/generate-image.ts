@@ -1,6 +1,6 @@
 "use server";
 
-import { CREATIVE_WORKER_URL } from "../models";
+import { CREATIVE_WORKER_URL, MULTIMODAL_WORKER_URL } from "../models";
 
 type GenerateImageOptions = {
   prompt: string;
@@ -17,7 +17,8 @@ export type GeneratedImageResult = {
   images: GeneratedImage[];
 };
 
-const IMAGE_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/images/generations`;
+const PRIMARY_IMAGE_ENDPOINT = `${MULTIMODAL_WORKER_URL}/v1/images/generations`;
+const FALLBACK_IMAGE_ENDPOINT = `${CREATIVE_WORKER_URL}/v1/images/generations`;
 
 /**
  * Helper to download an image URL and convert to base64
@@ -156,18 +157,30 @@ async function generateImageViaUnifiedWorker(
     body.model = modelId;
   }
 
-  const response = await fetchWithRetry(IMAGE_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: options.abortSignal,
-  });
+  let response: Response;
+  try {
+    response = await fetchWithRetry(PRIMARY_IMAGE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: options.abortSignal,
+    });
+  } catch (primaryErr) {
+    console.warn(
+      "[Image Gen] Primary multimodal worker failed, falling back to creative worker:",
+      primaryErr,
+    );
+    response = await fetchWithRetry(FALLBACK_IMAGE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: options.abortSignal,
+    });
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Unified Worker image gen failed: HTTP ${response.status} — ${errText}`,
-    );
+    throw new Error(`Image gen failed: HTTP ${response.status} — ${errText}`);
   }
 
   const contentType = response.headers.get("content-type") ?? "";
