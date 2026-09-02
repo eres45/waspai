@@ -34,6 +34,7 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   zai: "Zhipu AI",
   canopy: "Canopy",
   deepseek: "DeepSeek",
+  groq: "Groq",
   microsoft: "Microsoft",
   tiiuae: "Tiiuae",
   defog: "Defog",

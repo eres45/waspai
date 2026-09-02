@@ -650,15 +650,18 @@ export const customModelProvider = {
       return sarvamProvider(modelId) as unknown as LanguageModel;
     }
 
-    // DeepSeek routed via dedicated Multimodal Worker
+    // Groq & Open Source models & DeepSeek routed via dedicated Multimodal Worker
     if (
-      model.provider === "DeepSeek" ||
+      model.provider?.toLowerCase() === "groq" ||
+      model.provider?.toLowerCase() === "deepseek" ||
+      modelId.startsWith("groqw-") ||
       modelId.startsWith("deepseek-") ||
+      modelId.startsWith("llama-") ||
+      modelId === "gpt-oss-120b" ||
+      modelId === "gpt-oss-120b-p2" ||
       modelId === "deepseek-v4-flash"
     ) {
-      return multimodalProvider(
-        "deepseek-v4-flash",
-      ) as unknown as LanguageModel;
+      return multimodalProvider(modelId) as unknown as LanguageModel;
     }
 
     // Claude models routed via dedicated Claude AI Worker
