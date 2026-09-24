@@ -6,6 +6,13 @@ import { generateUUID } from "lib/utils";
 import { TextPart } from "ai";
 import { generateSpeech, CustomTTSVoice } from "./custom-tts";
 
+interface QueuedSentence {
+  sentence: string;
+  audioPromise: Promise<string>;
+  audioUrl?: string;
+  aborted?: boolean;
+}
+
 /**
  * Custom Voice Chat Hook using Web Speech API + Custom TTS
  * No OpenAI API key required!
@@ -42,11 +49,16 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const audioChunksRef = useRef<Blob[]>([]);
   const isTranscribingRef = useRef<boolean>(false);
 
-  // Streaming TTS state
-  const ttsQueue = useRef<string[]>([]);
+  // Streaming TTS state with pre-buffering pipeline
+  const ttsQueue = useRef<QueuedSentence[]>([]);
   const isPlayingQueue = useRef<boolean>(false);
   const sentenceBuffer = useRef<string>("");
   const processedCleanTextLength = useRef<number>(0);
+  const voiceRef = useRef<string>(voice);
+
+  useEffect(() => {
+    voiceRef.current = voice;
+  }, [voice]);
 
   // VAD state
   const lastSpeechTimeRef = useRef<number>(0);
@@ -56,20 +68,48 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   // Ref to track assistant speaking state inside callbacks without re-creating them
   const isAssistantSpeakingRef = useRef(false);
 
+  const clearAudioQueue = useCallback(() => {
+    if (audioElement.current && !audioElement.current.paused) {
+      audioElement.current.pause();
+      audioElement.current.src = "";
+    }
+    for (const item of ttsQueue.current) {
+      item.aborted = true;
+      if (item.audioUrl) {
+        URL.revokeObjectURL(item.audioUrl);
+      }
+    }
+    ttsQueue.current = [];
+    isPlayingQueue.current = false;
+    setIsAssistantSpeaking(false);
+    isAssistantSpeakingRef.current = false;
+  }, []);
+
   const playNextInQueue = useCallback(async () => {
     if (isPlayingQueue.current || ttsQueue.current.length === 0) return;
 
     isPlayingQueue.current = true;
     setIsAssistantSpeaking(true);
 
-    const sentence = ttsQueue.current.shift();
-    if (!sentence) {
+    const item = ttsQueue.current.shift();
+    if (!item) {
       isPlayingQueue.current = false;
+      setIsAssistantSpeaking(false);
       return;
     }
 
     try {
-      const audioUrl = await generateSpeech(sentence, voice as CustomTTSVoice);
+      // Await pre-fetched audio URL (already resolved or in-flight)
+      const audioUrl = await item.audioPromise;
+      if (!audioUrl || item.aborted) {
+        isPlayingQueue.current = false;
+        if (ttsQueue.current.length > 0) {
+          playNextInQueue();
+        } else {
+          setIsAssistantSpeaking(false);
+        }
+        return;
+      }
 
       if (!audioElement.current) {
         audioElement.current = new Audio();
@@ -90,16 +130,60 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       audioElement.current.onerror = () => {
         URL.revokeObjectURL(audioUrl);
         isPlayingQueue.current = false;
-        playNextInQueue();
+        if (ttsQueue.current.length > 0) {
+          playNextInQueue();
+        } else {
+          setIsAssistantSpeaking(false);
+        }
       };
 
       await audioElement.current.play();
     } catch (err) {
-      console.error("TTS Queue error", err);
+      console.warn("TTS playback error:", err);
       isPlayingQueue.current = false;
-      playNextInQueue();
+      if (ttsQueue.current.length > 0) {
+        playNextInQueue();
+      } else {
+        setIsAssistantSpeaking(false);
+      }
     }
-  }, [voice]);
+  }, []);
+
+  const enqueueSentence = useCallback(
+    (sentence: string) => {
+      const trimmed = sentence.trim();
+      if (!trimmed) return;
+
+      const item: QueuedSentence = {
+        sentence: trimmed,
+        audioPromise: Promise.resolve(""),
+      };
+
+      item.audioPromise = (async () => {
+        try {
+          const url = await generateSpeech(
+            trimmed,
+            voiceRef.current as CustomTTSVoice,
+          );
+          if (item.aborted) {
+            URL.revokeObjectURL(url);
+            return "";
+          }
+          item.audioUrl = url;
+          return url;
+        } catch (err) {
+          console.warn("TTS pre-fetch failed for sentence:", err);
+          return "";
+        }
+      })();
+
+      ttsQueue.current.push(item);
+      if (!isPlayingQueue.current) {
+        playNextInQueue();
+      }
+    },
+    [playNextInQueue],
+  );
 
   // Check Speech Recognition support and check if Sarvam STT is enabled
   useEffect(() => {
@@ -208,14 +292,8 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
       recognitionRef.current.onstart = () => {
         setIsUserSpeaking(true);
-        // INTERRUPTION: If user starts speaking, stop AI audio
-        if (audioElement.current && !audioElement.current.paused) {
-          audioElement.current.pause();
-          audioElement.current.src = "";
-          ttsQueue.current = [];
-          isPlayingQueue.current = false;
-          setIsAssistantSpeaking(false);
-        }
+        // INTERRUPTION: If user starts speaking, immediately stop and purge audio queue
+        clearAudioQueue();
       };
 
       recognitionRef.current.onend = () => {
@@ -263,14 +341,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
             isAssistantSpeakingRef.current &&
             (combinedInterim.length > 8 || combinedFinal.length > 3)
           ) {
-            if (audioElement.current && !audioElement.current.paused) {
-              audioElement.current.pause();
-              audioElement.current.src = "";
-              ttsQueue.current = [];
-              isPlayingQueue.current = false;
-              setIsAssistantSpeaking(false);
-              isAssistantSpeakingRef.current = false;
-            }
+            clearAudioQueue();
           }
         }
       };
@@ -326,7 +397,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       });
 
       try {
-        const voiceSystemPrompt = `You are a helpful AI assistant. Respond naturally and conversationally. Your current voice identity is ${voice}.`;
+        const voiceSystemPrompt = `You are a helpful AI assistant in a live voice conversation. Keep all responses natural, concise, direct, and conversational (usually 1 to 3 short spoken sentences). Never use markdown, bullet points, numbered lists, emojis, asterisks, or code blocks, as your text will be read aloud word-for-word. Your current voice identity is ${voice}.`;
 
         const messageId = generateUUID();
         const requestBody: any = {
@@ -420,18 +491,17 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                       sentenceBuffer.current += newCleanText;
                       processedCleanTextLength.current = cleanText.length;
 
-                      const sentenceMatch = sentenceBuffer.current.match(
-                        /[^.!?\n]+[.!?\n]+(?=\s|$)/,
-                      );
-                      if (sentenceMatch) {
+                      let sentenceMatch: RegExpMatchArray | null;
+                      while (
+                        (sentenceMatch = sentenceBuffer.current.match(
+                          /[^.!?\n]+[.!?\n]+(?=\s|$)/,
+                        )) !== null
+                      ) {
                         const sentence = sentenceMatch[0];
                         sentenceBuffer.current = sentenceBuffer.current.slice(
                           sentence.length,
                         );
-                        ttsQueue.current.push(sentence.trim());
-                        if (!isPlayingQueue.current) {
-                          playNextInQueue();
-                        }
+                        enqueueSentence(sentence);
                       }
                     }
 
@@ -451,10 +521,8 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         }
 
         if (sentenceBuffer.current.trim()) {
-          ttsQueue.current.push(sentenceBuffer.current.trim());
-          if (!isPlayingQueue.current) {
-            playNextInQueue();
-          }
+          enqueueSentence(sentenceBuffer.current.trim());
+          sentenceBuffer.current = "";
         }
 
         setMessages((prev) => {
@@ -470,7 +538,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     },
     [
       voice,
-      playNextInQueue,
+      enqueueSentence,
       props?.chatModel?.provider,
       props?.chatModel?.model,
       props?.agentId,
@@ -646,14 +714,11 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
   const stop = useCallback(async () => {
     await stopListening();
-    if (audioElement.current) {
-      audioElement.current.pause();
-      audioElement.current.src = "";
-    }
+    clearAudioQueue();
     setIsActive(false);
     setIsListening(false);
     setIsLoading(false);
-  }, [stopListening]);
+  }, [stopListening, clearAudioQueue]);
 
   useEffect(() => {
     return () => {

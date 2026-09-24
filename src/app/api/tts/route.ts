@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
             response_format: "mp3",
             speed: 1,
           }),
-          signal: AbortSignal.timeout(45000),
+          signal: AbortSignal.timeout(10000),
         });
 
         if (woinoResponse.ok && woinoResponse.body) {
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
             voice,
             model: "tts-1",
           }),
-          signal: AbortSignal.timeout(30000),
+          signal: AbortSignal.timeout(10000),
         });
 
         if (llamaiResponse.ok && llamaiResponse.body) {
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 3. Primary for fish-* / Fallback for others: Fish Audio (with 60s timeout & key rotation) ──
+    // ── 3. Primary for fish-* / Fallback for others: Fish Audio (with 10s timeout per key & key rotation) ──
     const referenceId = isMale ? FISH_MALE_VOICE_ID : FISH_FEMALE_VOICE_ID;
     const selectedGender = isMale ? "male" : "female";
 
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
             reference_id: referenceId,
             format: "mp3",
           }),
-          signal: AbortSignal.timeout(60000), // Generous 60s timeout so audio stream never gets cut off
+          signal: AbortSignal.timeout(10000), // 10s connection timeout for fast failover
         });
 
         if (fishResponse.ok && fishResponse.body) {
@@ -345,7 +345,7 @@ export async function POST(request: NextRequest) {
           voice: fallbackVoice,
           model: "tts-1",
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(10000),
       });
 
       if (fallbackResponse.ok && fallbackResponse.body) {
