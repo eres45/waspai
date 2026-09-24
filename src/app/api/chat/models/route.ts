@@ -19,6 +19,7 @@ const PROVIDER_ORDER = [
   "Z-AI",
   "StepFun",
   "Xiaomi",
+  "BudsAI",
   "Other",
 ];
 

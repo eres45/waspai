@@ -179,6 +179,33 @@ const mistralProvider = createOpenAICompatible({
   },
 });
 
+// BudsAI Provider (ox-alpha, step-3.7-flash, deepseek-v4-flash)
+export const BUDSAI_BASE_URL = "https://apichat.budsin.dev/v1";
+export const BUDSAI_DEFAULT_KEY =
+  "sk-RlGaIDImXrwXL10wnUYJh5M2WR3W0sHFpNlmZHt0t36Qw9Is";
+
+export const BUDSAI_MODELS = new Set([
+  "ox-alpha",
+  "step-3.7-flash",
+  "deepseek-v4-flash",
+]);
+
+function getBudsAiKey(): string {
+  return process.env.BUDSAI_API_KEY?.trim() || BUDSAI_DEFAULT_KEY;
+}
+
+const budsaiProvider = createOpenAICompatible({
+  name: "BudsAI",
+  apiKey: "dummy",
+  baseURL: BUDSAI_BASE_URL,
+  fetch: async (url, options) => {
+    const key = getBudsAiKey();
+    const headers = new Headers(options?.headers || {});
+    headers.set("Authorization", `Bearer ${key}`);
+    return fetch(url, { ...options, headers });
+  },
+});
+
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
 function getMimeTypes(modelId: string): string[] {
   const id = modelId.toLowerCase();
@@ -233,6 +260,9 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     { id: "mistral-code-latest", owned_by: "mistral" },
     { id: "ministral-14b-latest", owned_by: "mistral" },
     { id: "codestral-latest", owned_by: "mistral" },
+    { id: "ox-alpha", owned_by: "budsai" },
+    { id: "step-3.7-flash", owned_by: "budsai" },
+    { id: "deepseek-v4-flash", owned_by: "budsai" },
   ];
 }
 
@@ -254,6 +284,10 @@ const FREE_TIER_MODELS = new Set([
   "ministral-14b-latest",
   "ministral-14b",
   "codestral-latest",
+  // BudsAI models
+  "ox-alpha",
+  "step-3.7-flash",
+  "deepseek-v4-flash",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -403,6 +437,33 @@ export async function buildDynamicModelsInfo() {
         },
       ],
     },
+    {
+      provider: "BudsAI",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "ox-alpha",
+          isToolCallUnsupported: true, // returns 400 on tool calls
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "step-3.7-flash",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "deepseek-v4-flash",
+          isToolCallUnsupported: true, // returns 400 on tool calls
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
   ];
 }
 
@@ -512,6 +573,7 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
     raw.includes("glm")
   )
     return "Z-AI";
+  if (BUDSAI_MODELS.has(modelId)) return "BudsAI";
   if (id.includes("step-") || raw.includes("stepfun")) return "StepFun";
   if (id.includes("mimo") || raw.includes("xiaomi") || raw.includes("mimo"))
     return "Xiaomi";
@@ -606,6 +668,15 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
+  // BudsAI: ox-alpha and deepseek-v4-flash do NOT support tool calls (return 400)
+  // step-3.7-flash does support tool calls
+  if (modelId === "ox-alpha" || modelId === "deepseek-v4-flash") {
+    return true;
+  }
+  if (modelId === "step-3.7-flash") {
+    return false;
+  }
+
   // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
   // assume it doesn't support tool calls
   if (!modelId.includes("/") && !modelId.includes("frenix-")) {
@@ -675,6 +746,11 @@ export const customModelProvider = {
       return mistralProvider(resolvedId) as unknown as LanguageModel;
     }
 
+    // BudsAI provider (ox-alpha, step-3.7-flash, deepseek-v4-flash)
+    if (model.provider === "BudsAI" || BUDSAI_MODELS.has(modelId)) {
+      return budsaiProvider(modelId) as unknown as LanguageModel;
+    }
+
     // TokenHarbor provider (DeepSeek V4.1 Flash, Qwen 3.8 Flash, MiMo, etc.)
     if (
       model.provider === "TokenHarbor" ||
@@ -707,8 +783,7 @@ export const customModelProvider = {
       modelId.startsWith("llama-") ||
       modelId.startsWith("gpt-oss-") ||
       modelId === "gpt-oss-120b" ||
-      modelId === "gpt-oss-120b-p2" ||
-      modelId === "deepseek-v4-flash"
+      modelId === "gpt-oss-120b-p2"
     ) {
       return multimodalProvider(modelId) as unknown as LanguageModel;
     }

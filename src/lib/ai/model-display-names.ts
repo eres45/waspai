@@ -61,6 +61,10 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "ministral-14b-latest": "Ministral 14B",
   "ministral-14b": "Ministral 14B",
   "codestral-latest": "Codestral",
+  // BudsAI models
+  "ox-alpha": "Ox Alpha",
+  "step-3.7-flash": "Step 3.7 Flash",
+  "deepseek-v4-flash": "DeepSeek V4 Flash",
   // Groq / A4F Aggregated Models
   "canopylabs-orpheus-v1-english": "Orpheus v1 English",
   "llama-3.1-8b-instant": "Llama 3.1 8B Instant",

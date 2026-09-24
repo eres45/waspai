@@ -53,7 +53,7 @@ describe("customModelProvider file support metadata", () => {
     );
   });
 
-  it("returns default gpt-oss-120b, TokenHarbor, and Mistral free models in buildDynamicModelsInfo", async () => {
+  it("returns default gpt-oss-120b, TokenHarbor, Mistral, and BudsAI free models in buildDynamicModelsInfo", async () => {
     const {
       buildDynamicModelsInfo,
       isToolCallUnsupportedModel,
@@ -69,6 +69,7 @@ describe("customModelProvider file support metadata", () => {
       "Qwen",
       "Xiaomi",
       "Mistral",
+      "BudsAI",
     ]);
 
     const allModels = modelsInfo.flatMap((p) => p.models);
@@ -82,12 +83,24 @@ describe("customModelProvider file support metadata", () => {
     expect(modelNames).toContain("mistral-code-latest");
     expect(modelNames).toContain("ministral-14b-latest");
     expect(modelNames).toContain("codestral-latest");
+    expect(modelNames).toContain("ox-alpha");
+    expect(modelNames).toContain("step-3.7-flash");
+    expect(modelNames).toContain("deepseek-v4-flash");
 
-    // All are free tier and support tools
+    // All are free tier
     for (const m of allModels) {
       expect(m.tier).toBe("Free");
       expect(getModelTier(m.name)).toBe("Free");
-      expect(isToolCallUnsupportedModel(m.name)).toBe(false);
+    }
+
+    // Tool call support is per-model; ox-alpha and deepseek-v4-flash do NOT support tool calls
+    const toolUnsupported = ["ox-alpha", "deepseek-v4-flash"];
+    for (const m of allModels) {
+      if (toolUnsupported.includes(m.name)) {
+        expect(isToolCallUnsupportedModel(m.name)).toBe(true);
+      } else {
+        expect(isToolCallUnsupportedModel(m.name)).toBe(false);
+      }
     }
 
     // Mistral model instantiation & alias resolution
@@ -101,6 +114,20 @@ describe("customModelProvider file support metadata", () => {
       customModelProvider.getModel({
         provider: "Mistral",
         model: "mistral-code-latest",
+      }),
+    ).toBeDefined();
+
+    // BudsAI model instantiation
+    expect(
+      customModelProvider.getModel({
+        provider: "BudsAI",
+        model: "ox-alpha",
+      }),
+    ).toBeDefined();
+    expect(
+      customModelProvider.getModel({
+        provider: "BudsAI",
+        model: "step-3.7-flash",
       }),
     ).toBeDefined();
   });
@@ -305,7 +332,7 @@ describe("sanitizeMessageToolCalls", () => {
     });
 
     const modelsInfo = await buildDynamicModelsInfo();
-    expect(modelsInfo.length).toBe(5);
+    expect(modelsInfo.length).toBe(6);
     expect(modelsInfo[0].provider).toBe("OpenAI");
     expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
 
