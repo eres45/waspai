@@ -285,4 +285,50 @@ describe("sanitizeMessageToolCalls", () => {
     const result = sanitizeMessageToolCalls(messages);
     expect(result[0].toolInvocations[0].args).toEqual({});
   });
+
+  it("registers and configures Agnes (auto) and SenseNova models correctly", async () => {
+    const {
+      buildDynamicModelsInfo,
+      customModelProvider,
+      isToolCallUnsupportedModel,
+      getModelTier,
+    } = modelsModule;
+
+    const modelsInfo = await buildDynamicModelsInfo();
+    const agnesProvider = modelsInfo.find((p) => p.provider === "Agnes");
+    const sensenovaProvider = modelsInfo.find(
+      (p) => p.provider === "SenseNova",
+    );
+
+    expect(agnesProvider).toBeDefined();
+    expect(agnesProvider?.models.some((m) => m.name === "auto")).toBe(true);
+
+    expect(sensenovaProvider).toBeDefined();
+    expect(
+      sensenovaProvider?.models.some(
+        (m) => m.name === "sensenova-6.8-flash-lite",
+      ),
+    ).toBe(true);
+
+    // Free tier checks
+    expect(getModelTier("auto")).toBe("Free");
+    expect(getModelTier("sensenova-6.8-flash-lite")).toBe("Free");
+
+    // Tool calling supported checks
+    expect(isToolCallUnsupportedModel("auto")).toBe(false);
+    expect(isToolCallUnsupportedModel("sensenova-6.8-flash-lite")).toBe(false);
+
+    // Model instantiation
+    const autoModel = customModelProvider.getModel({
+      provider: "Agnes",
+      model: "auto",
+    });
+    expect(autoModel).toBeDefined();
+
+    const sensenovaModel = customModelProvider.getModel({
+      provider: "SenseNova",
+      model: "sensenova-6.8-flash-lite",
+    });
+    expect(sensenovaModel).toBeDefined();
+  });
 });

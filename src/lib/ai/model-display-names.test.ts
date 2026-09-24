@@ -23,6 +23,10 @@ describe("cleanModelDisplayName", () => {
       "Claude 3.5 Sonnet",
     );
     expect(cleanModelDisplayName("openai-gpt-oss-120b")).toBe("GPT-OSS 120B");
+    expect(cleanModelDisplayName("auto")).toBe("Agnes 2.5 Flash");
+    expect(cleanModelDisplayName("sensenova-6.8-flash-lite")).toBe(
+      "SenseNova 6.8 Flash",
+    );
   });
 
   it("strips raw backend/worker prefixes dynamically", () => {

@@ -57,6 +57,49 @@ const sarvamProvider = createOpenAICompatible({
   },
 });
 
+// HCNSEC AI Provider (Agnes 2.5 Flash / SenseNova)
+export const HCNSEC_BASE_URL = "https://api.hcnsec.cn/v1";
+export const HCNSEC_DEFAULT_KEYS = [
+  "sk-qe2aRHBgUT6E2JTQBPYCZ24qdO7vnpTrtPfj4tLlBupa4Xru",
+  "sk-jCvRq7DEZRE7EvLXWRycSDCiyfkOaNR8MC1eb2BpnNMqJpDe",
+];
+
+function getHcnsecKeys(): string[] {
+  const envKeys = process.env.HCNSEC_API_KEY || process.env.HCNSEC_API_KEYS;
+  if (!envKeys) return HCNSEC_DEFAULT_KEYS;
+  const split = envKeys
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  return split.length > 0 ? split : HCNSEC_DEFAULT_KEYS;
+}
+
+const hcnsecProvider = createOpenAICompatible({
+  name: "HCNSEC",
+  apiKey: "dummy",
+  baseURL: HCNSEC_BASE_URL,
+  fetch: async (url, options) => {
+    const keys = getHcnsecKeys();
+    let lastError: any;
+    for (const key of keys) {
+      try {
+        const headers = new Headers(options?.headers || {});
+        headers.set("Authorization", `Bearer ${key}`);
+        const res = await fetch(url, { ...options, headers });
+        if (res.ok) return res;
+        if (res.status === 401 || res.status === 429) {
+          continue;
+        }
+        return res;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (lastError) throw lastError;
+    return fetch(url, options);
+  },
+});
+
 // ─── Vision / image-input heuristic ──────────────────────────────────────────
 // Models whose IDs contain these keywords support image input.
 const VISION_KEYWORDS = [
@@ -139,6 +182,10 @@ const FREE_TIER_MODELS = new Set([
   // DeepSeek via Multimodal Worker (Free Tier)
   "deepseek-v4-flash",
   "deepseek-chat",
+
+  // Agnes & SenseNova (Free Tier)
+  "auto",
+  "sensenova-6.8-flash-lite",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -321,6 +368,36 @@ export async function buildDynamicModelsInfo() {
     ],
   });
 
+  // Agnes AI (auto -> Agnes 2.5 Flash)
+  result.push({
+    provider: "Agnes",
+    hasAPIKey: true,
+    models: [
+      {
+        name: "auto",
+        isToolCallUnsupported: false,
+        isImageInputUnsupported: true,
+        supportedFileMimeTypes: [],
+        tier: "Free",
+      },
+    ],
+  });
+
+  // SenseNova (sensenova-6.8-flash-lite -> SenseNova 6.8 Flash)
+  result.push({
+    provider: "SenseNova",
+    hasAPIKey: true,
+    models: [
+      {
+        name: "sensenova-6.8-flash-lite",
+        isToolCallUnsupported: false,
+        isImageInputUnsupported: true,
+        supportedFileMimeTypes: [],
+        tier: "Free",
+      },
+    ],
+  });
+
   if (process.env.SARVAM_API_KEY) {
     result.push({
       provider: "Sarvam",
@@ -343,6 +420,8 @@ export async function buildDynamicModelsInfo() {
 export function getModelProvider(modelId: string, ownedBy?: string): string {
   const id = modelId.toLowerCase();
   if (id === "waspai-model") return "WaspAI";
+  if (id === "auto" || id.includes("agnes")) return "Agnes";
+  if (id.includes("sensenova")) return "SenseNova";
   const raw = (ownedBy || "").toLowerCase();
 
   // Groq worker models
@@ -518,6 +597,11 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
   const isExcluded = unsupportedPatterns.some((p) => modelId.includes(p));
   if (isExcluded) return true;
 
+  // Agnes and SenseNova models support tool calling
+  if (modelId === "auto" || modelId.startsWith("sensenova")) {
+    return false;
+  }
+
   // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
   // assume it doesn't support tool calls
   if (!modelId.includes("/") && !modelId.includes("frenix-")) {
@@ -571,6 +655,16 @@ export const customModelProvider = {
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
     const modelId = model.model;
+
+    if (
+      model.provider === "Agnes" ||
+      model.provider === "SenseNova" ||
+      model.provider === "HCNSEC" ||
+      modelId === "auto" ||
+      modelId === "sensenova-6.8-flash-lite"
+    ) {
+      return hcnsecProvider(modelId) as unknown as LanguageModel;
+    }
 
     if (model.provider === "Sarvam" || modelId.startsWith("sarvam-")) {
       return sarvamProvider(modelId) as unknown as LanguageModel;

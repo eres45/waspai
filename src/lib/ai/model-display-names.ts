@@ -18,6 +18,8 @@ export const PROVIDER_ORDER = [
   "allenai", // AllenAI
   "others", // Others
   "llm", // LLM Section
+  "agnes", // Agnes AI
+  "sensenova", // SenseNova
 ];
 
 // Map backend provider names to display names
@@ -41,11 +43,15 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   allenai: "AllenAI",
   others: "Others",
   llm: "LLM (Llama)",
+  agnes: "Agnes AI",
+  sensenova: "SenseNova",
 };
 
 // Map backend model names to display names (real names)
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "waspai-model": "Wasp VoidFlash",
+  auto: "Agnes 2.5 Flash",
+  "sensenova-6.8-flash-lite": "SenseNova 6.8 Flash",
   // Groq / A4F Aggregated Models
   "canopylabs-orpheus-v1-english": "Orpheus v1 English",
   "llama-3.1-8b-instant": "Llama 3.1 8B Instant",
