@@ -8,8 +8,8 @@ export const createPieChartTool = createTool({
       .array(z.object({ label: z.string(), value: z.number() }))
       .min(2, "At least 2 data points are required to create a chart."),
     title: z.string(),
-    description: z.string().nullable(),
-    unit: z.string().nullable(),
+    description: z.string().nullable().optional(),
+    unit: z.string().nullable().optional(),
   }),
   execute: async () => {
     return "Success";

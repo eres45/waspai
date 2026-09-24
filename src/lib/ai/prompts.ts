@@ -319,36 +319,54 @@ Your responses must be highly structured, visually engaging, and easy to read. F
 
 <visualization_guidelines>
 When presenting quantitative data, trends, comparisons, or statistics, use the appropriate chart tool:
-- **Trend/time-series data** â†’ call \`createLineChart\` (e.g. price history, growth over time)
-- **Category comparisons** â†’ call \`createBarChart\` (e.g. rankings, side-by-side metrics)
-- **Part-to-whole breakdowns** â†’ call \`createPieChart\` (e.g. market share, portfolio allocation)
-- **Structured data grids** â†’ call \`createTable\` (e.g. feature comparisons, data tables)
-- **STRICT VISUALIZATION RULES**:
-  - **MANDATORY**: \`title\`, \`columns\`, and \`data\` are ALWAYS required.
-  - **MINIMUM DATA**: **DO NOT** call \`createTable\` unless at least **2 valid data rows** are available.
-  - **DATA GATHERING FIRST**: If sufficient data is not available, first use \`extract\` or browse the web to gather a full set of stats, then call \`createTable\`.
-  - **USE-CASES**: Only use \`createTable\` for side-by-side **comparisons**, structured stats, or feature lists. **DO NOT** use for simple conversational answers.
-  - **TYPE MATCHING**: Ensure each value in \`data\` matches its column \`type\` (e.g. numbers MUST be numbers, not strings in quotes).
-  - **LIMITS**: Keep tables concise (optimum **5-10 rows**) for readability.
-  - **KEY MATCHING**: Every row in \`data\` MUST have keys matching the \`key\` strings in your \`columns\` array.
-  - **FINAL EXPERT PATCH**:
-    - **Minimum Data**: For ALL chart tools, at least **2 valid data points** are required. Otherwise, do NOT call the tool.
-    - **Insufficient Data**: If data is insufficient or unclear, provide a normal text response instead of a chart.
-    - **Normalize Data**: Remove all symbols (â‚¹, $, â‚¬, commas) from numeric fields before calling tools (e.g. use \`59999\` instead of \`â‚¹59,999\`).
-    - **Meaningful Structure**: Ensure Line charts represent **time vs value** and Bar charts represent **category vs value**.
-    - **Efficiency**: Use multiple charts only when they add distinct value. Avoid redundant or repetitive visualizations.
-  - **Example**:
-    \`createTable({ 
-      title: "Model Specs", 
-      columns: [{key: "m", label: "Model"}, {key: "p", label: "Price", type: "number"}], 
-      data: [{m: "iQOO 12", p: 59999}, {m: "S24", p: 79999}] 
+- **Category comparisons** → call \`createBarChart\` (e.g. rankings, monthly metrics, side-by-side comparisons)
+- **Trend/time-series data** → call \`createLineChart\` (e.g. price history, growth over time, daily metrics)
+- **Part-to-whole breakdowns** → call \`createPieChart\` (e.g. market share, portfolio allocation)
+- **Structured data grids** → call \`createTable\` (e.g. feature comparisons, spec sheets, data tables)
+
+- **CRITICAL EXECUTION RULES**:
+  - When the user asks for charts (e.g., "give me charts", "show me a chart", "visualize this"), **IMMEDIATELY invoke the tool** (\`createBarChart\`, \`createLineChart\`, or \`createPieChart\`).
+  - **NEVER** output raw \`\`\`json code blocks or markdown tables instead of calling the tool. Always trigger the tool invocation.
+  - **Minimum Data**: At least 2 valid data points are required.
+  - **Numeric Values**: Numbers MUST be pure numbers, not strings with currency symbols (e.g. \`45000\` NOT \`"$45,000"\`).
+
+- **Tool Call Examples**:
+  - **createBarChart**:
+    \`createBarChart({
+      title: "Monthly Sales (USD k)",
+      data: [
+        { xAxisLabel: "Jan", series: [{ seriesName: "Sales", value: 45 }] },
+        { xAxisLabel: "Feb", series: [{ seriesName: "Sales", value: 52 }] },
+        { xAxisLabel: "Mar", series: [{ seriesName: "Sales", value: 61 }] }
+      ]
     })\`
 
-CRITICAL:
-- NEVER write chart data as a \`\`\`json code block â€” always call the tool instead.
-- Call chart tools AFTER the paragraph that introduces the data, so charts appear inline.
-- You can call multiple chart tools in one response for richer analysis.
-- For research/deep-dive responses, include a "## ðŸ“Š Visual Summary" section using these chart tools to visualize key data points, price trends, comparisons, and statistics found during research.
+  - **createLineChart**:
+    \`createLineChart({
+      title: "Daily Active Users (k)",
+      data: [
+        { xAxisLabel: "Mon", series: [{ seriesName: "Users", value: 12.4 }] },
+        { xAxisLabel: "Tue", series: [{ seriesName: "Users", value: 13.1 }] },
+        { xAxisLabel: "Wed", series: [{ seriesName: "Users", value: 14.3 }] }
+      ]
+    })\`
+
+  - **createPieChart**:
+    \`createPieChart({
+      title: "Market Share by Platform",
+      data: [
+        { label: "Web", value: 48 },
+        { label: "Mobile", value: 37 },
+        { label: "Desktop", value: 15 }
+      ]
+    })\`
+
+  - **createTable**:
+    \`createTable({ 
+      title: "Model Specs", 
+      columns: [{ key: "model", label: "Model" }, { key: "price", label: "Price", type: "number" }], 
+      data: [{ model: "iQOO 12", price: 59999 }, { model: "S24", price: 79999 }] 
+    })\`
 </visualization_guidelines>
 
 <site_and_game_creation_guidelines>

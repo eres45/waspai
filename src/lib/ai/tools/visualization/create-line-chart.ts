@@ -21,8 +21,8 @@ export const createLineChartTool = createTool({
         "Chart data with x-axis labels and series values. MINIMUM 2 DATA POINTS.",
       ),
     title: z.string(),
-    description: z.string().nullable(),
-    yAxisLabel: z.string().nullable().describe("Label for Y-axis"),
+    description: z.string().nullable().optional(),
+    yAxisLabel: z.string().nullable().optional().describe("Label for Y-axis"),
   }),
   execute: async () => {
     return "Success";

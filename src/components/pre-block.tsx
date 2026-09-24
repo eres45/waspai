@@ -114,33 +114,65 @@ export async function Highlight(
   if (lang === "json") {
     const json = safeJSONParse<any>(code);
 
-    if (json.success && json.value?.chartType) {
-      const { chartType, ...props } = json.value;
-      switch (chartType) {
-        case "pie":
-          return (
-            <PurePre code={code} lang={lang}>
-              <PieChart {...props} />
-            </PurePre>
-          );
-        case "bar":
-          return (
-            <PurePre code={code} lang={lang}>
-              <BarChart {...props} />
-            </PurePre>
-          );
-        case "line":
-          return (
-            <PurePre code={code} lang={lang}>
-              <LineChart {...props} />
-            </PurePre>
-          );
-        case "table":
-          return (
-            <PurePre code={code} lang={lang}>
-              <InteractiveTable {...props} />
-            </PurePre>
-          );
+    if (json.success && json.value && typeof json.value === "object") {
+      const val = json.value;
+      let chartType = val.chartType;
+
+      // Auto-detect interactive table if columns and data arrays are present
+      if (!chartType && Array.isArray(val.columns) && Array.isArray(val.data)) {
+        chartType = "table";
+      }
+
+      // Auto-detect bar chart if data items have xAxisLabel and series
+      if (
+        !chartType &&
+        Array.isArray(val.data) &&
+        val.data.length > 0 &&
+        val.data[0]?.xAxisLabel &&
+        Array.isArray(val.data[0]?.series)
+      ) {
+        chartType = "bar";
+      }
+
+      // Auto-detect pie chart if data items have label and numeric value
+      if (
+        !chartType &&
+        Array.isArray(val.data) &&
+        val.data.length > 0 &&
+        typeof val.data[0]?.label === "string" &&
+        typeof val.data[0]?.value === "number"
+      ) {
+        chartType = "pie";
+      }
+
+      if (chartType) {
+        const { chartType: _, ...props } = val;
+        switch (chartType) {
+          case "pie":
+            return (
+              <PurePre code={code} lang={lang}>
+                <PieChart {...props} />
+              </PurePre>
+            );
+          case "bar":
+            return (
+              <PurePre code={code} lang={lang}>
+                <BarChart {...props} />
+              </PurePre>
+            );
+          case "line":
+            return (
+              <PurePre code={code} lang={lang}>
+                <LineChart {...props} />
+              </PurePre>
+            );
+          case "table":
+            return (
+              <PurePre code={code} lang={lang}>
+                <InteractiveTable {...props} />
+              </PurePre>
+            );
+        }
       }
     }
 
