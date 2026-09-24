@@ -385,13 +385,65 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 4. Fallback Chain: LLAMAI Worker → Sarvam Worker → Kitten TTS ───────
+    // ── 4. Fallback Chain: Woino Neural → LLAMAI Worker → Sarvam Worker → Kitten TTS ───────
+    const woinoFallbackVoice = isMale ? "magnus" : "sienna";
     const sarvamFallbackVoice = isMale ? "shubh" : "priya";
     const kittenFallbackVoice = isMale ? "Bruno" : "Bella";
 
-    // 4a. Secondary Fallback: LLAMAI TTS Worker (with fallbackVoice)
+    const alreadyTriedWoino =
+      typeof voice === "string" &&
+      (voice === "woino" || voice.startsWith("woino-") || isWoinoVoice(voice));
+
+    // 4a. Fallback 1: Woino Neural (Magnus for male, Sienna for female)
+    if (!alreadyTriedWoino) {
+      try {
+        logger.info(
+          `Routing to Fallback 1 (Woino Neural): voice=${woinoFallbackVoice}`,
+        );
+        const woinoFbRes = await fetchWithConnectionTimeout(
+          "https://tts.woino.app/api/speech",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Origin: "https://tts.woino.app",
+              Referer: "https://tts.woino.app/studio",
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+            },
+            body: JSON.stringify({
+              input: cleanText,
+              model: "lightning_v3.1",
+              voice: woinoFallbackVoice,
+              response_format: "mp3",
+              speed: 1,
+            }),
+          },
+          10000,
+          180000,
+        );
+
+        if (woinoFbRes.ok && woinoFbRes.body) {
+          logger.info(
+            `Fallback 1 (Woino Neural) stream connected: voice=${woinoFallbackVoice}`,
+          );
+          return new Response(woinoFbRes.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "audio/mpeg",
+              "Transfer-Encoding": "chunked",
+              "Cache-Control": "no-cache",
+            },
+          });
+        }
+      } catch (woinoFbErr) {
+        logger.warn(`Fallback 1 (Woino Neural) failed:`, woinoFbErr);
+      }
+    }
+
+    // 4b. Secondary Fallback: LLAMAI TTS Worker (with fallbackVoice)
     try {
-      logger.info(`Routing to Fallback (LLAMAI TTS): voice=${fallbackVoice}`);
+      logger.info(`Routing to Fallback 2 (LLAMAI TTS): voice=${fallbackVoice}`);
       const fallbackResponse = await fetchWithConnectionTimeout(
         TTS_WORKER_FALLBACK_URL,
         {
