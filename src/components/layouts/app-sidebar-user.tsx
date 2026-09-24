@@ -54,9 +54,8 @@ export function AppSidebarUserInner(props: {
 }) {
   const { data: user } = useSWR<BasicUser>(`/api/user/details`, fetcher, {
     fallbackData: props.user,
-    suspense: true,
-    revalidateOnMount: true,
-    revalidateOnFocus: true,
+    revalidateOnMount: false,
+    revalidateOnFocus: false,
     shouldRetryOnError: false,
     refreshInterval: 1000 * 60 * 5,
   });
@@ -108,6 +107,7 @@ export function AppSidebarUserInner(props: {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
+                type="button"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground bg-input/30 border"
                 size={"lg"}
                 data-testid="sidebar-user-button"
@@ -304,9 +304,11 @@ function SelectLanguage() {
             <DropdownMenuCheckboxItem
               key={locale.code}
               checked={locale.code === currentLocale}
-              onCheckedChange={() =>
-                locale.code !== currentLocale && handleOnChange(locale.code)
-              }
+              onCheckedChange={(checked) => {
+                if (checked && locale.code !== currentLocale) {
+                  handleOnChange(locale.code);
+                }
+              }}
             >
               {locale.name}
             </DropdownMenuCheckboxItem>
