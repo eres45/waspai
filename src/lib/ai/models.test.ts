@@ -53,14 +53,29 @@ describe("customModelProvider file support metadata", () => {
     );
   });
 
-  it("returns exclusively gpt-oss-120b under OpenAI provider in buildDynamicModelsInfo", async () => {
-    const { buildDynamicModelsInfo } = modelsModule;
+  it("returns default gpt-oss-120b and TokenHarbor free models in buildDynamicModelsInfo", async () => {
+    const { buildDynamicModelsInfo, isToolCallUnsupportedModel, getModelTier } =
+      modelsModule;
     const modelsInfo = await buildDynamicModelsInfo();
 
-    expect(modelsInfo.length).toBe(1);
-    expect(modelsInfo[0].provider).toBe("OpenAI");
-    expect(modelsInfo[0].models.length).toBe(1);
-    expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
+    const providers = modelsInfo.map((p) => p.provider);
+    expect(providers).toEqual(["OpenAI", "DeepSeek", "Qwen", "Xiaomi"]);
+
+    const allModels = modelsInfo.flatMap((p) => p.models);
+    const modelNames = allModels.map((m) => m.name);
+    expect(modelNames).toContain("gpt-oss-120b");
+    expect(modelNames).toContain("deepseek-v4.1-flash:free");
+    expect(modelNames).toContain("deepseek-v4-flash:free");
+    expect(modelNames).toContain("qwen3.8-flash:free");
+    expect(modelNames).toContain("mimo-v2.6-flash:free");
+    expect(modelNames).toContain("mimo-v2.5:free");
+
+    // All are free tier
+    for (const m of allModels) {
+      expect(m.tier).toBe("Free");
+      expect(getModelTier(m.name)).toBe("Free");
+      expect(isToolCallUnsupportedModel(m.name)).toBe(false);
+    }
   });
 });
 
@@ -263,7 +278,7 @@ describe("sanitizeMessageToolCalls", () => {
     });
 
     const modelsInfo = await buildDynamicModelsInfo();
-    expect(modelsInfo.length).toBe(1);
+    expect(modelsInfo.length).toBe(4);
     expect(modelsInfo[0].provider).toBe("OpenAI");
     expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
 

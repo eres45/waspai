@@ -20,9 +20,12 @@ export const useChatModels = (options?: SWRConfiguration) => {
     dedupingInterval: 60_000 * 5,
     revalidateOnFocus: false,
     fallbackData: [],
-    onSuccess: (_data) => {
+    onSuccess: (data) => {
       const status = appStore.getState();
-      if (!status.chatModel || status.chatModel.model !== "gpt-oss-120b") {
+      const allModelNames = new Set(
+        data.flatMap((p) => p.models.map((m) => m.name)),
+      );
+      if (!status.chatModel || !allModelNames.has(status.chatModel.model)) {
         appStore.setState({
           chatModel: {
             provider: "OpenAI",

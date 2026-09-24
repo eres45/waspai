@@ -99,6 +99,58 @@ const hcnsecProvider = createOpenAICompatible({
   },
 });
 
+// TokenHarbor AI Provider (DeepSeek V4.1 Flash, Qwen 3.8 Flash, MiMo, etc.)
+export const TOKENHARBOR_BASE_URL = "https://tokenharbor.ai/v1";
+export const TOKENHARBOR_DEFAULT_KEYS = [
+  "thk_live_5XKowZNJ-e-ydWUuqnbm1FO-CIAbO6HWE55G6ad00xC8YfbqGrwYN_wyVXXABLaV",
+  "thk_live_7IpjJXQhhVJ-Smyx8s2LsXhKadnt6RRtIDVOWWVMdNZbDUu8m5FAi3TgSLdDAUJR",
+];
+
+export const TOKENHARBOR_FREE_MODELS = new Set([
+  "deepseek-v4.1-flash:free",
+  "deepseek-v4-flash:free",
+  "qwen3.8-flash:free",
+  "mimo-v2.6-flash:free",
+  "mimo-v2.5:free",
+]);
+
+function getTokenHarborKeys(): string[] {
+  const envKeys =
+    process.env.TOKENHARBOR_API_KEY || process.env.TOKENHARBOR_API_KEYS;
+  if (!envKeys) return TOKENHARBOR_DEFAULT_KEYS;
+  const split = envKeys
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  return split.length > 0 ? split : TOKENHARBOR_DEFAULT_KEYS;
+}
+
+const tokenHarborProvider = createOpenAICompatible({
+  name: "TokenHarbor",
+  apiKey: "dummy",
+  baseURL: TOKENHARBOR_BASE_URL,
+  fetch: async (url, options) => {
+    const keys = getTokenHarborKeys();
+    let lastError: any;
+    for (const key of keys) {
+      try {
+        const headers = new Headers(options?.headers || {});
+        headers.set("Authorization", `Bearer ${key}`);
+        const res = await fetch(url, { ...options, headers });
+        if (res.ok) return res;
+        if (res.status === 401 || res.status === 429) {
+          continue;
+        }
+        return res;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (lastError) throw lastError;
+    return fetch(url, options);
+  },
+});
+
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
 function getMimeTypes(modelId: string): string[] {
   const id = modelId.toLowerCase();
@@ -143,7 +195,14 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     }
   } catch (_err) {}
 
-  return [{ id: "gpt-oss-120b", owned_by: "openai" }];
+  return [
+    { id: "gpt-oss-120b", owned_by: "openai" },
+    { id: "deepseek-v4.1-flash:free", owned_by: "deepseek" },
+    { id: "deepseek-v4-flash:free", owned_by: "deepseek" },
+    { id: "qwen3.8-flash:free", owned_by: "qwen" },
+    { id: "mimo-v2.6-flash:free", owned_by: "xiaomi" },
+    { id: "mimo-v2.5:free", owned_by: "xiaomi" },
+  ];
 }
 
 export const DEFAULT_CHAT_MODEL: ChatModel = {
@@ -155,6 +214,11 @@ const FREE_TIER_MODELS = new Set([
   "gpt-oss-120b",
   "gpt-oss-120b-p2",
   "openai/gpt-oss-120b",
+  "deepseek-v4.1-flash:free",
+  "deepseek-v4-flash:free",
+  "qwen3.8-flash:free",
+  "mimo-v2.6-flash:free",
+  "mimo-v2.5:free",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -219,6 +283,59 @@ export async function buildDynamicModelsInfo() {
           name: "gpt-oss-120b",
           isToolCallUnsupported: false,
           isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
+    {
+      provider: "DeepSeek",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "deepseek-v4.1-flash:free",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "deepseek-v4-flash:free",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
+    {
+      provider: "Qwen",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "qwen3.8-flash:free",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
+    {
+      provider: "Xiaomi",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "mimo-v2.6-flash:free",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "mimo-v2.5:free",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
           tier: "Free",
         },
@@ -412,6 +529,11 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
+  // TokenHarbor free models support tool calling
+  if (modelId.endsWith(":free") || TOKENHARBOR_FREE_MODELS.has(modelId)) {
+    return false;
+  }
+
   // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
   // assume it doesn't support tool calls
   if (!modelId.includes("/") && !modelId.includes("frenix-")) {
@@ -465,6 +587,15 @@ export const customModelProvider = {
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
     const modelId = model.model;
+
+    // TokenHarbor provider (DeepSeek V4.1 Flash, Qwen 3.8 Flash, MiMo, etc.)
+    if (
+      model.provider === "TokenHarbor" ||
+      modelId.endsWith(":free") ||
+      TOKENHARBOR_FREE_MODELS.has(modelId)
+    ) {
+      return tokenHarborProvider(modelId) as unknown as LanguageModel;
+    }
 
     if (
       model.provider === "Agnes" ||
