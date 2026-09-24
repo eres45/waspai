@@ -93,7 +93,7 @@ export function cleanTextForSpeech(text: string): string {
  */
 export async function generateSpeech(
   text: string,
-  voice: CustomTTSVoice = "nova",
+  voice: CustomTTSVoice = "fish-female",
 ): Promise<string> {
   const clean = cleanTextForSpeech(text);
   if (!clean) {

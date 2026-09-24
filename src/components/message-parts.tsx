@@ -515,7 +515,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                           try {
                             const audioUrl = await generateSpeech(
                               clean,
-                              "nova",
+                              "fish-female",
                             );
                             const proxyUrl =
                               audioUrl.startsWith("data:") ||
