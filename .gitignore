@@ -60,3 +60,15 @@ local-data
 openai-compatible.config.ts
 certificates
 public/uploads
+
+# Scratch/temp files
+scratch/
+backup_waspai/
+*.mp3
+*.cjs
+extract.js
+fix.cjs
+inject_*.js
+patch-app*.js
+apply_patches.js
+"WaspAI app"
