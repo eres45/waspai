@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import logger from "logger";
-import { isWoinoVoice } from "lib/ai/speech/woino-voices";
+import { isWoinoVoice, resolveWoinoVoiceId } from "lib/ai/speech/woino-voices";
 
 const FISH_AUDIO_API_URL = "https://api.fish.audio/v1/tts";
 const DEFAULT_FISH_AUDIO_KEYS = [
@@ -186,9 +186,9 @@ export async function POST(request: NextRequest) {
     // ── 2. Intercept Woino Neural voice requests ─────────────────────────────
     if (
       typeof voice === "string" &&
-      (voice.startsWith("woino-") || isWoinoVoice(voice))
+      (voice === "woino" || voice.startsWith("woino-") || isWoinoVoice(voice))
     ) {
-      const woinoVoiceId = voice.startsWith("woino-") ? voice.slice(6) : voice;
+      const woinoVoiceId = resolveWoinoVoiceId(voice);
       try {
         logger.info(
           `Woino Neural TTS: voice=${woinoVoiceId}, text="${cleanText.substring(0, 60)}..."`,

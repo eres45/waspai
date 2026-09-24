@@ -59,5 +59,27 @@ describe("Custom TTS & Voice Call", () => {
 
     const nova = options.find((v) => v.id === "nova");
     expect(nova?.provider).toBe("openai");
+
+    const woino = options.find((v) => v.id === "woino");
+    expect(woino?.provider).toBe("woino");
+    expect(woino?.language).toBe("Hindi / English");
+  });
+
+  it("handles woino base alias and default voice resolution", () => {
+    expect(isWoinoVoice("woino")).toBe(true);
+    expect(isWoinoVoice("woino-female")).toBe(true);
+    expect(isWoinoVoice("woino-male")).toBe(true);
+    expect(isWoinoVoice("woino-default")).toBe(true);
+
+    const woinoVoice = getWoinoVoice("woino");
+    expect(woinoVoice?.name).toBe("Aditi");
+
+    const woinoMale = getWoinoVoice("woino-male");
+    expect(woinoMale?.name).toBe("Aarush");
+
+    expect(BASE_TTS_VOICES).toContain("woino");
+    expect(BASE_TTS_VOICES).toContain("woino-female");
+    expect(BASE_TTS_VOICES).toContain("woino-male");
+    expect(CUSTOM_TTS_VOICES).toContain("woino");
   });
 });

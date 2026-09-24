@@ -1499,13 +1499,34 @@ export const WOINO_VOICE_MAP = new Map<string, WoinoVoice>(
 
 export const WOINO_VOICE_IDS = new Set<string>(WOINO_VOICES.map((v) => v.id));
 
+export const WOINO_ALIASES: Record<string, string> = {
+  woino: "aditi",
+  "woino-default": "aditi",
+  "woino-female": "aditi",
+  "woino-male": "aarush",
+  "woino-hindi": "aditi",
+  "woino-english": "magnus",
+};
+
+export function resolveWoinoVoiceId(voice: string): string {
+  if (!voice) return "aditi";
+  if (WOINO_ALIASES[voice]) return WOINO_ALIASES[voice];
+  if (voice.startsWith("woino-")) {
+    const sub = voice.slice(6);
+    if (WOINO_ALIASES[sub]) return WOINO_ALIASES[sub];
+    return sub;
+  }
+  return voice;
+}
+
 export function isWoinoVoice(voice: string): boolean {
   if (!voice) return false;
-  const bareId = voice.startsWith("woino-") ? voice.slice(6) : voice;
+  if (voice === "woino" || WOINO_ALIASES[voice]) return true;
+  const bareId = resolveWoinoVoiceId(voice);
   return WOINO_VOICE_IDS.has(bareId);
 }
 
 export function getWoinoVoice(voice: string): WoinoVoice | undefined {
-  const bareId = voice.startsWith("woino-") ? voice.slice(6) : voice;
+  const bareId = resolveWoinoVoiceId(voice);
   return WOINO_VOICE_MAP.get(bareId);
 }

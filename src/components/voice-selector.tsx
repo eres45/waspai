@@ -91,8 +91,22 @@ export function VoiceSelector({
     const openai = allVoices.filter((v) => v.provider === "openai");
     const sarvam = allVoices.filter((v) => v.provider === "sarvam");
 
+    const woinoFeatured = allVoices.filter(
+      (v) =>
+        v.id === "woino" ||
+        v.id === "woino-male" ||
+        v.id === "woino-aditi" ||
+        v.id === "woino-aarush" ||
+        v.id === "woino-magnus" ||
+        v.id === "woino-aanya" ||
+        v.id === "woino-aarushi" ||
+        v.id === "woino-alex" ||
+        v.id === "woino-kabir",
+    );
+
     return {
       fish,
+      woinoFeatured,
       woinoHindi,
       woinoEnglish,
       woinoSouthIndian,
@@ -262,6 +276,22 @@ export function VoiceSelector({
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
                     {categorized.fish.map(renderVoiceItem)}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              {/* 2. Woino Featured */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-gradient-to-r from-amber-400 to-rose-500" />
+                  <span className="font-medium">Woino (Featured)</span>
+                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
+                    {categorized.woinoFeatured.length}
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
+                    {categorized.woinoFeatured.map(renderVoiceItem)}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
