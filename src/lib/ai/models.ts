@@ -151,6 +151,34 @@ const tokenHarborProvider = createOpenAICompatible({
   },
 });
 
+// Mistral AI Provider (mistral-code-latest, ministral-14b-latest, codestral-latest)
+export const MISTRAL_BASE_URL = "https://api.mistral.ai/v1";
+export const MISTRAL_DEFAULT_KEY =
+  "mstrl_k8kdT2jytnkDuQeEUs9Thsr4w6ZAL20j_3ZJm1U";
+
+export const MISTRAL_MODELS = new Set([
+  "mistral-code-latest",
+  "ministral-14b-latest",
+  "ministral-14b",
+  "codestral-latest",
+]);
+
+function getMistralKey(): string {
+  return process.env.MISTRAL_API_KEY?.trim() || MISTRAL_DEFAULT_KEY;
+}
+
+const mistralProvider = createOpenAICompatible({
+  name: "Mistral",
+  apiKey: "dummy",
+  baseURL: MISTRAL_BASE_URL,
+  fetch: async (url, options) => {
+    const key = getMistralKey();
+    const headers = new Headers(options?.headers || {});
+    headers.set("Authorization", `Bearer ${key}`);
+    return fetch(url, { ...options, headers });
+  },
+});
+
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
 function getMimeTypes(modelId: string): string[] {
   const id = modelId.toLowerCase();
@@ -202,6 +230,9 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     { id: "qwen3.8-flash:free", owned_by: "qwen" },
     { id: "mimo-v2.6-flash:free", owned_by: "xiaomi" },
     { id: "mimo-v2.5:free", owned_by: "xiaomi" },
+    { id: "mistral-code-latest", owned_by: "mistral" },
+    { id: "ministral-14b-latest", owned_by: "mistral" },
+    { id: "codestral-latest", owned_by: "mistral" },
   ];
 }
 
@@ -219,6 +250,10 @@ const FREE_TIER_MODELS = new Set([
   "qwen3.8-flash:free",
   "mimo-v2.6-flash:free",
   "mimo-v2.5:free",
+  "mistral-code-latest",
+  "ministral-14b-latest",
+  "ministral-14b",
+  "codestral-latest",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -336,6 +371,33 @@ export async function buildDynamicModelsInfo() {
           name: "mimo-v2.5:free",
           isToolCallUnsupported: false,
           isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
+    {
+      provider: "Mistral",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "mistral-code-latest",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "ministral-14b-latest",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "codestral-latest",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
           tier: "Free",
         },
@@ -534,6 +596,16 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
+  // Mistral models support tool calling
+  if (
+    MISTRAL_MODELS.has(modelId) ||
+    modelId.startsWith("ministral-") ||
+    modelId.startsWith("codestral-") ||
+    modelId === "mistral-code-latest"
+  ) {
+    return false;
+  }
+
   // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
   // assume it doesn't support tool calls
   if (!modelId.includes("/") && !modelId.includes("frenix-")) {
@@ -587,6 +659,21 @@ export const customModelProvider = {
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
     const modelId = model.model;
+
+    // Mistral provider (mistral-code-latest, ministral-14b-latest, codestral-latest)
+    if (
+      model.provider === "Mistral" ||
+      model.provider?.toLowerCase() === "mistral" ||
+      MISTRAL_MODELS.has(modelId) ||
+      modelId === "ministral-14b" ||
+      modelId === "ministral-14b-latest" ||
+      modelId === "mistral-code-latest" ||
+      modelId === "codestral-latest"
+    ) {
+      const resolvedId =
+        modelId === "ministral-14b" ? "ministral-14b-latest" : modelId;
+      return mistralProvider(resolvedId) as unknown as LanguageModel;
+    }
 
     // TokenHarbor provider (DeepSeek V4.1 Flash, Qwen 3.8 Flash, MiMo, etc.)
     if (

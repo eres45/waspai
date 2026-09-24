@@ -53,13 +53,23 @@ describe("customModelProvider file support metadata", () => {
     );
   });
 
-  it("returns default gpt-oss-120b and TokenHarbor free models in buildDynamicModelsInfo", async () => {
-    const { buildDynamicModelsInfo, isToolCallUnsupportedModel, getModelTier } =
-      modelsModule;
+  it("returns default gpt-oss-120b, TokenHarbor, and Mistral free models in buildDynamicModelsInfo", async () => {
+    const {
+      buildDynamicModelsInfo,
+      isToolCallUnsupportedModel,
+      getModelTier,
+      customModelProvider,
+    } = modelsModule;
     const modelsInfo = await buildDynamicModelsInfo();
 
     const providers = modelsInfo.map((p) => p.provider);
-    expect(providers).toEqual(["OpenAI", "DeepSeek", "Qwen", "Xiaomi"]);
+    expect(providers).toEqual([
+      "OpenAI",
+      "DeepSeek",
+      "Qwen",
+      "Xiaomi",
+      "Mistral",
+    ]);
 
     const allModels = modelsInfo.flatMap((p) => p.models);
     const modelNames = allModels.map((m) => m.name);
@@ -69,13 +79,30 @@ describe("customModelProvider file support metadata", () => {
     expect(modelNames).toContain("qwen3.8-flash:free");
     expect(modelNames).toContain("mimo-v2.6-flash:free");
     expect(modelNames).toContain("mimo-v2.5:free");
+    expect(modelNames).toContain("mistral-code-latest");
+    expect(modelNames).toContain("ministral-14b-latest");
+    expect(modelNames).toContain("codestral-latest");
 
-    // All are free tier
+    // All are free tier and support tools
     for (const m of allModels) {
       expect(m.tier).toBe("Free");
       expect(getModelTier(m.name)).toBe("Free");
       expect(isToolCallUnsupportedModel(m.name)).toBe(false);
     }
+
+    // Mistral model instantiation & alias resolution
+    expect(
+      customModelProvider.getModel({
+        provider: "Mistral",
+        model: "ministral-14b",
+      }),
+    ).toBeDefined();
+    expect(
+      customModelProvider.getModel({
+        provider: "Mistral",
+        model: "mistral-code-latest",
+      }),
+    ).toBeDefined();
   });
 });
 
@@ -278,7 +305,7 @@ describe("sanitizeMessageToolCalls", () => {
     });
 
     const modelsInfo = await buildDynamicModelsInfo();
-    expect(modelsInfo.length).toBe(4);
+    expect(modelsInfo.length).toBe(5);
     expect(modelsInfo[0].provider).toBe("OpenAI");
     expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
 

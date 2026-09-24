@@ -57,6 +57,10 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "qwen3.8-flash:free": "Qwen 3.8 Flash",
   "mimo-v2.6-flash:free": "MiMo v2.6 Flash",
   "mimo-v2.5:free": "MiMo v2.5",
+  "mistral-code-latest": "Mistral Code",
+  "ministral-14b-latest": "Ministral 14B",
+  "ministral-14b": "Ministral 14B",
+  "codestral-latest": "Codestral",
   // Groq / A4F Aggregated Models
   "canopylabs-orpheus-v1-english": "Orpheus v1 English",
   "llama-3.1-8b-instant": "Llama 3.1 8B Instant",
