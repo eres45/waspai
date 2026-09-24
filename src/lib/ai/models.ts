@@ -24,6 +24,112 @@ const unifiedProvider = multimodalProvider;
 const creativeProvider = multimodalProvider;
 const claudeProvider = multimodalProvider;
 
+export const GROQ_WORKER_URL = "https://groq-worker.revai.workers.dev";
+
+// Groq Worker Provider (openai/gpt-oss-120b with native reasoning and automatic key rotation)
+const groqWorkerProvider = createOpenAICompatible({
+  name: "GroqWorker",
+  apiKey: "dummy",
+  baseURL: `${GROQ_WORKER_URL}/v1`,
+  fetch: async (url, options) => {
+    // If the body requested stream: true, convert to stream: false to bypass worker JSON parse bug
+    if (options && options.body) {
+      try {
+        const bodyObj = JSON.parse(options.body as string);
+        if (bodyObj.stream) {
+          bodyObj.stream = false;
+          options.body = JSON.stringify(bodyObj);
+        }
+      } catch (_e) {}
+    }
+    const res = await fetch(url, options);
+    if (!res.ok) return res;
+
+    try {
+      const json = await res.json();
+      const msg = json.choices?.[0]?.message || {};
+      const reasoning = msg.reasoning || msg.reasoning_content || "";
+      const content = msg.content || "";
+      const toolCalls = msg.tool_calls;
+
+      const chunks: string[] = [];
+      if (reasoning) {
+        chunks.push(
+          "data: " +
+            JSON.stringify({
+              id: json.id || "chatcmpl-oss",
+              object: "chat.completion.chunk",
+              created: Math.floor(Date.now() / 1000),
+              model: "openai/gpt-oss-120b",
+              choices: [
+                {
+                  index: 0,
+                  delta: { reasoning_content: reasoning },
+                  finish_reason: null,
+                },
+              ],
+            }) +
+            "\n\n",
+        );
+      }
+      if (toolCalls && toolCalls.length > 0) {
+        const indexedCalls = toolCalls.map((tc: any, i: number) => ({
+          index: i,
+          id: tc.id,
+          type: tc.type || "function",
+          function: tc.function,
+        }));
+        chunks.push(
+          "data: " +
+            JSON.stringify({
+              id: json.id || "chatcmpl-oss",
+              object: "chat.completion.chunk",
+              created: Math.floor(Date.now() / 1000),
+              model: "openai/gpt-oss-120b",
+              choices: [
+                {
+                  index: 0,
+                  delta: { tool_calls: indexedCalls },
+                  finish_reason: "tool_calls",
+                },
+              ],
+            }) +
+            "\n\n",
+        );
+      } else if (content) {
+        chunks.push(
+          "data: " +
+            JSON.stringify({
+              id: json.id || "chatcmpl-oss",
+              object: "chat.completion.chunk",
+              created: Math.floor(Date.now() / 1000),
+              model: "openai/gpt-oss-120b",
+              choices: [
+                {
+                  index: 0,
+                  delta: { content: content },
+                  finish_reason: "stop",
+                },
+              ],
+            }) +
+            "\n\n",
+        );
+      }
+      chunks.push("data: [DONE]\n\n");
+
+      return new Response(chunks.join(""), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache",
+        },
+      });
+    } catch {
+      return res;
+    }
+  },
+});
+
 // Sarvam AI provider
 const sarvamProvider = createOpenAICompatible({
   name: "Sarvam",
@@ -843,6 +949,18 @@ export const customModelProvider = {
       return sarvamProvider(modelId) as unknown as LanguageModel;
     }
 
+    // GPT-OSS 120B routed to Groq Worker for native reasoning and high speed
+    if (
+      modelId === "gpt-oss-120b" ||
+      modelId === "gpt-oss-120b-p2" ||
+      modelId === "openai/gpt-oss-120b" ||
+      modelId.endsWith("/gpt-oss-120b")
+    ) {
+      return groqWorkerProvider(
+        "openai/gpt-oss-120b",
+      ) as unknown as LanguageModel;
+    }
+
     // Groq & Open Source models & DeepSeek routed via dedicated Multimodal Worker
     if (
       model.provider?.toLowerCase() === "groq" ||
@@ -850,9 +968,7 @@ export const customModelProvider = {
       modelId.startsWith("groqw-") ||
       modelId.startsWith("deepseek-") ||
       modelId.startsWith("llama-") ||
-      modelId.startsWith("gpt-oss-") ||
-      modelId === "gpt-oss-120b" ||
-      modelId === "gpt-oss-120b-p2"
+      modelId.startsWith("gpt-oss-")
     ) {
       return multimodalProvider(modelId) as unknown as LanguageModel;
     }
