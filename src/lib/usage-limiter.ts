@@ -5,9 +5,15 @@ import logger from "@/lib/logger";
  * Checks if a user has reached their daily limit for a specific action (web_search or image_gen).
  * Tracked by UTC calendar day.
  */
+export type DailyUsageActionType = "web_search" | "image_gen" | "chat_message";
+
+/**
+ * Checks if a user has reached their daily limit for a specific action (web_search, image_gen, or chat_message).
+ * Tracked by UTC calendar day.
+ */
 export async function checkDailyUsageLimit(
   userId: string,
-  actionType: "web_search" | "image_gen",
+  actionType: DailyUsageActionType,
   limitValue: number,
 ): Promise<{ allowed: boolean; count: number; limit: number }> {
   try {
@@ -52,7 +58,7 @@ export async function checkDailyUsageLimit(
  */
 export async function recordDailyUsage(
   userId: string,
-  actionType: "web_search" | "image_gen",
+  actionType: DailyUsageActionType,
 ): Promise<void> {
   try {
     const { error } = await supabaseRest.from("user_daily_usage").insert({

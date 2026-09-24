@@ -26,7 +26,9 @@ import {
   chatRepository,
   memoryRepository,
   skillRepository,
+  userRepository,
 } from "lib/db/repository";
+import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 import globalLogger from "logger";
 import {
   buildMcpServerCustomizationsSystemPrompt,
@@ -167,6 +169,34 @@ export async function POST(request: Request) {
       editImageModel,
       videoGenModel,
     } = parsedBody;
+
+    // ─── Enforce Daily Message Limits (50/day free, 300/day pro - hidden from UI) ───
+    if (session?.user?.id) {
+      const user = await userRepository.getUserById(session.user.id);
+      const isPro =
+        user?.tier === "pro" ||
+        user?.tier === "ultra" ||
+        user?.role === "admin";
+      const dailyCap = isPro ? 300 : 50;
+
+      const { allowed } = await checkDailyUsageLimit(
+        session.user.id,
+        "chat_message",
+        dailyCap,
+      );
+
+      if (!allowed) {
+        return new Response(
+          isPro
+            ? "You have reached your daily message limit (resets at midnight UTC)."
+            : "You have reached your daily message limit. Upgrade to Pro for 300 messages/day or try again tomorrow.",
+          { status: 429, headers: corsHeaders },
+        );
+      }
+
+      // Record message usage asynchronously
+      recordDailyUsage(session.user.id, "chat_message").catch(() => {});
+    }
 
     // Prepare deduplicated user message parts (including attachments) for database persistence.
     // We capture this early before any OCR updates or file stripping are made to the message parts

@@ -108,14 +108,19 @@ async function handleChatCompletions(request, env) {
       }
 
       if (!upstreamRes.ok) {
-        const errText = await upstreamRes.text();
+        const rawText = await upstreamRes.text().catch(() => "");
+        const isHtml = rawText.trim().startsWith("<");
+        const cleanMessage = isHtml
+          ? `Claude upstream provider (tabitoken.com) is temporarily unavailable (${upstreamRes.status}). Please check tabitoken.com or try again shortly.`
+          : rawText.slice(0, 300);
+
         return jsonResponse(
           {
             error: {
-              message: `Upstream error ${upstreamRes.status}: ${errText}`,
+              message: cleanMessage,
             },
           },
-          upstreamRes.status,
+          upstreamRes.status === 521 ? 503 : upstreamRes.status,
         );
       }
 
@@ -206,14 +211,19 @@ async function handleAnthropicMessages(request, env) {
       }
 
       if (!upstreamRes.ok) {
-        const errText = await upstreamRes.text();
+        const rawText = await upstreamRes.text().catch(() => "");
+        const isHtml = rawText.trim().startsWith("<");
+        const cleanMessage = isHtml
+          ? `Claude upstream provider (tabitoken.com) is temporarily unavailable (${upstreamRes.status}). Please check tabitoken.com or try again shortly.`
+          : rawText.slice(0, 300);
+
         return jsonResponse(
           {
             error: {
-              message: `Upstream error ${upstreamRes.status}: ${errText}`,
+              message: cleanMessage,
             },
           },
-          upstreamRes.status,
+          upstreamRes.status === 521 ? 503 : upstreamRes.status,
         );
       }
 

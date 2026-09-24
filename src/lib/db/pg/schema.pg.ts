@@ -714,7 +714,7 @@ export const UserDailyUsageTable = pgTable(
       .notNull()
       .references(() => UserTable.id, { onDelete: "cascade" }),
     actionType: varchar("action_type", {
-      enum: ["web_search", "image_gen"],
+      enum: ["web_search", "image_gen", "chat_message"],
     }).notNull(),
     createdAt: timestamp("created_at")
       .notNull()
