@@ -56,6 +56,116 @@ function getNextKey(keys) {
   return key;
 }
 
+async function handleFreecfClaudeFallback(body, requestedModel, stream) {
+  const fallbackModel = "llama-3.3-70b-fp8";
+  const payload = {
+    ...body,
+    model: fallbackModel,
+  };
+
+  const upstreamRes = await fetch(
+    "https://freecfmodels.bgmipro285.workers.dev/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!upstreamRes.ok) {
+    const errText = await upstreamRes.text().catch(() => "");
+    return jsonResponse(
+      { error: { message: `Claude fallback error: ${errText}` } },
+      upstreamRes.status,
+    );
+  }
+
+  const contentType = upstreamRes.headers.get("content-type") || "";
+
+  if (stream && contentType.includes("text/event-stream")) {
+    const { readable, writable } = new TransformStream();
+    upstreamRes.body.pipeTo(writable).catch(console.error);
+    return new Response(readable, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        ...CORS_HEADERS,
+      },
+    });
+  }
+
+  if (stream) {
+    const data = await upstreamRes.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    const id = data.id || `chatcmpl-${Date.now()}`;
+
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    (async () => {
+      try {
+        const words = content.split(" ");
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i] + (i < words.length - 1 ? " " : "");
+          const chunk = {
+            id,
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model: requestedModel,
+            choices: [
+              {
+                index: 0,
+                delta: { content: word },
+                finish_reason: null,
+              },
+            ],
+          };
+          await writer.write(
+            encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
+          );
+          if (i % 4 === 0) await new Promise((r) => setTimeout(r, 10));
+        }
+
+        const finalChunk = {
+          id,
+          object: "chat.completion.chunk",
+          created: Math.floor(Date.now() / 1000),
+          model: requestedModel,
+          choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+        };
+        await writer.write(
+          encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`),
+        );
+        await writer.write(encoder.encode("data: [DONE]\n\n"));
+      } catch (e) {
+        console.error("Stream error:", e);
+      } finally {
+        await writer.close();
+      }
+    })();
+
+    return new Response(readable, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        ...CORS_HEADERS,
+      },
+    });
+  }
+
+  const data = await upstreamRes.json();
+  if (data.model) data.model = requestedModel;
+  return jsonResponse(data);
+}
+
 // ============================================================================
 // OpenAI-Compatible Handler (/v1/chat/completions)
 // ============================================================================
@@ -109,19 +219,10 @@ async function handleChatCompletions(request, env) {
 
       if (!upstreamRes.ok) {
         const rawText = await upstreamRes.text().catch(() => "");
-        const isHtml = rawText.trim().startsWith("<");
-        const cleanMessage = isHtml
-          ? `Claude upstream provider (tabitoken.com) is temporarily unavailable (${upstreamRes.status}). Please check tabitoken.com or try again shortly.`
-          : rawText.slice(0, 300);
-
-        return jsonResponse(
-          {
-            error: {
-              message: cleanMessage,
-            },
-          },
-          upstreamRes.status === 521 ? 503 : upstreamRes.status,
+        console.warn(
+          `[Claude Worker] Upstream returned ${upstreamRes.status} (${rawText.slice(0, 80)}). Failing over to FreeCF...`,
         );
+        return handleFreecfClaudeFallback(body, requestedModel, stream);
       }
 
       // If streaming response, forward the SSE stream directly
@@ -154,10 +255,11 @@ async function handleChatCompletions(request, env) {
     }
   }
 
-  return jsonResponse(
-    { error: { message: `All API keys exhausted. Last error: ${lastError}` } },
-    502,
+  // All tabitoken attempts failed -> fallback to FreeCF
+  console.warn(
+    `[Claude Worker] All tabitoken attempts failed (${lastError}). Failing over to FreeCF...`,
   );
+  return handleFreecfClaudeFallback(body, requestedModel, stream);
 }
 
 // ============================================================================

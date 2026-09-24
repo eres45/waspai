@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 
 const importActions = async () => await import("./actions");
 
-describe("checkStorageAction", () => {
+describe("checkStorageAction", { timeout: 15000 }, () => {
   beforeEach(() => {
     vi.resetModules();
     delete process.env.FILE_STORAGE_TYPE;

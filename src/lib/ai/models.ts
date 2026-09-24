@@ -130,46 +130,24 @@ interface WorkerModelsResponse {
  */
 export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
   try {
-    const [resNvidia, resCreative] = await Promise.allSettled([
-      fetch(`${UNIFIED_WORKER_URL}/v1/models`, {
-        next: { revalidate: 300 }, // cache 5 min
-        headers: { Accept: "application/json" },
-      }).then(async (r) => {
-        if (!r.ok) throw new Error(`NVIDIA worker returned ${r.status}`);
-        return r.json() as Promise<WorkerModelsResponse>;
-      }),
-      fetch(`${CREATIVE_WORKER_URL}/v1/models`, {
-        next: { revalidate: 300 }, // cache 5 min
-        headers: { Accept: "application/json" },
-      }).then(async (r) => {
-        if (!r.ok) throw new Error(`Creative worker returned ${r.status}`);
-        return r.json() as Promise<WorkerModelsResponse>;
-      }),
-    ]);
+    const res = await fetch(`${CREATIVE_WORKER_URL}/v1/models`, {
+      next: { revalidate: 300 }, // cache 5 min
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(5000),
+    });
 
-    const models: WorkerModel[] = [];
-
-    if (resNvidia.status === "fulfilled" && resNvidia.value?.data) {
-      models.push(...resNvidia.value.data);
-    } else if (resNvidia.status === "rejected") {
-      console.error(
-        "[models] Failed to fetch from NVIDIA worker:",
-        resNvidia.reason,
-      );
+    if (!res.ok) {
+      console.warn(`[models] Creative worker returned ${res.status}`);
+      return [];
     }
 
-    if (resCreative.status === "fulfilled" && resCreative.value?.data) {
-      models.push(...resCreative.value.data);
-    } else if (resCreative.status === "rejected") {
-      console.error(
-        "[models] Failed to fetch from Creative worker:",
-        resCreative.reason,
-      );
-    }
-
-    return models;
+    const data = (await res.json()) as WorkerModelsResponse;
+    return data?.data || [];
   } catch (err) {
-    console.error("[models] Failed to fetch from workers:", err);
+    console.warn(
+      "[models] Failed to fetch from worker:",
+      (err as any)?.message,
+    );
     return [];
   }
 }

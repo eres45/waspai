@@ -708,7 +708,9 @@ export const ReasoningPart = memo(function ReasoningPart({
   const [isExpanded, setIsExpanded] = useState(isThinking);
 
   useEffect(() => {
-    if (!isThinking && isExpanded) {
+    if (isThinking) {
+      setIsExpanded(true);
+    } else {
       setIsExpanded(false);
     }
   }, [isThinking]);

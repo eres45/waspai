@@ -2013,8 +2013,9 @@ Always be aware of these installed skills. If a user asks "how many skills do we
                 model: modelToUse?.model,
                 instance: model,
               },
-          { provider: "OpenAI", model: "gpt-oss-120b-p2" },
-          { provider: "Sarvam", model: "sarvam-105b" },
+          { provider: "Groq", model: "gpt-oss-120b-p2" },
+          { provider: "Groq", model: "groqw-llama-3.1-8b" },
+          { provider: "DeepSeek", model: "deepseek-v4-flash" },
         ].filter(
           (item): item is { provider: string; model: string; instance?: any } =>
             item !== null,
@@ -2197,18 +2198,83 @@ Always be aware of these installed skills. If a user asks "how many skills do we
               toolChoice: currentIsToolCallAllowed ? "auto" : undefined,
               abortSignal: request.signal,
             } as any);
+
             result.consumeStream();
-            dataStream.merge(
-              result.toUIMessageStream({
-                sendReasoning: true,
-                messageMetadata: ({ part }) => {
-                  if (part.type == "finish") {
-                    metadata.usage = part.totalUsage;
-                    return metadata;
-                  }
-                },
-              }),
-            );
+            const uiStream = result.toUIMessageStream({
+              sendReasoning: true,
+              messageMetadata: ({ part }) => {
+                if (part.type == "finish") {
+                  metadata.usage = part.totalUsage;
+                  return metadata;
+                }
+              },
+            });
+
+            // Buffer stream parts until real content or error is observed.
+            // This prevents initial connection errors from leaking to dataStream and ruining subsequent fallback attempts.
+            const reader = uiStream.getReader();
+            const buffer: any[] = [];
+            let hasRealContent = false;
+            let streamHasError = false;
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer.push(value);
+
+              if (value.type === "error") {
+                streamHasError = true;
+                break;
+              }
+
+              // Real content arrived — model successfully connected and started generating!
+              const partType = (value as any).type;
+              if (
+                partType === "text-delta" ||
+                partType === "text-start" ||
+                partType === "reasoning-delta" ||
+                partType === "reasoning-start" ||
+                partType === "tool-call-start" ||
+                partType === "tool-result" ||
+                partType === "finish" ||
+                partType === "finish-step"
+              ) {
+                hasRealContent = true;
+                break;
+              }
+            }
+
+            if (streamHasError || !hasRealContent) {
+              const errSnippet =
+                buffer.find((b) => b.type === "error")?.errorText ||
+                "Empty output from provider";
+              logger.warn(
+                `Attempt ${attempt + 1} (${currentConfig.provider}/${currentConfig.model}) failed before outputting content: ${errSnippet}. Proceeding to fallback.`,
+              );
+              throw new Error(errSnippet);
+            }
+
+            // Model is producing content! Flush buffered parts and pipe the rest into dataStream
+            const forwardStream = new ReadableStream({
+              start(controller) {
+                for (const part of buffer) {
+                  controller.enqueue(part);
+                }
+              },
+              async pull(controller) {
+                const { done, value } = await reader.read();
+                if (done) {
+                  controller.close();
+                } else {
+                  controller.enqueue(value);
+                }
+              },
+              cancel(reason) {
+                reader.cancel(reason);
+              },
+            });
+
+            dataStream.merge(forwardStream);
 
             // Wait for completion to detect any stream failures
             await result.text;

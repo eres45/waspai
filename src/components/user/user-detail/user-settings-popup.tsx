@@ -30,9 +30,8 @@ function UserSettingsPopupContent() {
     openUserSettings ? `/api/user/details` : null,
     fetcher,
     {
-      revalidateOnMount: false,
-      revalidateIfStale: false,
       revalidateOnFocus: false,
+      shouldRetryOnError: false,
     },
   );
 
