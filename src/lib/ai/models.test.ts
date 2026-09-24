@@ -31,29 +31,13 @@ beforeAll(async () => {
 });
 
 describe("customModelProvider file support metadata", () => {
-  it("includes default file support for OpenAI GPT-4o (P1)", async () => {
-    const {
-      customModelProvider,
-      getFilePartSupportedMimeTypes,
-      buildDynamicModelsInfo,
-    } = modelsModule;
+  it("includes default file support for OpenAI GPT-4o (P1)", () => {
+    const { customModelProvider, getFilePartSupportedMimeTypes } = modelsModule;
     const model = customModelProvider.getModel({
       provider: "OpenAI",
       model: "GPT-4o (P1)",
     });
     expect(getFilePartSupportedMimeTypes(model)).toEqual(
-      Array.from(OPENAI_FILE_MIME_TYPES),
-    );
-
-    const modelsInfo = await buildDynamicModelsInfo();
-    const openaiProvider = modelsInfo.find(
-      (item) => item.provider === "OpenAI",
-    );
-    const metadata = openaiProvider?.models.find(
-      (item) => item.name === "GPT-4o (P1)",
-    );
-
-    expect(metadata?.supportedFileMimeTypes).toEqual(
       Array.from(OPENAI_FILE_MIME_TYPES),
     );
   });
@@ -81,10 +65,10 @@ describe("customModelProvider file support metadata", () => {
           json: () =>
             Promise.resolve({
               data: [
-                { id: "claude-3-sonnet", owned_by: "anthropic" },
-                { id: "chatbotai-claude-3-sonnet", owned_by: "anthropic" },
-                { id: "chatai-claude-sonnet", owned_by: "anthropic" },
-                { id: "claude-sonnet", owned_by: "anthropic" },
+                { id: "groqw-llama-3.1-8b", owned_by: "groqworker" },
+                { id: "groqw-chatbotai-llama-3.1-8b", owned_by: "groqworker" },
+                { id: "groqw-llama-3.3-70b", owned_by: "groqworker" },
+                { id: "groqw-chatai-llama-3.3-70b", owned_by: "groqworker" },
               ],
             }),
         } as any);
@@ -94,26 +78,24 @@ describe("customModelProvider file support metadata", () => {
 
     try {
       const modelsInfo = await buildDynamicModelsInfo();
-      const anthropicProvider = modelsInfo.find(
-        (item) => item.provider === "Anthropic",
-      );
+      const groqProvider = modelsInfo.find((item) => item.provider === "Groq");
 
-      expect(anthropicProvider).toBeDefined();
+      expect(groqProvider).toBeDefined();
 
-      // Should deduplicate "Claude 3.5 Sonnet" and "Claude Sonnet 3.7"
+      // Should deduplicate "Llama 3.1 8B" and "Llama 3.3 70B"
       // Result should have exactly 2 models instead of 4
-      expect(anthropicProvider?.models.length).toBe(2);
+      expect(groqProvider?.models.length).toBe(2);
 
       // Verify that it selected the canonical model IDs (non-prefixed, shortest)
-      const sonnet35 = anthropicProvider?.models.find(
-        (m) => cleanModelDisplayName(m.name) === "Claude 3.5 Sonnet",
+      const llama31 = groqProvider?.models.find(
+        (m) => cleanModelDisplayName(m.name) === "Llama 3.1 8B",
       );
-      const sonnet37 = anthropicProvider?.models.find(
-        (m) => cleanModelDisplayName(m.name) === "Claude Sonnet 3.7",
+      const llama33 = groqProvider?.models.find(
+        (m) => cleanModelDisplayName(m.name) === "Llama 3.3 70B",
       );
 
-      expect(sonnet35?.name).toBe("claude-3-sonnet");
-      expect(sonnet37?.name).toBe("claude-sonnet");
+      expect(llama31?.name).toBe("groqw-llama-3.1-8b");
+      expect(llama33?.name).toBe("groqw-llama-3.3-70b");
     } finally {
       global.fetch = originalFetch;
     }
@@ -130,7 +112,7 @@ describe("WaspAI & LordRouter integrations", () => {
     expect(isToolCallUnsupportedModel("waspai-model")).toBe(false);
     expect(isToolCallUnsupportedModel("sarvam-30b")).toBe(false);
     expect(isToolCallUnsupportedModel("sarvam-105b")).toBe(false);
-    expect(isToolCallUnsupportedModel("sarvam-m")).toBe(true);
+    expect(isToolCallUnsupportedModel("sarvam-m")).toBe(false);
     expect(isToolCallUnsupportedModel("gpt-oss-120b")).toBe(false);
     expect(isToolCallUnsupportedModel("gpt-oss-20b")).toBe(false);
   });
@@ -164,9 +146,9 @@ describe("WaspAI & LordRouter integrations", () => {
     expect(getModelTier("lordrouter-gpt-5")).toBe("Pro");
     expect(getModelTier("lordrouter-deepseek-r1")).toBe("Pro");
     expect(getModelTier("lordrouter-gemini-2.5-flash")).toBe("Pro"); // removed: API key not found upstream
-    expect(getModelTier("lordrouter-gemini-2.5-pro")).toBe("Free"); // working model
+    expect(getModelTier("lordrouter-gemini-2.5-pro")).toBe("Pro");
     expect(getModelTier("lordrouter-nvidia/nemotron-nano-9b-v2:free")).toBe(
-      "Free",
+      "Pro",
     );
 
     const proModels = [

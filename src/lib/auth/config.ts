@@ -106,17 +106,15 @@ export function getAuthConfig(): AuthConfig {
 
   // Filter only google and github to fulfill "let only google and git"
   const socialAuthenticationProviders = {
-    ...(socialConfigs.github && { github: socialConfigs.github }),
-    ...(socialConfigs.google && { google: socialConfigs.google }),
+    github: socialConfigs.github,
+    google: socialConfigs.google,
   };
 
   const rawConfig = {
     emailAndPasswordEnabled:
-      process.env.NODE_ENV === "test" ||
       !!process.env.PLAYWRIGHT_TEST ||
       parseEnvBoolean(process.env.ENABLE_EMAIL_PASS),
     signUpEnabled:
-      process.env.NODE_ENV === "test" ||
       !!process.env.PLAYWRIGHT_TEST ||
       parseEnvBoolean(process.env.ENABLE_EMAIL_PASS),
     socialAuthenticationProviders,

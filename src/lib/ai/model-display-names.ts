@@ -320,9 +320,15 @@ export function cleanModelDisplayName(name: string): string {
     "stockmark/",
   ];
 
-  for (const prefix of prefixes) {
-    if (cleaned.toLowerCase().startsWith(prefix.toLowerCase())) {
-      cleaned = cleaned.slice(prefix.length);
+  let matched = true;
+  while (matched) {
+    matched = false;
+    for (const prefix of prefixes) {
+      if (cleaned.toLowerCase().startsWith(prefix.toLowerCase())) {
+        cleaned = cleaned.slice(prefix.length);
+        matched = true;
+        break;
+      }
     }
   }
 
