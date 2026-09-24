@@ -2,9 +2,23 @@ import { NextRequest } from "next/server";
 import logger from "logger";
 
 const FISH_AUDIO_API_URL = "https://api.fish.audio/v1/tts";
-const FISH_AUDIO_API_KEY =
-  process.env.FISH_AUDIO_API_KEY ||
-  "sk-fish-YM7VRAWHIe1H7PmrYEgOAP6SnZZImkY9kPj0SxGvbO0";
+const DEFAULT_FISH_AUDIO_KEYS = [
+  "sk-fish-YM7VRAWHIe1H7PmrYEgOAP6SnZZImkY9kPj0SxGvbO0",
+  "sk-fish-XgGMqXw6-gp5Gb_EO2mVJsFKonQMi-Nyp8uwxvAL7DM",
+];
+
+function getFishAudioKeys(): string[] {
+  const envKeys =
+    process.env.FISH_AUDIO_API_KEY || process.env.FISH_AUDIO_API_KEYS;
+  if (!envKeys) {
+    return DEFAULT_FISH_AUDIO_KEYS;
+  }
+  const split = envKeys
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  return split.length > 0 ? split : DEFAULT_FISH_AUDIO_KEYS;
+}
 
 // Primary Female Voice (Sweet, conversational, friendly assistant)
 const FISH_FEMALE_VOICE_ID = "f7f74a4bc4324c25b96b9b6741a72ab3";
@@ -124,7 +138,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── 2. Primary: Fish Audio (s2.1-pro-free with streaming) ─────────────────
+    // ── 2. Primary: Fish Audio (s2.1-pro-free with streaming & key rotation) ──
     const isMale = typeof voice === "string" && MALE_VOICES.has(voice);
     const referenceId = isMale ? FISH_MALE_VOICE_ID : FISH_FEMALE_VOICE_ID;
     const selectedGender = isMale ? "male" : "female";
@@ -133,39 +147,48 @@ export async function POST(request: NextRequest) {
       `Fish Audio TTS [s2.1-pro-free]: gender=${selectedGender}, voice=${voice}, text="${cleanText.substring(0, 60)}..."`,
     );
 
-    try {
-      const fishResponse = await fetch(FISH_AUDIO_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FISH_AUDIO_API_KEY}`,
-          "Content-Type": "application/json",
-          model: "s2.1-pro-free",
-        },
-        body: JSON.stringify({
-          text: cleanText,
-          reference_id: referenceId,
-          format: "mp3",
-        }),
-      });
-
-      if (fishResponse.ok && fishResponse.body) {
-        logger.info(`Fish Audio TTS stream connected successfully`);
-        return new Response(fishResponse.body, {
-          status: 200,
+    const fishKeys = getFishAudioKeys();
+    for (const apiKey of fishKeys) {
+      try {
+        const fishResponse = await fetch(FISH_AUDIO_API_URL, {
+          method: "POST",
           headers: {
-            "Content-Type": "audio/mpeg",
-            "Transfer-Encoding": "chunked",
-            "Cache-Control": "no-cache",
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            model: "s2.1-pro-free",
           },
+          body: JSON.stringify({
+            text: cleanText,
+            reference_id: referenceId,
+            format: "mp3",
+          }),
+          signal: AbortSignal.timeout(5000),
         });
-      }
 
-      const fishErr = await fishResponse.text().catch(() => "");
-      logger.warn(
-        `Fish Audio TTS warning ${fishResponse.status}: ${fishErr.substring(0, 150)}, trying fallback...`,
-      );
-    } catch (fishError) {
-      logger.warn(`Fish Audio fetch failed, routing to fallback:`, fishError);
+        if (fishResponse.ok && fishResponse.body) {
+          logger.info(
+            `Fish Audio TTS stream connected successfully with key ...${apiKey.slice(-6)}`,
+          );
+          return new Response(fishResponse.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "audio/mpeg",
+              "Transfer-Encoding": "chunked",
+              "Cache-Control": "no-cache",
+            },
+          });
+        }
+
+        const fishErr = await fishResponse.text().catch(() => "");
+        logger.warn(
+          `Fish Audio TTS key (...${apiKey.slice(-6)}) warning ${fishResponse.status}: ${fishErr.substring(0, 150)}, trying next key...`,
+        );
+      } catch (fishError) {
+        logger.warn(
+          `Fish Audio fetch failed for key (...${apiKey.slice(-6)}):`,
+          fishError,
+        );
+      }
     }
 
     // ── 3. Fallback Chain: LLAMAI Worker → Sarvam Worker → Kitten TTS ───────

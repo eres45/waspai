@@ -178,4 +178,52 @@ describe("TTS API Proxy Endpoint", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("should fail over to second Fish Audio key if first key returns 402 or error", async () => {
+    process.env.FISH_AUDIO_API_KEY = "test-key-1,test-key-2";
+
+    const attemptedKeys: string[] = [];
+    const mockAudioStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([9, 10, 11, 12]));
+        controller.close();
+      },
+    });
+
+    const mockFetch = vi
+      .fn()
+      .mockImplementation((url: string, options?: RequestInit) => {
+        if (url.includes("fish.audio")) {
+          const auth =
+            (options?.headers as Record<string, string>)?.["Authorization"] ||
+            "";
+          attemptedKeys.push(auth);
+          if (auth.includes("test-key-1")) {
+            return Promise.resolve({
+              ok: false,
+              status: 402,
+              text: async () => "Insufficient credit",
+            });
+          }
+          return Promise.resolve({
+            ok: true,
+            body: mockAudioStream,
+          });
+        }
+        return Promise.resolve({ ok: false, status: 500 });
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const request = new NextRequest("http://localhost/api/tts", {
+      method: "POST",
+      body: JSON.stringify({ text: "Testing multi-key failover" }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(attemptedKeys).toEqual(["Bearer test-key-1", "Bearer test-key-2"]);
+
+    delete process.env.FISH_AUDIO_API_KEY;
+    vi.unstubAllGlobals();
+  });
 });
