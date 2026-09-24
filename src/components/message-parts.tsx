@@ -46,7 +46,11 @@ import { cleanModelDisplayName } from "lib/ai/model-display-names";
 
 import { TextShimmer } from "ui/text-shimmer";
 import equal from "lib/equal";
-import { generateSpeech } from "lib/ai/speech/custom-tts";
+import {
+  generateSpeech,
+  cleanTextForSpeech,
+  speakWithWebSpeech,
+} from "lib/ai/speech/custom-tts";
 import {
   VercelAIWorkflowToolStreamingResult,
   VercelAIWorkflowToolStreamingResultTag,
@@ -343,8 +347,25 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const stopSpeechRef = useRef<(() => void) | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const metadata = message.metadata as ChatMetadata | undefined;
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      if (stopSpeechRef.current) {
+        stopSpeechRef.current();
+        stopSpeechRef.current = null;
+      }
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const agent = useMemo(() => {
     return agentList.find((a) => a.id === metadata?.agentId);
@@ -470,34 +491,71 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                           audioRef.current.pause();
                           audioRef.current.currentTime = 0;
                         }
+                        if (stopSpeechRef.current) {
+                          stopSpeechRef.current();
+                          stopSpeechRef.current = null;
+                        }
+                        if (
+                          typeof window !== "undefined" &&
+                          window.speechSynthesis
+                        ) {
+                          window.speechSynthesis.cancel();
+                        }
                         setIsPlaying(false);
                       } else {
                         // Start playing
                         try {
-                          const text = part.text;
-                          if (!text) return;
+                          const rawText = part.text;
+                          if (!rawText) return;
+                          const clean = cleanTextForSpeech(rawText);
+                          if (!clean) return;
+
                           setIsPlaying(true);
-                          const audioUrl = await generateSpeech(text, "nova");
-                          const proxyUrl =
-                            audioUrl.startsWith("data:") ||
-                            audioUrl.startsWith("blob:")
-                              ? audioUrl
-                              : `/api/audio?url=${encodeURIComponent(audioUrl)}`;
 
-                          if (!audioRef.current) {
-                            audioRef.current = new Audio();
+                          try {
+                            const audioUrl = await generateSpeech(
+                              clean,
+                              "nova",
+                            );
+                            const proxyUrl =
+                              audioUrl.startsWith("data:") ||
+                              audioUrl.startsWith("blob:")
+                                ? audioUrl
+                                : `/api/audio?url=${encodeURIComponent(audioUrl)}`;
+
+                            if (!audioRef.current) {
+                              audioRef.current = new Audio();
+                            }
+
+                            audioRef.current.src = proxyUrl;
+                            audioRef.current.onended = () => {
+                              setIsPlaying(false);
+                            };
+                            audioRef.current.onerror = () => {
+                              setIsPlaying(false);
+                              toast.error("Failed to play audio");
+                            };
+
+                            await audioRef.current.play();
+                          } catch (backendError) {
+                            console.warn(
+                              "Backend TTS failed, using Web Speech fallback:",
+                              backendError,
+                            );
+                            stopSpeechRef.current = speakWithWebSpeech(
+                              clean,
+                              "alloy",
+                              () => {
+                                setIsPlaying(false);
+                                stopSpeechRef.current = null;
+                              },
+                              () => {
+                                setIsPlaying(false);
+                                stopSpeechRef.current = null;
+                                toast.error("Failed to play audio");
+                              },
+                            );
                           }
-
-                          audioRef.current.src = proxyUrl;
-                          audioRef.current.onended = () => {
-                            setIsPlaying(false);
-                          };
-                          audioRef.current.onerror = () => {
-                            setIsPlaying(false);
-                            toast.error("Failed to play audio");
-                          };
-
-                          await audioRef.current.play();
                         } catch (error) {
                           console.error("TTS error:", error);
                           toast.error("Failed to generate speech");

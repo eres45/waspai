@@ -49,9 +49,47 @@ const MALE_VOICES = new Set([
   "fish-male",
 ]);
 
+const LLAMAI_VOICES = new Set([
+  "nova",
+  "alloy",
+  "shimmer",
+  "echo",
+  "onyx",
+  "fable",
+  "en-US-JennyNeural",
+  "en-US-GuyNeural",
+]);
+
+function cleanTextForSpeech(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "")
+    .replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, "")
+    .replace(/<reasoning>[\s\S]*?(?:<\/reasoning>|$)/gi, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/^[ \t]*#{1,6}[ \t]*/gm, "")
+    .replace(/^[ \t]*[>\-*+][ \t]+/gm, "")
+    .replace(/^[ \t]*\d+\.[ \t]+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\\\([\s\S]*?\\\)/g, "")
+    .replace(/\\\[[\s\S]*?\\\]/g, "")
+    .replace(/\$\$[\s\S]*?\$\$/g, "")
+    .replace(/\$([^$]+)\$/g, "$1")
+    .replace(/\n{2,}/g, ". ")
+    .replace(/\n/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\.{2,}/g, ".")
+    .trim();
+}
+
 /**
- * TTS API Proxy – Primary: Fish Audio (s2.1-pro-free, streaming female voice)
- * Fallbacks: Sarvam AI (Indic voices) or LLAMAI TTS Worker
+ * TTS API Proxy – Primary: Fish Audio / LLAMAI TTS Worker
  * Streams raw MP3 audio directly to the client.
  */
 export async function POST(request: NextRequest) {
@@ -66,7 +104,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cleanText = text.trim();
+    const cleanText = cleanTextForSpeech(text.trim());
+    if (!cleanText) {
+      return Response.json(
+        { success: false, error: "Text contains no speakable content" },
+        { status: 400 },
+      );
+    }
 
     // ── 1. Intercept Sarvam AI voice requests ──────────────────────────────────
     if (voice && typeof voice === "string" && voice.startsWith("sarvam-")) {
@@ -138,8 +182,46 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── 2. Primary: Fish Audio (s2.1-pro-free with streaming & key rotation) ──
     const isMale = typeof voice === "string" && MALE_VOICES.has(voice);
+    const fallbackVoice = isMale ? "en-US-GuyNeural" : "en-US-JennyNeural";
+
+    // ── 2. If voice is an OpenAI/Neural voice (e.g. nova, alloy, shimmer, echo, etc.), route directly to LLAMAI TTS ──
+    if (typeof voice === "string" && LLAMAI_VOICES.has(voice)) {
+      try {
+        logger.info(`Routing directly to LLAMAI TTS: voice=${voice}`);
+        const llamaiResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer abc",
+          },
+          body: JSON.stringify({
+            input: cleanText,
+            voice,
+            model: "tts-1",
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (llamaiResponse.ok && llamaiResponse.body) {
+          logger.info(
+            `LLAMAI TTS stream connected successfully for voice=${voice}`,
+          );
+          return new Response(llamaiResponse.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "audio/mpeg",
+              "Transfer-Encoding": "chunked",
+              "Cache-Control": "no-store",
+            },
+          });
+        }
+      } catch (llamaiErr) {
+        logger.warn(`Primary LLAMAI TTS failed for voice=${voice}:`, llamaiErr);
+      }
+    }
+
+    // ── 3. Primary for fish-* / Fallback for others: Fish Audio (with 60s timeout & key rotation) ──
     const referenceId = isMale ? FISH_MALE_VOICE_ID : FISH_FEMALE_VOICE_ID;
     const selectedGender = isMale ? "male" : "female";
 
@@ -162,7 +244,7 @@ export async function POST(request: NextRequest) {
             reference_id: referenceId,
             format: "mp3",
           }),
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(60000), // Generous 60s timeout so audio stream never gets cut off
         });
 
         if (fishResponse.ok && fishResponse.body) {
@@ -191,14 +273,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 3. Fallback Chain: LLAMAI Worker → Sarvam Worker → Kitten TTS ───────
-    const fallbackVoice = isMale ? "en-US-GuyNeural" : "en-US-JennyNeural";
+    // ── 4. Fallback Chain: LLAMAI Worker → Sarvam Worker → Kitten TTS ───────
     const sarvamFallbackVoice = isMale ? "shubh" : "priya";
     const kittenFallbackVoice = isMale ? "Bruno" : "Bella";
 
-    // 3a. Primary Fallback: LLAMAI TTS Worker
+    // 4a. Secondary Fallback: LLAMAI TTS Worker (with fallbackVoice)
     try {
-      logger.info(`Routing to Fallback 1 (LLAMAI TTS): voice=${fallbackVoice}`);
+      logger.info(`Routing to Fallback (LLAMAI TTS): voice=${fallbackVoice}`);
       const fallbackResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
         method: "POST",
         headers: {
@@ -210,7 +291,7 @@ export async function POST(request: NextRequest) {
           voice: fallbackVoice,
           model: "tts-1",
         }),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (fallbackResponse.ok && fallbackResponse.body) {
@@ -224,7 +305,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (fb1Err) {
-      logger.warn(`Fallback 1 (LLAMAI) failed:`, fb1Err);
+      logger.warn(`Fallback (LLAMAI) failed:`, fb1Err);
     }
 
     // 3b. Secondary Fallback: Sarvam Worker (odd-fog-3663)

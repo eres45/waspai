@@ -57,83 +57,136 @@ export function getVoiceDisplayName(voice: CustomTTSVoice): string {
 }
 
 /**
- * Generate speech from text using Fish Audio / TTS Worker (via backend proxy).
- * The proxy returns raw MP3 bytes (chunked/streamed); we convert them to an object URL for playback.
- * Falls back to Web Speech API if the request fails.
+ * Clean markdown, think tags, and code blocks to produce natural spoken speech.
  */
-export async function generateSpeech(
-  text: string,
-  voice: CustomTTSVoice = "fish-female",
-): Promise<string> {
-  try {
-    const response = await fetch("/api/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice }),
-    });
-
-    if (!response.ok) {
-      console.warn(`LOVO TTS error: ${response.status}, falling back...`);
-      return generateSpeechFallback(text, voice);
-    }
-
-    // The proxy returns raw audio bytes (audio/mpeg)
-    const audioBlob = await response.blob();
-    return URL.createObjectURL(audioBlob);
-  } catch (error) {
-    console.error("TTS generation error:", error);
-    return generateSpeechFallback(text, voice);
-  }
+export function cleanTextForSpeech(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "")
+    .replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, "")
+    .replace(/<reasoning>[\s\S]*?(?:<\/reasoning>|$)/gi, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/^[ \t]*#{1,6}[ \t]*/gm, "")
+    .replace(/^[ \t]*[>\-*+][ \t]+/gm, "")
+    .replace(/^[ \t]*\d+\.[ \t]+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\\\([\s\S]*?\\\)/g, "")
+    .replace(/\\\[[\s\S]*?\\\]/g, "")
+    .replace(/\$\$[\s\S]*?\$\$/g, "")
+    .replace(/\$([^$]+)\$/g, "$1")
+    .replace(/\n{2,}/g, ". ")
+    .replace(/\n/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\.{2,}/g, ".")
+    .trim();
 }
 
 /**
- * Fallback TTS using Web Speech API (client-side)
- * Creates a data URL with audio data
+ * Generate speech from text using the backend TTS route.
+ * Returns an object URL for raw MP3 audio bytes.
  */
-function generateSpeechFallback(
+export async function generateSpeech(
+  text: string,
+  voice: CustomTTSVoice = "nova",
+): Promise<string> {
+  const clean = cleanTextForSpeech(text);
+  if (!clean) {
+    throw new Error("No speakable text provided");
+  }
+
+  const response = await fetch("/api/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: clean, voice }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(`TTS service error (${response.status}): ${errorText}`);
+  }
+
+  const audioBlob = await response.blob();
+  if (audioBlob.size === 0) {
+    throw new Error("Empty audio received from TTS service");
+  }
+
+  return URL.createObjectURL(audioBlob);
+}
+
+/**
+ * Speaks text using the browser Web Speech API.
+ * Handles Chrome's ~15s pause bug and provides a stop/cancel callback.
+ */
+export function speakWithWebSpeech(
   text: string,
   voice: CustomTTSVoice = "alloy",
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Check if Web Speech API is available
-      const SpeechSynthesisUtterance =
-        typeof window !== "undefined" && window.SpeechSynthesisUtterance
-          ? window.SpeechSynthesisUtterance
-          : null;
+  onEnd?: () => void,
+  onError?: (err: any) => void,
+): () => void {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    onError?.(new Error("Web Speech API not available"));
+    return () => {};
+  }
 
-      if (!SpeechSynthesisUtterance) {
-        reject(new Error("Web Speech API not available"));
-        return;
-      }
+  window.speechSynthesis.cancel();
+  const clean = cleanTextForSpeech(text);
+  const utterance = new SpeechSynthesisUtterance(clean);
 
-      // Create utterance
-      const utterance = new SpeechSynthesisUtterance(text);
+  const voiceIndex = CUSTOM_TTS_VOICES.indexOf(voice);
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    utterance.voice = voices[Math.min(voiceIndex, voices.length - 1)];
+  }
 
-      // Map custom voice to Web Speech voice
-      const voiceIndex = CUSTOM_TTS_VOICES.indexOf(voice);
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        utterance.voice = voices[Math.min(voiceIndex, voices.length - 1)];
-      }
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  utterance.volume = 1;
 
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      utterance.volume = 1;
+  let timer: any = null;
 
-      // For fallback, we'll return a data URL that represents the speech
-      // This is a workaround - ideally we'd record the audio, but that requires more setup
-      const audioDataUrl = `data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==`;
-
-      // Speak the text (for immediate playback)
-      window.speechSynthesis.speak(utterance);
-
-      // Return the data URL
-      resolve(audioDataUrl);
-    } catch (error) {
-      reject(error);
+  const cleanup = () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
     }
-  });
+  };
+
+  utterance.onend = () => {
+    cleanup();
+    onEnd?.();
+  };
+
+  utterance.onerror = (e) => {
+    cleanup();
+    if (e.error !== "canceled" && e.error !== "interrupted") {
+      onError?.(e);
+    }
+  };
+
+  // Chrome speech synthesis freeze fix: ping every 10s so it doesn't pause after ~15s
+  timer = setInterval(() => {
+    if (!window.speechSynthesis.speaking) {
+      cleanup();
+      return;
+    }
+    window.speechSynthesis.pause();
+    window.speechSynthesis.resume();
+  }, 10000);
+
+  window.speechSynthesis.speak(utterance);
+
+  return () => {
+    cleanup();
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  };
 }
 
 /**
