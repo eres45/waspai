@@ -206,6 +206,32 @@ const budsaiProvider = createOpenAICompatible({
   },
 });
 
+// SeekAI Provider (deepseek-ai/DeepSeek-V4-Flash-0731, glm-5.3-flash)
+export const SEEKAI_BASE_URL = "https://seekai.cc/v1";
+export const SEEKAI_DEFAULT_KEY =
+  "sk-zCStGYhQQFmPJxr1RsGUh7YGirDm08aaF5bxNCtn3lUFCrOO";
+
+export const SEEKAI_MODELS = new Set([
+  "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "glm-5.3-flash",
+]);
+
+function getSeekAiKey(): string {
+  return process.env.SEEKAI_API_KEY?.trim() || SEEKAI_DEFAULT_KEY;
+}
+
+const seekaiProvider = createOpenAICompatible({
+  name: "SeekAI",
+  apiKey: "dummy",
+  baseURL: SEEKAI_BASE_URL,
+  fetch: async (url, options) => {
+    const key = getSeekAiKey();
+    const headers = new Headers(options?.headers || {});
+    headers.set("Authorization", `Bearer ${key}`);
+    return fetch(url, { ...options, headers });
+  },
+});
+
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
 function getMimeTypes(modelId: string): string[] {
   const id = modelId.toLowerCase();
@@ -263,6 +289,8 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     { id: "ox-alpha", owned_by: "budsai" },
     { id: "step-3.7-flash", owned_by: "budsai" },
     { id: "deepseek-v4-flash", owned_by: "budsai" },
+    { id: "deepseek-ai/DeepSeek-V4-Flash-0731", owned_by: "seekai" },
+    { id: "glm-5.3-flash", owned_by: "seekai" },
   ];
 }
 
@@ -288,6 +316,9 @@ const FREE_TIER_MODELS = new Set([
   "ox-alpha",
   "step-3.7-flash",
   "deepseek-v4-flash",
+  // SeekAI models
+  "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "glm-5.3-flash",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -464,6 +495,26 @@ export async function buildDynamicModelsInfo() {
         },
       ],
     },
+    {
+      provider: "SeekAI",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "deepseek-ai/DeepSeek-V4-Flash-0731",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "glm-5.3-flash",
+          isToolCallUnsupported: true, // returns 404 when tools are passed
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
   ];
 }
 
@@ -497,6 +548,8 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   if (id.startsWith("frenix-qwen")) return "Qwen";
   if (id.startsWith("frenix-grok")) return "xAI";
   if (id.startsWith("frenix-")) return "Frenix";
+
+  if (SEEKAI_MODELS.has(modelId)) return "SeekAI";
 
   if (
     id.includes("claude") ||
@@ -677,6 +730,17 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
+  // SeekAI: deepseek-ai/DeepSeek-V4-Flash-0731 supports tool calls; glm-5.3-flash does not
+  if (modelId === "glm-5.3-flash") {
+    return true;
+  }
+  if (
+    modelId === "deepseek-ai/deepseek-v4-flash-0731" ||
+    modelId === "deepseek-ai/DeepSeek-V4-Flash-0731".toLowerCase()
+  ) {
+    return false;
+  }
+
   // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
   // assume it doesn't support tool calls
   if (!modelId.includes("/") && !modelId.includes("frenix-")) {
@@ -744,6 +808,11 @@ export const customModelProvider = {
       const resolvedId =
         modelId === "ministral-14b" ? "ministral-14b-latest" : modelId;
       return mistralProvider(resolvedId) as unknown as LanguageModel;
+    }
+
+    // SeekAI provider (deepseek-ai/DeepSeek-V4-Flash-0731, glm-5.3-flash)
+    if (model.provider === "SeekAI" || SEEKAI_MODELS.has(modelId)) {
+      return seekaiProvider(modelId) as unknown as LanguageModel;
     }
 
     // BudsAI provider (ox-alpha, step-3.7-flash, deepseek-v4-flash)

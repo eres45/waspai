@@ -70,6 +70,7 @@ describe("customModelProvider file support metadata", () => {
       "Xiaomi",
       "Mistral",
       "BudsAI",
+      "SeekAI",
     ]);
 
     const allModels = modelsInfo.flatMap((p) => p.models);
@@ -86,6 +87,8 @@ describe("customModelProvider file support metadata", () => {
     expect(modelNames).toContain("ox-alpha");
     expect(modelNames).toContain("step-3.7-flash");
     expect(modelNames).toContain("deepseek-v4-flash");
+    expect(modelNames).toContain("deepseek-ai/DeepSeek-V4-Flash-0731");
+    expect(modelNames).toContain("glm-5.3-flash");
 
     // All are free tier
     for (const m of allModels) {
@@ -93,8 +96,8 @@ describe("customModelProvider file support metadata", () => {
       expect(getModelTier(m.name)).toBe("Free");
     }
 
-    // Tool call support is per-model; ox-alpha and deepseek-v4-flash do NOT support tool calls
-    const toolUnsupported = ["ox-alpha", "deepseek-v4-flash"];
+    // Tool call support is per-model; ox-alpha, deepseek-v4-flash, and glm-5.3-flash do NOT support tool calls
+    const toolUnsupported = ["ox-alpha", "deepseek-v4-flash", "glm-5.3-flash"];
     for (const m of allModels) {
       if (toolUnsupported.includes(m.name)) {
         expect(isToolCallUnsupportedModel(m.name)).toBe(true);
@@ -128,6 +131,20 @@ describe("customModelProvider file support metadata", () => {
       customModelProvider.getModel({
         provider: "BudsAI",
         model: "step-3.7-flash",
+      }),
+    ).toBeDefined();
+
+    // SeekAI model instantiation
+    expect(
+      customModelProvider.getModel({
+        provider: "SeekAI",
+        model: "deepseek-ai/DeepSeek-V4-Flash-0731",
+      }),
+    ).toBeDefined();
+    expect(
+      customModelProvider.getModel({
+        provider: "SeekAI",
+        model: "glm-5.3-flash",
       }),
     ).toBeDefined();
   });
@@ -332,7 +349,7 @@ describe("sanitizeMessageToolCalls", () => {
     });
 
     const modelsInfo = await buildDynamicModelsInfo();
-    expect(modelsInfo.length).toBe(6);
+    expect(modelsInfo.length).toBe(7);
     expect(modelsInfo[0].provider).toBe("OpenAI");
     expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
 
