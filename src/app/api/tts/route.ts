@@ -168,43 +168,115 @@ export async function POST(request: NextRequest) {
       logger.warn(`Fish Audio fetch failed, routing to fallback:`, fishError);
     }
 
-    // ── 3. Secondary Fallback: LLAMAI TTS Worker ──────────────────────────────
+    // ── 3. Fallback Chain: LLAMAI Worker → Sarvam Worker → Kitten TTS ───────
     const fallbackVoice = isMale ? "en-US-GuyNeural" : "en-US-JennyNeural";
-    logger.info(`Routing to fallback TTS Worker: voice=${fallbackVoice}`);
+    const sarvamFallbackVoice = isMale ? "shubh" : "priya";
+    const kittenFallbackVoice = isMale ? "Bruno" : "Bella";
 
-    const fallbackResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer abc",
-      },
-      body: JSON.stringify({
-        input: cleanText,
-        voice: fallbackVoice,
-        model: "tts-1",
-      }),
-    });
-
-    if (!fallbackResponse.ok) {
-      const err = await fallbackResponse.text();
-      logger.error(`Fallback TTS error ${fallbackResponse.status}: ${err}`);
-      return Response.json(
-        {
-          success: false,
-          error: `TTS provider error: ${fallbackResponse.status}`,
+    // 3a. Primary Fallback: LLAMAI TTS Worker
+    try {
+      logger.info(`Routing to Fallback 1 (LLAMAI TTS): voice=${fallbackVoice}`);
+      const fallbackResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer abc",
         },
-        { status: 502 },
-      );
+        body: JSON.stringify({
+          input: cleanText,
+          voice: fallbackVoice,
+          model: "tts-1",
+        }),
+        signal: AbortSignal.timeout(6000),
+      });
+
+      if (fallbackResponse.ok && fallbackResponse.body) {
+        return new Response(fallbackResponse.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "Transfer-Encoding": "chunked",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
+    } catch (fb1Err) {
+      logger.warn(`Fallback 1 (LLAMAI) failed:`, fb1Err);
     }
 
-    return new Response(fallbackResponse.body, {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Transfer-Encoding": "chunked",
-        "Cache-Control": "no-store",
+    // 3b. Secondary Fallback: Sarvam Worker (odd-fog-3663)
+    try {
+      logger.info(
+        `Routing to Fallback 2 (Sarvam Worker): voice=${sarvamFallbackVoice}`,
+      );
+      const sarvamFbRes = await fetch(
+        "https://odd-fog-3663.mikemathews7000.workers.dev/v1/audio/speech",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "bulbul:v3",
+            input: cleanText,
+            voice: sarvamFallbackVoice,
+          }),
+          signal: AbortSignal.timeout(5000),
+        },
+      );
+
+      if (sarvamFbRes.ok && sarvamFbRes.body) {
+        return new Response(sarvamFbRes.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "Transfer-Encoding": "chunked",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
+    } catch (fb2Err) {
+      logger.warn(`Fallback 2 (Sarvam Worker) failed:`, fb2Err);
+    }
+
+    // 3c. Tertiary Fallback: Kitten TTS (47.95.206.196)
+    try {
+      logger.info(
+        `Routing to Fallback 3 (Kitten TTS): voice=${kittenFallbackVoice}`,
+      );
+      const kittenRes = await fetch(
+        "http://47.95.206.196:8080/v1/audio/speech",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "kitten-tts",
+            input: cleanText,
+            voice: kittenFallbackVoice,
+          }),
+          signal: AbortSignal.timeout(3000),
+        },
+      );
+
+      if (kittenRes.ok && kittenRes.body) {
+        return new Response(kittenRes.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "Transfer-Encoding": "chunked",
+            "Cache-Control": "no-store",
+          },
+        });
+      }
+    } catch (fb3Err) {
+      logger.warn(`Fallback 3 (Kitten TTS) failed:`, fb3Err);
+    }
+
+    return Response.json(
+      {
+        success: false,
+        error: "All TTS providers and fallbacks temporarily unavailable",
       },
-    });
+      { status: 502 },
+    );
   } catch (error) {
     logger.error(`TTS proxy error: ${error}`);
     return Response.json(

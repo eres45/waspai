@@ -6,6 +6,7 @@ vi.mock("logger", () => ({
   default: {
     info: vi.fn(),
     error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -121,6 +122,56 @@ describe("TTS API Proxy Endpoint", () => {
           text: "Hello from Fish Audio",
           reference_id: "f7f74a4bc4324c25b96b9b6741a72ab3",
           format: "mp3",
+        }),
+      }),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("should fall back to secondary worker when Fish Audio fails", async () => {
+    const mockAudioStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([5, 6, 7, 8]));
+        controller.close();
+      },
+    });
+
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("fish.audio")) {
+        return Promise.resolve({
+          ok: false,
+          status: 503,
+          text: async () => "Fish Audio Busy",
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        body: mockAudioStream,
+      });
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const request = new NextRequest("http://localhost/api/tts", {
+      method: "POST",
+      body: JSON.stringify({
+        text: "Hello fallback speech",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
+
+    // Verified fallback was called
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://tts-worker.llamai.workers.dev/v1/audio/speech",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          input: "Hello fallback speech",
+          voice: "en-US-JennyNeural",
+          model: "tts-1",
         }),
       }),
     );
