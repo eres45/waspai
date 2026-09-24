@@ -325,6 +325,8 @@ async function handleChatCompletions(request) {
         const reader = upstreamRes.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
+        let hasSentThinkStart = false;
+        let isThinking = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -337,6 +339,25 @@ async function handleChatCompletions(request) {
             const trimmed = line.trim();
             if (!trimmed || !trimmed.startsWith("data: ")) continue;
             if (trimmed.includes("[DONE]")) {
+              if (isThinking) {
+                const closeChunk = {
+                  id: `chatcmpl-${Date.now()}`,
+                  object: "chat.completion.chunk",
+                  created: Math.floor(Date.now() / 1000),
+                  model: requestedModel,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: { content: "</think>\n\n" },
+                      finish_reason: null,
+                    },
+                  ],
+                };
+                await writer.write(
+                  encoder.encode(`data: ${JSON.stringify(closeChunk)}\n\n`),
+                );
+                isThinking = false;
+              }
               await writer.write(encoder.encode("data: [DONE]\n\n"));
               continue;
             }
@@ -345,6 +366,24 @@ async function handleChatCompletions(request) {
               const data = JSON.parse(trimmed.slice(6));
               const deltaContent = data.choices?.[0]?.delta?.content ?? "";
               const deltaReasoning = data.choices?.[0]?.delta?.reasoning ?? "";
+
+              let chunkContent = deltaContent;
+              if (deltaReasoning) {
+                if (!hasSentThinkStart) {
+                  chunkContent = `<think>${deltaReasoning}`;
+                  hasSentThinkStart = true;
+                  isThinking = true;
+                } else {
+                  chunkContent = deltaReasoning;
+                }
+              } else if (isThinking && deltaContent) {
+                chunkContent = `</think>\n\n${deltaContent}`;
+                isThinking = false;
+              }
+
+              if (!chunkContent && !data.choices?.[0]?.finish_reason) {
+                continue;
+              }
 
               const chunk = {
                 id: data.id || `chatcmpl-${Date.now()}`,
@@ -355,7 +394,7 @@ async function handleChatCompletions(request) {
                   {
                     index: 0,
                     delta: {
-                      ...(deltaContent ? { content: deltaContent } : {}),
+                      ...(chunkContent ? { content: chunkContent } : {}),
                       ...(deltaReasoning
                         ? { reasoning_content: deltaReasoning }
                         : {}),
@@ -372,6 +411,24 @@ async function handleChatCompletions(request) {
               await writer.write(encoder.encode(`${trimmed}\n\n`));
             }
           }
+        }
+        if (isThinking) {
+          const closeChunk = {
+            id: `chatcmpl-${Date.now()}`,
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model: requestedModel,
+            choices: [
+              {
+                index: 0,
+                delta: { content: "</think>\n\n" },
+                finish_reason: null,
+              },
+            ],
+          };
+          await writer.write(
+            encoder.encode(`data: ${JSON.stringify(closeChunk)}\n\n`),
+          );
         }
         await writer.write(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
