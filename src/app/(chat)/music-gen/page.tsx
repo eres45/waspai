@@ -254,23 +254,21 @@ export default function MusicGenPage() {
                 </div>
               </div>
 
+              <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-500 flex items-center gap-2">
+                <span>
+                  ⚠️ Audio synthesizer is currently undergoing backend
+                  maintenance.
+                </span>
+              </div>
+
               <Button
                 onClick={handleGenerate}
-                disabled={isGenerating || !lyrics.trim()}
-                className="w-full"
+                disabled={true}
+                className="w-full opacity-60 cursor-not-allowed"
                 size="lg"
               >
-                {isGenerating ? (
-                  <>
-                    <div className="size-4 mr-2 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Music className="size-4 mr-2" />
-                    Generate Music
-                  </>
-                )}
+                <Music className="size-4 mr-2" />
+                Audio Generation Offline
               </Button>
 
               <Button

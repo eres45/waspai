@@ -40,7 +40,6 @@ import { pdfGeneratorTool } from "./pdf-generator";
 import { fileConverterTool } from "./file-converter";
 import { presentationGeneratorTool } from "./presentation-generator";
 import { pptProcessorTool } from "./ppt-processor";
-import { videoGenTool } from "./image/video-gen";
 import { analyzeImageTool } from "./image/analyze-image";
 import { qrCodeGeneratorTool, qrCodeWithLogoTool } from "./qr-code-generator";
 import { htmlPreviewTool } from "./html-preview";
@@ -100,7 +99,6 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.SuperResolution]: superResolutionTool,
     [DefaultToolName.RestoreOldPhoto]: restoreOldPhotoTool,
     [DefaultToolName.BlurBackground]: blurBackgroundTool,
-    [DefaultToolName.VideoGen]: videoGenTool,
     [DefaultToolName.AnalyzeImage]: analyzeImageTool,
   },
   [AppDefaultToolkit.Browser]: {

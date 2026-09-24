@@ -81,7 +81,6 @@ import {
   blurBackgroundTool,
   editImageTool,
 } from "lib/ai/tools/image/edit-image";
-import { videoGenTool } from "lib/ai/tools/image/video-gen";
 import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
 import {
   wordDocumentTool,
@@ -1816,7 +1815,6 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           "restore-old-photo": scopedRestoreOldPhotoTool,
           "blur-background": scopedBlurBackgroundTool,
           "edit-image": scopedEditImageTool,
-          ...(isVideoGenRequest ? { "video-gen": videoGenTool } : {}),
 
           // ALWAYS include document generation tools to prevent AI from "forgetting" them
           "generate-pdf": pdfGeneratorTool,

@@ -63,7 +63,17 @@ async function uploadToSnapzion(
  * - lyrics: Song lyrics (can be multi-line)
  * - tags: Music style tags (e.g., sad, piano, hop, pop, epic, orchestra, cinematic)
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
+  return NextResponse.json(
+    {
+      error: "AI Music Audio Generation is currently disabled for maintenance.",
+      disabled: true,
+    },
+    { status: 503 },
+  );
+}
+
+export async function _DISABLED_POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session?.user.id) {

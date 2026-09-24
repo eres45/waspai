@@ -7,40 +7,23 @@ import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { cleanModelDisplayName } from "./model-display-names";
 
-export const UNIFIED_WORKER_URL = "https://nvidia-nim-worker.rutv.workers.dev";
-export const CREATIVE_WORKER_URL = "https://unified-ai-worker.rutv.workers.dev";
 export const MULTIMODAL_WORKER_URL =
   "https://wasp-multimodal-worker.hhhlproxy.workers.dev";
-export const CLAUDE_WORKER_URL =
-  "https://wasp-claude-worker.hhhlproxy.workers.dev";
+export const UNIFIED_WORKER_URL = MULTIMODAL_WORKER_URL;
+export const CREATIVE_WORKER_URL = MULTIMODAL_WORKER_URL;
+export const CLAUDE_WORKER_URL = MULTIMODAL_WORKER_URL;
 
-// Single unified provider — every model routes through the worker
-const unifiedProvider = createOpenAICompatible({
-  name: "Unified AI Worker",
-  apiKey: "dummy",
-  baseURL: `${UNIFIED_WORKER_URL}/v1`,
-});
-
-// Creative AI worker provider for open-source / fallback models
-const creativeProvider = createOpenAICompatible({
-  name: "Creative AI Worker",
-  apiKey: "dummy",
-  baseURL: `${CREATIVE_WORKER_URL}/v1`,
-});
-
-// Dedicated Multimodal Worker (DeepSeek Chat + PicAI GPT-Image-2/FLUX)
+// Dedicated Multimodal Worker (DeepSeek Chat + Groq FreeCF + PicAI GPT-Image-2/FLUX)
 const multimodalProvider = createOpenAICompatible({
   name: "Multimodal AI Worker",
   apiKey: "dummy",
   baseURL: `${MULTIMODAL_WORKER_URL}/v1`,
 });
 
-// Dedicated Claude AI Worker (Claude Sonnet 5, Opus 5, Fable 5 with Key Rotation)
-const claudeProvider = createOpenAICompatible({
-  name: "Claude AI Worker",
-  apiKey: "dummy",
-  baseURL: `${CLAUDE_WORKER_URL}/v1`,
-});
+// Single unified provider aliases routing through multimodal worker
+const unifiedProvider = multimodalProvider;
+const creativeProvider = multimodalProvider;
+const claudeProvider = multimodalProvider;
 
 // Sarvam AI provider
 const sarvamProvider = createOpenAICompatible({
@@ -119,37 +102,31 @@ interface WorkerModel {
   created?: number;
 }
 
-interface WorkerModelsResponse {
-  object?: string;
-  data: WorkerModel[];
-}
-
 /**
- * Fetch the full model list from the unified worker.
- * Cached for 5 minutes using Next.js fetch cache.
+ * Fetch the full verified model list.
  */
 export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
   try {
-    const res = await fetch(`${CREATIVE_WORKER_URL}/v1/models`, {
-      next: { revalidate: 300 }, // cache 5 min
+    const res = await fetch(`${MULTIMODAL_WORKER_URL}/v1/models`, {
+      next: { revalidate: 300 },
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(5000),
     });
 
-    if (!res.ok) {
-      console.warn(`[models] Creative worker returned ${res.status}`);
-      return [];
+    if (res.ok) {
+      const data = (await res.json()) as any;
+      if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+        return data.data;
+      }
     }
+  } catch (_err) {}
 
-    const data = (await res.json()) as WorkerModelsResponse;
-    return data?.data || [];
-  } catch (err) {
-    console.warn(
-      "[models] Failed to fetch from worker:",
-      (err as any)?.message,
-    );
-    return [];
-  }
+  return [
+    { id: "gpt-oss-120b", owned_by: "groqworker" },
+    { id: "groqw-llama-3.1-8b", owned_by: "groqworker" },
+    { id: "groqw-llama-3.3-70b", owned_by: "groqworker" },
+    { id: "groqw-llama-4-scout", owned_by: "groqworker" },
+  ];
 }
 
 const FREE_TIER_MODELS = new Set([
@@ -340,35 +317,6 @@ export async function buildDynamicModelsInfo() {
         isImageInputUnsupported: true,
         supportedFileMimeTypes: [],
         tier: "Free",
-      },
-    ],
-  });
-
-  // Claude via Dedicated Claude Worker (with Key Rotation)
-  result.push({
-    provider: "Anthropic",
-    hasAPIKey: true,
-    models: [
-      {
-        name: "claude-sonnet-5",
-        isToolCallUnsupported: false,
-        isImageInputUnsupported: false,
-        supportedFileMimeTypes: [],
-        tier: "Pro",
-      },
-      {
-        name: "claude-opus-5",
-        isToolCallUnsupported: false,
-        isImageInputUnsupported: false,
-        supportedFileMimeTypes: [],
-        tier: "Pro",
-      },
-      {
-        name: "claude-fable-5",
-        isToolCallUnsupported: false,
-        isImageInputUnsupported: false,
-        supportedFileMimeTypes: [],
-        tier: "Pro",
       },
     ],
   });
@@ -635,6 +583,7 @@ export const customModelProvider = {
       modelId.startsWith("groqw-") ||
       modelId.startsWith("deepseek-") ||
       modelId.startsWith("llama-") ||
+      modelId.startsWith("gpt-oss-") ||
       modelId === "gpt-oss-120b" ||
       modelId === "gpt-oss-120b-p2" ||
       modelId === "deepseek-v4-flash"
@@ -642,22 +591,8 @@ export const customModelProvider = {
       return multimodalProvider(modelId) as unknown as LanguageModel;
     }
 
-    // Claude models routed via dedicated Claude AI Worker
-    if (model.provider === "Anthropic" || modelId.startsWith("claude-")) {
-      return claudeProvider(modelId) as unknown as LanguageModel;
-    }
-
-    if (modelId.startsWith("lordrouter-")) {
-      return creativeProvider(modelId) as unknown as LanguageModel;
-    }
-
-    // NVIDIA NIM models on the nvidia-nim-worker always have a slash in their ID (e.g., 'meta/llama-3.1-8b-instruct')
-    // Open-source/creative worker models on unified-ai-worker do not contain a slash (e.g., 'llama-3.2-1b', 'chatai-gpt-4o')
-    if (modelId.includes("/")) {
-      return unifiedProvider(modelId) as unknown as LanguageModel;
-    }
-
-    return creativeProvider(modelId) as unknown as LanguageModel;
+    // Default safe fallback: route through multimodal worker preserving modelId
+    return multimodalProvider(modelId) as unknown as LanguageModel;
   },
 };
 
@@ -748,4 +683,4 @@ export function sanitizeMessageToolCalls<
   });
 }
 
-export { unifiedProvider };
+export { unifiedProvider, creativeProvider, claudeProvider };
