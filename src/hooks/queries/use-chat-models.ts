@@ -20,14 +20,13 @@ export const useChatModels = (options?: SWRConfiguration) => {
     dedupingInterval: 60_000 * 5,
     revalidateOnFocus: false,
     fallbackData: [],
-    onSuccess: (data) => {
+    onSuccess: (_data) => {
       const status = appStore.getState();
-      if (!status.chatModel && data.length > 0) {
-        // Set default to first available model from first provider
+      if (!status.chatModel || status.chatModel.model !== "gpt-oss-120b") {
         appStore.setState({
           chatModel: {
-            provider: data[0].provider,
-            model: data[0].models[0].name,
+            provider: "OpenAI",
+            model: "gpt-oss-120b",
           },
         });
       }

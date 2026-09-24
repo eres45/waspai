@@ -138,7 +138,7 @@ const initialState: AppState = {
   toolPresets: [],
   chatModel: {
     provider: "OpenAI",
-    model: "openai/gpt-oss-120b",
+    model: "gpt-oss-120b",
   },
   openShortcutsPopup: false,
   openChatPreferences: false,

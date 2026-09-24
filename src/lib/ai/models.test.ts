@@ -53,52 +53,14 @@ describe("customModelProvider file support metadata", () => {
     );
   });
 
-  it("deduplicates models in buildDynamicModelsInfo by display name, prioritizing canonical over prefixed", async () => {
+  it("returns exclusively gpt-oss-120b under OpenAI provider in buildDynamicModelsInfo", async () => {
     const { buildDynamicModelsInfo } = modelsModule;
+    const modelsInfo = await buildDynamicModelsInfo();
 
-    // Temporarily mock fetch to return duplicates
-    const originalFetch = global.fetch;
-    global.fetch = vi.fn().mockImplementation((url: string) => {
-      if (url.includes("/v1/models")) {
-        return Promise.resolve({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              data: [
-                { id: "groqw-llama-3.1-8b", owned_by: "groqworker" },
-                { id: "groqw-chatbotai-llama-3.1-8b", owned_by: "groqworker" },
-                { id: "groqw-llama-3.3-70b", owned_by: "groqworker" },
-                { id: "groqw-chatai-llama-3.3-70b", owned_by: "groqworker" },
-              ],
-            }),
-        } as any);
-      }
-      return Promise.reject(new Error("Unknown URL"));
-    });
-
-    try {
-      const modelsInfo = await buildDynamicModelsInfo();
-      const groqProvider = modelsInfo.find((item) => item.provider === "Groq");
-
-      expect(groqProvider).toBeDefined();
-
-      // Should deduplicate "Llama 3.1 8B" and "Llama 3.3 70B"
-      // Result should have exactly 2 models instead of 4
-      expect(groqProvider?.models.length).toBe(2);
-
-      // Verify that it selected the canonical model IDs (non-prefixed, shortest)
-      const llama31 = groqProvider?.models.find(
-        (m) => cleanModelDisplayName(m.name) === "Llama 3.1 8B",
-      );
-      const llama33 = groqProvider?.models.find(
-        (m) => cleanModelDisplayName(m.name) === "Llama 3.3 70B",
-      );
-
-      expect(llama31?.name).toBe("groqw-llama-3.1-8b");
-      expect(llama33?.name).toBe("groqw-llama-3.3-70b");
-    } finally {
-      global.fetch = originalFetch;
-    }
+    expect(modelsInfo.length).toBe(1);
+    expect(modelsInfo[0].provider).toBe("OpenAI");
+    expect(modelsInfo[0].models.length).toBe(1);
+    expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
   });
 });
 
@@ -286,54 +248,36 @@ describe("sanitizeMessageToolCalls", () => {
     expect(result[0].toolInvocations[0].args).toEqual({});
   });
 
-  it("registers and configures Agnes (auto) and SenseNova models correctly", async () => {
+  it("sets gpt-oss-120b as the default chat model and configures it correctly", async () => {
     const {
       buildDynamicModelsInfo,
       customModelProvider,
       isToolCallUnsupportedModel,
       getModelTier,
+      DEFAULT_CHAT_MODEL,
     } = modelsModule;
 
+    expect(DEFAULT_CHAT_MODEL).toEqual({
+      provider: "OpenAI",
+      model: "gpt-oss-120b",
+    });
+
     const modelsInfo = await buildDynamicModelsInfo();
-    const agnesProvider = modelsInfo.find((p) => p.provider === "Agnes");
-    const sensenovaProvider = modelsInfo.find(
-      (p) => p.provider === "SenseNova",
-    );
-
-    expect(agnesProvider).toBeDefined();
-    expect(agnesProvider?.models.some((m) => m.name === "auto")).toBe(true);
-
-    const deepseekProvider = modelsInfo.find((p) => p.provider === "DeepSeek");
-    const sarvamProviderItem = modelsInfo.find((p) => p.provider === "Sarvam");
-    expect(deepseekProvider).toBeUndefined();
-    expect(sarvamProviderItem).toBeUndefined();
-
-    expect(sensenovaProvider).toBeDefined();
-    expect(
-      sensenovaProvider?.models.some(
-        (m) => m.name === "sensenova-6.8-flash-lite",
-      ),
-    ).toBe(true);
+    expect(modelsInfo.length).toBe(1);
+    expect(modelsInfo[0].provider).toBe("OpenAI");
+    expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
 
     // Free tier checks
-    expect(getModelTier("auto")).toBe("Free");
-    expect(getModelTier("sensenova-6.8-flash-lite")).toBe("Free");
+    expect(getModelTier("gpt-oss-120b")).toBe("Free");
 
     // Tool calling supported checks
-    expect(isToolCallUnsupportedModel("auto")).toBe(false);
-    expect(isToolCallUnsupportedModel("sensenova-6.8-flash-lite")).toBe(false);
+    expect(isToolCallUnsupportedModel("gpt-oss-120b")).toBe(false);
 
     // Model instantiation
-    const autoModel = customModelProvider.getModel({
-      provider: "Agnes",
-      model: "auto",
+    const model = customModelProvider.getModel({
+      provider: "OpenAI",
+      model: "gpt-oss-120b",
     });
-    expect(autoModel).toBeDefined();
-
-    const sensenovaModel = customModelProvider.getModel({
-      provider: "SenseNova",
-      model: "sensenova-6.8-flash-lite",
-    });
-    expect(sensenovaModel).toBeDefined();
+    expect(model).toBeDefined();
   });
 });

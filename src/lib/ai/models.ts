@@ -5,7 +5,6 @@ import {
 } from "./file-support";
 import { ChatModel } from "app-types/chat";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { cleanModelDisplayName } from "./model-display-names";
 
 export const MULTIMODAL_WORKER_URL =
   "https://wasp-multimodal-worker.hhhlproxy.workers.dev";
@@ -100,26 +99,6 @@ const hcnsecProvider = createOpenAICompatible({
   },
 });
 
-// ─── Vision / image-input heuristic ──────────────────────────────────────────
-// Models whose IDs contain these keywords support image input.
-const VISION_KEYWORDS = [
-  "vision",
-  "vl",
-  "multimodal",
-  "image-preview",
-  "image-gen",
-  "gemini",
-  "gpt-4o",
-  "gpt-4-turbo",
-  "claude-3",
-  "claude-4",
-];
-
-function isVisionModel(modelId: string): boolean {
-  const id = modelId.toLowerCase();
-  return VISION_KEYWORDS.some((kw) => id.includes(kw));
-}
-
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
 function getMimeTypes(modelId: string): string[] {
   const id = modelId.toLowerCase();
@@ -164,24 +143,18 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     }
   } catch (_err) {}
 
-  return [
-    { id: "gpt-oss-120b", owned_by: "groqworker" },
-    { id: "groqw-llama-3.1-8b", owned_by: "groqworker" },
-    { id: "groqw-llama-3.3-70b", owned_by: "groqworker" },
-    { id: "groqw-llama-4-scout", owned_by: "groqworker" },
-  ];
+  return [{ id: "gpt-oss-120b", owned_by: "openai" }];
 }
 
-const FREE_TIER_MODELS = new Set([
-  // Groq worker models (all free for now)
-  "groqw-llama-3.1-8b",
-  "groqw-llama-3.3-70b",
-  "groqw-llama-4-scout",
-  "gpt-oss-120b",
+export const DEFAULT_CHAT_MODEL: ChatModel = {
+  provider: "OpenAI",
+  model: "gpt-oss-120b",
+};
 
-  // Agnes & SenseNova (Free Tier)
-  "auto",
-  "sensenova-6.8-flash-lite",
+const FREE_TIER_MODELS = new Set([
+  "gpt-oss-120b",
+  "gpt-oss-120b-p2",
+  "openai/gpt-oss-120b",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -232,154 +205,26 @@ export function getModelTier(modelId: string): string {
   return isFree ? "Free" : "Pro";
 }
 
-const COMMON_PREFIXES = [
-  "chatai-",
-  "chatbotai-",
-  "randomai-",
-  "svelteai-",
-  "openrouterhub-",
-  "groqw-",
-  "nvidiaw-",
-  "cf-",
-  "freecf-",
-  "google/",
-  "meta/",
-  "microsoft/",
-  "mistralai/",
-  "nvidia/",
-  "openai/",
-  "qwen/",
-  "sarvamai/",
-  "stepfun-ai/",
-  "upstage/",
-  "stockmark/",
-];
-
-function isPrefixedModel(name: string): boolean {
-  const lowercaseName = name.toLowerCase();
-  return COMMON_PREFIXES.some((prefix) => lowercaseName.startsWith(prefix));
-}
-
 /**
  * Build modelsInfo from live worker data.
  * Groups models by their `owned_by` field (provider).
  */
 export async function buildDynamicModelsInfo() {
-  const rawWorkerModels = await fetchModelsFromWorker();
-
-  // Deduplicate models by ID (some workers return the same model multiple times)
-  const seen = new Set<string>();
-  const workerModels = rawWorkerModels.filter((m) => {
-    if (seen.has(m.id)) return false;
-    seen.add(m.id);
-    return true;
-  });
-
-  // Keep only Groq-powered models
-  const chatModels = workerModels
-    .filter((m) => {
-      const ownedBy = (m.owned_by ?? "").toLowerCase();
-      const id = m.id.toLowerCase();
-      return ownedBy === "groqworker" || id.startsWith("groqw-");
-    })
-    .map((m) => ({
-      ...m,
-      // Normalize display IDs
-      id: m.id === "gpt-oss-120b-p2" ? "gpt-oss-120b" : m.id,
-    }));
-
-  // Group by provider determined dynamically
-  const grouped = new Map<string, WorkerModel[]>();
-  for (const m of chatModels) {
-    const provider = getModelProvider(m.id, m.owned_by);
-    if (!grouped.has(provider)) grouped.set(provider, []);
-    grouped.get(provider)!.push(m);
-  }
-
-  const result = Array.from(grouped.entries()).map(([provider, models]) => {
-    // 1. Map models to their info structure
-    const mappedModels = models.map((m) => ({
-      name: m.id,
-      isToolCallUnsupported: isToolCallUnsupportedModel(m.id),
-      isImageInputUnsupported: !isVisionModel(m.id),
-      supportedFileMimeTypes: getMimeTypes(m.id),
-      tier: getModelTier(m.id),
-    }));
-
-    // 2. Sort mapped models to prioritize canonical/non-prefixed first
-    const sortedModels = mappedModels.sort((a, b) => {
-      const aPrefixed = isPrefixedModel(a.name);
-      const bPrefixed = isPrefixedModel(b.name);
-
-      if (aPrefixed !== bPrefixed) {
-        return aPrefixed ? 1 : -1; // non-prefixed first
-      }
-
-      // Sort by length of ID (shorter first)
-      if (a.name.length !== b.name.length) {
-        return a.name.length - b.name.length;
-      }
-
-      // Alphabetical fallback
-      return a.name.localeCompare(b.name);
-    });
-
-    // 3. Deduplicate by display name (case-insensitive)
-    const seenDisplayNames = new Set<string>();
-    const uniqueModels: typeof mappedModels = [];
-    for (const m of sortedModels) {
-      const displayName = cleanModelDisplayName(m.name).toLowerCase();
-      if (!seenDisplayNames.has(displayName)) {
-        seenDisplayNames.add(displayName);
-        uniqueModels.push(m);
-      }
-    }
-
-    // 4. Finally, sort the unique models alphabetically by display name
-    uniqueModels.sort((a, b) => {
-      const aDisp = cleanModelDisplayName(a.name);
-      const bDisp = cleanModelDisplayName(b.name);
-      return aDisp.localeCompare(bDisp);
-    });
-
-    return {
-      provider,
+  return [
+    {
+      provider: "OpenAI",
       hasAPIKey: true,
-      models: uniqueModels,
-    };
-  });
-
-  // Agnes AI (auto -> Agnes 2.5 Flash)
-  result.push({
-    provider: "Agnes",
-    hasAPIKey: true,
-    models: [
-      {
-        name: "auto",
-        isToolCallUnsupported: false,
-        isImageInputUnsupported: true,
-        supportedFileMimeTypes: [],
-        tier: "Free",
-      },
-    ],
-  });
-
-  // SenseNova (sensenova-6.8-flash-lite -> SenseNova 6.8 Flash)
-  result.push({
-    provider: "SenseNova",
-    hasAPIKey: true,
-    models: [
-      {
-        name: "sensenova-6.8-flash-lite",
-        isToolCallUnsupported: false,
-        isImageInputUnsupported: true,
-        supportedFileMimeTypes: [],
-        tier: "Free",
-      },
-    ],
-  });
-
-  return result;
+      models: [
+        {
+          name: "gpt-oss-120b",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
+  ];
 }
 
 export function getModelProvider(modelId: string, ownedBy?: string): string {

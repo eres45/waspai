@@ -62,7 +62,7 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   "moonshotai-kimi-k2-instruct": "Kimi K2 Instruct",
   "openai/gpt-oss-120b": "GPT-OSS 120B",
   "openai-gpt-oss-120b": "GPT-OSS 120B",
-  "gpt-oss-120b": "GPT-OSS 120B Lite",
+  "gpt-oss-120b": "GPT-OSS 120B",
   "gpt-oss-120b-p2": "GPT-OSS 120B P2",
   "gemini-2.5-flash": "Gemini 2.5 Flash",
   "gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite",

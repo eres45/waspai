@@ -367,7 +367,7 @@ export async function POST(request: Request) {
       );
       initialModelLoadFailed = true;
       try {
-        modelToUse = { provider: "OpenAI", model: "gpt-oss-120b-p2" };
+        modelToUse = { provider: "OpenAI", model: "gpt-oss-120b" };
         model = customModelProvider.getModel(modelToUse);
       } catch (innerError) {
         logger.error(`Failed to load default fallback model:`, innerError);
