@@ -511,11 +511,11 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                           if (!clean) return;
 
                           setIsPlaying(true);
+                          const selectedVoice =
+                            appStore.getState().voiceChat.options
+                              .providerOptions?.voice || "fish-female";
 
                           try {
-                            const selectedVoice =
-                              appStore.getState().voiceChat.options
-                                .providerOptions?.voice || "fish-female";
                             const audioUrl = await generateSpeech(
                               clean,
                               selectedVoice,
@@ -542,24 +542,33 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                               let remainingText = clean;
                               if (
                                 audioRef.current &&
-                                audioRef.current.duration > 0 &&
                                 audioRef.current.currentTime > 0
                               ) {
-                                const fraction =
-                                  audioRef.current.currentTime /
-                                  audioRef.current.duration;
-                                const charIndex = Math.floor(
-                                  fraction * clean.length,
+                                const charIndexByFraction =
+                                  audioRef.current.duration > 0
+                                    ? Math.floor(
+                                        (audioRef.current.currentTime /
+                                          audioRef.current.duration) *
+                                          clean.length,
+                                      )
+                                    : 0;
+                                const charIndexByTime = Math.floor(
+                                  audioRef.current.currentTime * 14,
+                                );
+                                // Prevent premature jumps if duration was cut off early
+                                const charIndex = Math.min(
+                                  charIndexByFraction,
+                                  Math.max(charIndexByTime, 0),
                                 );
                                 const prevSentence = clean.lastIndexOf(
                                   ". ",
                                   charIndex,
                                 );
-                                if (prevSentence !== -1) {
+                                if (prevSentence !== -1 && prevSentence > 0) {
                                   remainingText = clean
                                     .substring(prevSentence + 2)
                                     .trim();
-                                } else {
+                                } else if (charIndex > 0) {
                                   remainingText = clean
                                     .substring(charIndex)
                                     .trim();
@@ -569,7 +578,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                               if (remainingText) {
                                 stopSpeechRef.current = speakWithWebSpeech(
                                   remainingText,
-                                  "alloy",
+                                  selectedVoice,
                                   () => {
                                     setIsPlaying(false);
                                     stopSpeechRef.current = null;
@@ -593,7 +602,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                             );
                             stopSpeechRef.current = speakWithWebSpeech(
                               clean,
-                              "alloy",
+                              selectedVoice,
                               () => {
                                 setIsPlaying(false);
                                 stopSpeechRef.current = null;

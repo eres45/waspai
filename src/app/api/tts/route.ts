@@ -90,6 +90,52 @@ function cleanTextForSpeech(text: string): string {
 }
 
 /**
+ * Custom fetch helper that enforces a fast connection/TTFB timeout (e.g. 10s)
+ * so we can quickly failover if a provider is unresponsive, but allows the resulting
+ * audio body stream up to streamTimeoutMs (e.g. 180s) to download without premature abortion.
+ */
+async function fetchWithConnectionTimeout(
+  url: string,
+  options: RequestInit,
+  connectTimeoutMs: number = 10000,
+  streamTimeoutMs: number = 180000,
+): Promise<Response> {
+  const controller = new AbortController();
+  let timer: NodeJS.Timeout | null = setTimeout(() => {
+    controller.abort(
+      new Error(`Connection timed out after ${connectTimeoutMs}ms`),
+    );
+  }, connectTimeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    if (res.ok) {
+      timer = setTimeout(() => {
+        controller.abort(
+          new Error(`Audio stream timed out after ${streamTimeoutMs}ms`),
+        );
+      }, streamTimeoutMs);
+      if (timer.unref) timer.unref();
+    }
+    return res;
+  } catch (err) {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    throw err;
+  }
+}
+
+/**
  * TTS API Proxy – Primary: Fish Audio / LLAMAI TTS Worker
  * Streams raw MP3 audio directly to the client.
  */
@@ -193,24 +239,28 @@ export async function POST(request: NextRequest) {
         logger.info(
           `Woino Neural TTS: voice=${woinoVoiceId}, text="${cleanText.substring(0, 60)}..."`,
         );
-        const woinoResponse = await fetch("https://tts.woino.app/api/speech", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Origin: "https://tts.woino.app",
-            Referer: "https://tts.woino.app/studio",
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+        const woinoResponse = await fetchWithConnectionTimeout(
+          "https://tts.woino.app/api/speech",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Origin: "https://tts.woino.app",
+              Referer: "https://tts.woino.app/studio",
+              "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+            },
+            body: JSON.stringify({
+              input: cleanText,
+              model: "lightning_v3.1",
+              voice: woinoVoiceId,
+              response_format: "mp3",
+              speed: 1,
+            }),
           },
-          body: JSON.stringify({
-            input: cleanText,
-            model: "lightning_v3.1",
-            voice: woinoVoiceId,
-            response_format: "mp3",
-            speed: 1,
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
+          10000,
+          180000,
+        );
 
         if (woinoResponse.ok && woinoResponse.body) {
           logger.info(`Woino TTS stream connected: voice=${woinoVoiceId}`);
@@ -243,19 +293,23 @@ export async function POST(request: NextRequest) {
     if (typeof voice === "string" && LLAMAI_VOICES.has(voice)) {
       try {
         logger.info(`Routing directly to LLAMAI TTS: voice=${voice}`);
-        const llamaiResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer abc",
+        const llamaiResponse = await fetchWithConnectionTimeout(
+          TTS_WORKER_FALLBACK_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer abc",
+            },
+            body: JSON.stringify({
+              input: cleanText,
+              voice,
+              model: "tts-1",
+            }),
           },
-          body: JSON.stringify({
-            input: cleanText,
-            voice,
-            model: "tts-1",
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
+          10000,
+          180000,
+        );
 
         if (llamaiResponse.ok && llamaiResponse.body) {
           logger.info(
@@ -275,7 +329,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── 3. Primary for fish-* / Fallback for others: Fish Audio (with 10s timeout per key & key rotation) ──
+    // ── 3. Primary for fish-* / Fallback for others: Fish Audio (with 10s connection timeout & key rotation) ──
     const referenceId = isMale ? FISH_MALE_VOICE_ID : FISH_FEMALE_VOICE_ID;
     const selectedGender = isMale ? "male" : "female";
 
@@ -286,20 +340,24 @@ export async function POST(request: NextRequest) {
     const fishKeys = getFishAudioKeys();
     for (const apiKey of fishKeys) {
       try {
-        const fishResponse = await fetch(FISH_AUDIO_API_URL, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            model: "s2.1-pro-free",
+        const fishResponse = await fetchWithConnectionTimeout(
+          FISH_AUDIO_API_URL,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+              model: "s2.1-pro-free",
+            },
+            body: JSON.stringify({
+              text: cleanText,
+              reference_id: referenceId,
+              format: "mp3",
+            }),
           },
-          body: JSON.stringify({
-            text: cleanText,
-            reference_id: referenceId,
-            format: "mp3",
-          }),
-          signal: AbortSignal.timeout(10000), // 10s connection timeout for fast failover
-        });
+          10000,
+          180000,
+        );
 
         if (fishResponse.ok && fishResponse.body) {
           logger.info(
@@ -334,19 +392,23 @@ export async function POST(request: NextRequest) {
     // 4a. Secondary Fallback: LLAMAI TTS Worker (with fallbackVoice)
     try {
       logger.info(`Routing to Fallback (LLAMAI TTS): voice=${fallbackVoice}`);
-      const fallbackResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer abc",
+      const fallbackResponse = await fetchWithConnectionTimeout(
+        TTS_WORKER_FALLBACK_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer abc",
+          },
+          body: JSON.stringify({
+            input: cleanText,
+            voice: fallbackVoice,
+            model: "tts-1",
+          }),
         },
-        body: JSON.stringify({
-          input: cleanText,
-          voice: fallbackVoice,
-          model: "tts-1",
-        }),
-        signal: AbortSignal.timeout(10000),
-      });
+        10000,
+        180000,
+      );
 
       if (fallbackResponse.ok && fallbackResponse.body) {
         return new Response(fallbackResponse.body, {
@@ -367,7 +429,7 @@ export async function POST(request: NextRequest) {
       logger.info(
         `Routing to Fallback 2 (Sarvam Worker): voice=${sarvamFallbackVoice}`,
       );
-      const sarvamFbRes = await fetch(
+      const sarvamFbRes = await fetchWithConnectionTimeout(
         "https://odd-fog-3663.mikemathews7000.workers.dev/v1/audio/speech",
         {
           method: "POST",
@@ -377,8 +439,9 @@ export async function POST(request: NextRequest) {
             input: cleanText,
             voice: sarvamFallbackVoice,
           }),
-          signal: AbortSignal.timeout(5000),
         },
+        5000,
+        60000,
       );
 
       if (sarvamFbRes.ok && sarvamFbRes.body) {
@@ -400,7 +463,7 @@ export async function POST(request: NextRequest) {
       logger.info(
         `Routing to Fallback 3 (Kitten TTS): voice=${kittenFallbackVoice}`,
       );
-      const kittenRes = await fetch(
+      const kittenRes = await fetchWithConnectionTimeout(
         "http://47.95.206.196:8080/v1/audio/speech",
         {
           method: "POST",
@@ -410,8 +473,9 @@ export async function POST(request: NextRequest) {
             input: cleanText,
             voice: kittenFallbackVoice,
           }),
-          signal: AbortSignal.timeout(3000),
         },
+        3000,
+        60000,
       );
 
       if (kittenRes.ok && kittenRes.body) {

@@ -335,13 +335,102 @@ export async function generateSpeech(
   return URL.createObjectURL(audioBlob);
 }
 
+function selectWebSpeechVoice(
+  requestedVoice: string,
+  voices: SpeechSynthesisVoice[],
+): SpeechSynthesisVoice | null {
+  if (!voices || voices.length === 0) return null;
+
+  const lower = (requestedVoice || "").toLowerCase();
+  const isMale = [
+    "male",
+    "guy",
+    "david",
+    "mark",
+    "echo",
+    "onyx",
+    "fable",
+    "aarush",
+    "magnus",
+    "shubh",
+    "aswarth",
+    "karthik",
+    "bruno",
+  ].some((k) => lower.includes(k));
+
+  let targetLangPrefix = "en";
+  if (
+    lower.includes("hi") ||
+    lower.includes("hindi") ||
+    lower.includes("aditi") ||
+    lower.includes("aarush") ||
+    lower.includes("shubh") ||
+    lower.includes("bulbul")
+  ) {
+    targetLangPrefix = "hi";
+  } else if (lower.includes("te") || lower.includes("aswarth")) {
+    targetLangPrefix = "te";
+  } else if (lower.includes("ta") || lower.includes("karthik")) {
+    targetLangPrefix = "ta";
+  } else if (lower.includes("kn") || lower.includes("deepika")) {
+    targetLangPrefix = "kn";
+  } else if (lower.includes("mr") || lower.includes("lata")) {
+    targetLangPrefix = "mr";
+  }
+
+  // 1. Try finding voices matching target language
+  const matchingLangVoices = voices.filter((v) =>
+    v.lang.toLowerCase().startsWith(targetLangPrefix),
+  );
+
+  if (matchingLangVoices.length > 0) {
+    if (isMale) {
+      const maleVoice = matchingLangVoices.find((v) =>
+        /male|david|mark|guy|george|james|natural male/i.test(v.name),
+      );
+      if (maleVoice) return maleVoice;
+    } else {
+      const femaleVoice = matchingLangVoices.find((v) =>
+        /female|zira|jenny|samantha|susan|karen|aria|natural female/i.test(
+          v.name,
+        ),
+      );
+      if (femaleVoice) return femaleVoice;
+    }
+    return matchingLangVoices.find((v) => v.default) || matchingLangVoices[0];
+  }
+
+  // 2. If target language voice not found, fall back strictly to English (en).
+  // NEVER select a Japanese or random locale voice!
+  const englishVoices = voices.filter((v) =>
+    v.lang.toLowerCase().startsWith("en"),
+  );
+
+  if (englishVoices.length > 0) {
+    if (isMale) {
+      const maleVoice = englishVoices.find((v) =>
+        /male|david|mark|guy/i.test(v.name),
+      );
+      if (maleVoice) return maleVoice;
+    } else {
+      const femaleVoice = englishVoices.find((v) =>
+        /female|zira|jenny|samantha|aria/i.test(v.name),
+      );
+      if (femaleVoice) return femaleVoice;
+    }
+    return englishVoices.find((v) => v.default) || englishVoices[0];
+  }
+
+  return voices.find((v) => v.default) || voices[0];
+}
+
 /**
  * Speaks text using the browser Web Speech API.
  * Handles Chrome's ~15s pause bug and provides a stop/cancel callback.
  */
 export function speakWithWebSpeech(
   text: string,
-  voice: CustomTTSVoice = "alloy",
+  voice: CustomTTSVoice = "fish-female",
   onEnd?: () => void,
   onError?: (err: any) => void,
 ): () => void {
@@ -354,10 +443,13 @@ export function speakWithWebSpeech(
   const clean = cleanTextForSpeech(text);
   const utterance = new SpeechSynthesisUtterance(clean);
 
-  const voiceIndex = CUSTOM_TTS_VOICES.indexOf(voice);
   const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    utterance.voice = voices[Math.min(voiceIndex, voices.length - 1)];
+  const selectedVoiceObj = selectWebSpeechVoice(voice, voices);
+  if (selectedVoiceObj) {
+    utterance.voice = selectedVoiceObj;
+    utterance.lang = selectedVoiceObj.lang;
+  } else {
+    utterance.lang = "en-US";
   }
 
   utterance.rate = 1;
