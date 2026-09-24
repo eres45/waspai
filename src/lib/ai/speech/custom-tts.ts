@@ -8,6 +8,8 @@
  */
 
 export const CUSTOM_TTS_VOICES = [
+  "fish-female",
+  "fish-male",
   "en-US-JennyNeural",
   "en-US-GuyNeural",
   "alloy",
@@ -28,6 +30,8 @@ export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number];
 
 // Voice display metadata for worker voices
 export const VOICE_LANGUAGE_MAP: Record<string, string> = {
+  "fish-female": "Female Natural (Fish Audio - Default)",
+  "fish-male": "Male Natural (Fish Audio)",
   "en-US-JennyNeural": "Female US (Jenny)",
   "en-US-GuyNeural": "Male US (Guy)",
   alloy: "Female US (Legacy)",
@@ -53,13 +57,13 @@ export function getVoiceDisplayName(voice: CustomTTSVoice): string {
 }
 
 /**
- * Generate speech from text using LOVO TTS Worker (via backend proxy).
- * The proxy returns raw MP3 bytes; we convert them to an object URL for playback.
+ * Generate speech from text using Fish Audio / TTS Worker (via backend proxy).
+ * The proxy returns raw MP3 bytes (chunked/streamed); we convert them to an object URL for playback.
  * Falls back to Web Speech API if the request fails.
  */
 export async function generateSpeech(
   text: string,
-  voice: CustomTTSVoice = "alloy",
+  voice: CustomTTSVoice = "fish-female",
 ): Promise<string> {
   try {
     const response = await fetch("/api/tts", {

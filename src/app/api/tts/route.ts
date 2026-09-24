@@ -1,7 +1,19 @@
 import { NextRequest } from "next/server";
 import logger from "logger";
 
-const TTS_WORKER_URL = "https://tts-worker.llamai.workers.dev/v1/audio/speech";
+const FISH_AUDIO_API_URL = "https://api.fish.audio/v1/tts";
+const FISH_AUDIO_API_KEY =
+  process.env.FISH_AUDIO_API_KEY ||
+  "sk-fish-YM7VRAWHIe1H7PmrYEgOAP6SnZZImkY9kPj0SxGvbO0";
+
+// Primary Female Voice (Sweet, conversational, friendly assistant)
+const FISH_FEMALE_VOICE_ID = "f7f74a4bc4324c25b96b9b6741a72ab3";
+
+// Secondary / Male Voice
+const FISH_MALE_VOICE_ID = "3b480f554a5b4ab9a6bc62d6ebd7c98a";
+
+const TTS_WORKER_FALLBACK_URL =
+  "https://tts-worker.llamai.workers.dev/v1/audio/speech";
 
 const SARVAM_VOICE_LANGS: Record<string, string> = {
   shubh: "hi-IN",
@@ -12,14 +24,26 @@ const SARVAM_VOICE_LANGS: Record<string, string> = {
   lata: "mr-IN",
 };
 
+const MALE_VOICES = new Set([
+  "echo",
+  "onyx",
+  "fable",
+  "verse",
+  "ash",
+  "ballad",
+  "en-US-GuyNeural",
+  "fish-male",
+]);
+
 /**
- * TTS API Proxy – LLAMAI TTS Worker (OpenAI-compatible) or Sarvam AI
- * Streams raw MP3 audio back to the client to avoid CORS issues.
+ * TTS API Proxy – Primary: Fish Audio (s2.1-pro-free, streaming female voice)
+ * Fallbacks: Sarvam AI (Indic voices) or LLAMAI TTS Worker
+ * Streams raw MP3 audio directly to the client.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, voice = "en-US-JennyNeural" } = body;
+    const { text, voice = "fish-female" } = body;
 
     if (!text || typeof text !== "string") {
       return Response.json(
@@ -28,7 +52,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Intercept Sarvam AI voice requests
+    const cleanText = text.trim();
+
+    // ── 1. Intercept Sarvam AI voice requests ──────────────────────────────────
     if (voice && typeof voice === "string" && voice.startsWith("sarvam-")) {
       if (!process.env.SARVAM_API_KEY) {
         logger.error("SARVAM_API_KEY is not configured in the environment.");
@@ -42,7 +68,7 @@ export async function POST(request: NextRequest) {
       const targetLang = SARVAM_VOICE_LANGS[speaker] || "en-IN";
 
       logger.info(
-        `Sarvam TTS: speaker=${speaker}, lang=${targetLang}, text="${text.substring(0, 60)}..."`,
+        `Sarvam TTS: speaker=${speaker}, lang=${targetLang}, text="${cleanText.substring(0, 60)}..."`,
       );
 
       const sarvamResponse = await fetch(
@@ -54,7 +80,7 @@ export async function POST(request: NextRequest) {
             "api-subscription-key": process.env.SARVAM_API_KEY,
           },
           body: JSON.stringify({
-            text: text.trim(),
+            text: cleanText,
             target_language_code: targetLang,
             speaker,
             model: "bulbul:v3",
@@ -98,69 +124,84 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Map common names to the new worker voices if needed
-    let targetVoice = "en-US-JennyNeural";
-    const maleVoices = [
-      "echo",
-      "onyx",
-      "fable",
-      "verse",
-      "ash",
-      "ballad",
-      "en-US-GuyNeural",
-    ];
-    const femaleVoices = [
-      "nova",
-      "shimmer",
-      "alloy",
-      "sage",
-      "coral",
-      "en-US-JennyNeural",
-    ];
-
-    if (voice && typeof voice === "string") {
-      if (maleVoices.includes(voice)) {
-        targetVoice = "en-US-GuyNeural";
-      } else if (femaleVoices.includes(voice)) {
-        targetVoice = "en-US-JennyNeural";
-      }
-    }
+    // ── 2. Primary: Fish Audio (s2.1-pro-free with streaming) ─────────────────
+    const isMale = typeof voice === "string" && MALE_VOICES.has(voice);
+    const referenceId = isMale ? FISH_MALE_VOICE_ID : FISH_FEMALE_VOICE_ID;
+    const selectedGender = isMale ? "male" : "female";
 
     logger.info(
-      `LLAMAI TTS: voice=${targetVoice}, text="${text.substring(0, 60)}..."`,
+      `Fish Audio TTS [s2.1-pro-free]: gender=${selectedGender}, voice=${voice}, text="${cleanText.substring(0, 60)}..."`,
     );
 
-    const ttsResponse = await fetch(TTS_WORKER_URL, {
+    try {
+      const fishResponse = await fetch(FISH_AUDIO_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FISH_AUDIO_API_KEY}`,
+          "Content-Type": "application/json",
+          model: "s2.1-pro-free",
+        },
+        body: JSON.stringify({
+          text: cleanText,
+          reference_id: referenceId,
+          format: "mp3",
+        }),
+      });
+
+      if (fishResponse.ok && fishResponse.body) {
+        logger.info(`Fish Audio TTS stream connected successfully`);
+        return new Response(fishResponse.body, {
+          status: 200,
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "Transfer-Encoding": "chunked",
+            "Cache-Control": "no-cache",
+          },
+        });
+      }
+
+      const fishErr = await fishResponse.text().catch(() => "");
+      logger.warn(
+        `Fish Audio TTS warning ${fishResponse.status}: ${fishErr.substring(0, 150)}, trying fallback...`,
+      );
+    } catch (fishError) {
+      logger.warn(`Fish Audio fetch failed, routing to fallback:`, fishError);
+    }
+
+    // ── 3. Secondary Fallback: LLAMAI TTS Worker ──────────────────────────────
+    const fallbackVoice = isMale ? "en-US-GuyNeural" : "en-US-JennyNeural";
+    logger.info(`Routing to fallback TTS Worker: voice=${fallbackVoice}`);
+
+    const fallbackResponse = await fetch(TTS_WORKER_FALLBACK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer abc",
       },
       body: JSON.stringify({
-        input: text.trim(),
-        voice: targetVoice,
+        input: cleanText,
+        voice: fallbackVoice,
         model: "tts-1",
       }),
     });
 
-    if (!ttsResponse.ok) {
-      const err = await ttsResponse.text();
-      logger.error(`LLAMAI TTS error ${ttsResponse.status}: ${err}`);
+    if (!fallbackResponse.ok) {
+      const err = await fallbackResponse.text();
+      logger.error(`Fallback TTS error ${fallbackResponse.status}: ${err}`);
       return Response.json(
-        { success: false, error: `TTS provider error: ${ttsResponse.status}` },
+        {
+          success: false,
+          error: `TTS provider error: ${fallbackResponse.status}`,
+        },
         { status: 502 },
       );
     }
 
-    // Stream the raw audio bytes back to the browser
-    const audioBuffer = await ttsResponse.arrayBuffer();
-
-    logger.info(`LLAMAI TTS success: ${audioBuffer.byteLength} bytes returned`);
-
-    return new Response(audioBuffer, {
+    return new Response(fallbackResponse.body, {
       status: 200,
       headers: {
         "Content-Type": "audio/mpeg",
+        "Transfer-Encoding": "chunked",
         "Cache-Control": "no-store",
       },
     });

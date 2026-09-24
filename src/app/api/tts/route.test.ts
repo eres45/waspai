@@ -83,4 +83,48 @@ describe("TTS API Proxy Endpoint", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("should stream Fish Audio TTS with default female voice", async () => {
+    const mockAudioStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3, 4]));
+        controller.close();
+      },
+    });
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: mockAudioStream,
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const request = new NextRequest("http://localhost/api/tts", {
+      method: "POST",
+      body: JSON.stringify({
+        text: "Hello from Fish Audio",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
+    expect(response.headers.get("Transfer-Encoding")).toBe("chunked");
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.fish.audio/v1/tts",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          model: "s2.1-pro-free",
+        }),
+        body: JSON.stringify({
+          text: "Hello from Fish Audio",
+          reference_id: "f7f74a4bc4324c25b96b9b6741a72ab3",
+          format: "mp3",
+        }),
+      }),
+    );
+
+    vi.unstubAllGlobals();
+  });
 });

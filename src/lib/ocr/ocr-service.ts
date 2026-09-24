@@ -246,7 +246,7 @@ export async function extractTextFromImageViaAI(
         },
       ],
       maxRetries: 1, // Fail fast on hobby tier
-      abortSignal: AbortSignal.timeout(8000), // Strict timeout for fallback
+      abortSignal: AbortSignal.timeout(15000), // Timeout for vision extraction
     });
 
     if (text && text.trim().length > 0) {
