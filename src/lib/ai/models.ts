@@ -26,6 +26,36 @@ const claudeProvider = multimodalProvider;
 
 export const GROQ_WORKER_URL = "https://groq-worker.revai.workers.dev";
 
+function condenseSystemPromptForGroq(prompt: string): string {
+  if (prompt.length <= 2500) return prompt;
+
+  let condensed = prompt
+    .replace(
+      /<site_and_game_creation_guidelines>[\s\S]*?<\/site_and_game_creation_guidelines>/gi,
+      "",
+    )
+    .replace(
+      /<browser_automation_guidelines>[\s\S]*?<\/browser_automation_guidelines>/gi,
+      "",
+    )
+    .replace(/<system_capabilities>[\s\S]*?<\/system_capabilities>/gi, "")
+    .replace(
+      /<file_generation_guidelines>[\s\S]*?<\/file_generation_guidelines>/gi,
+      "",
+    )
+    .replace(
+      /<image_editing_guidelines>[\s\S]*?<\/image_editing_guidelines>/gi,
+      "",
+    );
+
+  if (condensed.length > 3000) {
+    condensed =
+      condensed.substring(0, 3000) +
+      "\n\nAlways use web_search for real-time information, market prices, and live data.";
+  }
+  return condensed;
+}
+
 // Groq Worker Provider (openai/gpt-oss-120b with native reasoning and automatic key rotation)
 const groqWorkerProvider = createOpenAICompatible({
   name: "GroqWorker",
@@ -38,12 +68,27 @@ const groqWorkerProvider = createOpenAICompatible({
         const bodyObj = JSON.parse(options.body as string);
         if (bodyObj.stream) {
           bodyObj.stream = false;
-          options.body = JSON.stringify(bodyObj);
         }
+        // Condense system prompt so request stays safely within Groq's 8,000 TPM limit
+        if (Array.isArray(bodyObj.messages)) {
+          bodyObj.messages = bodyObj.messages.map((m: any) => {
+            if (m.role === "system" && typeof m.content === "string") {
+              return { ...m, content: condenseSystemPromptForGroq(m.content) };
+            }
+            return m;
+          });
+        }
+        options.body = JSON.stringify(bodyObj);
       } catch (_e) {}
     }
     const res = await fetch(url, options);
-    if (!res.ok) return res;
+    if (!res.ok) {
+      try {
+        const errText = await res.clone().text();
+        console.error(`[GroqWorker HTTP ${res.status}]`, errText);
+      } catch (_e) {}
+      return res;
+    }
 
     try {
       const json = await res.json();
