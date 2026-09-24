@@ -39,7 +39,7 @@ export function VoiceVisualizerBlob({
   }
 
   return (
-    <div className="flex items-center justify-center relative w-72 h-72 md:w-80 md:h-80 mx-auto select-none rounded-full overflow-hidden shadow-2xl transition-all duration-700 bg-background/5 border border-muted/50">
+    <div className="flex items-center justify-center relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 shrink-0 aspect-square mx-auto select-none rounded-full overflow-hidden shadow-2xl transition-all duration-700 bg-background/5 border border-muted/50">
       {/* Dynamic State Glow Background */}
       <div
         className={cn(
@@ -65,10 +65,10 @@ export function VoiceVisualizerBlob({
           pointerEvents: "none",
           border: "none",
           position: "absolute",
-          width: "130%",
-          height: "130%",
-          left: "-15%",
-          top: "-15%",
+          width: "140%",
+          height: "140%",
+          left: "-20%",
+          top: "-20%",
         }}
       />
 

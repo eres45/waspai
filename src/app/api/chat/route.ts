@@ -1700,7 +1700,18 @@ Always be aware of these installed skills. If a user asks "how many skills do we
           logger.error("Failed to process user memories", error);
         }
 
+        const voiceCallPrompt = isVoiceChat
+          ? `[LIVE REAL-TIME VOICE CALL ACTIVE]
+CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
+1. You are speaking directly with the user on a live real-time voice call.
+2. KEEP ALL RESPONSES SHORT, CRISP, AND CONVERSATIONAL (1 to 2 short sentences, maximum 25 to 30 words).
+3. ABSOLUTELY NEVER use markdown headers, bullet points (-), numbered lists (1.), asterisks (**), emojis, code blocks, or URLs. Every single word you generate will be read aloud immediately into the caller's ear.
+4. Speak naturally and warmly like a real human on the phone. Keep turns quick and snappy.`
+          : undefined;
+
         const systemPrompt = mergeSystemPrompt(
+          voiceCallPrompt,
+          json.systemPrompt || undefined,
           skillsSystemPrompt || undefined, // Inject active skills first
           skillLibraryOverviewPrompt || undefined, // Inject skill library overview
           userMemoriesPrompt, // Inject memories high priority

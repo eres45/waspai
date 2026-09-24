@@ -478,11 +478,14 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                   if (content) {
                     assistantText += content;
 
-                    // Clean out unclosed/closed <think> blocks so reasoning is hidden from TTS and UI text
-                    const cleanText = assistantText.replace(
-                      /<think>[\s\S]*?(?:<\/think>|$)/gi,
-                      "",
-                    );
+                    // Clean out think blocks and markdown formatting so reasoning & syntax are hidden from spoken TTS and UI text
+                    const cleanText = assistantText
+                      .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "")
+                      .replace(/<thinking>[\s\S]*?(?:<\/thinking>|$)/gi, "")
+                      .replace(/<reasoning>[\s\S]*?(?:<\/reasoning>|$)/gi, "")
+                      .replace(/(\*\*|__)(.*?)\1/g, "$2")
+                      .replace(/^[ \t]*[>\-*+][ \t]+/gm, "")
+                      .replace(/^[ \t]*\d+\.[ \t]+/gm, "");
 
                     const newCleanText = cleanText.slice(
                       processedCleanTextLength.current,
@@ -494,7 +497,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                       let sentenceMatch: RegExpMatchArray | null;
                       while (
                         (sentenceMatch = sentenceBuffer.current.match(
-                          /[^.!?\n]+[.!?\n]+(?=\s|$)/,
+                          /[^.!?\n:]+[.!?\n:]+(?=\s|$)/,
                         )) !== null
                       ) {
                         const sentence = sentenceMatch[0];

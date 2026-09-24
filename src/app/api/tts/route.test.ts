@@ -129,7 +129,7 @@ describe("TTS API Proxy Endpoint", () => {
     vi.unstubAllGlobals();
   });
 
-  it("should fall back to secondary worker when Fish Audio fails", async () => {
+  it("should fall back to Woino Neural when Fish Audio fails", async () => {
     const mockAudioStream = new ReadableStream({
       start(controller) {
         controller.enqueue(new Uint8Array([5, 6, 7, 8]));
@@ -163,7 +163,59 @@ describe("TTS API Proxy Endpoint", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
 
-    // Verified fallback was called
+    // Verified Woino fallback (Fallback 1) was called
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://tts.woino.app/api/speech",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          input: "Hello fallback speech",
+          model: "lightning_v3.1",
+          voice: "sienna",
+          response_format: "mp3",
+          speed: 1,
+        }),
+      }),
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("should fall back to secondary worker when Fish Audio and Woino fail", async () => {
+    const mockAudioStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([5, 6, 7, 8]));
+        controller.close();
+      },
+    });
+
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("fish.audio") || url.includes("woino.app")) {
+        return Promise.resolve({
+          ok: false,
+          status: 503,
+          text: async () => "Provider Busy",
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        body: mockAudioStream,
+      });
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const request = new NextRequest("http://localhost/api/tts", {
+      method: "POST",
+      body: JSON.stringify({
+        text: "Hello fallback speech",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
+
+    // Verified secondary LLAMAI worker was called as Fallback 2
     expect(mockFetch).toHaveBeenCalledWith(
       "https://tts-worker.llamai.workers.dev/v1/audio/speech",
       expect.objectContaining({

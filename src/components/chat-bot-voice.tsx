@@ -564,6 +564,25 @@ function CompactMessageView({
     return { toolParts, textPart };
   }, [messages]);
 
+  const cleanSpokenWords = useMemo(() => {
+    if (!textPart?.text) return [];
+    const clean = textPart.text
+      .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "")
+      .replace(/(\*\*|__)(.*?)\1/g, "$2")
+      .replace(/^[ \t]*[>\-*+][ \t]+/gm, "")
+      .replace(/^[ \t]*\d+\.[ \t]+/gm, "")
+      .trim();
+    return clean ? clean.split(" ") : [];
+  }, [textPart?.text]);
+
+  const textContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (textContainerRef.current) {
+      textContainerRef.current.scrollTop =
+        textContainerRef.current.scrollHeight;
+    }
+  }, [cleanSpokenWords.length]);
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-6">
       <div className="absolute bottom-6 max-h-[80vh] overflow-y-auto left-6 z-10 flex-col gap-2 hidden md:flex">
@@ -626,7 +645,7 @@ function CompactMessageView({
         })}
       </div>
 
-      <div className="flex flex-col items-center justify-center flex-1 w-full gap-10 max-h-[70vh]">
+      <div className="flex flex-col items-center justify-center flex-1 w-full gap-6 md:gap-8 max-h-[80vh] overflow-hidden py-4">
         {/* Animated Blob */}
         <VoiceVisualizerBlob
           isActive={isActive}
@@ -637,14 +656,17 @@ function CompactMessageView({
         />
 
         {/* Real-time Assistant Response Text */}
-        <div className="w-full max-w-2xl text-center min-h-[8rem] flex items-start justify-center overflow-y-auto px-4 select-text">
-          {textPart?.text ? (
-            <div className="animate-in fade-in-50 duration-700">
-              <p className="text-xl md:text-2xl font-semibold leading-relaxed tracking-wide text-foreground/90">
-                {textPart.text.split(" ").map((word, wordIndex) => (
+        <div
+          ref={textContainerRef}
+          className="w-full max-w-2xl text-center min-h-[4rem] max-h-[12rem] flex items-center justify-center overflow-y-auto px-4 select-text [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {cleanSpokenWords.length > 0 ? (
+            <div className="animate-in fade-in-50 duration-500 py-2">
+              <p className="text-lg md:text-2xl font-medium leading-relaxed tracking-normal text-foreground/90">
+                {cleanSpokenWords.map((word, wordIndex) => (
                   <span
                     key={wordIndex}
-                    className="animate-in fade-in duration-300"
+                    className="animate-in fade-in duration-200"
                   >
                     {word}{" "}
                   </span>

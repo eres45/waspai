@@ -62,58 +62,52 @@ export function VoiceSelector({
     );
   }, [allVoices, searchQuery]);
 
-  // Group non-search voices into organized categories
+  // Group non-search voices into clean organized categories without provider names
   const categorized = useMemo(() => {
-    const fish = allVoices.filter((v) => v.provider === "fish");
-    const woinoHindi = allVoices.filter(
-      (v) => v.provider === "woino" && v.language.toLowerCase() === "hindi",
-    );
-    const woinoEnglish = allVoices.filter(
-      (v) => v.provider === "woino" && v.language.toLowerCase() === "english",
-    );
-    const woinoSouthIndian = allVoices.filter(
+    const featured = allVoices.filter(
       (v) =>
-        v.provider === "woino" &&
-        ["kannada", "tamil", "telugu", "malayalam"].includes(
-          v.language.toLowerCase(),
-        ),
-    );
-    const woinoRegional = allVoices.filter(
-      (v) =>
-        v.provider === "woino" &&
-        ["bengali", "marathi", "gujarati", "punjabi"].includes(
-          v.language.toLowerCase(),
-        ),
-    );
-    const woinoSpanish = allVoices.filter(
-      (v) => v.provider === "woino" && v.language.toLowerCase() === "spanish",
-    );
-    const openai = allVoices.filter((v) => v.provider === "openai");
-    const sarvam = allVoices.filter((v) => v.provider === "sarvam");
-
-    const woinoFeatured = allVoices.filter(
-      (v) =>
-        v.id === "woino" ||
-        v.id === "woino-male" ||
+        v.id === "fish-female" ||
+        v.id === "fish-male" ||
+        v.id === "woino-magnus" ||
         v.id === "woino-aditi" ||
         v.id === "woino-aarush" ||
-        v.id === "woino-magnus" ||
-        v.id === "woino-aanya" ||
-        v.id === "woino-aarushi" ||
-        v.id === "woino-alex" ||
-        v.id === "woino-kabir",
+        v.id === "en-US-JennyNeural" ||
+        v.id === "en-US-GuyNeural" ||
+        v.id === "nova",
+    );
+    const english = allVoices.filter(
+      (v) =>
+        v.language.toLowerCase().includes("english") &&
+        !featured.some((f) => f.id === v.id),
+    );
+    const hindi = allVoices.filter(
+      (v) =>
+        v.language.toLowerCase().includes("hindi") &&
+        !featured.some((f) => f.id === v.id),
+    );
+    const southIndian = allVoices.filter((v) =>
+      ["kannada", "tamil", "telugu", "malayalam"].some((lang) =>
+        v.language.toLowerCase().includes(lang),
+      ),
+    );
+    const regionalIndian = allVoices.filter((v) =>
+      ["bengali", "marathi", "gujarati", "punjabi"].some((lang) =>
+        v.language.toLowerCase().includes(lang),
+      ),
+    );
+    const globalVoices = allVoices.filter(
+      (v) =>
+        v.language.toLowerCase().includes("spanish") ||
+        ["alloy", "shimmer", "echo", "onyx", "fable"].includes(v.id),
     );
 
     return {
-      fish,
-      woinoFeatured,
-      woinoHindi,
-      woinoEnglish,
-      woinoSouthIndian,
-      woinoRegional,
-      woinoSpanish,
-      openai,
-      sarvam,
+      featured,
+      english,
+      hindi,
+      southIndian,
+      regionalIndian,
+      globalVoices,
     };
   }, [allVoices]);
 
@@ -136,7 +130,7 @@ export function VoiceSelector({
   const activeDisplayName = useMemo(() => {
     const matched = allVoices.find((v) => v.id === activeVoice);
     if (matched) {
-      return `${matched.name} (${matched.language})`;
+      return matched.name;
     }
     return getVoiceDisplayName(activeVoice);
   }, [allVoices, activeVoice]);
@@ -264,148 +258,100 @@ export function VoiceSelector({
             </DropdownMenuGroup>
           ) : (
             <DropdownMenuGroup>
-              {/* 1. Fish Audio */}
+              {/* 1. Featured Voices */}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
                   <span className="size-2 rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500" />
-                  <span className="font-medium">Fish Audio (HD)</span>
+                  <span className="font-medium">⭐ Featured Voices</span>
                   <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.fish.length}
+                    {categorized.featured.length}
                   </span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.fish.map(renderVoiceItem)}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              {/* 2. Woino Featured */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-amber-400 to-rose-500" />
-                  <span className="font-medium">Woino (Featured)</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.woinoFeatured.length}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.woinoFeatured.map(renderVoiceItem)}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              {/* 2. Woino Hindi */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-orange-400 to-amber-500" />
-                  <span>Woino Neural — Hindi</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.woinoHindi.length}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.woinoHindi.map(renderVoiceItem)}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              {/* 3. Woino English */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500" />
-                  <span>Woino Neural — English</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.woinoEnglish.length}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.woinoEnglish.map(renderVoiceItem)}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              {/* 4. Woino South Indian */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-purple-400 to-pink-500" />
-                  <span>Woino — South Indian</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.woinoSouthIndian.length}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.woinoSouthIndian.map(renderVoiceItem)}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              {/* 5. Woino Regional */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-500" />
-                  <span>Woino — Regional Indic</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.woinoRegional.length}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.woinoRegional.map(renderVoiceItem)}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-
-              {/* 6. Woino Spanish */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-rose-400 to-red-500" />
-                  <span>Woino — Spanish</span>
-                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.woinoSpanish.length}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.woinoSpanish.map(renderVoiceItem)}
+                    {categorized.featured.map(renderVoiceItem)}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
 
               <DropdownMenuSeparator className="my-1" />
 
-              {/* 7. OpenAI / LLAMAI */}
+              {/* 2. English Voices */}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-neutral-400 to-neutral-600" />
-                  <span>OpenAI / LLAMAI</span>
+                  <span className="size-2 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500" />
+                  <span>English Voices</span>
                   <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.openai.length}
+                    {categorized.english.length}
                   </span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.openai.map(renderVoiceItem)}
+                    {categorized.english.map(renderVoiceItem)}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
 
-              {/* 8. Sarvam AI */}
+              {/* 3. Hindi Voices */}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
-                  <span className="size-2 rounded-full bg-gradient-to-r from-yellow-500 to-amber-600" />
-                  <span>Sarvam AI (Indic)</span>
+                  <span className="size-2 rounded-full bg-gradient-to-r from-orange-400 to-amber-500" />
+                  <span>Hindi Voices</span>
                   <span className="text-[10px] text-muted-foreground ml-auto pr-1">
-                    {categorized.sarvam.length}
+                    {categorized.hindi.length}
                   </span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
-                    {categorized.sarvam.map(renderVoiceItem)}
+                    {categorized.hindi.map(renderVoiceItem)}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              {/* 4. South Indian */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-gradient-to-r from-purple-400 to-pink-500" />
+                  <span>South Indian Voices</span>
+                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
+                    {categorized.southIndian.length}
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
+                    {categorized.southIndian.map(renderVoiceItem)}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              {/* 5. Regional Indian */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-gradient-to-r from-teal-400 to-cyan-500" />
+                  <span>Regional Indian Voices</span>
+                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
+                    {categorized.regionalIndian.length}
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
+                    {categorized.regionalIndian.map(renderVoiceItem)}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              {/* 6. Global & Spanish */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="cursor-pointer text-xs py-1.5 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-gradient-to-r from-rose-400 to-red-500" />
+                  <span>Global & Other Voices</span>
+                  <span className="text-[10px] text-muted-foreground ml-auto pr-1">
+                    {categorized.globalVoices.length}
+                  </span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-64 max-h-80 overflow-y-auto p-1">
+                    {categorized.globalVoices.map(renderVoiceItem)}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>

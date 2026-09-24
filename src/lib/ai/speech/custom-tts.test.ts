@@ -32,16 +32,10 @@ describe("Custom TTS & Voice Call", () => {
   });
 
   it("formats display names properly for all voice types", () => {
-    expect(getVoiceDisplayName("fish-female")).toContain(
-      "Fish Audio - Default",
-    );
-    expect(getVoiceDisplayName("woino-aditi")).toBe(
-      "Aditi [Female, Hindi (Neural)]",
-    );
-    expect(getVoiceDisplayName("woino-magnus")).toBe(
-      "Magnus [Male, English (Neural)]",
-    );
-    expect(getVoiceDisplayName("sarvam-shubh")).toContain("Shubh");
+    expect(getVoiceDisplayName("fish-female")).toBe("Natural Female");
+    expect(getVoiceDisplayName("woino-aditi")).toBe("Aditi");
+    expect(getVoiceDisplayName("woino-magnus")).toBe("Magnus");
+    expect(getVoiceDisplayName("sarvam-shubh")).toBe("Shubh");
   });
 
   it("returns organized voice options with categories and badges", () => {
@@ -51,11 +45,11 @@ describe("Custom TTS & Voice Call", () => {
     const fishFemale = options.find((v) => v.id === "fish-female");
     expect(fishFemale?.isDefault).toBe(true);
     expect(fishFemale?.provider).toBe("fish");
+    expect(fishFemale?.name).toBe("Natural Female");
 
     const aditi = options.find((v) => v.id === "woino-aditi");
     expect(aditi?.provider).toBe("woino");
     expect(aditi?.language).toBe("Hindi");
-    expect(aditi?.badge).toBe("Hindi Neural");
 
     const nova = options.find((v) => v.id === "nova");
     expect(nova?.provider).toBe("openai");
