@@ -176,7 +176,7 @@ export const webContentToolForWorkflow = createTool({
 
 export const webSearchTool = createTool({
   description:
-    'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
+    "Search the web for real-time information, current market prices, live cryptocurrency/bitcoin/stock rates, latest news, current weather, or events beyond your knowledge cutoff. Invoke this tool whenever the user asks for current prices, live data, or latest updates.",
   inputSchema: freeSearchSchema,
   execute: (params) => {
     return safe(async () => {

@@ -1914,23 +1914,8 @@ Always be aware of these installed skills. If a user asks "how many skills do we
             ? { "export-chat-messages": chatExportTool }
             : {}),
 
-          // Only include web search if explicitly requested or needed
-          // (Note: isSearchQuery is for Gemini-Search model, but we might want search tool access for others too if needed)
-          // For now, let's keep web search available as a general tool unless it causes issues,
-          // OR restrict it if the user wants strict mode.
-          // Given the user complaints about "web-search" appearing randomly, let's restrict it too.
-          // We can use a simple keyword check if isSearchQuery is not sufficient.
-          // Actually, let's trust the isSearchQuery detection or similar logic.
-          // If the model is not "gemini-search", it shouldn't really be searching unless told to.
-          // But webSearchTool is useful. Let's make it available by default BUT with stricter prompt?
-          // No, user explicitly complained about "web-search".
-          // Let's hide it unless "search" or "google" is in the prompt.
-          ...(messageText.toLowerCase().includes("search") ||
-          messageText.toLowerCase().includes("find") ||
-          messageText.toLowerCase().includes("google") ||
-          modelToUse?.model === "gemini-search"
-            ? { "web-search": webSearchTool }
-            : {}),
+          // ALWAYS include web-search tool so models can look up real-time information, current market rates, prices, news, and live facts
+          "web-search": webSearchTool,
           // ALWAYS include memory tools
           save_memory: saveMemoryTool,
           update_memory: updateMemoryTool,
