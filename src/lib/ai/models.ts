@@ -179,10 +179,6 @@ const FREE_TIER_MODELS = new Set([
   "groqw-llama-4-scout",
   "gpt-oss-120b",
 
-  // DeepSeek via Multimodal Worker (Free Tier)
-  "deepseek-v4-flash",
-  "deepseek-chat",
-
   // Agnes & SenseNova (Free Tier)
   "auto",
   "sensenova-6.8-flash-lite",
@@ -353,21 +349,6 @@ export async function buildDynamicModelsInfo() {
     };
   });
 
-  // DeepSeek via Multimodal Worker
-  result.push({
-    provider: "DeepSeek",
-    hasAPIKey: true,
-    models: [
-      {
-        name: "deepseek-v4-flash",
-        isToolCallUnsupported: true,
-        isImageInputUnsupported: true,
-        supportedFileMimeTypes: [],
-        tier: "Free",
-      },
-    ],
-  });
-
   // Agnes AI (auto -> Agnes 2.5 Flash)
   result.push({
     provider: "Agnes",
@@ -397,22 +378,6 @@ export async function buildDynamicModelsInfo() {
       },
     ],
   });
-
-  if (process.env.SARVAM_API_KEY) {
-    result.push({
-      provider: "Sarvam",
-      hasAPIKey: true,
-      models: [
-        {
-          name: "sarvam-105b",
-          isToolCallUnsupported: false,
-          isImageInputUnsupported: true,
-          supportedFileMimeTypes: [],
-          tier: "Pro",
-        },
-      ],
-    });
-  }
 
   return result;
 }

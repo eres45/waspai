@@ -303,6 +303,11 @@ describe("sanitizeMessageToolCalls", () => {
     expect(agnesProvider).toBeDefined();
     expect(agnesProvider?.models.some((m) => m.name === "auto")).toBe(true);
 
+    const deepseekProvider = modelsInfo.find((p) => p.provider === "DeepSeek");
+    const sarvamProviderItem = modelsInfo.find((p) => p.provider === "Sarvam");
+    expect(deepseekProvider).toBeUndefined();
+    expect(sarvamProviderItem).toBeUndefined();
+
     expect(sensenovaProvider).toBeDefined();
     expect(
       sensenovaProvider?.models.some(
