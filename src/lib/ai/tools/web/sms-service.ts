@@ -59,7 +59,7 @@ export class SMSService {
       {
         name: "smss.net",
         url: country
-          ? `https://smss.net/numbers/${this.getCountryCode(country)}`
+          ? `https://smss.net/countries/${this.getCountrySlug(country)}`
           : "https://smss.net",
       },
       {
@@ -72,61 +72,48 @@ export class SMSService {
 
     for (const p of providers) {
       try {
-        const response = await fetch(p.url, { headers: this.HEADERS });
-        if (!response.ok) continue;
+        const response = await fetch(p.url, {
+          headers: this.HEADERS,
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!response.ok) {
+          // If country-specific URL returns 404, fallback to base url
+          if (country && p.name === "smss.net") {
+            const fallbackRes = await fetch("https://smss.net", {
+              headers: this.HEADERS,
+              signal: AbortSignal.timeout(5000),
+            });
+            if (fallbackRes.ok) {
+              const html = await fallbackRes.text();
+              const $ = cheerio.load(html);
+              $("a[href*='/number/']").each((_, el) => {
+                const href = $(el).attr("href") || "";
+                const num = href.match(/\/number\/(\d+)\/?$/)?.[1];
+                if (num && num.length >= 10) {
+                  results.push({
+                    number: `+${num}`,
+                    country: country || "International",
+                    status: "Online",
+                    provider: p.name as any,
+                  });
+                }
+              });
+            }
+          }
+          continue;
+        }
 
         const html = await response.text();
         const $ = cheerio.load(html);
 
-        // 1. JSON NextData Strategy
-        try {
-          const nextData = $("#__NEXT_DATA__").html();
-          if (nextData) {
-            const data = JSON.parse(nextData);
-            // Dynamic exploration of the data object
-            const findNumbers = (obj: any) => {
-              if (!obj || typeof obj !== "object") return;
-              if (
-                obj.number &&
-                typeof obj.number === "string" &&
-                obj.number.length >= 10
-              ) {
-                results.push({
-                  number: obj.number.startsWith("+")
-                    ? obj.number
-                    : `+${obj.number}`,
-                  country: country || "International",
-                  status: "Online",
-                  provider: p.name as any,
-                });
-              }
-              Object.values(obj).forEach(findNumbers);
-            };
-            findNumbers(data);
-          }
-        } catch (_e) {}
-
-        // 2. Global Regex Strategy (Best for dynamic spans/divs)
-        const numRegex = /\+?([1-9]\d{9,14})/g;
-        let match;
-        while ((match = numRegex.exec(html)) !== null) {
-          const num = match[1];
-          // Simple validation: ignore common static numbers/dates if any
-          if (num.length >= 10 && !num.includes("2026")) {
-            results.push({
-              number: `+${num}`,
-              country: country || "International",
-              status: "Online",
-              provider: p.name as any,
-            });
-          }
-        }
-
-        // 3. Link Strategy
+        // 1. Link Strategy (Primary for Next.js App Router on smss.net)
         $("a[href*='/number/'], a[href*='/temporary-phone-number/']").each(
           (_, el) => {
             const href = $(el).attr("href") || "";
-            const num = href.match(/\/(\d+)\/?$/)?.[1];
+            const num =
+              href.match(
+                /\/(?:number|temporary-phone-number)\/(\d+)\/?$/,
+              )?.[1] || href.match(/\/(\d{10,15})\/?$/)?.[1];
             if (num && num.length >= 10) {
               results.push({
                 number: `+${num}`,
@@ -137,6 +124,25 @@ export class SMSService {
             }
           },
         );
+
+        // 2. Global Regex Strategy (Best for dynamic spans/divs)
+        const numRegex = /\+?([1-9]\d{9,14})/g;
+        let match;
+        while ((match = numRegex.exec(html)) !== null) {
+          const num = match[1];
+          if (
+            num.length >= 10 &&
+            !num.includes("2026") &&
+            !num.includes("123456789")
+          ) {
+            results.push({
+              number: `+${num}`,
+              country: country || "International",
+              status: "Online",
+              provider: p.name as any,
+            });
+          }
+        }
       } catch (_err) {}
     }
 
@@ -168,28 +174,66 @@ export class SMSService {
     const slug = this.getCountrySlug(country);
     const url =
       provider === "smss.net"
-        ? `https://smss.net/temporary-phone-number/${slug}/${cleanNumber}`
+        ? `https://smss.net/number/${cleanNumber}`
         : `https://smss.biz/free-temporary-numbers/${slug}/${cleanNumber}`;
 
     try {
-      const response = await fetch(url, { headers: this.HEADERS });
+      const response = await fetch(url, {
+        headers: this.HEADERS,
+        signal: AbortSignal.timeout(5000),
+      });
       const html = await response.text();
       const $ = cheerio.load(html);
       const messages: SMSMessage[] = [];
 
-      // Check for card-based messages (smss.net)
-      $("div.bg-white, .message-box, div[class*='message']").each((_, el) => {
-        const from = $(el).find("span, div, h4").first().text().trim();
-        const text = $(el)
-          .find("p, div.text-gray-700, .msg-content")
-          .text()
-          .trim();
-        const date = $(el).find("span.text-xs, .time").text().trim();
-        if (from && text && from !== "From" && from.length < 50)
-          messages.push({ from, text, date });
+      // Strategy A: Modern smss.net card layout
+      $(".card").each((_, card) => {
+        $(card)
+          .find("li, div[class*='border-b'], [class*='divide'] > div")
+          .each((_, el) => {
+            const from = $(el)
+              .find("span.font-semibold, h4, span.min-w-0")
+              .first()
+              .text()
+              .trim();
+            const text = $(el)
+              .find("p, div.text-gray-700, .msg-content")
+              .first()
+              .text()
+              .trim();
+            const date =
+              $(el)
+                .find("span.text-muted-2, span.text-xs, time")
+                .first()
+                .text()
+                .trim() || "Just now";
+
+            if (
+              from &&
+              text &&
+              !from.toLowerCase().includes("refresh") &&
+              !from.toLowerCase().includes("pause")
+            ) {
+              messages.push({ from, text, date });
+            }
+          });
       });
 
-      // Check for table-based messages (smss.biz)
+      // Strategy B: Legacy smss.net boxes
+      if (messages.length === 0) {
+        $("div.bg-white, .message-box, div[class*='message']").each((_, el) => {
+          const from = $(el).find("span, div, h4").first().text().trim();
+          const text = $(el)
+            .find("p, div.text-gray-700, .msg-content")
+            .text()
+            .trim();
+          const date = $(el).find("span.text-xs, .time").text().trim();
+          if (from && text && from !== "From" && from.length < 50)
+            messages.push({ from, text, date });
+        });
+      }
+
+      // Strategy C: Table-based messages (smss.biz)
       if (messages.length === 0) {
         $("table tr").each((i, el) => {
           if (i === 0) return;
