@@ -14,12 +14,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "ui/dropdown-menu";
 import { AvatarFallback, AvatarImage, Avatar } from "ui/avatar";
-import {
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenu,
-  useSidebar,
-} from "ui/sidebar";
+import { SidebarMenuButton, SidebarMenuItem, SidebarMenu } from "ui/sidebar";
 import {
   ChevronsUpDown,
   LogOutIcon,
@@ -30,7 +25,6 @@ import {
   ChevronRight,
   Settings,
   CreditCard,
-  Ticket,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
@@ -61,7 +55,6 @@ export function AppSidebarUserInner(props: {
   });
   const appStoreMutate = appStore((state) => state.mutate);
   const t = useTranslations("Layout");
-  const { open: sidebarOpen } = useSidebar();
 
   const logout = async () => {
     try {
@@ -76,32 +69,8 @@ export function AppSidebarUserInner(props: {
 
   if (!user) return null;
 
-  const isPaidSubscriber =
-    (user.tier === "pro" || user.tier === "ultra") &&
-    !(user as any).tierExpiresAt;
-  const showReferralWidget =
-    !(user as any).referralWidgetHidden && !isPaidSubscriber && sidebarOpen;
-
   return (
     <div className="flex flex-col space-y-2 w-full">
-      {showReferralWidget && (
-        <Link
-          href="/invite"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent transition-colors duration-150 group"
-        >
-          <Ticket className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground leading-tight">
-              Invite to Earn
-            </p>
-            <p className="text-xs text-muted-foreground leading-tight">
-              Up to 1-year K3 Credits
-            </p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 group-hover:text-foreground transition-colors" />
-        </Link>
-      )}
-
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu>
