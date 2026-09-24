@@ -532,8 +532,54 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                               setIsPlaying(false);
                             };
                             audioRef.current.onerror = () => {
-                              setIsPlaying(false);
-                              toast.error("Failed to play audio");
+                              console.warn(
+                                "Audio playback interrupted, resuming via Web Speech fallback...",
+                              );
+                              // Resume from current sentence boundary if possible
+                              let remainingText = clean;
+                              if (
+                                audioRef.current &&
+                                audioRef.current.duration > 0 &&
+                                audioRef.current.currentTime > 0
+                              ) {
+                                const fraction =
+                                  audioRef.current.currentTime /
+                                  audioRef.current.duration;
+                                const charIndex = Math.floor(
+                                  fraction * clean.length,
+                                );
+                                const prevSentence = clean.lastIndexOf(
+                                  ". ",
+                                  charIndex,
+                                );
+                                if (prevSentence !== -1) {
+                                  remainingText = clean
+                                    .substring(prevSentence + 2)
+                                    .trim();
+                                } else {
+                                  remainingText = clean
+                                    .substring(charIndex)
+                                    .trim();
+                                }
+                              }
+
+                              if (remainingText) {
+                                stopSpeechRef.current = speakWithWebSpeech(
+                                  remainingText,
+                                  "alloy",
+                                  () => {
+                                    setIsPlaying(false);
+                                    stopSpeechRef.current = null;
+                                  },
+                                  () => {
+                                    setIsPlaying(false);
+                                    stopSpeechRef.current = null;
+                                    toast.error("Failed to play audio");
+                                  },
+                                );
+                              } else {
+                                setIsPlaying(false);
+                              }
                             };
 
                             await audioRef.current.play();
