@@ -341,22 +341,30 @@ export function PureGroupedWebSearchToolInvocation({
           <div className="flex flex-col min-w-0">
             <span className="text-[13px] font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
               {isSearching ? (
-                <TextShimmer>{t("Chat.Tool.webSearching")}</TextShimmer>
+                <>
+                  <TextShimmer>{t("Chat.Tool.webSearching")}</TextShimmer>
+                  {queries[queries.length - 1] && (
+                    <span className="font-normal text-muted-foreground truncate max-w-[280px] sm:max-w-[420px]">
+                      &ldquo;{queries[queries.length - 1]}&rdquo;
+                    </span>
+                  )}
+                </>
               ) : (
                 <>
                   <span>{t("Chat.Tool.searchedTheWeb")}</span>
-                  <span className="text-muted-foreground font-normal">
-                    ({parts.length} {parts.length === 1 ? "search" : "searches"}
-                    )
-                  </span>
+                  {queries[0] && (
+                    <span className="font-semibold text-foreground truncate max-w-[260px] sm:max-w-[380px]">
+                      &ldquo;{queries[0]}&rdquo;
+                    </span>
+                  )}
+                  {queries.length > 1 && (
+                    <span className="text-muted-foreground font-normal text-xs">
+                      (+{queries.length - 1} more)
+                    </span>
+                  )}
                 </>
               )}
             </span>
-            {!isSearching && queries.length > 0 && (
-              <span className="text-[11px] text-muted-foreground truncate max-w-[400px] md:max-w-[550px] font-medium mt-0.5">
-                {queries.map((q) => `"${q}"`).join(", ")}
-              </span>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

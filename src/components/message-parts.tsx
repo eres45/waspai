@@ -11,7 +11,6 @@ import {
   RefreshCw,
   X,
   Trash2,
-  ChevronRight,
   TriangleAlert,
   HammerIcon,
   EllipsisIcon,
@@ -1299,6 +1298,117 @@ export const ToolMessagePart = memo(
       return !isCompleted && isLast;
     }, [isWorkflowTool, isCompleted, result, isLast]);
 
+    const toolDisplay = useMemo(() => {
+      const inp = input as any;
+      if (toolName === "web-search" || toolName === "webSearch") {
+        return {
+          action: isExecuting ? "Searching the web" : "Searched the web",
+          detail: inp?.query ? `"${inp.query}"` : "",
+        };
+      }
+      if (
+        toolName === "web-content" ||
+        toolName === "webContent" ||
+        toolName === "fetch" ||
+        toolName === "scrape-web-page"
+      ) {
+        return {
+          action: isExecuting ? "Reading webpage" : "Read webpage",
+          detail: inp?.url || "",
+        };
+      }
+      if (toolName === "python-execution") {
+        const line = inp?.code ? inp.code.trim().split("\n")[0] : "";
+        return {
+          action: isExecuting ? "Running Python" : "Ran Python",
+          detail: line || "",
+        };
+      }
+      if (toolName === "mini-javascript-execution") {
+        const line = inp?.code ? inp.code.trim().split("\n")[0] : "";
+        return {
+          action: isExecuting ? "Running JavaScript" : "Ran JavaScript",
+          detail: line || "",
+        };
+      }
+      if (toolName === "createBarChart") {
+        return {
+          action: isExecuting ? "Creating Bar Chart" : "Created Bar Chart",
+          detail: inp?.title ? `"${inp.title}"` : "",
+        };
+      }
+      if (toolName === "createLineChart") {
+        return {
+          action: isExecuting ? "Creating Line Chart" : "Created Line Chart",
+          detail: inp?.title ? `"${inp.title}"` : "",
+        };
+      }
+      if (toolName === "createPieChart") {
+        return {
+          action: isExecuting ? "Creating Pie Chart" : "Created Pie Chart",
+          detail: inp?.title ? `"${inp.title}"` : "",
+        };
+      }
+      if (toolName === "createTable") {
+        return {
+          action: isExecuting ? "Creating Table" : "Created Table",
+          detail: inp?.title ? `"${inp.title}"` : "",
+        };
+      }
+      if (toolName === "write_site_file") {
+        return {
+          action: isExecuting ? "Writing file" : "Wrote file",
+          detail: inp?.path || "",
+        };
+      }
+      if (toolName === "read_site_file") {
+        return {
+          action: isExecuting ? "Reading file" : "Read file",
+          detail: inp?.path || "",
+        };
+      }
+      if (toolName === "html_preview") {
+        return {
+          action: isExecuting ? "Rendering Preview" : "Rendered Preview",
+          detail: inp?.title || "",
+        };
+      }
+      if (toolName === "generate-pdf") {
+        return {
+          action: isExecuting ? "Generating PDF" : "Generated PDF",
+          detail: inp?.title || inp?.fileName || "",
+        };
+      }
+      if (toolName === "generate-word-document") {
+        return {
+          action: isExecuting
+            ? "Generating Word Document"
+            : "Generated Word Document",
+          detail: inp?.title || inp?.fileName || "",
+        };
+      }
+      if (
+        toolName === "generate-qr-code" ||
+        toolName === "generate-qr-code-with-logo"
+      ) {
+        return {
+          action: isExecuting ? "Generating QR Code" : "Generated QR Code",
+          detail: inp?.text ? `"${inp.text.slice(0, 30)}"` : "",
+        };
+      }
+
+      const server = mcpServerName || toolName;
+      const tool = mcpToolName || "";
+      const firstVal =
+        inp && typeof inp === "object"
+          ? String(Object.values(inp)[0] || "").slice(0, 40)
+          : "";
+      return {
+        action: tool ? `${server}: ${tool}` : server,
+        detail: firstVal ? `"${firstVal}"` : "",
+      };
+    }, [toolName, input, isExecuting, mcpServerName, mcpToolName]);
+
     return (
       <div className="group w-full">
         {CustomToolComponent ? (
@@ -1330,21 +1440,18 @@ export const ToolMessagePart = memo(
                   <HammerIcon className="size-3.5" />
                 )}
               </div>
-              <span className="font-bold flex items-center gap-2">
+              <span className="font-semibold text-foreground flex items-center gap-1.5 min-w-0">
                 {isExecuting ? (
-                  <TextShimmer>{mcpServerName}</TextShimmer>
+                  <TextShimmer>{toolDisplay.action}</TextShimmer>
                 ) : (
-                  mcpServerName
+                  <span>{toolDisplay.action}</span>
+                )}
+                {toolDisplay.detail && (
+                  <span className="text-muted-foreground font-normal truncate max-w-[240px] sm:max-w-[420px]">
+                    {toolDisplay.detail}
+                  </span>
                 )}
               </span>
-              {mcpToolName && (
-                <>
-                  <ChevronRight className="size-3.5" />
-                  <span className="text-muted-foreground group-hover/title:text-primary transition-colors duration-300">
-                    {mcpToolName}
-                  </span>
-                </>
-              )}
               <div className="ml-auto group-hover/title:bg-input p-1.5 rounded transition-colors duration-300">
                 <ChevronDownIcon
                   className={cn(isExpanded && "rotate-180", "size-3.5")}
