@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ChatMention, ChatModel, ChatThread } from "app-types/chat";
 import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
-import { OPENAI_VOICE } from "lib/ai/speech/open-ai/use-voice-chat.openai";
 import { WorkflowSummary } from "app-types/workflow";
 import { AppDefaultToolkit } from "lib/ai/tools";
 import { AgentSummary } from "app-types/agent";
@@ -150,9 +149,9 @@ const initialState: AppState = {
   voiceChat: {
     isOpen: false,
     options: {
-      provider: "openai",
+      provider: "custom-tts",
       providerOptions: {
-        model: OPENAI_VOICE["Alloy"],
+        voice: "fish-female",
       },
     },
   },

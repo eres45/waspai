@@ -513,9 +513,12 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                           setIsPlaying(true);
 
                           try {
+                            const selectedVoice =
+                              appStore.getState().voiceChat.options
+                                .providerOptions?.voice || "fish-female";
                             const audioUrl = await generateSpeech(
                               clean,
-                              "fish-female",
+                              selectedVoice,
                             );
                             const proxyUrl =
                               audioUrl.startsWith("data:") ||

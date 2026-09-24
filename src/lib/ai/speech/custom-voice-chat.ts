@@ -21,14 +21,16 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
   // Track voice from props - update when props change
   const [voice, setVoice] = useState<string>(
-    props?.voice || "en-US-JennyNeural",
+    props?.voice || (props as any)?.model || "fish-female",
   );
 
   useEffect(() => {
     if (props?.voice) {
       setVoice(props.voice);
+    } else if ((props as any)?.model) {
+      setVoice((props as any).model);
     }
-  }, [props?.voice]);
+  }, [props?.voice, (props as any)?.model]);
 
   const [isSarvamEnabled, setIsSarvamEnabled] = useState(false);
 

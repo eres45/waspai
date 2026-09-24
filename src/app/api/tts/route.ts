@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import logger from "logger";
+import { isWoinoVoice } from "lib/ai/speech/woino-voices";
 
 const FISH_AUDIO_API_URL = "https://api.fish.audio/v1/tts";
 const DEFAULT_FISH_AUDIO_KEYS = [
@@ -182,10 +183,63 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // ── 2. Intercept Woino Neural voice requests ─────────────────────────────
+    if (
+      typeof voice === "string" &&
+      (voice.startsWith("woino-") || isWoinoVoice(voice))
+    ) {
+      const woinoVoiceId = voice.startsWith("woino-") ? voice.slice(6) : voice;
+      try {
+        logger.info(
+          `Woino Neural TTS: voice=${woinoVoiceId}, text="${cleanText.substring(0, 60)}..."`,
+        );
+        const woinoResponse = await fetch("https://tts.woino.app/api/speech", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Origin: "https://tts.woino.app",
+            Referer: "https://tts.woino.app/studio",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+          },
+          body: JSON.stringify({
+            input: cleanText,
+            model: "lightning_v3.1",
+            voice: woinoVoiceId,
+            response_format: "mp3",
+            speed: 1,
+          }),
+          signal: AbortSignal.timeout(45000),
+        });
+
+        if (woinoResponse.ok && woinoResponse.body) {
+          logger.info(`Woino TTS stream connected: voice=${woinoVoiceId}`);
+          return new Response(woinoResponse.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "audio/mpeg",
+              "Transfer-Encoding": "chunked",
+              "Cache-Control": "no-cache",
+            },
+          });
+        }
+
+        const woinoErr = await woinoResponse.text().catch(() => "");
+        logger.warn(
+          `Woino TTS returned ${woinoResponse.status}: ${woinoErr.substring(0, 120)}. Continuing to fallback...`,
+        );
+      } catch (woinoErr) {
+        logger.warn(
+          `Woino TTS fetch error for voice=${woinoVoiceId}:`,
+          woinoErr,
+        );
+      }
+    }
+
     const isMale = typeof voice === "string" && MALE_VOICES.has(voice);
     const fallbackVoice = isMale ? "en-US-GuyNeural" : "en-US-JennyNeural";
 
-    // ── 2. If voice is an OpenAI/Neural voice (e.g. nova, alloy, shimmer, echo, etc.), route directly to LLAMAI TTS ──
+    // ── 3. If voice is an OpenAI/Neural voice (e.g. nova, alloy, shimmer, echo, etc.), route directly to LLAMAI TTS ──
     if (typeof voice === "string" && LLAMAI_VOICES.has(voice)) {
       try {
         logger.info(`Routing directly to LLAMAI TTS: voice=${voice}`);

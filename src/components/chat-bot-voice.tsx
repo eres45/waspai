@@ -2,21 +2,15 @@
 
 import { getToolName, isToolUIPart, TextPart } from "ai";
 import { DEFAULT_VOICE_TOOLS, UIMessageWithCompleted } from "lib/ai/speech";
-import {
-  CUSTOM_TTS_VOICES,
-  getVoiceDisplayName,
-} from "lib/ai/speech/custom-tts";
-
 import { useCustomVoiceChat } from "lib/ai/speech/custom-voice-chat";
 import { VoiceVisualizerBlob } from "./voice-visualizer-blob";
+import { VoiceSelector } from "./voice-selector";
 import { cn, groupBy, isNull } from "lib/utils";
 import {
-  CheckIcon,
   Loader,
   MicIcon,
   MicOffIcon,
   PhoneIcon,
-  Settings2Icon,
   TriangleAlertIcon,
   XIcon,
   MessagesSquareIcon,
@@ -31,17 +25,6 @@ import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { Button } from "ui/button";
 
 import { Drawer, DrawerContent, DrawerPortal, DrawerTitle } from "ui/drawer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "ui/dropdown-menu";
 import { MessageLoading } from "ui/message-loading";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ToolMessagePart } from "./message-parts";
@@ -353,62 +336,10 @@ export function ChatBotVoice() {
 
               <EnabledToolsDropdown align="start" side="bottom" tools={tools} />
 
-              <DrawerTitle className="ml-auto">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant={"ghost"} size={"icon"}>
-                      <Settings2Icon className="text-foreground size-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    side="left"
-                    className="min-w-40"
-                    align="start"
-                  >
-                    <DropdownMenuGroup className="cursor-pointer">
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger
-                          className="flex items-center gap-2 cursor-pointer"
-                          icon=""
-                        >
-                          <span className="size-3.5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-                          Custom TTS
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                          <DropdownMenuSubContent className="max-h-96 overflow-y-auto">
-                            {CUSTOM_TTS_VOICES.map((voice) => (
-                              <DropdownMenuItem
-                                className="cursor-pointer flex items-center justify-between"
-                                key={voice}
-                                onClick={() =>
-                                  appStoreMutate({
-                                    voiceChat: {
-                                      ...voiceChat,
-                                      options: {
-                                        provider: "custom-tts",
-                                        providerOptions: {
-                                          voice: voice,
-                                        },
-                                      },
-                                    },
-                                  })
-                                }
-                              >
-                                {getVoiceDisplayName(voice)}
-
-                                {voice ===
-                                  voiceChat.options.providerOptions?.voice && (
-                                  <CheckIcon className="size-3.5" />
-                                )}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                      </DropdownMenuSub>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </DrawerTitle>
+              <DrawerTitle className="sr-only">Voice Chat</DrawerTitle>
+              <div className="ml-auto flex items-center gap-2">
+                <VoiceSelector variant="pill" />
+              </div>
             </div>
             <div className="flex-1 min-h-0 mx-auto w-full">
               {error ? (

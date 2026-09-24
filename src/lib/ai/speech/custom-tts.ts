@@ -1,13 +1,22 @@
 /**
- * Custom TTS Provider — LOVO TTS Worker
- * API: https://lovo-tts.llamai.workers.dev
- *
- * Voice mapping:
- *   alloy, nova, shimmer → Chloe (Female US)
- *   echo, onyx, fable    → Thomas (Male US)
+ * Custom TTS Provider — Fish Audio (Primary HD), Woino Neural (Indic & Multilingual),
+ * LLAMAI Studio (OpenAI fallback), and Sarvam AI.
  */
 
-export const CUSTOM_TTS_VOICES = [
+import { WOINO_VOICES, getWoinoVoice } from "./woino-voices";
+
+export interface VoiceOption {
+  id: string;
+  name: string;
+  provider: "fish" | "woino" | "openai" | "sarvam";
+  category: string;
+  language: string;
+  gender: "female" | "male" | "neutral";
+  badge?: string;
+  isDefault?: boolean;
+}
+
+export const BASE_TTS_VOICES = [
   "fish-female",
   "fish-male",
   "en-US-JennyNeural",
@@ -26,7 +35,16 @@ export const CUSTOM_TTS_VOICES = [
   "sarvam-lata",
 ] as const;
 
-export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number];
+export const WOINO_VOICE_IDS_WITH_PREFIX = WOINO_VOICES.map(
+  (v) => `woino-${v.id}`,
+);
+
+export const CUSTOM_TTS_VOICES = [
+  ...BASE_TTS_VOICES,
+  ...WOINO_VOICE_IDS_WITH_PREFIX,
+] as const;
+
+export type CustomTTSVoice = (typeof CUSTOM_TTS_VOICES)[number] | string;
 
 // Voice display metadata for worker voices
 export const VOICE_LANGUAGE_MAP: Record<string, string> = {
@@ -51,9 +69,175 @@ export const VOICE_LANGUAGE_MAP: Record<string, string> = {
 /**
  * Get voice display name with language
  */
-export function getVoiceDisplayName(voice: CustomTTSVoice): string {
-  const language = VOICE_LANGUAGE_MAP[voice] || "Unknown";
-  return `${voice} [${language}]`;
+export function getVoiceDisplayName(voice: string): string {
+  if (VOICE_LANGUAGE_MAP[voice]) {
+    return VOICE_LANGUAGE_MAP[voice];
+  }
+  const wv = getWoinoVoice(voice);
+  if (wv) {
+    const lang = wv.lang.charAt(0).toUpperCase() + wv.lang.slice(1);
+    const gender = wv.gender === "female" ? "Female" : "Male";
+    return `${wv.name} [${gender}, ${lang} (Neural)]`;
+  }
+  return voice;
+}
+
+export function getAllVoiceOptions(): VoiceOption[] {
+  const options: VoiceOption[] = [
+    {
+      id: "fish-female",
+      name: "Natural Female (Fish Audio)",
+      provider: "fish",
+      category: "Fish Audio (HD)",
+      language: "Multilingual / Hindi / English",
+      gender: "female",
+      badge: "Default",
+      isDefault: true,
+    },
+    {
+      id: "fish-male",
+      name: "Natural Male (Fish Audio)",
+      provider: "fish",
+      category: "Fish Audio (HD)",
+      language: "Multilingual / Hindi / English",
+      gender: "male",
+      badge: "HD",
+    },
+    {
+      id: "nova",
+      name: "Nova (Conversational)",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "female",
+      badge: "Fast",
+    },
+    {
+      id: "alloy",
+      name: "Alloy",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "neutral",
+    },
+    {
+      id: "shimmer",
+      name: "Shimmer",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "female",
+    },
+    {
+      id: "echo",
+      name: "Echo",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "male",
+    },
+    {
+      id: "onyx",
+      name: "Onyx",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "male",
+    },
+    {
+      id: "fable",
+      name: "Fable",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (UK)",
+      gender: "male",
+    },
+    {
+      id: "en-US-JennyNeural",
+      name: "Jenny",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "female",
+    },
+    {
+      id: "en-US-GuyNeural",
+      name: "Guy",
+      provider: "openai",
+      category: "OpenAI / LLAMAI",
+      language: "English (US)",
+      gender: "male",
+    },
+    {
+      id: "sarvam-shubh",
+      name: "Shubh",
+      provider: "sarvam",
+      category: "Sarvam AI",
+      language: "Hindi / English",
+      gender: "male",
+      badge: "Indic",
+    },
+    {
+      id: "sarvam-bulbul",
+      name: "Bulbul",
+      provider: "sarvam",
+      category: "Sarvam AI",
+      language: "Hindi / English",
+      gender: "female",
+      badge: "Indic",
+    },
+    {
+      id: "sarvam-aswarth",
+      name: "Aswarth",
+      provider: "sarvam",
+      category: "Sarvam AI",
+      language: "Telugu / English",
+      gender: "male",
+      badge: "Indic",
+    },
+    {
+      id: "sarvam-karthik",
+      name: "Karthik",
+      provider: "sarvam",
+      category: "Sarvam AI",
+      language: "Tamil / English",
+      gender: "male",
+      badge: "Indic",
+    },
+    {
+      id: "sarvam-deepika",
+      name: "Deepika",
+      provider: "sarvam",
+      category: "Sarvam AI",
+      language: "Kannada / English",
+      gender: "female",
+      badge: "Indic",
+    },
+    {
+      id: "sarvam-lata",
+      name: "Lata",
+      provider: "sarvam",
+      category: "Sarvam AI",
+      language: "Marathi / English",
+      gender: "female",
+      badge: "Indic",
+    },
+  ];
+
+  for (const v of WOINO_VOICES) {
+    const lang = v.lang.charAt(0).toUpperCase() + v.lang.slice(1);
+    options.push({
+      id: `woino-${v.id}`,
+      name: v.name,
+      provider: "woino",
+      category: `Woino Neural (${lang})`,
+      language: lang,
+      gender: v.gender,
+      badge: `${lang} Neural`,
+    });
+  }
+
+  return options;
 }
 
 /**
