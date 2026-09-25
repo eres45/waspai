@@ -18,7 +18,7 @@ import {
   getModelTier,
 } from "lib/ai/models";
 import { createReverseModelMapping } from "lib/ai/model-display-names";
-
+import { AppDefaultToolkit } from "lib/ai/tools";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 import {
@@ -159,8 +159,8 @@ export async function POST(request: Request) {
       id,
       message,
       chatModel,
-      toolChoice,
-      allowedAppDefaultToolkit,
+      toolChoice: rawToolChoice,
+      allowedAppDefaultToolkit: rawAllowedAppDefaultToolkit,
       allowedMcpServers,
       imageTool,
       mentions = [],
@@ -168,6 +168,17 @@ export async function POST(request: Request) {
       editImageModel,
       videoGenModel,
     } = parsedBody;
+    const toolChoice = rawToolChoice === "manual" ? "manual" : "auto";
+    const allowedAppDefaultToolkit = Array.from(
+      new Set([
+        ...(rawAllowedAppDefaultToolkit || []),
+        AppDefaultToolkit.WebSearch,
+        AppDefaultToolkit.Code,
+        AppDefaultToolkit.Visualization,
+        AppDefaultToolkit.Media,
+        AppDefaultToolkit.Utilities,
+      ]),
+    );
 
     // ─── Enforce Daily Message Limits (50/day free, 300/day pro - hidden from UI) ───
     if (session?.user?.id) {

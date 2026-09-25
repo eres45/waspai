@@ -165,10 +165,30 @@ export const appStore = create<AppState & AppDispatch>()(
       mutate: set,
     }),
     {
-      name: "mc-app-store-v2.0.3",
+      name: "mc-app-store-v2.0.4",
+      merge: (persistedState: any, currentState) => {
+        const merged = {
+          ...currentState,
+          ...(persistedState || {}),
+        };
+        merged.toolChoice =
+          persistedState?.toolChoice === "manual" ? "manual" : "auto";
+        merged.allowedAppDefaultToolkit = Array.from(
+          new Set([
+            ...(currentState.allowedAppDefaultToolkit || []),
+            ...(
+              persistedState?.allowedAppDefaultToolkit ||
+              currentState.allowedAppDefaultToolkit ||
+              []
+            ).filter((v: any) => Object.values(AppDefaultToolkit).includes(v)),
+          ]),
+        );
+        return merged;
+      },
       partialize: (state) => ({
         chatModel: state.chatModel || initialState.chatModel,
-        toolChoice: state.toolChoice || initialState.toolChoice,
+        toolChoice:
+          state.toolChoice === "manual" ? "manual" : initialState.toolChoice,
         allowedMcpServers:
           state.allowedMcpServers || initialState.allowedMcpServers,
         allowedAppDefaultToolkit: (
