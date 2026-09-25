@@ -31,6 +31,146 @@ export const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
   );
 });
 WordByWordFadeIn.displayName = "WordByWordFadeIn";
+const KNOWN_PUBLICATION_LABELS: Record<string, string> = {
+  "coinmarketcap.com": "CoinMarketCap",
+  "coindesk.com": "CoinDesk",
+  "coinbase.com": "Coinbase",
+  "binance.com": "Binance",
+  "coingecko.com": "CoinGecko",
+  "finance.yahoo.com": "Yahoo Finance",
+  "yahoo.com": "Yahoo",
+  "reuters.com": "Reuters",
+  "bloomberg.com": "Bloomberg",
+  "cnbc.com": "CNBC",
+  "investing.com": "Investing.com",
+  "tradingview.com": "TradingView",
+  "kraken.com": "Kraken",
+  "forbes.com": "Forbes",
+  "techcrunch.com": "TechCrunch",
+  "theverge.com": "The Verge",
+  "github.com": "GitHub",
+  "wikipedia.org": "Wikipedia",
+};
+
+function getCleanDomainLabel(domain: string, fallbackText: string): string {
+  const cleanDomain = domain.toLowerCase().replace(/^www\./, "");
+  if (KNOWN_PUBLICATION_LABELS[cleanDomain]) {
+    return KNOWN_PUBLICATION_LABELS[cleanDomain];
+  }
+  for (const [key, label] of Object.entries(KNOWN_PUBLICATION_LABELS)) {
+    if (cleanDomain.endsWith(`.${key}`)) return label;
+  }
+  const trimmed = fallbackText
+    .replace(/^【|】$/g, "")
+    .replace(/^\[|\]$/g, "")
+    .trim();
+  if (
+    trimmed &&
+    !trimmed.startsWith("http://") &&
+    !trimmed.startsWith("https://") &&
+    !trimmed.includes("://") &&
+    trimmed.toLowerCase() !== "source" &&
+    trimmed.length <= 28
+  ) {
+    return trimmed;
+  }
+  if (cleanDomain) {
+    const base = cleanDomain.split(".")[0] || cleanDomain;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  }
+  return trimmed || "Source";
+}
+
+const CANONICAL_SOURCE_URLS: Record<string, { label: string; url: string }> = {
+  coinmarketcap: {
+    label: "CoinMarketCap",
+    url: "https://coinmarketcap.com",
+  },
+  coindesk: {
+    label: "CoinDesk",
+    url: "https://www.coindesk.com",
+  },
+  coinbase: {
+    label: "Coinbase",
+    url: "https://www.coinbase.com",
+  },
+  binance: {
+    label: "Binance",
+    url: "https://www.binance.com",
+  },
+  coingecko: {
+    label: "CoinGecko",
+    url: "https://www.coingecko.com",
+  },
+  "yahoo finance": {
+    label: "Yahoo Finance",
+    url: "https://finance.yahoo.com",
+  },
+  reuters: {
+    label: "Reuters",
+    url: "https://www.reuters.com",
+  },
+  bloomberg: {
+    label: "Bloomberg",
+    url: "https://www.bloomberg.com",
+  },
+  tradingview: {
+    label: "TradingView",
+    url: "https://www.tradingview.com",
+  },
+  investing: {
+    label: "Investing.com",
+    url: "https://www.investing.com",
+  },
+  "investing.com": {
+    label: "Investing.com",
+    url: "https://www.investing.com",
+  },
+  kraken: {
+    label: "Kraken",
+    url: "https://www.kraken.com",
+  },
+};
+
+function normalizeMarkdownCitations(raw: string): string {
+  if (!raw || typeof raw !== "string") return raw;
+  return (
+    raw
+      // Convert 【Label】 (https://...) or 【Label】(https://...) -> [Label](https://...)
+      .replace(
+        /【([^】]+)】\s*\(\s*(https?:\/\/[^\s)]+)\s*\)/g,
+        (_, label, url) => ` [${label.trim()}](${url.trim()})`,
+      )
+      // Convert [Label] (https://...) with accidental space between ] and ( -> [Label](https://...)
+      .replace(
+        /\[([^\]]+)\]\s+\(\s*(https?:\/\/[^\s)]+)\s*\)/g,
+        (_, label, url) => `[${label.trim()}](${url.trim()})`,
+      )
+      // Convert 【https://...】 -> [Source](https://...)
+      .replace(
+        /【\s*(https?:\/\/[^\s】]+)\s*】/g,
+        (_, url) => ` [Source](${url.trim()})`,
+      )
+      // Convert bare parenthesized URLs (https://...) not preceded by ] into [Source](https://...)
+      .replace(
+        /(?<!\])\(\s*(https?:\/\/[^\s)]+)\s*\)/g,
+        (_, url) => ` [Source](${url.trim()})`,
+      )
+      // Convert standalone 【Source】 into clickable [Source](https://...) pills
+      .replace(/【([^】]{1,48})】/g, (_, inner) => {
+        const clean = String(inner).trim();
+        const key = clean.toLowerCase();
+        if (CANONICAL_SOURCE_URLS[key]) {
+          return ` [${CANONICAL_SOURCE_URLS[key].label}](${CANONICAL_SOURCE_URLS[key].url})`;
+        }
+        if (/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(clean)) {
+          return ` [${clean}](https://${clean})`;
+        }
+        return "";
+      })
+  );
+}
+
 const components: Partial<Components> = {
   table: ({ node, children, ...props }) => {
     return (
@@ -101,7 +241,7 @@ const components: Partial<Components> = {
   },
   li: ({ node, children, ...props }) => {
     return (
-      <li className="py-2 break-words" {...props}>
+      <li className="py-1.5 break-words" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </li>
     );
@@ -121,20 +261,29 @@ const components: Partial<Components> = {
     );
   },
   a: ({ node, children, ...props }) => {
-    const href = (props as any)?.href || "";
+    const href = ((props as any)?.href || "").replace(/[),.;]+$/, "");
     let domain = "";
     try {
       if (href.startsWith("http")) {
         domain = new URL(href).hostname.replace(/^www\./, "");
       }
     } catch {}
+    const rawText = React.Children.toArray(children)
+      .map((c) =>
+        typeof c === "string" || typeof c === "number" ? String(c) : "",
+      )
+      .join("")
+      .trim();
+    const displayLabel = getCleanDomainLabel(domain, rawText);
+
     return (
       <a
-        className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full text-[11px] font-medium bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60 transition-colors align-baseline no-underline leading-tight"
+        className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full text-[11px] font-medium bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60 transition-colors align-baseline no-underline leading-tight max-w-[180px]"
         target="_blank"
         rel="noreferrer"
-        title={href}
         {...toAny(props)}
+        href={href}
+        title={href}
       >
         {domain ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -149,48 +298,48 @@ const components: Partial<Components> = {
         ) : (
           <LinkIcon className="size-3 shrink-0" />
         )}
-        <WordByWordFadeIn>{children}</WordByWordFadeIn>
+        <span className="truncate">{displayLabel}</span>
       </a>
     );
   },
   h1: ({ node, children, ...props }) => {
     return (
-      <h1 className="text-3xl font-semibold mt-6 mb-2" {...props}>
+      <h1 className="text-2xl font-semibold mt-5 mb-2" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h1>
     );
   },
   h2: ({ node, children, ...props }) => {
     return (
-      <h2 className="text-2xl font-semibold mt-6 mb-2" {...props}>
+      <h2 className="text-xl font-semibold mt-5 mb-2" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h2>
     );
   },
   h3: ({ node, children, ...props }) => {
     return (
-      <h3 className="text-xl font-semibold mt-6 mb-2" {...props}>
+      <h3 className="text-lg font-semibold mt-4 mb-1.5" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h3>
     );
   },
   h4: ({ node, children, ...props }) => {
     return (
-      <h4 className="text-lg font-semibold mt-6 mb-2" {...props}>
+      <h4 className="text-base font-semibold mt-4 mb-1.5" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h4>
     );
   },
   h5: ({ node, children, ...props }) => {
     return (
-      <h5 className="text-base font-semibold mt-6 mb-2" {...props}>
+      <h5 className="text-sm font-semibold mt-3 mb-1" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h5>
     );
   },
   h6: ({ node, children, ...props }) => {
     return (
-      <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
+      <h6 className="text-xs font-semibold mt-3 mb-1" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h6>
     );
@@ -206,6 +355,7 @@ const components: Partial<Components> = {
 };
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
+  const normalizedChildren = normalizeMarkdownCitations(children);
   return (
     <article className="w-full h-full relative">
       <ReactMarkdown
@@ -216,7 +366,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         ]}
         rehypePlugins={[rehypeKatex]}
       >
-        {children}
+        {normalizedChildren}
       </ReactMarkdown>
     </article>
   );

@@ -27,7 +27,7 @@ function condenseSystemPromptForGroq(
     ? `1. The \`web-search\` tool has ALREADY been executed for this turn and the live search results are in the conversation history below. Do NOT call \`web-search\` again, and NEVER claim that the \`web-search\` tool is unavailable or disabled. Answer the user's question directly using the provided search results.`
     : `1. For ANY real-time data (crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately with a clear \`query\` parameter.`;
 
-  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL WEB SEARCH, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. Present a clear, well-structured breakdown across top sources and cite every source inline at the end of the bullet or sentence using a Markdown link whose label is ONLY the short publication name, e.g. [CoinDesk](https://...), [Yahoo Finance](https://...), [CoinMarketCap](https://...). Do NOT output a separate "Source:" block.\n3. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Instead, explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
+  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL WEB SEARCH, FORMATTING, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. RICH RESPONSE STRUCTURE (NEVER reply with a single 1-line sentence!):\n   - Start with a clear **Headline Snapshot** (e.g., current live price/answer in **bold**, date/time, and inline source citation).\n   - Follow with a **Markdown Comparison Table** (\`| Source / Platform | Live Rate / Value | Key Details |\`) comparing figures across multiple top sources.\n   - Add a **\`### Key Takeaways & Market Context\`** section with 3–4 concise bullet points (**Bold Lead-in:** explanation + inline citation).\n3. INLINE CITATION SYNTAX: Cite every source inline at the end of the bullet, table row, or sentence using ONLY standard ASCII Markdown links with NO space between \`]\` and \`(\`, e.g. \`[CoinMarketCap](https://...)\`, \`[CoinDesk](https://...)\`, \`[Coinbase](https://...)\`. NEVER use CJK brackets \`【...】\` and NEVER output raw unlinked URLs.\n4. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Instead, explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
 
   let condensed = prompt
     .replace(
@@ -345,6 +345,37 @@ function stripToolCallMarkup(text: string): string {
     .replace(/<invoke\b[\s\S]*?<\/[\s|｜]*(?:DSML[\s|｜]*)?invoke>/gi, "")
     .replace(/<parameter\b[\s\S]*?<\/[\s|｜]*(?:DSML[\s|｜]*)?parameter>/gi, "")
     .replace(/<\/?(?:invoke|parameter|tool_call|function_calls)\b[^>]*>/gi, "")
+    .replace(
+      /【([^】]+)】\s*\(\s*(https?:\/\/[^\s)]+)\s*\)/g,
+      (_, label, url) => ` [${label.trim()}](${url.trim()})`,
+    )
+    .replace(
+      /\[([^\]]+)\]\s+\(\s*(https?:\/\/[^\s)]+)\s*\)/g,
+      (_, label, url) => `[${label.trim()}](${url.trim()})`,
+    )
+    .replace(
+      /【\s*(https?:\/\/[^\s】]+)\s*】/g,
+      (_, url) => ` [Source](${url.trim()})`,
+    )
+    .replace(/【([^】]{1,48})】/g, (_, inner) => {
+      const clean = String(inner).trim();
+      const key = clean.toLowerCase();
+      const map: Record<string, string> = {
+        coinmarketcap: "https://coinmarketcap.com",
+        coindesk: "https://www.coindesk.com",
+        coinbase: "https://www.coinbase.com",
+        binance: "https://www.binance.com",
+        coingecko: "https://www.coingecko.com",
+        "yahoo finance": "https://finance.yahoo.com",
+        reuters: "https://www.reuters.com",
+        bloomberg: "https://www.bloomberg.com",
+      };
+      if (map[key]) return ` [${clean}](${map[key]})`;
+      if (/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(clean)) {
+        return ` [${clean}](https://${clean})`;
+      }
+      return "";
+    })
     .trim();
 }
 
@@ -546,7 +577,7 @@ function flattenToolMessagesForSynthesis(messages: any[]): any[] {
           : JSON.stringify(m.content || "");
       result.push({
         role: "user",
-        content: `[Live Web Search Data]:\n${raw.slice(0, 2500)}\n\nPlease synthesize the above live data into a complete, well-structured answer with inline Markdown link citations (e.g. [Source Name](https://...)). Do NOT say that web-search is unavailable.`,
+        content: `[Live Web Search Data]:\n${raw.slice(0, 2500)}\n\nPlease synthesize the above live data into a rich, well-structured response:\n1. Start with a bold **Headline Summary** with the exact live figure/answer and inline citation.\n2. Include a **Markdown Comparison Table** (\`| Source | Live Price / Value | Details |\`) across the top sources.\n3. Add a **\`### Key Market Highlights\`** section with 3-4 concise bullet points.\n4. Use ONLY standard ASCII Markdown links \`[SourceName](https://...)\` with NO space between \`]\` and \`(\`, and NEVER use \`【...】\` brackets.`,
       });
       continue;
     }

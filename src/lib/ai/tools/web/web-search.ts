@@ -376,7 +376,7 @@ export const webSearchTool = createTool({
 
       const guide =
         result.results.length > 0
-          ? `Use these live search results to answer the user's question accurately with exact numbers and inline Markdown source citations (e.g. [CoinMarketCap](url), [CoinDesk](url)).`
+          ? `Synthesize these live search results into a rich, well-structured answer (NEVER a single 1-line sentence): 1) Start with a bold Headline Summary with the exact live figure and timestamp; 2) Include a Markdown Comparison Table (| Source / Platform | Live Rate / Value | Key Details |) across the top sources; 3) Add a '### Key Takeaways' section with 3-4 concise bullet points; 4) Cite every source inline using ONLY standard ASCII Markdown links [SourceName](https://...) with NO space between ] and (, and NEVER use 【...】 brackets.`
           : `No search results were found for "${queryStr}".`;
 
       return {
