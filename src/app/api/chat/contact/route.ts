@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     // ── Stream response ───────────────────────────────────────────────────────
     const result = streamText({
-      model: groq("llama-3.1-8b-instant"),
+      model: groq("openai/gpt-oss-120b"),
       messages: convertToModelMessages(messages),
       system: SYSTEM_PROMPT,
       maxTokens: 1024,

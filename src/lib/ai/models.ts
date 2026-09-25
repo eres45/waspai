@@ -27,7 +27,12 @@ const claudeProvider = multimodalProvider;
 export const GROQ_WORKER_URL = "https://groq-worker.revai.workers.dev";
 
 function condenseSystemPromptForGroq(prompt: string): string {
-  if (prompt.length <= 2500) return prompt;
+  const currentDateStr = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL WEB SEARCH & CITATION RULES:\n1. For ANY real-time data (crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately without asking permission.\n2. If the initial search results look stale or lack a live figure, briefly write a 1-sentence note (e.g. "These results are mostly stale cached pages. Let me get a more reliable current figure.") and call \`web-search\` a second time with a more specific query including the current month/year (${currentDateStr}).\n3. Present a clear, well-structured breakdown across top sources and cite every source inline at the end of the bullet or sentence using a Markdown link whose label is ONLY the short publication name, e.g. [CoinDesk](https://...), [Yahoo Finance](https://...), [Investing.com](https://...). Do NOT output a separate "Source:" block.`;
 
   let condensed = prompt
     .replace(
@@ -48,12 +53,171 @@ function condenseSystemPromptForGroq(prompt: string): string {
       "",
     );
 
-  if (condensed.length > 3000) {
-    condensed =
-      condensed.substring(0, 3000) +
-      "\n\nAlways use web_search (or web-search) for real-time information, market prices, and live data. Invoke tools using the native function calling feature.";
+  if (condensed.length > 1800) {
+    condensed = condensed.substring(0, 1800);
   }
-  return condensed;
+  return condensed + coreSearchDirective;
+}
+
+/**
+ * Filters and compacts the 34+ tool schemas down to only relevant tools for Groq's 8,000 TPM budget.
+ * Reduces tool token overhead from ~6,500 tokens to ~150-300 tokens so GPT-OSS 120B never hits 429 TPM limits.
+ */
+function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
+  if (!Array.isArray(tools) || tools.length === 0) return tools;
+
+  const userText = (messages || [])
+    .filter((m: any) => m.role === "user")
+    .map((m: any) =>
+      typeof m.content === "string"
+        ? m.content
+        : JSON.stringify(m.content || ""),
+    )
+    .join(" ")
+    .toLowerCase();
+
+  const previouslyCalledTools = new Set<string>();
+  for (const m of messages || []) {
+    if (Array.isArray(m.tool_calls)) {
+      for (const tc of m.tool_calls) {
+        if (tc.function?.name) previouslyCalledTools.add(tc.function.name);
+      }
+    }
+  }
+
+  const wantsImage =
+    /\b(image|picture|photo|draw|paint|generate.*img|illustrat|avatar|logo|wallpaper|background|watermark|anime|upscale|enhance|restore|blur)\b/i.test(
+      userText,
+    );
+  const wantsDoc =
+    /\b(pdf|word|docx|csv|excel|spreadsheet|text file|document|convert file|export)\b/i.test(
+      userText,
+    );
+  const wantsQr = /\b(qr|barcode)\b/i.test(userText);
+  const wantsSite =
+    /\b(html|website|web page|landing page|game|dashboard|widget|preview|deploy|app|ui)\b/i.test(
+      userText,
+    );
+  const wantsSmsOrMail =
+    /\b(sms|phone number|otp|verification code|temp mail|temporary email|disposable email)\b/i.test(
+      userText,
+    );
+  const wantsMem =
+    /\b(remember|memory|memories|forget|my preference|my name)\b/i.test(
+      userText,
+    );
+
+  const seenNames = new Set<string>();
+  const filtered: any[] = [];
+
+  for (const t of tools) {
+    const fn = t?.function;
+    if (!fn?.name) continue;
+    const name: string = fn.name;
+
+    // Deduplicate web_search vs web-search
+    if (name === "web_search") continue;
+    if (seenNames.has(name)) continue;
+
+    let keep = false;
+    if (name === "web-search" || previouslyCalledTools.has(name)) {
+      keep = true;
+    } else if (
+      wantsMem &&
+      (name === "save_memory" ||
+        name === "get_memories" ||
+        name === "update_memory" ||
+        name === "delete_memory")
+    ) {
+      keep = true;
+    } else if (
+      wantsImage &&
+      (name === "image-manager" ||
+        name === "remove-background" ||
+        name === "enhance-image" ||
+        name === "anime-conversion" ||
+        name === "remove-watermark" ||
+        name === "remove-object" ||
+        name === "super-resolution" ||
+        name === "restore-old-photo" ||
+        name === "blur-background" ||
+        name === "edit-image" ||
+        name === "analyze-image")
+    ) {
+      keep = true;
+    } else if (
+      wantsDoc &&
+      (name === "generate-pdf" ||
+        name === "generate-word-document" ||
+        name === "generate-csv" ||
+        name === "generate-text-file" ||
+        name === "convert-file")
+    ) {
+      keep = true;
+    } else if (
+      wantsQr &&
+      (name === "generate-qr-code" || name === "generate-qr-code-with-logo")
+    ) {
+      keep = true;
+    } else if (
+      wantsSite &&
+      (name === "html_preview" ||
+        name === "deploy_site" ||
+        name === "write_site_file" ||
+        name === "read_site_file" ||
+        name === "edit_site_file")
+    ) {
+      keep = true;
+    } else if (
+      wantsSmsOrMail &&
+      (name === "list-sms-numbers" ||
+        name === "get-sms-messages" ||
+        name === "create-temp-email" ||
+        name === "get-temp-email-messages")
+    ) {
+      keep = true;
+    }
+
+    if (!keep) continue;
+    seenNames.add(name);
+
+    // Compact web-search schema so it takes <60 tokens and never confuses strict function validators
+    if (name === "web-search") {
+      filtered.push({
+        type: "function",
+        function: {
+          name: "web-search",
+          description:
+            "Search the web for real-time news, live prices, market rates, and current facts.",
+          parameters: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description:
+                  "The search query (include current month/year for live prices or news)",
+              },
+            },
+            required: ["query"],
+          },
+        },
+      });
+      continue;
+    }
+
+    filtered.push({
+      ...t,
+      function: {
+        ...fn,
+        description:
+          typeof fn.description === "string" && fn.description.length > 160
+            ? fn.description.substring(0, 160)
+            : fn.description,
+      },
+    });
+  }
+
+  return filtered;
 }
 
 /**
@@ -122,19 +286,52 @@ const groqWorkerProvider = createOpenAICompatible({
         if (bodyObj.stream) {
           bodyObj.stream = false;
         }
-        // Condense system prompt so request stays safely within Groq's 8,000 TPM limit
+        // Cap max_tokens so Groq doesn't reject the request for reserving >8,000 TPM
+        if (!bodyObj.max_tokens || bodyObj.max_tokens > 3072) {
+          bodyObj.max_tokens = 3072;
+        }
+        if (
+          bodyObj.max_completion_tokens &&
+          bodyObj.max_completion_tokens > 3072
+        ) {
+          bodyObj.max_completion_tokens = 3072;
+        }
+        // Condense system prompt and compact tool results so request stays safely within Groq's 8,000 TPM limit
         if (Array.isArray(bodyObj.messages)) {
           bodyObj.messages = bodyObj.messages.map((m: any) => {
             if (m.role === "system" && typeof m.content === "string") {
               return { ...m, content: condenseSystemPromptForGroq(m.content) };
             }
+            if (
+              m.role === "tool" &&
+              typeof m.content === "string" &&
+              m.content.length > 3500
+            ) {
+              return { ...m, content: m.content.substring(0, 3500) };
+            }
             return m;
           });
+        }
+        if (Array.isArray(bodyObj.tools)) {
+          bodyObj.tools = filterAndCompactToolsForGroq(
+            bodyObj.tools,
+            bodyObj.messages || [],
+          );
         }
         options.body = JSON.stringify(bodyObj);
       } catch (_e) {}
     }
-    const res = await fetch(url, options);
+
+    // Automatic retry on 429 / 5xx to rotate to the next fresh Groq API key in the worker pool
+    let res = await fetch(url, options);
+    for (
+      let retry = 0;
+      retry < 2 && (res.status === 429 || res.status >= 500);
+      retry++
+    ) {
+      res = await fetch(url, options);
+    }
+
     if (!res.ok) {
       try {
         const errText = await res.clone().text();
@@ -150,6 +347,20 @@ const groqWorkerProvider = createOpenAICompatible({
       const content = msg.content || "";
       let toolCalls = msg.tool_calls;
       let effectiveContent = content;
+
+      // Normalize tool names on native tool_calls (e.g. web_search -> web-search)
+      if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+        toolCalls = toolCalls.map((tc: any) => ({
+          ...tc,
+          function: {
+            ...tc.function,
+            name:
+              tc.function?.name === "web_search"
+                ? "web-search"
+                : tc.function?.name,
+          },
+        }));
+      }
 
       // If the model leaked a tool call as raw JSON in content instead of tool_calls, parse and recover it!
       if (!toolCalls || toolCalls.length === 0) {
@@ -188,7 +399,7 @@ const groqWorkerProvider = createOpenAICompatible({
               choices: [
                 {
                   index: 0,
-                  delta: { reasoning_content: reasoning },
+                  delta: { role: "assistant", reasoning_content: reasoning },
                   finish_reason: null,
                 },
               ],
@@ -201,7 +412,13 @@ const groqWorkerProvider = createOpenAICompatible({
           index: i,
           id: tc.id || `call_${i}_${Date.now()}`,
           type: tc.type || "function",
-          function: tc.function,
+          function: {
+            name: tc.function?.name,
+            arguments:
+              typeof tc.function?.arguments === "string"
+                ? tc.function.arguments
+                : JSON.stringify(tc.function?.arguments || {}),
+          },
         }));
         chunks.push(
           "data: " +
@@ -213,10 +430,28 @@ const groqWorkerProvider = createOpenAICompatible({
               choices: [
                 {
                   index: 0,
-                  delta: { tool_calls: indexedCalls },
+                  delta: { role: "assistant", tool_calls: indexedCalls },
+                  finish_reason: null,
+                },
+              ],
+            }) +
+            "\n\n",
+        );
+        chunks.push(
+          "data: " +
+            JSON.stringify({
+              id: json.id || "chatcmpl-oss",
+              object: "chat.completion.chunk",
+              created: Math.floor(Date.now() / 1000),
+              model: "openai/gpt-oss-120b",
+              choices: [
+                {
+                  index: 0,
+                  delta: {},
                   finish_reason: "tool_calls",
                 },
               ],
+              usage: json.usage,
             }) +
             "\n\n",
         );
@@ -231,10 +466,28 @@ const groqWorkerProvider = createOpenAICompatible({
               choices: [
                 {
                   index: 0,
-                  delta: { content: content },
+                  delta: { role: "assistant", content: effectiveContent },
+                  finish_reason: null,
+                },
+              ],
+            }) +
+            "\n\n",
+        );
+        chunks.push(
+          "data: " +
+            JSON.stringify({
+              id: json.id || "chatcmpl-oss",
+              object: "chat.completion.chunk",
+              created: Math.floor(Date.now() / 1000),
+              model: "openai/gpt-oss-120b",
+              choices: [
+                {
+                  index: 0,
+                  delta: {},
                   finish_reason: "stop",
                 },
               ],
+              usage: json.usage,
             }) +
             "\n\n",
         );

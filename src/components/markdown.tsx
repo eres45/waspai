@@ -121,14 +121,34 @@ const components: Partial<Components> = {
     );
   },
   a: ({ node, children, ...props }) => {
+    const href = (props as any)?.href || "";
+    let domain = "";
+    try {
+      if (href.startsWith("http")) {
+        domain = new URL(href).hostname.replace(/^www\./, "");
+      }
+    } catch {}
     return (
       <a
-        className="text-primary hover:underline flex gap-1.5 items-center"
+        className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full text-[11px] font-medium bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60 transition-colors align-baseline no-underline leading-tight"
         target="_blank"
         rel="noreferrer"
+        title={href}
         {...toAny(props)}
       >
-        <LinkIcon className="size-3.5" />
+        {domain ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
+            alt=""
+            className="size-3 rounded-[2px] shrink-0"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <LinkIcon className="size-3 shrink-0" />
+        )}
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </a>
     );

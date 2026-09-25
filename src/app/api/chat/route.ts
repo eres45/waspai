@@ -1928,7 +1928,6 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
 
           // ALWAYS include web-search tool so models can look up real-time information, current market rates, prices, news, and live facts
           "web-search": webSearchTool,
-          web_search: webSearchTool,
           // ALWAYS include memory tools
           save_memory: saveMemoryTool,
           update_memory: updateMemoryTool,
@@ -2009,9 +2008,10 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                 model: modelToUse?.model,
                 instance: model,
               },
-          { provider: "Groq", model: "gpt-oss-120b-p2" },
-          { provider: "Groq", model: "groqw-llama-3.1-8b" },
-          { provider: "DeepSeek", model: "deepseek-v4-flash" },
+          { provider: "OpenAI", model: "gpt-oss-120b" },
+          { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
+          { provider: "SeekAI", model: "deepseek-ai/DeepSeek-V4-Flash-0731" },
+          { provider: "Qwen", model: "qwen3.8-flash:free" },
         ].filter(
           (item): item is { provider: string; model: string; instance?: any } =>
             item !== null,
@@ -2224,14 +2224,13 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
               }
 
               // Real content arrived — model successfully connected and started generating!
-              const partType = (value as any).type;
+              const partType = String((value as any).type || "");
               if (
                 partType === "text-delta" ||
                 partType === "text-start" ||
                 partType === "reasoning-delta" ||
                 partType === "reasoning-start" ||
-                partType === "tool-call-start" ||
-                partType === "tool-result" ||
+                partType.startsWith("tool-") ||
                 partType === "finish" ||
                 partType === "finish-step"
               ) {

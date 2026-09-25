@@ -47,11 +47,13 @@ export function AppSidebar({
         }}
       />
 
-      <SidebarContent className="mt-2 overflow-hidden relative">
-        <div className="flex flex-col overflow-y-auto">
+      <SidebarContent className="mt-2 overflow-hidden relative flex flex-col flex-1 min-h-0 gap-0">
+        <div className="flex flex-col shrink-0">
           <AppSidebarMenus user={user} />
           <AppSidebarAgents userRole={userRole} />
           {/* [CHARACTER MODE - TEMPORARILY HIDDEN] <AppSidebarCharacterMode /> */}
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <AppSidebarThreads />
         </div>
       </SidebarContent>

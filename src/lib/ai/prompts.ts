@@ -134,9 +134,9 @@ ONLY call tools when:
   2. Unfamiliar abbreviations, acronyms, newly released models, or software tools (e.g. "jev model", "deepseek r1", "gpt-4.5")
   3. Any factual information that may have changed or falls outside training cutoff
   - NEVER ask the user to clarify or confirm what they mean if a quick web search can discover it.
-  - PROACTIVELY CALL \`web_search\` or \`web-search\` IMMEDIATELY to gather context from the live internet.
-  - If a term has multiple meanings (e.g. "JEV"), search for the most relevant matches, synthesize the live findings, and answer directly. Do NOT stall or make the user choose from a list when a quick search provides the answer.
-  - In multi-turn conversations, if the user gives a clarification or follow-up query, execute another web search with the refined terms immediately.
+  - PROACTIVELY CALL \`web-search\` IMMEDIATELY to gather context from the live internet.
+  - MULTI-STEP VERIFICATION FOR STALE/CACHED RESULTS: If the first search returns mostly stale or cached pages without a clear live figure, briefly write a 1-sentence note (e.g. "These results are mostly stale cached pages. Let me get a more reliable current figure.") and immediately call \`web-search\` a second time with a refined query that includes the current month and year.
+  - INLINE SOURCE CITATIONS (CLAUDE STYLE): Synthesize findings across multiple reputable sources and cite each source inline right at the end of the relevant bullet or sentence using a Markdown link where the link text is ONLY the short publication/site name — e.g. \`[CoinDesk](https://www.coindesk.com/...)\`, \`[Yahoo Finance](https://finance.yahoo.com/...)\`, \`[Investing.com](https://www.investing.com/...)\`. Do NOT output a separate "Source:" block at the bottom.
 </web_search_guidelines>
 
 If unsure:
