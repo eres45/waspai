@@ -27,7 +27,7 @@ function condenseSystemPromptForGroq(
     ? `1. The \`web-search\` tool has ALREADY been executed for this turn and the live search results are in the conversation history below. Do NOT call \`web-search\` again, and NEVER claim that the \`web-search\` tool is unavailable or disabled. Answer the user's question directly using the provided search results.`
     : `1. For ANY real-time data (crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately with a clear \`query\` parameter.`;
 
-  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL WEB SEARCH, FORMATTING, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. RICH RESPONSE STRUCTURE (NEVER reply with a single 1-line sentence!):\n   - Start with a clear **Headline Snapshot** (e.g., current live price/answer in **bold**, date/time, and inline source citation).\n   - Follow with a **Markdown Comparison Table** (\`| Source / Platform | Live Rate / Value | Key Details |\`) comparing figures across multiple top sources.\n   - Add a **\`### Key Takeaways & Market Context\`** section with 3–4 concise bullet points (**Bold Lead-in:** explanation + inline citation).\n3. INLINE CITATION SYNTAX: Cite every source inline at the end of the bullet, table row, or sentence using ONLY standard ASCII Markdown links with NO space between \`]\` and \`(\`, e.g. \`[CoinMarketCap](https://...)\`, \`[CoinDesk](https://...)\`, \`[Coinbase](https://...)\`. NEVER use CJK brackets \`【...】\` and NEVER output raw unlinked URLs.\n4. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Instead, explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
+  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL TOOL, FORMATTING, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. ADAPTIVE EXECUTIVE FORMATTING:\n   - **If answering a Market / Crypto / Stock / Currency / Weather / Price query (with web-search)**:\n     a) Start with a bold **Headline Snapshot** (exact live rate/value in **bold**, date, and inline citation).\n     b) Include a **Markdown Comparison Table** (\`| Source / Platform | Live Rate / Metric | Key Details |\`) across top sources.\n     c) Add **\`### Key Takeaways & Market Context\`** with 3–4 **bold-lead** bullets and inline citations.\n   - **If answering a News / Tech / Sports / General Web Search query**:\n     a) Start with a bold **Executive Summary** directly answering the question with inline citations.\n     b) Organize details using clean \`###\` section headings, a structured **Summary Table** (\`| Topic / Development | Key Details | Source |\`), and **bold-lead** bullet points.\n   - **If answering a Coding / Math / Explanation / General Chat query (where no live web search is needed)**:\n     a) Do NOT call \`web-search\` for pure coding, math, or timeless concepts.\n     b) Present clean, well-structured Markdown with \`###\` headings, syntax-highlighted code blocks, and concise bullet points.\n3. INLINE CITATION SYNTAX (for web-search): Cite every source inline using ONLY standard ASCII Markdown links with NO space between \`]\` and \`(\`, e.g. \`[CoinMarketCap](https://...)\`, \`[Reuters](https://...)\`, \`[TechCrunch](https://...)\`. NEVER use CJK brackets \`【...】\` and NEVER output raw unlinked URLs.\n4. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
 
   let condensed = prompt
     .replace(
@@ -376,6 +376,7 @@ function stripToolCallMarkup(text: string): string {
       }
       return "";
     })
+    .replace(/!\s*\[[^\]]*\]\s*\(\s*(?:attachment|sandbox|file):[^)]+\)/gi, "")
     .trim();
 }
 
@@ -439,7 +440,10 @@ function extractLeakedToolCall(
     }
   }
 
-  // 2. Check for trailing or full JSON object
+  // 2. Check for trailing or full JSON object (including OpenAI Harmony `to=functions.<name> ... {...}`)
+  const harmonyToolMatch = text.match(/to=functions\.([a-zA-Z0-9_-]+)/i);
+  const harmonyToolName = harmonyToolMatch ? harmonyToolMatch[1] : "";
+
   const lastClose = text.lastIndexOf("}");
   if (lastClose === -1) return null;
 
@@ -485,9 +489,25 @@ function extractLeakedToolCall(
     const cleanSlice = () =>
       stripToolCallMarkup(
         (text.slice(0, startIdx) + text.slice(lastClose + 1))
+          .replace(/<\|channel\|>[\s\S]*$/gi, "")
+          .replace(/to=functions\.[a-zA-Z0-9_-]+[\s\S]*$/gi, "")
           .replace(/```(?:json)?\s*$/i, "")
           .replace(/<\/?tool_call>\s*$/gi, ""),
       );
+
+    if (harmonyToolName) {
+      const normName =
+        harmonyToolName === "web_search" || harmonyToolName === "search"
+          ? "web-search"
+          : harmonyToolName;
+      const directArgs =
+        parsed.arguments || parsed.parameters || parsed.args || parsed;
+      return {
+        toolName: normName,
+        args: directArgs,
+        cleanedText: cleanSlice(),
+      };
+    }
 
     const toolName =
       parsed.tool ||
@@ -575,9 +595,14 @@ function flattenToolMessagesForSynthesis(messages: any[]): any[] {
         typeof m.content === "string"
           ? m.content
           : JSON.stringify(m.content || "");
+      const isWebSearchPayload =
+        raw.includes('"results"') &&
+        (raw.includes('"url"') || raw.includes('"favicon"'));
       result.push({
         role: "user",
-        content: `[Live Web Search Data]:\n${raw.slice(0, 2500)}\n\nPlease synthesize the above live data into a rich, well-structured response:\n1. Start with a bold **Headline Summary** with the exact live figure/answer and inline citation.\n2. Include a **Markdown Comparison Table** (\`| Source | Live Price / Value | Details |\`) across the top sources.\n3. Add a **\`### Key Market Highlights\`** section with 3-4 concise bullet points.\n4. Use ONLY standard ASCII Markdown links \`[SourceName](https://...)\` with NO space between \`]\` and \`(\`, and NEVER use \`【...】\` brackets.`,
+        content: isWebSearchPayload
+          ? `[Live Web Search Data]:\n${raw.slice(0, 2800)}\n\nPlease synthesize the above live data into a rich, well-structured response tailored to the user's question:\n- Start with a bold **Headline Summary** answering the query directly with inline citation.\n- If the query is about prices/rates/metrics, include a **Markdown Comparison Table** (\`| Source / Platform | Live Value | Key Details |\`); if it is about news/events/topics, use clean \`###\` section headings or a **Summary Table** (\`| Topic / Event | Details | Source |\`) and **bold-lead** bullet points.\n- Use ONLY standard ASCII Markdown links \`[SourceName](https://...)\` with NO space between \`]\` and \`(\`, and NEVER use \`【...】\` brackets.`
+          : `[Tool Execution Output]:\n${raw.slice(0, 2500)}\n\nThe requested tool has completed execution and rendered its output above. Provide a clear, helpful summary and explanation of the results for the user.`,
       });
       continue;
     }

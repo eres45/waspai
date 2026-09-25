@@ -346,11 +346,23 @@ const components: Partial<Components> = {
   },
   img: ({ node, children, ...props }) => {
     const { src, alt, ...rest } = props;
+    const srcStr = typeof src === "string" ? src.trim() : "";
+    if (
+      !srcStr ||
+      srcStr.startsWith("attachment:") ||
+      srcStr.startsWith("sandbox:") ||
+      (!srcStr.startsWith("http://") &&
+        !srcStr.startsWith("https://") &&
+        !srcStr.startsWith("data:") &&
+        !srcStr.startsWith("/"))
+    ) {
+      return null;
+    }
 
-    return src ? (
+    return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img className="mx-auto rounded-lg" src={src} alt={alt} {...rest} />
-    ) : null;
+      <img className="mx-auto rounded-lg" src={srcStr} alt={alt} {...rest} />
+    );
   },
 };
 
