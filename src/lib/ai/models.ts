@@ -338,15 +338,82 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
 }
 
 /**
- * Robustly extracts a leaked JSON tool call from either full text or the end of a reasoning/content block.
- * Also supports bare search query objects like {"query": "Bitcoin price live September 2026", "top_n": 5, ...}
- * and returns the cleaned text with the leaked JSON removed.
+ * Strips any leaked DSML (< | DSML | ...>, <｜DSML｜...>) or XML (<invoke>, <tool_call>) tool markup from text.
+ */
+function stripToolCallMarkup(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/<[\s|｜]*DSML[\s|｜]*[\s\S]*$/gi, "")
+    .replace(/<\/?[\s|｜]*DSML[\s|｜]*[^>]*>/gi, "")
+    .replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "")
+    .replace(/<function_calls>[\s\S]*?<\/function_calls>/gi, "")
+    .replace(/<invoke\b[\s\S]*?<\/[\s|｜]*(?:DSML[\s|｜]*)?invoke>/gi, "")
+    .replace(/<parameter\b[\s\S]*?<\/[\s|｜]*(?:DSML[\s|｜]*)?parameter>/gi, "")
+    .replace(/<\/?(?:invoke|parameter|tool_call|function_calls)\b[^>]*>/gi, "")
+    .trim();
+}
+
+function makeToolCallId(index = 0): string {
+  // 9 alphanumeric chars (a-zA-Z0-9) satisfies strict Mistral and OpenAI tool_call_id validation
+  const rand = Math.random().toString(36).substring(2, 9).padEnd(7, "0");
+  return `tc${index}${rand}`.slice(0, 9);
+}
+
+/**
+ * Robustly extracts a leaked tool call from DeepSeek DSML (< | DSML | calls>...), XML (<invoke>...),
+ * or JSON (full text or trailing JSON in reasoning/content).
+ * Returns the normalized toolName, args, and cleanedText with the markup stripped.
  */
 function extractLeakedToolCall(
   rawText: string,
 ): { toolName: string; args: any; cleanedText: string } | null {
   if (!rawText) return null;
   const text = rawText.trim();
+
+  // 1. Check for DeepSeek DSML (< | DSML | invoke name="..."> or <｜DSML｜parameter name="...">) or XML <invoke>
+  if (
+    /DSML/i.test(text) ||
+    /<invoke\b/i.test(text) ||
+    /<parameter\b/i.test(text)
+  ) {
+    const invokeMatch = text.match(/invoke\s+name=["']?([^"'\s>]+)["']?/i);
+    let detectedTool = invokeMatch ? invokeMatch[1] : "";
+    const params: Record<string, any> = {};
+    const paramRegex =
+      /parameter\s+name=["']?([^"'\s>]+)["']?[^>]*>([\s\S]*?)<\/[\s|｜]*(?:DSML[\s|｜]*)?parameter>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = paramRegex.exec(text)) !== null) {
+      const k = m[1].trim();
+      const v = m[2].trim();
+      params[k] = v;
+    }
+    if (!detectedTool && (params.query || params.q || params.search_query)) {
+      detectedTool = "web-search";
+    }
+    if (detectedTool) {
+      const normName =
+        detectedTool === "web_search" || detectedTool === "search"
+          ? "web-search"
+          : detectedTool;
+      const finalArgs =
+        normName === "web-search"
+          ? {
+              query: String(
+                params.query || params.q || params.search_query || "",
+              ).trim(),
+            }
+          : params;
+      if (normName !== "web-search" || finalArgs.query) {
+        return {
+          toolName: normName,
+          args: finalArgs,
+          cleanedText: stripToolCallMarkup(text),
+        };
+      }
+    }
+  }
+
+  // 2. Check for trailing or full JSON object
   const lastClose = text.lastIndexOf("}");
   if (lastClose === -1) return null;
 
@@ -390,10 +457,11 @@ function extractLeakedToolCall(
     }
 
     const cleanSlice = () =>
-      (text.slice(0, startIdx) + text.slice(lastClose + 1))
-        .replace(/```(?:json)?\s*$/i, "")
-        .replace(/<\/?tool_call>\s*$/gi, "")
-        .trim();
+      stripToolCallMarkup(
+        (text.slice(0, startIdx) + text.slice(lastClose + 1))
+          .replace(/```(?:json)?\s*$/i, "")
+          .replace(/<\/?tool_call>\s*$/gi, ""),
+      );
 
     const toolName =
       parsed.tool ||
@@ -416,7 +484,6 @@ function extractLeakedToolCall(
           argsObj = { query: rawArgs };
         }
       }
-      // If it's a search tool, normalize arguments to { query } so extra keys like top_n/recency_days don't break schema
       if (
         (toolName === "web-search" ||
           toolName === "web_search" ||
@@ -437,7 +504,7 @@ function extractLeakedToolCall(
       return { toolName, args: argsObj, cleanedText: cleanSlice() };
     }
 
-    // Bare search query JSON object: {"query": "Bitcoin price live September 2026", "top_n": 5, "recency_days": 1, "source": "news"}
+    // Bare search query JSON object: {"query": "Bitcoin price live September 2026", "top_n": 5, ...}
     const q = parsed.query || parsed.q || parsed.search_query;
     if (typeof q === "string" && q.trim().length > 0) {
       return {
@@ -452,21 +519,73 @@ function extractLeakedToolCall(
   return null;
 }
 
-// Groq Worker Provider (openai/gpt-oss-120b with native reasoning and automatic key rotation)
-const groqWorkerProvider = createOpenAICompatible({
-  name: "GroqWorker",
-  apiKey: "dummy",
-  baseURL: `${GROQ_WORKER_URL}/v1`,
-  fetch: async (url, options) => {
+function flattenToolMessagesForSynthesis(messages: any[]): any[] {
+  const result: any[] = [];
+  for (const m of messages || []) {
+    if (
+      m.role === "assistant" &&
+      Array.isArray(m.tool_calls) &&
+      m.tool_calls.length > 0
+    ) {
+      if (
+        m.content &&
+        typeof m.content === "string" &&
+        m.content.trim() &&
+        m.content !== "OK."
+      ) {
+        result.push({ role: "assistant", content: m.content });
+      }
+      continue;
+    }
+    if (m.role === "tool") {
+      const raw =
+        typeof m.content === "string"
+          ? m.content
+          : JSON.stringify(m.content || "");
+      result.push({
+        role: "user",
+        content: `[Live Web Search Data]:\n${raw.slice(0, 2500)}\n\nPlease synthesize the above live data into a complete, well-structured answer with inline Markdown link citations (e.g. [Source Name](https://...)).`,
+      });
+      continue;
+    }
+    result.push(m);
+  }
+  return result;
+}
+
+/**
+ * Universal Smart OpenAI-Compatible Fetch Wrapper.
+ * Used across all providers (GroqWorker, TokenHarbor, BudsAI, SeekAI, Mistral) to:
+ * 1. Compact tool schemas (~98% token reduction, eliminating 8,137-token bloat and 400/413 errors).
+ * 2. Normalize conversation history messages (flattening array reasoning/text content on assistant messages and preserving reasoning_content for thinking models).
+ * 3. Convert stream:true -> stream:false on the upstream hop and emit clean OpenAI SSE chunks, allowing 100% interception and conversion of leaked DeepSeek DSML (< | DSML | calls>), XML, and JSON tool calls into native tool_calls!
+ */
+function createSmartOpenAICompatibleFetch(
+  getKeys: () => string[],
+  defaultModelName = "openai/gpt-oss-120b",
+) {
+  return async (
+    url: RequestInfo | URL,
+    options?: RequestInit,
+  ): Promise<Response> => {
     let parsedBodyObj: any = null;
-    // If the body requested stream: true, convert to stream: false to bypass worker JSON parse bug
+    const isMistralApi = String(url).includes("api.mistral.ai");
+    const toolIdMap = new Map<string, string>();
+    const mapToolId = (id: string, idx = 0) => {
+      if (!id) return makeToolCallId(idx);
+      if (/^[a-zA-Z0-9]{9}$/.test(id)) return id;
+      if (!toolIdMap.has(id)) {
+        toolIdMap.set(id, makeToolCallId(toolIdMap.size + idx));
+      }
+      return toolIdMap.get(id)!;
+    };
+
     if (options && options.body) {
       try {
         const bodyObj = JSON.parse(options.body as string);
         if (bodyObj.stream) {
           bodyObj.stream = false;
         }
-        // Cap max_tokens to 2048 so multi-step requests (Step 1 + Step 2) stay well within Groq's 8,000 TPM limit
         if (!bodyObj.max_tokens || bodyObj.max_tokens > 2048) {
           bodyObj.max_tokens = 2048;
         }
@@ -476,18 +595,68 @@ const groqWorkerProvider = createOpenAICompatible({
         ) {
           bodyObj.max_completion_tokens = 2048;
         }
-        // Condense system prompt and compact tool results so request stays safely within Groq's 8,000 TPM limit
         if (Array.isArray(bodyObj.messages)) {
-          bodyObj.messages = bodyObj.messages.map((m: any) => {
+          bodyObj.messages = bodyObj.messages.map((m: any, mIdx: number) => {
             if (m.role === "system" && typeof m.content === "string") {
               return { ...m, content: condenseSystemPromptForGroq(m.content) };
             }
-            if (
-              m.role === "tool" &&
-              typeof m.content === "string" &&
-              m.content.length > 2500
-            ) {
-              return { ...m, content: m.content.substring(0, 2500) };
+            if (m.role === "assistant") {
+              let cleanText = "";
+              let extractedReasoning = m.reasoning_content || m.reasoning || "";
+              if (typeof m.content === "string") {
+                cleanText = stripToolCallMarkup(m.content);
+              } else if (Array.isArray(m.content)) {
+                const textParts = m.content
+                  .filter((p: any) => p.type === "text" && p.text)
+                  .map((p: any) => p.text)
+                  .join("\n\n");
+                const reasoningParts = m.content
+                  .filter((p: any) => p.type === "reasoning" && p.text)
+                  .map((p: any) => p.text)
+                  .join("\n\n");
+                if (reasoningParts && !extractedReasoning) {
+                  extractedReasoning = stripToolCallMarkup(reasoningParts);
+                }
+                cleanText = stripToolCallMarkup(
+                  textParts || reasoningParts || "",
+                );
+              }
+              const hasTools =
+                Array.isArray(m.tool_calls) && m.tool_calls.length > 0;
+              const normToolCalls = hasTools
+                ? m.tool_calls.map((tc: any, tIdx: number) => ({
+                    ...tc,
+                    id: mapToolId(tc.id, tIdx),
+                  }))
+                : undefined;
+              return {
+                ...m,
+                content: hasTools ? cleanText || "" : cleanText || "OK.",
+                ...(normToolCalls ? { tool_calls: normToolCalls } : {}),
+                ...(!isMistralApi && (hasTools || extractedReasoning)
+                  ? {
+                      reasoning_content:
+                        extractedReasoning ||
+                        "Analyzing request and invoking web-search tool.",
+                    }
+                  : {}),
+              };
+            }
+            if (m.role === "tool") {
+              const rawContent =
+                typeof m.content === "string"
+                  ? m.content
+                  : JSON.stringify(m.content || "");
+              return {
+                ...m,
+                tool_call_id: m.tool_call_id
+                  ? mapToolId(m.tool_call_id, mIdx)
+                  : makeToolCallId(mIdx),
+                content:
+                  rawContent.length > 2500
+                    ? rawContent.substring(0, 2500)
+                    : rawContent,
+              };
             }
             return m;
           });
@@ -499,98 +668,219 @@ const groqWorkerProvider = createOpenAICompatible({
           );
         }
         parsedBodyObj = bodyObj;
-        options.body = JSON.stringify(bodyObj);
+        options = {
+          ...options,
+          body: JSON.stringify(bodyObj),
+        };
       } catch (_e) {}
     }
 
-    // Automatic retry on 429 / 413 / 5xx to rotate to the next fresh Groq API key in the worker pool
-    let res = await fetch(url, options);
-    for (
-      let retry = 0;
-      retry < 3 &&
-      (res.status === 429 || res.status === 413 || res.status >= 500);
-      retry++
-    ) {
-      res = await fetch(url, options);
+    const parseResponseJsonOrSse = async (response: Response): Promise<any> => {
+      const rawText = await response.text();
+      const trimmed = rawText.trim();
+      if (!trimmed) return {};
+      try {
+        return JSON.parse(trimmed);
+      } catch (_jsonErr) {
+        let accReasoning = "";
+        let accContent = "";
+        let modelId = defaultModelName;
+        let respId = "chatcmpl-sse";
+        const toolCallMap = new Map<number, any>();
+        for (const line of trimmed.split(/\r?\n/)) {
+          const l = line.trim();
+          if (!l.startsWith("data:")) continue;
+          const payload = l.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const chunk = JSON.parse(payload);
+            if (chunk.id) respId = chunk.id;
+            if (chunk.model) modelId = chunk.model;
+            const choice = chunk.choices?.[0];
+            if (!choice) continue;
+            const d = choice.delta || choice.message || {};
+            if (d.reasoning || d.reasoning_content) {
+              accReasoning += d.reasoning || d.reasoning_content;
+            }
+            if (d.content) {
+              accContent += d.content;
+            }
+            if (Array.isArray(d.tool_calls)) {
+              for (const tc of d.tool_calls) {
+                const idx = typeof tc.index === "number" ? tc.index : 0;
+                const existing = toolCallMap.get(idx) || {
+                  id: tc.id || makeToolCallId(idx),
+                  type: "function",
+                  function: { name: "", arguments: "" },
+                };
+                if (tc.id) existing.id = tc.id;
+                if (tc.function?.name)
+                  existing.function.name += tc.function.name;
+                if (tc.function?.arguments)
+                  existing.function.arguments += tc.function.arguments;
+                toolCallMap.set(idx, existing);
+              }
+            }
+          } catch (_chunkErr) {}
+        }
+        const assembledTools = Array.from(toolCallMap.values());
+        return {
+          id: respId,
+          model: modelId,
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: "assistant",
+                reasoning: accReasoning,
+                content: accContent,
+                ...(assembledTools.length > 0
+                  ? { tool_calls: assembledTools }
+                  : {}),
+              },
+            },
+          ],
+        };
+      }
+    };
+
+    const doFetchWithKeys = async (reqOptions?: RequestInit) => {
+      const keys = getKeys();
+      let lastRes: Response | null = null;
+      let lastErr: any = null;
+      for (const key of keys) {
+        try {
+          const headers = new Headers(reqOptions?.headers || {});
+          if (key && key !== "dummy") {
+            headers.set("Authorization", `Bearer ${key}`);
+          }
+          const r = await fetch(url, {
+            ...reqOptions,
+            headers,
+            signal: AbortSignal.timeout(22000),
+          });
+          lastRes = r;
+          if (r.ok) return r;
+          if (
+            r.status === 401 ||
+            r.status === 429 ||
+            r.status === 413 ||
+            r.status >= 500
+          ) {
+            continue;
+          }
+          return r;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      if (lastRes) return lastRes;
+      if (lastErr) throw lastErr;
+      return fetch(url, reqOptions);
+    };
+
+    let res: Response;
+    try {
+      res = await doFetchWithKeys(options);
+      for (
+        let retry = 0;
+        retry < 2 &&
+        (res.status === 429 || res.status === 413 || res.status >= 500);
+        retry++
+      ) {
+        res = await doFetchWithKeys(options);
+      }
+    } catch (_fetchErr) {
+      res = new Response(
+        JSON.stringify({ error: { message: "Upstream timeout" } }),
+        { status: 504 },
+      );
     }
 
     let recoveredJson: any = null;
     if (!res.ok) {
+      let errText = "";
       try {
-        const errText = await res.clone().text();
-        console.error(`[GroqWorker HTTP ${res.status}]`, errText);
-        // If Groq rejected a tool call due to strict schema validation (400 tool_use_failed), recover from failed_generation or retry without tools!
-        if (res.status === 400 || res.status === 413) {
-          try {
-            const errJson = JSON.parse(errText);
-            const failedGen =
-              errJson?.error?.failed_generation || errJson?.failed_generation;
-            if (typeof failedGen === "string" && failedGen.trim().length > 0) {
-              const extracted = extractLeakedToolCall(failedGen);
-              if (extracted) {
-                recoveredJson = {
-                  id: "chatcmpl-oss-recovered",
-                  choices: [
-                    {
-                      message: {
-                        role: "assistant",
-                        reasoning: extracted.cleanedText,
-                        content: "",
-                        tool_calls: [
-                          {
-                            id: `fc_${Date.now()}`,
-                            type: "function",
-                            function: {
-                              name:
-                                extracted.toolName === "web_search"
-                                  ? "web-search"
-                                  : extracted.toolName,
-                              arguments: JSON.stringify(extracted.args),
-                            },
+        errText = await res.text();
+        console.error(`[SmartProvider HTTP ${res.status}]`, errText);
+        try {
+          const errJson = JSON.parse(errText);
+          const failedGen =
+            errJson?.error?.failed_generation || errJson?.failed_generation;
+          if (typeof failedGen === "string" && failedGen.trim().length > 0) {
+            const extracted = extractLeakedToolCall(failedGen);
+            if (extracted) {
+              recoveredJson = {
+                id: "chatcmpl-recovered",
+                choices: [
+                  {
+                    message: {
+                      role: "assistant",
+                      reasoning: extracted.cleanedText,
+                      content: "",
+                      tool_calls: [
+                        {
+                          id: makeToolCallId(0),
+                          type: "function",
+                          function: {
+                            name:
+                              extracted.toolName === "web_search"
+                                ? "web-search"
+                                : extracted.toolName,
+                            arguments: JSON.stringify(extracted.args),
                           },
-                        ],
-                      },
+                        },
+                      ],
                     },
-                  ],
-                };
-              }
+                  },
+                ],
+              };
             }
-          } catch (_parseErr) {}
+          }
+        } catch (_parseErr) {}
 
-          // If not recovered via failed_generation, retry immediately without tools / lower max_tokens so it never fails
-          if (!recoveredJson && parsedBodyObj) {
-            const fallbackBody = {
-              ...parsedBodyObj,
-              max_tokens: 1536,
-            };
-            delete fallbackBody.tools;
-            delete fallbackBody.tool_choice;
-            const retryRes = await fetch(url, {
-              ...options,
-              body: JSON.stringify(fallbackBody),
-            });
-            if (retryRes.ok) {
-              res = retryRes;
-            }
+        // Retry with flattened messages and no tools so Step 1 or Step 2 always succeeds
+        if (!recoveredJson && parsedBodyObj) {
+          const fallbackBody = {
+            ...parsedBodyObj,
+            messages: flattenToolMessagesForSynthesis(parsedBodyObj.messages),
+            max_tokens: 1536,
+          };
+          delete fallbackBody.tools;
+          delete fallbackBody.tool_choice;
+          const retryRes = await doFetchWithKeys({
+            ...options,
+            body: JSON.stringify(fallbackBody),
+          });
+          if (retryRes.ok) {
+            res = retryRes;
           }
         }
       } catch (_e) {}
       if (!res.ok && !recoveredJson) {
-        return res;
+        return new Response(errText || "Upstream Error", {
+          status: res.status,
+          headers: { "Content-Type": "application/json" },
+        });
       }
     }
 
     try {
-      const json = recoveredJson || (await res.json());
+      const json = recoveredJson || (await parseResponseJsonOrSse(res));
       const msg = json.choices?.[0]?.message || {};
       let reasoning = msg.reasoning || msg.reasoning_content || "";
       const content = msg.content || "";
       let toolCalls = msg.tool_calls;
       let effectiveContent = content;
 
-      // Normalize tool names and arguments on native tool_calls (e.g. web_search -> web-search, strip extra keys like top_n)
+      const messagesList: any[] = parsedBodyObj?.messages || [];
+      const hasToolResultsInHistory = messagesList.some(
+        (m: any) => m.role === "tool",
+      );
+
+      // Normalize tool names and arguments on native tool_calls
       if (Array.isArray(toolCalls) && toolCalls.length > 0) {
-        toolCalls = toolCalls.map((tc: any) => {
+        toolCalls = toolCalls.map((tc: any, idx: number) => {
           const rawName = tc.function?.name;
           const normName =
             rawName === "web_search" || rawName === "search"
@@ -609,6 +899,7 @@ const groqWorkerProvider = createOpenAICompatible({
           }
           return {
             ...tc,
+            id: mapToolId(tc.id, idx),
             function: {
               ...tc.function,
               name: normName,
@@ -618,7 +909,7 @@ const groqWorkerProvider = createOpenAICompatible({
         });
       }
 
-      // If the model leaked a tool call as raw JSON in content OR at the end of reasoning instead of tool_calls, extract and recover it!
+      // If the model leaked a tool call as DSML (< | DSML | calls>), XML, or raw JSON in content OR reasoning, extract and recover it!
       if (!toolCalls || toolCalls.length === 0) {
         const fromContent = extractLeakedToolCall(effectiveContent);
         if (fromContent) {
@@ -628,7 +919,7 @@ const groqWorkerProvider = createOpenAICompatible({
               : fromContent.toolName;
           toolCalls = [
             {
-              id: `fc_${Date.now()}`,
+              id: makeToolCallId(0),
               type: "function",
               function: {
                 name: normalizedName,
@@ -649,7 +940,7 @@ const groqWorkerProvider = createOpenAICompatible({
                 : fromReasoning.toolName;
             toolCalls = [
               {
-                id: `fc_${Date.now()}`,
+                id: makeToolCallId(0),
                 type: "function",
                 function: {
                   name: normalizedName,
@@ -665,10 +956,20 @@ const groqWorkerProvider = createOpenAICompatible({
         }
       }
 
-      const messagesList: any[] = parsedBodyObj?.messages || [];
-      const hasToolResultsInHistory = messagesList.some(
-        (m: any) => m.role === "tool",
-      );
+      // Always strip any residual DSML/XML tool markup from both effectiveContent and reasoning
+      effectiveContent = stripToolCallMarkup(effectiveContent);
+      reasoning = stripToolCallMarkup(reasoning);
+
+      // Prevent infinite tool loops: if Step 2+ already has tool results in history and the model tries to call web-search AGAIN, clear both toolCalls and pre-tool filler so Step 2 forces final answer synthesis!
+      if (
+        hasToolResultsInHistory &&
+        Array.isArray(toolCalls) &&
+        toolCalls.length > 0 &&
+        toolCalls.every((tc: any) => tc.function?.name === "web-search")
+      ) {
+        toolCalls = undefined;
+        effectiveContent = "";
+      }
 
       // If Step 1 produced reasoning about needing to search/fetch live info, but emitted neither toolCalls nor content, synthesize web-search!
       if (
@@ -699,7 +1000,7 @@ const groqWorkerProvider = createOpenAICompatible({
           });
           toolCalls = [
             {
-              id: `fc_${Date.now()}`,
+              id: makeToolCallId(0),
               type: "function",
               function: {
                 name: "web-search",
@@ -712,7 +1013,12 @@ const groqWorkerProvider = createOpenAICompatible({
         }
       }
 
-      // If Step 2+ (after tool execution) STILL has no content and no tool calls, force a tool-free synthesis call or fallback to reasoning
+      // When executing tool calls on Step 1, keep content empty so pre-tool filler or stray tags never clutter above the tool card
+      if (toolCalls && toolCalls.length > 0) {
+        effectiveContent = "";
+      }
+
+      // If Step 2+ (after tool execution) STILL has no content and no tool calls, force a tool-free synthesis call with flattened search results!
       if (
         (!toolCalls || toolCalls.length === 0) &&
         !effectiveContent &&
@@ -721,19 +1027,20 @@ const groqWorkerProvider = createOpenAICompatible({
         try {
           const synthesisBody = {
             ...parsedBodyObj,
+            messages: flattenToolMessagesForSynthesis(parsedBodyObj.messages),
             max_tokens: 1536,
           };
           delete synthesisBody.tools;
           delete synthesisBody.tool_choice;
-          const synthRes = await fetch(url, {
+          const synthRes = await doFetchWithKeys({
             ...options,
             body: JSON.stringify(synthesisBody),
           });
           if (synthRes.ok) {
-            const synthJson = await synthRes.json();
+            const synthJson = await parseResponseJsonOrSse(synthRes);
             const synthMsg = synthJson.choices?.[0]?.message || {};
             if (synthMsg.content) {
-              effectiveContent = synthMsg.content;
+              effectiveContent = stripToolCallMarkup(synthMsg.content);
             }
           }
         } catch (_e) {}
@@ -742,15 +1049,16 @@ const groqWorkerProvider = createOpenAICompatible({
         }
       }
 
+      const modelLabel = json.model || parsedBodyObj?.model || defaultModelName;
       const chunks: string[] = [];
       if (reasoning) {
         chunks.push(
           "data: " +
             JSON.stringify({
-              id: json.id || "chatcmpl-oss",
+              id: json.id || "chatcmpl-smart",
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
-              model: "openai/gpt-oss-120b",
+              model: modelLabel,
               choices: [
                 {
                   index: 0,
@@ -765,7 +1073,7 @@ const groqWorkerProvider = createOpenAICompatible({
       if (toolCalls && toolCalls.length > 0) {
         const indexedCalls = toolCalls.map((tc: any, i: number) => ({
           index: i,
-          id: tc.id || `call_${i}_${Date.now()}`,
+          id: mapToolId(tc.id, i),
           type: tc.type || "function",
           function: {
             name: tc.function?.name,
@@ -778,10 +1086,10 @@ const groqWorkerProvider = createOpenAICompatible({
         chunks.push(
           "data: " +
             JSON.stringify({
-              id: json.id || "chatcmpl-oss",
+              id: json.id || "chatcmpl-smart",
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
-              model: "openai/gpt-oss-120b",
+              model: modelLabel,
               choices: [
                 {
                   index: 0,
@@ -795,10 +1103,10 @@ const groqWorkerProvider = createOpenAICompatible({
         chunks.push(
           "data: " +
             JSON.stringify({
-              id: json.id || "chatcmpl-oss",
+              id: json.id || "chatcmpl-smart",
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
-              model: "openai/gpt-oss-120b",
+              model: modelLabel,
               choices: [
                 {
                   index: 0,
@@ -814,10 +1122,10 @@ const groqWorkerProvider = createOpenAICompatible({
         chunks.push(
           "data: " +
             JSON.stringify({
-              id: json.id || "chatcmpl-oss",
+              id: json.id || "chatcmpl-smart",
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
-              model: "openai/gpt-oss-120b",
+              model: modelLabel,
               choices: [
                 {
                   index: 0,
@@ -831,10 +1139,10 @@ const groqWorkerProvider = createOpenAICompatible({
         chunks.push(
           "data: " +
             JSON.stringify({
-              id: json.id || "chatcmpl-oss",
+              id: json.id || "chatcmpl-smart",
               object: "chat.completion.chunk",
               created: Math.floor(Date.now() / 1000),
-              model: "openai/gpt-oss-120b",
+              model: modelLabel,
               choices: [
                 {
                   index: 0,
@@ -859,7 +1167,18 @@ const groqWorkerProvider = createOpenAICompatible({
     } catch {
       return res;
     }
-  },
+  };
+}
+
+// Groq Worker Provider (openai/gpt-oss-120b with native reasoning and automatic key rotation)
+const groqWorkerProvider = createOpenAICompatible({
+  name: "GroqWorker",
+  apiKey: "dummy",
+  baseURL: `${GROQ_WORKER_URL}/v1`,
+  fetch: createSmartOpenAICompatibleFetch(
+    () => ["dummy"],
+    "openai/gpt-oss-120b",
+  ),
 });
 
 // Sarvam AI provider
@@ -915,26 +1234,7 @@ const hcnsecProvider = createOpenAICompatible({
   name: "HCNSEC",
   apiKey: "dummy",
   baseURL: HCNSEC_BASE_URL,
-  fetch: async (url, options) => {
-    const keys = getHcnsecKeys();
-    let lastError: any;
-    for (const key of keys) {
-      try {
-        const headers = new Headers(options?.headers || {});
-        headers.set("Authorization", `Bearer ${key}`);
-        const res = await fetch(url, { ...options, headers });
-        if (res.ok) return res;
-        if (res.status === 401 || res.status === 429) {
-          continue;
-        }
-        return res;
-      } catch (err) {
-        lastError = err;
-      }
-    }
-    if (lastError) throw lastError;
-    return fetch(url, options);
-  },
+  fetch: createSmartOpenAICompatibleFetch(getHcnsecKeys, "auto"),
 });
 
 // TokenHarbor AI Provider (DeepSeek V4.1 Flash, Qwen 3.8 Flash, MiMo, etc.)
@@ -967,26 +1267,10 @@ const tokenHarborProvider = createOpenAICompatible({
   name: "TokenHarbor",
   apiKey: "dummy",
   baseURL: TOKENHARBOR_BASE_URL,
-  fetch: async (url, options) => {
-    const keys = getTokenHarborKeys();
-    let lastError: any;
-    for (const key of keys) {
-      try {
-        const headers = new Headers(options?.headers || {});
-        headers.set("Authorization", `Bearer ${key}`);
-        const res = await fetch(url, { ...options, headers });
-        if (res.ok) return res;
-        if (res.status === 401 || res.status === 429) {
-          continue;
-        }
-        return res;
-      } catch (err) {
-        lastError = err;
-      }
-    }
-    if (lastError) throw lastError;
-    return fetch(url, options);
-  },
+  fetch: createSmartOpenAICompatibleFetch(
+    getTokenHarborKeys,
+    "deepseek-v4.1-flash:free",
+  ),
 });
 
 // Mistral AI Provider (mistral-code-latest, ministral-14b-latest, codestral-latest)
@@ -1009,12 +1293,10 @@ const mistralProvider = createOpenAICompatible({
   name: "Mistral",
   apiKey: "dummy",
   baseURL: MISTRAL_BASE_URL,
-  fetch: async (url, options) => {
-    const key = getMistralKey();
-    const headers = new Headers(options?.headers || {});
-    headers.set("Authorization", `Bearer ${key}`);
-    return fetch(url, { ...options, headers });
-  },
+  fetch: createSmartOpenAICompatibleFetch(
+    () => [getMistralKey()],
+    "ministral-14b-latest",
+  ),
 });
 
 // BudsAI Provider (ox-alpha, step-3.7-flash, deepseek-v4-flash)
@@ -1036,12 +1318,7 @@ const budsaiProvider = createOpenAICompatible({
   name: "BudsAI",
   apiKey: "dummy",
   baseURL: BUDSAI_BASE_URL,
-  fetch: async (url, options) => {
-    const key = getBudsAiKey();
-    const headers = new Headers(options?.headers || {});
-    headers.set("Authorization", `Bearer ${key}`);
-    return fetch(url, { ...options, headers });
-  },
+  fetch: createSmartOpenAICompatibleFetch(() => [getBudsAiKey()], "ox-alpha"),
 });
 
 // SeekAI Provider (deepseek-ai/DeepSeek-V4-Flash-0731, glm-5.3-flash)
@@ -1062,12 +1339,10 @@ const seekaiProvider = createOpenAICompatible({
   name: "SeekAI",
   apiKey: "dummy",
   baseURL: SEEKAI_BASE_URL,
-  fetch: async (url, options) => {
-    const key = getSeekAiKey();
-    const headers = new Headers(options?.headers || {});
-    headers.set("Authorization", `Bearer ${key}`);
-    return fetch(url, { ...options, headers });
-  },
+  fetch: createSmartOpenAICompatibleFetch(
+    () => [getSeekAiKey()],
+    "deepseek-ai/DeepSeek-V4-Flash-0731",
+  ),
 });
 
 // ─── MIME type heuristic ──────────────────────────────────────────────────────
@@ -1312,7 +1587,7 @@ export async function buildDynamicModelsInfo() {
       models: [
         {
           name: "ox-alpha",
-          isToolCallUnsupported: true, // returns 400 on tool calls
+          isToolCallUnsupported: false,
           isImageInputUnsupported: false,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
           tier: "Free",
@@ -1326,7 +1601,7 @@ export async function buildDynamicModelsInfo() {
         },
         {
           name: "deepseek-v4-flash",
-          isToolCallUnsupported: true, // returns 400 on tool calls
+          isToolCallUnsupported: false,
           isImageInputUnsupported: false,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
           tier: "Free",
@@ -1346,7 +1621,7 @@ export async function buildDynamicModelsInfo() {
         },
         {
           name: "glm-5.3-flash",
-          isToolCallUnsupported: true, // returns 404 when tools are passed
+          isToolCallUnsupported: false,
           isImageInputUnsupported: false,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
           tier: "Free",
@@ -1559,20 +1834,20 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
-  // BudsAI: ox-alpha and deepseek-v4-flash do NOT support tool calls (return 400)
-  // step-3.7-flash does support tool calls
-  if (modelId === "ox-alpha" || modelId === "deepseek-v4-flash") {
-    return true;
-  }
-  if (modelId === "step-3.7-flash") {
+  // BudsAI models support tool calling via createSmartOpenAICompatibleFetch
+  if (
+    BUDSAI_MODELS.has(modelId) ||
+    modelId === "ox-alpha" ||
+    modelId === "deepseek-v4-flash" ||
+    modelId === "step-3.7-flash"
+  ) {
     return false;
   }
 
-  // SeekAI: deepseek-ai/DeepSeek-V4-Flash-0731 supports tool calls; glm-5.3-flash does not
-  if (modelId === "glm-5.3-flash") {
-    return true;
-  }
+  // SeekAI models support tool calling via createSmartOpenAICompatibleFetch
   if (
+    SEEKAI_MODELS.has(modelId) ||
+    modelId === "glm-5.3-flash" ||
     modelId === "deepseek-ai/deepseek-v4-flash-0731" ||
     modelId === "deepseek-ai/DeepSeek-V4-Flash-0731".toLowerCase()
   ) {

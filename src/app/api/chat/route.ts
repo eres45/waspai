@@ -249,7 +249,7 @@ export async function POST(request: Request) {
         >
       )?.agentId || (message.metadata as ChatMetadata)?.agentId;
 
-    // Convert display names back to backend names
+    // Convert display names back to backend names while preserving exact matches in dynamicModelsInfo
     const dynamicModelsInfo = await buildDynamicModelsInfo();
     const dynamicModelIds = dynamicModelsInfo.flatMap((p) =>
       p.models.map((m) => m.name),
@@ -258,14 +258,38 @@ export async function POST(request: Request) {
       createReverseModelMapping(dynamicModelIds);
     let modelToUse = chatModel;
     if (modelToUse) {
-      const backendProvider =
-        providerReverseMapping[modelToUse.provider] || modelToUse.provider;
-      const backendModel =
+      const candidateModel =
         modelReverseMapping[modelToUse.model] || modelToUse.model;
-      modelToUse = {
-        provider: backendProvider,
-        model: backendModel,
-      };
+      const exactGroup =
+        dynamicModelsInfo.find(
+          (g) =>
+            g.provider.toLowerCase() ===
+              (modelToUse?.provider || "").toLowerCase() &&
+            g.models.some(
+              (m) => m.name === modelToUse?.model || m.name === candidateModel,
+            ),
+        ) ||
+        dynamicModelsInfo.find((g) =>
+          g.models.some(
+            (m) => m.name === modelToUse?.model || m.name === candidateModel,
+          ),
+        );
+      if (exactGroup) {
+        const exactModel =
+          exactGroup.models.find((m) => m.name === modelToUse?.model) ||
+          exactGroup.models.find((m) => m.name === candidateModel)!;
+        modelToUse = {
+          provider: exactGroup.provider,
+          model: exactModel.name,
+        };
+      } else {
+        const backendProvider =
+          providerReverseMapping[modelToUse.provider] || modelToUse.provider;
+        modelToUse = {
+          provider: backendProvider,
+          model: candidateModel,
+        };
+      }
     }
     const messageText =
       message.parts
