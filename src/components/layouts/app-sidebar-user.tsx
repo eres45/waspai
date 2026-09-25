@@ -12,6 +12,8 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "ui/dropdown-menu";
 import { AvatarFallback, AvatarImage, Avatar } from "ui/avatar";
 import { SidebarMenuButton, SidebarMenuItem, SidebarMenu } from "ui/sidebar";
@@ -28,13 +30,14 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { appStore } from "@/app/store";
 import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
 import { capitalizeFirstLetter, cn, fetcher } from "lib/utils";
 import { authClient } from "auth/client";
 import { useTranslations } from "next-intl";
 import { signOutAction } from "@/app/api/auth/actions";
-import { Suspense, useCallback } from "react";
+import { useCallback } from "react";
 import useSWR from "swr";
 import { getLocaleAction } from "@/i18n/get-locale";
 import { DiscordIcon } from "ui/discord-icon";
@@ -67,7 +70,7 @@ export function AppSidebarUserInner(props: {
     }
   };
 
-  if (!user) return null;
+  if (!user) return <AppSidebarUserSkeleton />;
 
   return (
     <div className="flex flex-col space-y-2 w-full">
@@ -249,14 +252,23 @@ function SelectTheme() {
 
 function SelectLanguage() {
   const t = useTranslations("Layout");
-  const { data: currentLocale } = useSWR(COOKIE_KEY_LOCALE, getLocaleAction, {
-    fallbackData: SUPPORTED_LOCALES[0].code,
-    revalidateOnFocus: false,
-  });
-  const handleOnChange = useCallback((locale: string) => {
-    document.cookie = `${COOKIE_KEY_LOCALE}=${locale}; path=/;`;
-    window.location.reload();
-  }, []);
+  const router = useRouter();
+  const { data: currentLocale, mutate } = useSWR(
+    COOKIE_KEY_LOCALE,
+    getLocaleAction,
+    {
+      fallbackData: SUPPORTED_LOCALES[0].code,
+      revalidateOnFocus: false,
+    },
+  );
+  const handleOnChange = useCallback(
+    (locale: string) => {
+      document.cookie = `${COOKIE_KEY_LOCALE}=${locale}; path=/;`;
+      mutate(locale, false);
+      router.refresh();
+    },
+    [mutate, router],
+  );
 
   return (
     <DropdownMenuSub>
@@ -269,19 +281,20 @@ function SelectLanguage() {
           <DropdownMenuLabel className="text-muted-foreground">
             {t("language")}
           </DropdownMenuLabel>
-          {SUPPORTED_LOCALES.map((locale) => (
-            <DropdownMenuCheckboxItem
-              key={locale.code}
-              checked={locale.code === currentLocale}
-              onCheckedChange={(checked) => {
-                if (checked && locale.code !== currentLocale) {
-                  handleOnChange(locale.code);
-                }
-              }}
-            >
-              {locale.name}
-            </DropdownMenuCheckboxItem>
-          ))}
+          <DropdownMenuRadioGroup
+            value={currentLocale}
+            onValueChange={(val) => {
+              if (val && val !== currentLocale) {
+                handleOnChange(val);
+              }
+            }}
+          >
+            {SUPPORTED_LOCALES.map((locale) => (
+              <DropdownMenuRadioItem key={locale.code} value={locale.code}>
+                {locale.name}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
@@ -310,9 +323,5 @@ export function AppSidebarUser({
 }: {
   user?: BasicUser;
 }) {
-  return (
-    <Suspense fallback={<AppSidebarUserSkeleton />}>
-      <AppSidebarUserInner user={user} />
-    </Suspense>
-  );
+  return <AppSidebarUserInner user={user} />;
 }

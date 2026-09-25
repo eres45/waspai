@@ -10,7 +10,6 @@ import { SWRConfigProvider } from "./swr-config";
 import { ReferralInitializer } from "@/components/referral/referral-initializer";
 
 import { redirect } from "next/navigation";
-export const experimental_ppr = true;
 
 export default async function ChatLayout({
   children,
