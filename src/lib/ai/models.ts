@@ -99,8 +99,27 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     }
   }
 
-  // Only keep web-search unconditionally so general/live queries use ~60 tokens of tool schema instead of ~3,800 tokens
-  const alwaysKeep = new Set(["web-search"]);
+  // Keep all core WaspAI tools unconditionally available in compact schema form (~580 tokens total) so no user prompt ever misses a tool due to keyword matching
+  const alwaysKeep = new Set([
+    "web-search",
+    "html_preview",
+    "createBarChart",
+    "createPieChart",
+    "createLineChart",
+    "createTable",
+    "python-execution",
+    "mini-javascript-execution",
+    "generate-qr-code",
+    "generate-pdf",
+    "generate-csv",
+    "generate-word-document",
+    "generate-presentation",
+    "save_memory",
+    "get_memories",
+    "image-manager",
+    "web-content",
+    "youtube-transcript",
+  ]);
 
   // All built-in default tools; any tool NOT in this set is a custom/MCP tool and will be kept
   const knownBuiltinTools = new Set([
