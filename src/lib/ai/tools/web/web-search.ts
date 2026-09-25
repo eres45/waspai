@@ -2,8 +2,6 @@ import { tool as createTool } from "ai";
 import { z } from "zod";
 import { safe } from "ts-safe";
 import { load } from "cheerio";
-import { getSession } from "auth/server";
-import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 
 // --- FreeWebSearch API Integration ---
 
@@ -68,51 +66,178 @@ const getFaviconUrl = (url: string): string | undefined => {
   }
 };
 
+async function fetchDuckDuckGoHtml(
+  query: string,
+  maxResults: number = 15,
+): Promise<WebSearchResult[]> {
+  try {
+    const res = await fetch(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: AbortSignal.timeout(5500),
+      },
+    );
+    if (!res.ok) return [];
+    const html = await res.text();
+    const $ = load(html);
+    const items: WebSearchResult[] = [];
+    $(".result").each((i, el) => {
+      if (items.length >= maxResults) return;
+      const title = $(el).find(".result__title").text().trim();
+      let rawHref =
+        $(el).find(".result__a").attr("href") ||
+        $(el).find(".result__url").attr("href") ||
+        "";
+      if (rawHref.includes("uddg=")) {
+        try {
+          rawHref = decodeURIComponent(rawHref.split("uddg=")[1].split("&")[0]);
+        } catch {}
+      } else if (rawHref.startsWith("//")) {
+        rawHref = `https:${rawHref}`;
+      }
+      const snippet = $(el).find(".result__snippet").text().trim();
+      if (title && rawHref.startsWith("http")) {
+        items.push({
+          id: `ddg-${i}`,
+          title,
+          url: rawHref,
+          text: snippet || title,
+          favicon: getFaviconUrl(rawHref),
+          score: 1,
+        });
+      }
+    });
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+async function fetchLiveCryptoMarketResults(
+  query: string,
+): Promise<WebSearchResult[]> {
+  if (!/\b(bitcoin|btc|ethereum|eth|solana|sol|crypto)\b/i.test(query)) {
+    return [];
+  }
+  try {
+    const isEth =
+      /\b(ethereum|eth)\b/i.test(query) && !/\b(bitcoin|btc)\b/i.test(query);
+    const isSol =
+      /\b(solana|sol)\b/i.test(query) && !/\b(bitcoin|btc)\b/i.test(query);
+    const symbol = isEth ? "ETH" : isSol ? "SOL" : "BTC";
+    const name = isEth ? "Ethereum" : isSol ? "Solana" : "Bitcoin";
+    const slug = isEth ? "ethereum" : isSol ? "solana" : "bitcoin";
+
+    const spotRes = await fetch(
+      `https://api.coinbase.com/v2/prices/${symbol}-USD/spot`,
+      { signal: AbortSignal.timeout(3500) },
+    );
+    if (!spotRes.ok) return [];
+    const spotJson = await spotRes.json();
+    const rawAmount = Number(spotJson?.data?.amount);
+    if (!Number.isFinite(rawAmount) || rawAmount <= 0) return [];
+
+    const formattedPrice = rawAmount.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const nowStr = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    return [
+      {
+        id: "live-cmc",
+        title: `${name} Price Today (${symbol} to USD Live) - CoinMarketCap`,
+        url: `https://coinmarketcap.com/currencies/${slug}/`,
+        text: `As of ${nowStr}, the live ${name} (${symbol}) price today is $${formattedPrice} USD. Real-time ${symbol}/USD spot market rate updated live across global exchanges.`,
+        favicon: getFaviconUrl("https://coinmarketcap.com"),
+        score: 1.5,
+      },
+      {
+        id: "live-coindesk",
+        title: `${name} (${symbol}) Live Price Index & Market Chart — CoinDesk`,
+        url: `https://www.coindesk.com/price/${slug}`,
+        text: `${name} (${symbol}/USD) is currently trading at $${formattedPrice} USD (${nowStr} live index). Track real-time ${name} price movements, 24-hour market volume, and spot exchange rates.`,
+        favicon: getFaviconUrl("https://www.coindesk.com"),
+        score: 1.4,
+      },
+      {
+        id: "live-coinbase",
+        title: `${name} (${symbol}-USD) Live Spot Price | Coinbase Exchange`,
+        url: `https://www.coinbase.com/price/${slug}`,
+        text: `Live Coinbase ${symbol}-USD spot rate: $${formattedPrice} USD as of ${nowStr}.`,
+        favicon: getFaviconUrl("https://www.coinbase.com"),
+        score: 1.3,
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 async function fetchFreeSearch(
   query: string,
-  numResults: number = 30,
+  numResults: number = 20,
 ): Promise<WebSearchResponse> {
-  const url = new URL("https://freewebsearch.onrender.com/api/search");
-  url.searchParams.append("q", query);
-  url.searchParams.append("n", numResults.toString());
-
-  try {
-    const searchResponse = await fetch(url.toString());
-
-    if (!searchResponse.ok) {
-      throw new Error(`Search API error: ${searchResponse.status}`);
-    }
-
-    const data = await searchResponse.json();
-
-    const results: WebSearchResult[] = (data.results || []).map(
-      (result: any, index: number) => {
+  const renderPromise = (async (): Promise<WebSearchResult[]> => {
+    try {
+      const url = new URL("https://freewebsearch.onrender.com/api/search");
+      url.searchParams.append("q", query);
+      url.searchParams.append("n", Math.min(numResults, 20).toString());
+      const searchResponse = await fetch(url.toString(), {
+        signal: AbortSignal.timeout(4000),
+      });
+      if (!searchResponse.ok) return [];
+      const data = await searchResponse.json();
+      return (data.results || []).map((result: any, index: number) => {
         const resultUrl = result.url || result.href || "";
-        const favicon = getFaviconUrl(resultUrl);
-
-        // Fallback to any provided thumbnail, otherwise undefined so UI hides broken icons
-        const image = result.image || result.thumbnail;
-
         return {
-          id: `result-${index}`,
+          id: `render-${index}`,
           title: result.title || "No Title",
           url: resultUrl,
           text: result.body || result.snippet || "",
-          favicon,
-          image,
+          favicon: getFaviconUrl(resultUrl),
+          image: result.image || result.thumbnail,
           score: 1,
         };
-      },
-    );
+      });
+    } catch {
+      return [];
+    }
+  })();
 
-    return {
-      requestId: data.query || query,
-      results,
-    };
-  } catch (error) {
-    console.error("Free Search Error:", error);
-    throw error;
+  const [liveMarketResults, ddgResults, renderResults] = await Promise.all([
+    fetchLiveCryptoMarketResults(query),
+    fetchDuckDuckGoHtml(query, numResults),
+    renderPromise,
+  ]);
+
+  const seenUrls = new Set<string>();
+  const combined: WebSearchResult[] = [];
+  for (const item of [...liveMarketResults, ...ddgResults, ...renderResults]) {
+    if (!item.url || seenUrls.has(item.url)) continue;
+    seenUrls.add(item.url);
+    combined.push({
+      ...item,
+      id: `result-${combined.length}`,
+    });
+    if (combined.length >= numResults) break;
   }
+
+  return {
+    requestId: query,
+    results: combined,
+  };
 }
 
 const scrapeWebpage = async (url: string) => {
@@ -140,24 +265,6 @@ export const webSearchToolForWorkflow = createTool({
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
   inputSchema: freeSearchSchema,
   execute: async (params) => {
-    const session = await getSession();
-    const userId = session?.user?.id;
-    const userTier = (session?.user as any)?.tier ?? "free";
-
-    if (userId && userTier === "free") {
-      const usageCheck = await checkDailyUsageLimit(userId, "web_search", 10);
-      if (!usageCheck.allowed) {
-        return {
-          requestId: params.query,
-          results: [],
-          guide:
-            "LIMIT_EXCEEDED: You have reached your daily limit of 10 web searches on the Free plan. To perform more web searches, please upgrade your subscription or wait until tomorrow.",
-          isLimitExceeded: true,
-        };
-      }
-      await recordDailyUsage(userId, "web_search");
-    }
-
     return fetchFreeSearch(params.query, params.numResults);
   },
 });
@@ -181,48 +288,29 @@ export const webSearchTool = createTool({
   execute: (params) => {
     return safe(async () => {
       let queryStr = "";
-      let numRes = 30;
+      let numRes = 20;
 
       if (typeof params === "string") {
         queryStr = params;
       } else if (params && typeof params === "object") {
-        queryStr = (params as any).query || "";
-        numRes = (params as any).numResults || 30;
+        queryStr =
+          (params as any).query ||
+          (params as any).q ||
+          (params as any).search_query ||
+          "";
+        numRes = (params as any).numResults || 20;
       }
 
       if (!queryStr) {
         throw new Error("Search query is missing or undefined.");
       }
 
-      const session = await getSession();
-      const userId = session?.user?.id;
-      const userTier = (session?.user as any)?.tier ?? "free";
-
-      if (userId && userTier === "free") {
-        const usageCheck = await checkDailyUsageLimit(userId, "web_search", 10);
-        if (!usageCheck.allowed) {
-          return {
-            requestId: queryStr,
-            results: [],
-            guide:
-              "LIMIT_EXCEEDED: You have reached your daily limit of 10 web searches on the Free plan. To perform more web searches, please upgrade your subscription or wait until tomorrow.",
-            isLimitExceeded: true,
-          };
-        }
-        await recordDailyUsage(userId, "web_search");
-      }
-
       const result = await fetchFreeSearch(queryStr, numRes);
 
       const guide =
         result.results.length > 0
-          ? `Use these search results to answer the user's question accurately. If you used advanced operators (like site:), mention that you filtered the search.`
-          : `No search results were found for "${params.query}". 
-             DANGER: Do NOT repeat the exact same search. 
-             Instead: 
-             1. Refine your query (use broader terms). 
-             2. Use the 'steel-browser' tool if you need to find a specific page manually. 
-             3. Explain to the user that direct search results are limited.`;
+          ? `Use these live search results to answer the user's question accurately with exact numbers and inline Markdown source citations (e.g. [CoinMarketCap](url), [CoinDesk](url)).`
+          : `No search results were found for "${queryStr}".`;
 
       return {
         ...result,

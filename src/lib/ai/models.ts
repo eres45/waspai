@@ -629,18 +629,26 @@ function createSmartOpenAICompatibleFetch(
                     id: mapToolId(tc.id, tIdx),
                   }))
                 : undefined;
-              return {
+              const needsReasoningInput =
+                !isMistralApi &&
+                !String(url).includes("groq") &&
+                /\b(deepseek|mimo|step|glm)\b/i.test(
+                  String(bodyObj.model || defaultModelName),
+                );
+              const cleanedAssistantMsg: any = {
                 ...m,
                 content: hasTools ? cleanText || "" : cleanText || "OK.",
                 ...(normToolCalls ? { tool_calls: normToolCalls } : {}),
-                ...(!isMistralApi && (hasTools || extractedReasoning)
-                  ? {
-                      reasoning_content:
-                        extractedReasoning ||
-                        "Analyzing request and invoking web-search tool.",
-                    }
-                  : {}),
               };
+              delete cleanedAssistantMsg.reasoning;
+              if (needsReasoningInput && (hasTools || extractedReasoning)) {
+                cleanedAssistantMsg.reasoning_content =
+                  extractedReasoning ||
+                  "Analyzing request and invoking web-search tool.";
+              } else {
+                delete cleanedAssistantMsg.reasoning_content;
+              }
+              return cleanedAssistantMsg;
             }
             if (m.role === "tool") {
               const rawContent =
