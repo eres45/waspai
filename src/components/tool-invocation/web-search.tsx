@@ -52,10 +52,15 @@ function ClaudeSearchBlock({
     return part.output as WebSearchResponse & {
       isError?: boolean;
       error?: string;
+      isLimitExceeded?: boolean;
+      limit?: number;
+      used?: number;
     };
   }, [part.state, part.output]);
 
-  const resultsList = result?.results ?? [];
+  const resultsList = (result?.results ?? []).filter(
+    (r) => r.id !== "limit-exceeded",
+  );
 
   if (isSearching) {
     return (
@@ -103,7 +108,24 @@ function ClaudeSearchBlock({
 
       {expanded && (
         <div className="mt-1.5 rounded-xl border border-border/70 bg-card/50 backdrop-blur-sm p-2 flex flex-col gap-0.5 max-h-[320px] overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-1 duration-150">
-          {result?.isError ? (
+          {result?.isLimitExceeded ? (
+            <div className="px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-amber-300">
+                <AlertTriangleIcon className="size-4 shrink-0 text-amber-400" />
+                <span>
+                  Daily Free limit reached ({result.used || 10}/
+                  {result.limit || 10} web searches today). Upgrade to Pro for
+                  unlimited web search.
+                </span>
+              </div>
+              <a
+                href="/subscription"
+                className="shrink-0 px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-medium transition-colors no-underline"
+              >
+                Upgrade Plan →
+              </a>
+            </div>
+          ) : result?.isError ? (
             <div className="px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
               <AlertTriangleIcon className="size-3.5 shrink-0" />
               <span>{result.error || "Search failed"}</span>

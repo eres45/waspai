@@ -47,8 +47,12 @@ export const nanoBananaTool = createTool({
     const userId = session.user.id;
     const userTier = (session.user as any).tier ?? "free";
 
-    // Enforce daily limit of 10 for Free tier users
-    if (userTier === "free") {
+    // Enforce daily limit of 10 for Free tier users (Pro/Ultra/Admin exempt)
+    const isExempt =
+      userTier === "pro" ||
+      userTier === "ultra" ||
+      (session.user as any)?.role === "admin";
+    if (!isExempt) {
       const usageCheck = await checkDailyUsageLimit(userId, "image_gen", 10);
       if (!usageCheck.allowed) {
         logger.info(`Daily image generation limit reached for user ${userId}`);
@@ -56,8 +60,11 @@ export const nanoBananaTool = createTool({
           images: [],
           model,
           mode: "create",
+          isLimitExceeded: true,
+          limit: 10,
+          used: usageCheck.count,
           guide:
-            "LIMIT_EXCEEDED: You have reached your daily limit of 10 image generations on the Free plan. To generate more images, please upgrade your subscription or wait until tomorrow.",
+            "SYSTEM_LIMIT_REACHED / LIMIT_EXCEEDED: The user has reached their daily Free Plan limit of 10 image generations today (resets at midnight UTC). MANDATORY AI INSTRUCTION: Politely inform the user that they have used all 10 of their daily free image generations today, and invite them to upgrade to WaspAI Pro (/subscription) for higher Pro image generation & editing limits.",
         };
       }
     }

@@ -2,6 +2,8 @@ import { tool as createTool } from "ai";
 import { z } from "zod";
 import { safe } from "ts-safe";
 import { load } from "cheerio";
+import { getSession } from "auth/server";
+import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 
 // --- FreeWebSearch API Integration ---
 
@@ -265,6 +267,38 @@ export const webSearchToolForWorkflow = createTool({
     'Free, fast, and comprehensive web search. Supports advanced operators: site:domain.com, filetype:pdf/ipynb, intitle:word, -exclude, and "exact phrase". Use this to find real-time information, news, code examples, or research papers.',
   inputSchema: freeSearchSchema,
   execute: async (params) => {
+    const session = await getSession().catch(() => null);
+    const userId = session?.user?.id;
+    const userTier = (session?.user as any)?.tier ?? "free";
+    const isExempt =
+      userTier === "pro" ||
+      userTier === "ultra" ||
+      (session?.user as any)?.role === "admin";
+
+    if (userId && !isExempt) {
+      const usageCheck = await checkDailyUsageLimit(userId, "web_search", 10);
+      if (!usageCheck.allowed) {
+        return {
+          requestId: params.query,
+          isLimitExceeded: true,
+          limit: 10,
+          used: usageCheck.count,
+          results: [
+            {
+              id: "limit-exceeded",
+              title:
+                "Daily Free Plan Web Search Limit Reached (10/10 used today)",
+              url: "/subscription",
+              text: "SYSTEM_LIMIT_REACHED: The user is on the Free Plan and has used all 10 of their daily free web searches today (resets at midnight UTC). MANDATORY AI INSTRUCTION: Politely inform the user that they have reached their daily Free Plan limit of 10 web searches, and let them know they can upgrade to WaspAI Pro (/subscription) for unlimited real-time web searches, higher image generation limits, and priority access.",
+            },
+          ],
+          guide:
+            "LIMIT_EXCEEDED: The user has reached their daily limit of 10 web searches on the Free plan. You MUST inform the user that they have reached their daily Free Plan web search limit (10/day) and invite them to upgrade to WaspAI Pro (/subscription) for unlimited web searches.",
+        };
+      }
+      await recordDailyUsage(userId, "web_search").catch(() => {});
+    }
+
     return fetchFreeSearch(params.query, params.numResults);
   },
 });
@@ -303,6 +337,38 @@ export const webSearchTool = createTool({
 
       if (!queryStr) {
         throw new Error("Search query is missing or undefined.");
+      }
+
+      const session = await getSession().catch(() => null);
+      const userId = session?.user?.id;
+      const userTier = (session?.user as any)?.tier ?? "free";
+      const isExempt =
+        userTier === "pro" ||
+        userTier === "ultra" ||
+        (session?.user as any)?.role === "admin";
+
+      if (userId && !isExempt) {
+        const usageCheck = await checkDailyUsageLimit(userId, "web_search", 10);
+        if (!usageCheck.allowed) {
+          return {
+            requestId: queryStr,
+            isLimitExceeded: true,
+            limit: 10,
+            used: usageCheck.count,
+            results: [
+              {
+                id: "limit-exceeded",
+                title:
+                  "Daily Free Plan Web Search Limit Reached (10/10 used today)",
+                url: "/subscription",
+                text: "SYSTEM_LIMIT_REACHED: The user is on the Free Plan and has used all 10 of their daily free web searches today (resets at midnight UTC). MANDATORY AI INSTRUCTION: Politely inform the user that they have reached their daily Free Plan limit of 10 web searches for today, and let them know they can upgrade to WaspAI Pro (/subscription) to unlock unlimited real-time web searches, higher image generation limits, and priority model access.",
+              },
+            ],
+            guide:
+              "LIMIT_EXCEEDED: The user has reached their daily limit of 10 web searches on the Free plan. You MUST explicitly inform the user that they reached their daily Free Plan limit of 10 web searches (resets at midnight UTC) and recommend upgrading to WaspAI Pro (/subscription) for unlimited web search access.",
+          };
+        }
+        await recordDailyUsage(userId, "web_search").catch(() => {});
       }
 
       const result = await fetchFreeSearch(queryStr, numRes);
