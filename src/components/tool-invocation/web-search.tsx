@@ -42,10 +42,6 @@ function ClaudeSearchBlock({
   }, [isSearching]);
 
   const input = (part.input || (part as any).args || {}) as any;
-  const queryText =
-    input?.query ||
-    (Array.isArray(input?.urls) ? input.urls.join(", ") : "") ||
-    "";
 
   const result = useMemo(() => {
     if (!part.state.startsWith("output")) return null;
@@ -55,8 +51,17 @@ function ClaudeSearchBlock({
       isLimitExceeded?: boolean;
       limit?: number;
       used?: number;
+      query?: string;
     };
   }, [part.state, part.output]);
+
+  const queryText =
+    input?.query ||
+    input?.q ||
+    input?.search_query ||
+    result?.query ||
+    (Array.isArray(input?.urls) ? input.urls.join(", ") : "") ||
+    "";
 
   const resultsList = (result?.results ?? []).filter(
     (r) => r.id !== "limit-exceeded",

@@ -725,7 +725,7 @@ export async function POST(request: Request) {
     const effectiveImageTool = imageTool || undefined;
 
     // Allow tool calls whenever the model supports them — AI decides when to use them
-    const isToolCallAllowed = supportToolCall && toolChoice !== "none";
+    const isToolCallAllowed = supportToolCall;
 
     const stream = createUIMessageStream({
       execute: async ({ writer: dataStream }) => {
@@ -1952,6 +1952,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
 
           // ALWAYS include web-search tool so models can look up real-time information, current market rates, prices, news, and live facts
           "web-search": webSearchTool,
+          web_search: webSearchTool,
           // ALWAYS include memory tools
           save_memory: saveMemoryTool,
           update_memory: updateMemoryTool,
@@ -2085,8 +2086,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
             const currentSupportToolCall = !isToolCallUnsupportedModel(
               currentConfig.model || "",
             );
-            const currentIsToolCallAllowed =
-              currentSupportToolCall && toolChoice !== "none";
+            const currentIsToolCallAllowed = currentSupportToolCall;
             const currentVercelAITooles = currentIsToolCallAllowed
               ? vercelAITooles
               : undefined;

@@ -12,27 +12,22 @@ export const UNIFIED_WORKER_URL = MULTIMODAL_WORKER_URL;
 export const CREATIVE_WORKER_URL = MULTIMODAL_WORKER_URL;
 export const CLAUDE_WORKER_URL = MULTIMODAL_WORKER_URL;
 
-// Dedicated Multimodal Worker (DeepSeek Chat + Groq FreeCF + PicAI GPT-Image-2/FLUX)
-const multimodalProvider = createOpenAICompatible({
-  name: "Multimodal AI Worker",
-  apiKey: "dummy",
-  baseURL: `${MULTIMODAL_WORKER_URL}/v1`,
-});
-
-// Single unified provider aliases routing through multimodal worker
-const unifiedProvider = multimodalProvider;
-const creativeProvider = multimodalProvider;
-const claudeProvider = multimodalProvider;
-
 export const GROQ_WORKER_URL = "https://groq-worker.revai.workers.dev";
 
-function condenseSystemPromptForGroq(prompt: string): string {
+function condenseSystemPromptForGroq(
+  prompt: string,
+  hasPriorToolResults: boolean = false,
+): string {
   const currentDateStr = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL WEB SEARCH, CITATION & PLAN LIMIT RULES:\n1. For ANY real-time data (crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately without asking permission.\n2. Present a clear, well-structured breakdown across top sources and cite every source inline at the end of the bullet or sentence using a Markdown link whose label is ONLY the short publication name, e.g. [CoinDesk](https://...), [Yahoo Finance](https://...), [CoinMarketCap](https://...). Do NOT output a separate "Source:" block.\n3. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Instead, explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
+  const stepSpecificSearchRule = hasPriorToolResults
+    ? `1. The \`web-search\` tool has ALREADY been executed for this turn and the live search results are in the conversation history below. Do NOT call \`web-search\` again, and NEVER claim that the \`web-search\` tool is unavailable or disabled. Answer the user's question directly using the provided search results.`
+    : `1. For ANY real-time data (crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately with a clear \`query\` parameter.`;
+
+  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr}.\nCRITICAL WEB SEARCH, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. Present a clear, well-structured breakdown across top sources and cite every source inline at the end of the bullet or sentence using a Markdown link whose label is ONLY the short publication name, e.g. [CoinDesk](https://...), [Yahoo Finance](https://...), [CoinMarketCap](https://...). Do NOT output a separate "Source:" block.\n3. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Instead, explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
 
   let condensed = prompt
     .replace(
@@ -522,6 +517,13 @@ function extractLeakedToolCall(
 function flattenToolMessagesForSynthesis(messages: any[]): any[] {
   const result: any[] = [];
   for (const m of messages || []) {
+    if (m.role === "system" && typeof m.content === "string") {
+      result.push({
+        ...m,
+        content: condenseSystemPromptForGroq(m.content, true),
+      });
+      continue;
+    }
     if (
       m.role === "assistant" &&
       Array.isArray(m.tool_calls) &&
@@ -544,7 +546,7 @@ function flattenToolMessagesForSynthesis(messages: any[]): any[] {
           : JSON.stringify(m.content || "");
       result.push({
         role: "user",
-        content: `[Live Web Search Data]:\n${raw.slice(0, 2500)}\n\nPlease synthesize the above live data into a complete, well-structured answer with inline Markdown link citations (e.g. [Source Name](https://...)).`,
+        content: `[Live Web Search Data]:\n${raw.slice(0, 2500)}\n\nPlease synthesize the above live data into a complete, well-structured answer with inline Markdown link citations (e.g. [Source Name](https://...)). Do NOT say that web-search is unavailable.`,
       });
       continue;
     }
@@ -596,9 +598,18 @@ function createSmartOpenAICompatibleFetch(
           bodyObj.max_completion_tokens = 2048;
         }
         if (Array.isArray(bodyObj.messages)) {
+          const hasPriorToolResults = bodyObj.messages.some(
+            (m: any) => m.role === "tool",
+          );
           bodyObj.messages = bodyObj.messages.map((m: any, mIdx: number) => {
             if (m.role === "system" && typeof m.content === "string") {
-              return { ...m, content: condenseSystemPromptForGroq(m.content) };
+              return {
+                ...m,
+                content: condenseSystemPromptForGroq(
+                  m.content,
+                  hasPriorToolResults,
+                ),
+              };
             }
             if (m.role === "assistant") {
               let cleanText = "";
@@ -805,6 +816,24 @@ function createSmartOpenAICompatibleFetch(
       );
     }
 
+    const messagesList: any[] = parsedBodyObj?.messages || [];
+    const hasToolResultsInHistory = messagesList.some(
+      (m: any) => m.role === "tool",
+    );
+    const lastUserMsg = [...messagesList]
+      .reverse()
+      .find((m: any) => m.role === "user");
+    const fallbackQueryText = (
+      typeof lastUserMsg?.content === "string"
+        ? lastUserMsg.content
+        : Array.isArray(lastUserMsg?.content)
+          ? lastUserMsg.content
+              .map((p: any) => p.text || "")
+              .join(" ")
+              .trim()
+          : ""
+    ).trim();
+
     let recoveredJson: any = null;
     if (!res.ok) {
       let errText = "";
@@ -818,6 +847,22 @@ function createSmartOpenAICompatibleFetch(
           if (typeof failedGen === "string" && failedGen.trim().length > 0) {
             const extracted = extractLeakedToolCall(failedGen);
             if (extracted) {
+              const normToolName =
+                extracted.toolName === "web_search"
+                  ? "web-search"
+                  : extracted.toolName;
+              const finalArgs =
+                normToolName === "web-search"
+                  ? {
+                      query:
+                        String(
+                          extracted.args?.query ||
+                            extracted.args?.q ||
+                            extracted.args?.search_query ||
+                            fallbackQueryText,
+                        ).trim() || fallbackQueryText,
+                    }
+                  : extracted.args;
               recoveredJson = {
                 id: "chatcmpl-recovered",
                 choices: [
@@ -831,11 +876,33 @@ function createSmartOpenAICompatibleFetch(
                           id: makeToolCallId(0),
                           type: "function",
                           function: {
-                            name:
-                              extracted.toolName === "web_search"
-                                ? "web-search"
-                                : extracted.toolName,
-                            arguments: JSON.stringify(extracted.args),
+                            name: normToolName,
+                            arguments: JSON.stringify(finalArgs),
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              };
+            } else if (!hasToolResultsInHistory && fallbackQueryText) {
+              recoveredJson = {
+                id: "chatcmpl-recovered",
+                choices: [
+                  {
+                    message: {
+                      role: "assistant",
+                      reasoning: "",
+                      content: "",
+                      tool_calls: [
+                        {
+                          id: makeToolCallId(0),
+                          type: "function",
+                          function: {
+                            name: "web-search",
+                            arguments: JSON.stringify({
+                              query: fallbackQueryText,
+                            }),
                           },
                         },
                       ],
@@ -905,11 +972,6 @@ function createSmartOpenAICompatibleFetch(
       let toolCalls = msg.tool_calls;
       let effectiveContent = content;
 
-      const messagesList: any[] = parsedBodyObj?.messages || [];
-      const hasToolResultsInHistory = messagesList.some(
-        (m: any) => m.role === "tool",
-      );
-
       // Normalize tool names and arguments on native tool_calls
       if (Array.isArray(toolCalls) && toolCalls.length > 0) {
         toolCalls = toolCalls.map((tc: any, idx: number) => {
@@ -919,15 +981,26 @@ function createSmartOpenAICompatibleFetch(
               ? "web-search"
               : rawName;
           let normArgs = tc.function?.arguments;
-          if (normName === "web-search" && typeof normArgs === "string") {
-            try {
-              const p = JSON.parse(normArgs);
-              if (p && typeof (p.query || p.q || p.search_query) === "string") {
-                normArgs = JSON.stringify({
-                  query: String(p.query || p.q || p.search_query).trim(),
-                });
-              }
-            } catch {}
+          if (normName === "web-search") {
+            let extractedQ = "";
+            if (typeof normArgs === "string") {
+              try {
+                const p = JSON.parse(normArgs);
+                if (
+                  p &&
+                  typeof (p.query || p.q || p.search_query) === "string"
+                ) {
+                  extractedQ = String(p.query || p.q || p.search_query).trim();
+                }
+              } catch {}
+            } else if (normArgs && typeof normArgs === "object") {
+              extractedQ = String(
+                normArgs.query || normArgs.q || normArgs.search_query || "",
+              ).trim();
+            }
+            normArgs = JSON.stringify({
+              query: extractedQ || fallbackQueryText,
+            });
           }
           return {
             ...tc,
@@ -992,40 +1065,35 @@ function createSmartOpenAICompatibleFetch(
       effectiveContent = stripToolCallMarkup(effectiveContent);
       reasoning = stripToolCallMarkup(reasoning);
 
-      // Prevent infinite tool loops: if Step 2+ already has tool results in history and the model tries to call web-search AGAIN, clear both toolCalls and pre-tool filler so Step 2 forces final answer synthesis!
+      const isRefusingLiveSearch =
+        /\b(web-search tool isn't available|web search tool is not available|web-search is unavailable|can't retrieve live|cannot retrieve live|don't have access to live|no access to real-time)\b/i.test(
+          effectiveContent,
+        );
+
+      // Prevent infinite tool loops: if Step 2+ already has tool results in history and the model tries to call web-search AGAIN (or falsely claims web-search is unavailable), clear both toolCalls and pre-tool filler so Step 2 forces final answer synthesis!
       if (
         hasToolResultsInHistory &&
-        Array.isArray(toolCalls) &&
-        toolCalls.length > 0 &&
-        toolCalls.every((tc: any) => tc.function?.name === "web-search")
+        ((Array.isArray(toolCalls) &&
+          toolCalls.length > 0 &&
+          toolCalls.every((tc: any) => tc.function?.name === "web-search")) ||
+          isRefusingLiveSearch)
       ) {
         toolCalls = undefined;
         effectiveContent = "";
       }
 
-      // If Step 1 produced reasoning about needing to search/fetch live info, but emitted neither toolCalls nor content, synthesize web-search!
+      // If Step 1 produced reasoning about needing to search/fetch live info (or falsely refused live search), synthesize web-search!
       if (
         (!toolCalls || toolCalls.length === 0) &&
-        !effectiveContent &&
-        reasoning &&
         !hasToolResultsInHistory &&
-        /\b(web-search|web_search|search|fetch|current|live|price|rate)\b/i.test(
-          reasoning,
-        )
+        ((!effectiveContent &&
+          reasoning &&
+          /\b(web-search|web_search|search|fetch|current|live|price|rate)\b/i.test(
+            reasoning,
+          )) ||
+          isRefusingLiveSearch)
       ) {
-        const lastUserMsg = [...messagesList]
-          .reverse()
-          .find((m: any) => m.role === "user");
-        const lastUserText =
-          typeof lastUserMsg?.content === "string"
-            ? lastUserMsg.content
-            : Array.isArray(lastUserMsg?.content)
-              ? lastUserMsg.content
-                  .map((p: any) => p.text || "")
-                  .join(" ")
-                  .trim()
-              : "";
-        if (lastUserText) {
+        if (fallbackQueryText) {
           const currentMonthYear = new Date().toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
@@ -1037,11 +1105,12 @@ function createSmartOpenAICompatibleFetch(
               function: {
                 name: "web-search",
                 arguments: JSON.stringify({
-                  query: `${lastUserText.slice(0, 120)} ${currentMonthYear}`,
+                  query: `${fallbackQueryText.slice(0, 120)} ${currentMonthYear}`,
                 }),
               },
             },
           ];
+          effectiveContent = "";
         }
       }
 
@@ -1228,6 +1297,20 @@ const groqWorkerProvider = createOpenAICompatible({
     "openai/gpt-oss-120b",
   ),
 });
+
+// Dedicated Multimodal Worker with Smart Fetch
+const multimodalProvider = createOpenAICompatible({
+  name: "Multimodal AI Worker",
+  apiKey: "dummy",
+  baseURL: `${MULTIMODAL_WORKER_URL}/v1`,
+  fetch: createSmartOpenAICompatibleFetch(
+    () => ["dummy"],
+    "openai/gpt-oss-120b",
+  ),
+});
+const unifiedProvider = multimodalProvider;
+const creativeProvider = multimodalProvider;
+const claudeProvider = multimodalProvider;
 
 // Sarvam AI provider
 const sarvamProvider = createOpenAICompatible({
@@ -1902,12 +1985,6 @@ export const isToolCallUnsupportedModel = (model: LanguageModel | string) => {
     return false;
   }
 
-  // Legacy fallback: if it doesn't include a slash and is not a Frenix model (which we know are compatible),
-  // assume it doesn't support tool calls
-  if (!modelId.includes("/") && !modelId.includes("frenix-")) {
-    return true;
-  }
-
   return false;
 };
 
@@ -2005,11 +2082,13 @@ export const customModelProvider = {
     }
 
     // GPT-OSS 120B routed to Groq Worker for native reasoning and high speed
+    const lowerId = modelId.toLowerCase();
     if (
-      modelId === "gpt-oss-120b" ||
-      modelId === "gpt-oss-120b-p2" ||
-      modelId === "openai/gpt-oss-120b" ||
-      modelId.endsWith("/gpt-oss-120b")
+      lowerId === "gpt-oss-120b" ||
+      lowerId === "gpt-oss-120b-p2" ||
+      lowerId === "openai/gpt-oss-120b" ||
+      lowerId.includes("gpt-oss-120b") ||
+      lowerId.includes("gpt-oss 120b")
     ) {
       return groqWorkerProvider(
         "openai/gpt-oss-120b",
@@ -2020,10 +2099,10 @@ export const customModelProvider = {
     if (
       model.provider?.toLowerCase() === "groq" ||
       model.provider?.toLowerCase() === "deepseek" ||
-      modelId.startsWith("groqw-") ||
-      modelId.startsWith("deepseek-") ||
-      modelId.startsWith("llama-") ||
-      modelId.startsWith("gpt-oss-")
+      lowerId.startsWith("groqw-") ||
+      lowerId.startsWith("deepseek-") ||
+      lowerId.startsWith("llama-") ||
+      lowerId.startsWith("gpt-oss-")
     ) {
       return multimodalProvider(modelId) as unknown as LanguageModel;
     }

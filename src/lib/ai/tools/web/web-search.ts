@@ -364,6 +364,7 @@ export const webSearchTool = createTool({
                 text: "SYSTEM_LIMIT_REACHED: The user is on the Free Plan and has used all 10 of their daily free web searches today (resets at 4:00 AM IST). MANDATORY AI INSTRUCTION: Politely inform the user that they have reached their daily Free Plan limit of 10 web searches for today, and let them know they can upgrade to WaspAI Pro (/subscription) to unlock unlimited real-time web searches, higher image generation limits, and priority model access.",
               },
             ],
+            query: queryStr,
             guide:
               "LIMIT_EXCEEDED: The user has reached their daily limit of 10 web searches on the Free plan. You MUST explicitly inform the user that they reached their daily Free Plan limit of 10 web searches (resets at 4:00 AM IST) and recommend upgrading to WaspAI Pro (/subscription) for unlimited web search access.",
           };
@@ -380,6 +381,7 @@ export const webSearchTool = createTool({
 
       return {
         ...result,
+        query: queryStr,
         guide,
       };
     })
