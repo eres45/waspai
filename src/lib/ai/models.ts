@@ -51,9 +51,62 @@ function condenseSystemPromptForGroq(prompt: string): string {
   if (condensed.length > 3000) {
     condensed =
       condensed.substring(0, 3000) +
-      "\n\nAlways use web_search for real-time information, market prices, and live data.";
+      "\n\nAlways use web_search (or web-search) for real-time information, market prices, and live data. Invoke tools using the native function calling feature.";
   }
   return condensed;
+}
+
+/**
+ * Robustly parses tool calls leaked as raw JSON or markdown codeblocks in assistant text output.
+ */
+function parseTextToolCall(
+  content: string,
+): { toolName: string; args: any } | null {
+  if (!content) return null;
+  let text = content.trim();
+  if (text.startsWith("```json") || text.startsWith("```")) {
+    text = text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+  }
+  if (text.startsWith("<tool_call>") && text.endsWith("</tool_call>")) {
+    text = text.slice(11, -12).trim();
+  }
+  if (!text.startsWith("{") || !text.endsWith("}")) return null;
+
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      return null;
+
+    const toolName =
+      parsed.tool ||
+      parsed.name ||
+      (typeof parsed.function === "string"
+        ? parsed.function
+        : parsed.function?.name);
+    const rawArgs =
+      parsed.arguments ||
+      parsed.parameters ||
+      parsed.args ||
+      parsed.function?.arguments;
+
+    if (toolName && typeof toolName === "string" && rawArgs !== undefined) {
+      let argsObj: any = rawArgs;
+      if (typeof rawArgs === "string") {
+        try {
+          argsObj = JSON.parse(rawArgs);
+        } catch {
+          argsObj = { query: rawArgs };
+        }
+      }
+      return { toolName, args: argsObj };
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 // Groq Worker Provider (openai/gpt-oss-120b with native reasoning and automatic key rotation)
@@ -95,7 +148,33 @@ const groqWorkerProvider = createOpenAICompatible({
       const msg = json.choices?.[0]?.message || {};
       const reasoning = msg.reasoning || msg.reasoning_content || "";
       const content = msg.content || "";
-      const toolCalls = msg.tool_calls;
+      let toolCalls = msg.tool_calls;
+      let effectiveContent = content;
+
+      // If the model leaked a tool call as raw JSON in content instead of tool_calls, parse and recover it!
+      if (!toolCalls || toolCalls.length === 0) {
+        const textTool = parseTextToolCall(content);
+        if (textTool) {
+          const normalizedName =
+            textTool.toolName === "web_search"
+              ? "web-search"
+              : textTool.toolName;
+          toolCalls = [
+            {
+              id: `fc_${Date.now()}`,
+              type: "function",
+              function: {
+                name: normalizedName,
+                arguments:
+                  typeof textTool.args === "string"
+                    ? textTool.args
+                    : JSON.stringify(textTool.args),
+              },
+            },
+          ];
+          effectiveContent = ""; // Clear content so raw JSON never leaks to user UI
+        }
+      }
 
       const chunks: string[] = [];
       if (reasoning) {
@@ -120,7 +199,7 @@ const groqWorkerProvider = createOpenAICompatible({
       if (toolCalls && toolCalls.length > 0) {
         const indexedCalls = toolCalls.map((tc: any, i: number) => ({
           index: i,
-          id: tc.id,
+          id: tc.id || `call_${i}_${Date.now()}`,
           type: tc.type || "function",
           function: tc.function,
         }));
@@ -141,7 +220,7 @@ const groqWorkerProvider = createOpenAICompatible({
             }) +
             "\n\n",
         );
-      } else if (content) {
+      } else if (effectiveContent) {
         chunks.push(
           "data: " +
             JSON.stringify({

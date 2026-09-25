@@ -1743,7 +1743,8 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           // Tool Calling Format Reinforcement (fixes some models leaking XML or JSON)
           `[TOOL USE STANDARD]
            1. DO NOT output XML tags like <invoke>, <tool_code>, <minimax:tool_call>, <tool_call>, <function>, or <parameter> in your text response.
-           2. Use the native tool call/function call feature to invoke tools. NEVER print raw JSON strings or JSON objects representing tool calls in your conversational text output.`,
+           2. Use the native tool call/function call feature to invoke tools. NEVER print raw JSON strings or JSON objects representing tool calls in your conversational text output.
+           3. PROACTIVE WEB SEARCH: When asked about current prices, rates, recent events, or unfamiliar models/terms (e.g. "jev model"), invoke web-search or web_search immediately instead of asking the user to confirm.`,
 
           // NOTE: Visualization, Memory, Browser, and Tool Knowledge blocks
           // are already covered by buildUserSystemPrompt() in prompts.ts
@@ -1927,6 +1928,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
 
           // ALWAYS include web-search tool so models can look up real-time information, current market rates, prices, news, and live facts
           "web-search": webSearchTool,
+          web_search: webSearchTool,
           // ALWAYS include memory tools
           save_memory: saveMemoryTool,
           update_memory: updateMemoryTool,

@@ -48,7 +48,9 @@ function groupWebSearchParts(parts: any[]) {
       (getToolName(part) === "web-search" ||
         getToolName(part) === "web-content" ||
         getToolName(part) === "webSearch" ||
-        getToolName(part) === "webContent");
+        getToolName(part) === "webContent" ||
+        getToolName(part) === "web_search" ||
+        getToolName(part) === "web_content");
 
     if (isSearch) {
       currentGroup.push(part);

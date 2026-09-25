@@ -1271,7 +1271,10 @@ export const ToolMessagePart = memo(
         toolName === DefaultToolName.WebSearch ||
         toolName === DefaultToolName.WebContent ||
         toolName === "webSearch" ||
-        toolName === "webContent"
+        toolName === "webContent" ||
+        toolName === "web_search" ||
+        toolName === "web-search" ||
+        toolName === "web_content"
       ) {
         return <WebSearchToolInvocation part={part} />;
       }
@@ -1416,7 +1419,11 @@ export const ToolMessagePart = memo(
 
     const toolDisplay = useMemo(() => {
       const inp = input as any;
-      if (toolName === "web-search" || toolName === "webSearch") {
+      if (
+        toolName === "web-search" ||
+        toolName === "webSearch" ||
+        toolName === "web_search"
+      ) {
         return {
           action: isExecuting ? "Searching the web" : "Searched the web",
           detail: inp?.query ? `"${inp.query}"` : "",
