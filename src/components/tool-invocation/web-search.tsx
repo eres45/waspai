@@ -114,8 +114,8 @@ function ClaudeSearchBlock({
                 <AlertTriangleIcon className="size-4 shrink-0 text-amber-400" />
                 <span>
                   Daily Free limit reached ({result.used || 10}/
-                  {result.limit || 10} web searches today). Upgrade to Pro for
-                  unlimited web search.
+                  {result.limit || 10} web searches today • resets at 4:00 AM
+                  IST). Upgrade to Pro for unlimited web search.
                 </span>
               </div>
               <a

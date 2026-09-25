@@ -1,5 +1,9 @@
 import { supabaseRest } from "@/lib/db/supabase-rest";
 import logger from "@/lib/logger";
+import {
+  getDailyIstWindowStart,
+  getNextDailyIstResetTime,
+} from "@/lib/usage-limiter";
 
 const DAILY_UPLOAD_LIMIT = 5;
 
@@ -25,9 +29,8 @@ export async function checkDailyUploadLimitRest(
   }
 
   try {
-    // Get today's start time (UTC)
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    // Get today's start time (4:00 AM IST)
+    const today = getDailyIstWindowStart();
 
     // Query to count uploads today
     const { data, error } = await supabaseRest
@@ -111,8 +114,7 @@ export async function getTodayUploadsRest(userId: string): Promise<
   }>
 > {
   try {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const today = getDailyIstWindowStart();
 
     const { data, error } = await supabaseRest
       .from("file_uploads")
@@ -140,12 +142,8 @@ export async function getTodayUploadsRest(userId: string): Promise<
 }
 
 /**
- * Helper function to calculate reset time
+ * Helper function to calculate next 4:00 AM IST reset time
  */
 function getResetTime(): Date {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const resetTime = new Date(today);
-  resetTime.setUTCDate(resetTime.getUTCDate() + 1);
-  return resetTime;
+  return getNextDailyIstResetTime();
 }

@@ -64,7 +64,7 @@ export const nanoBananaTool = createTool({
           limit: 10,
           used: usageCheck.count,
           guide:
-            "SYSTEM_LIMIT_REACHED / LIMIT_EXCEEDED: The user has reached their daily Free Plan limit of 10 image generations today (resets at midnight UTC). MANDATORY AI INSTRUCTION: Politely inform the user that they have used all 10 of their daily free image generations today, and invite them to upgrade to WaspAI Pro (/subscription) for higher Pro image generation & editing limits.",
+            "SYSTEM_LIMIT_REACHED / LIMIT_EXCEEDED: The user has reached their daily Free Plan limit of 10 image generations today (resets daily at 4:00 AM IST). MANDATORY AI INSTRUCTION: Politely inform the user that they have used all 10 of their daily free image generations today, and invite them to upgrade to WaspAI Pro (/subscription) for higher Pro image generation & editing limits.",
         };
       }
     }

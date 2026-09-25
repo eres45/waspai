@@ -187,8 +187,8 @@ export async function POST(request: Request) {
       if (!allowed) {
         return new Response(
           isPro
-            ? "You have reached your daily message limit (resets at midnight UTC)."
-            : "You have reached your daily message limit. Upgrade to Pro for 300 messages/day or try again tomorrow.",
+            ? "You have reached your daily message limit (resets daily at 4:00 AM IST)."
+            : "You have reached your daily message limit (resets daily at 4:00 AM IST). Upgrade to Pro for 300 messages/day.",
           { status: 429, headers: corsHeaders },
         );
       }
