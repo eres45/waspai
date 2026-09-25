@@ -12,7 +12,6 @@ import {
   X,
   Trash2,
   TriangleAlert,
-  HammerIcon,
   EllipsisIcon,
   FileIcon,
   Download,
