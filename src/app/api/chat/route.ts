@@ -267,8 +267,10 @@ export async function POST(request: Request) {
     );
     const { models: modelReverseMapping, providers: providerReverseMapping } =
       createReverseModelMapping(dynamicModelIds);
-    let modelToUse = chatModel;
-    if (modelToUse) {
+    let modelToUse = isVoiceChat
+      ? { provider: "Mistral", model: "ministral-14b-latest" }
+      : chatModel;
+    if (modelToUse && !isVoiceChat) {
       const candidateModel =
         modelReverseMapping[modelToUse.model] || modelToUse.model;
       const exactGroup =
@@ -2036,24 +2038,40 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           // But log this critical error for debugging
         }
 
-        const candidateFallbacks = [
-          initialModelLoadFailed
-            ? null
-            : {
-                provider: modelToUse?.provider,
-                model: modelToUse?.model,
-                instance: model,
+        const candidateFallbacks = isVoiceChat
+          ? [
+              {
+                provider: "Mistral",
+                model: "ministral-14b-latest",
+                instance: initialModelLoadFailed ? undefined : model,
               },
-          { provider: "OpenAI", model: "gpt-oss-120b" },
-          { provider: "Mistral", model: "codestral-latest" },
-          { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
-          { provider: "BudsAI", model: "step-3.7-flash" },
-          { provider: "SeekAI", model: "deepseek-ai/DeepSeek-V4-Flash-0731" },
-          { provider: "Qwen", model: "qwen3.8-flash:free" },
-        ].filter(
-          (item): item is { provider: string; model: string; instance?: any } =>
-            item !== null && Boolean(item.provider && item.model),
-        );
+              { provider: "Mistral", model: "codestral-latest" },
+              { provider: "Mistral", model: "mistral-code-latest" },
+              { provider: "OpenAI", model: "gpt-oss-120b" },
+            ]
+          : [
+              initialModelLoadFailed
+                ? null
+                : {
+                    provider: modelToUse?.provider,
+                    model: modelToUse?.model,
+                    instance: model,
+                  },
+              { provider: "OpenAI", model: "gpt-oss-120b" },
+              { provider: "Mistral", model: "codestral-latest" },
+              { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
+              { provider: "BudsAI", model: "step-3.7-flash" },
+              {
+                provider: "SeekAI",
+                model: "deepseek-ai/DeepSeek-V4-Flash-0731",
+              },
+              { provider: "Qwen", model: "qwen3.8-flash:free" },
+            ].filter(
+              (
+                item,
+              ): item is { provider: string; model: string; instance?: any } =>
+                item !== null && Boolean(item.provider && item.model),
+            );
         const seenFallbackKeys = new Set<string>();
         const fallbackModels = candidateFallbacks.filter((item) => {
           const key = `${item.provider}/${item.model}`.toLowerCase();
@@ -2106,9 +2124,13 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
               `Executing chat stream Attempt ${attempt + 1} with model: ${currentConfig.provider}/${currentConfig.model}`,
             );
 
+            const effectiveSystemPrompt = isVoiceChat
+              ? `You are WaspAI in a live spoken voice call. Keep all responses natural, warm, concise, and conversational (1 to 3 short spoken sentences). Never use markdown tables, bullet points, numbered lists, emojis, asterisks, raw URLs, or code blocks because your text is read aloud word-for-word by TTS. If the user asks for live prices, weather, or news, call web-search and state the live answer naturally in spoken sentences.`
+              : systemPrompt;
+
             const result = streamText({
               model: currentModel,
-              system: systemPrompt,
+              system: effectiveSystemPrompt,
               messages: convertToModelMessages(
                 (() => {
                   const modelId = currentConfig.model || "frenix-gemma-3-12b";

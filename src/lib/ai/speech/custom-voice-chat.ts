@@ -415,9 +415,9 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
             role: m.role,
             parts: m.parts,
           })),
-          chatModel: props?.chatModel || {
-            provider: "Meta",
-            model: "Llama 3.3 70B Versatile",
+          chatModel: {
+            provider: "Mistral",
+            model: "ministral-14b-latest",
           },
           toolChoice: "auto",
           systemPrompt: voiceSystemPrompt,

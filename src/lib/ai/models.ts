@@ -23,6 +23,17 @@ function condenseSystemPromptForGroq(
     month: "long",
     day: "numeric",
   });
+  if (
+    /live spoken voice call|live voice conversation|read aloud word-for-word/i.test(
+      prompt,
+    )
+  ) {
+    return `${prompt}\nCurrent Date: ${currentDateStr}. ${
+      hasPriorToolResults
+        ? "The web-search tool has already been executed; answer naturally in 1 to 3 short spoken sentences using the search data without Markdown tables or URLs."
+        : "For live prices, news, or weather, call web-search first, then answer in 1 to 3 short spoken sentences without Markdown tables or URLs."
+    }`;
+  }
   const stepSpecificSearchRule = hasPriorToolResults
     ? `1. The \`web-search\` tool has ALREADY been executed for this turn and the live search results are in the conversation history below. Do NOT call \`web-search\` again, and NEVER claim that the \`web-search\` tool is unavailable or disabled. Answer the user's question directly using the provided search results.`
     : `1. For ANY real-time data (crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately with a clear \`query\` parameter.`;
