@@ -2223,17 +2223,11 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                 break;
               }
 
-              // Real content arrived — model successfully connected and started generating!
+              // Wait until an actual text-delta or tool-* call arrives before committing the stream.
+              // Any preceding reasoning-start / reasoning-delta chunks remain in `buffer` and are flushed
+              // immediately once text or tool execution begins, preventing reasoning-only empty responses.
               const partType = String((value as any).type || "");
-              if (
-                partType === "text-delta" ||
-                partType === "text-start" ||
-                partType === "reasoning-delta" ||
-                partType === "reasoning-start" ||
-                partType.startsWith("tool-") ||
-                partType === "finish" ||
-                partType === "finish-step"
-              ) {
+              if (partType === "text-delta" || partType.startsWith("tool-")) {
                 hasRealContent = true;
                 break;
               }

@@ -104,27 +104,45 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     }
   }
 
-  const alwaysKeep = new Set([
+  // Only keep web-search unconditionally so general/live queries use ~60 tokens of tool schema instead of ~3,800 tokens
+  const alwaysKeep = new Set(["web-search"]);
+
+  // All built-in default tools; any tool NOT in this set is a custom/MCP tool and will be kept
+  const knownBuiltinTools = new Set([
     "web-search",
+    "web_search",
     "web-content",
-    "save_memory",
-    "get_memories",
-    "update_memory",
-    "delete_memory",
+    "scrape-web-page",
+    "youtube-transcript",
+    "http",
+    "createPieChart",
     "createBarChart",
     "createLineChart",
-    "createPieChart",
     "createTable",
-    "html_preview",
-    "python-execution",
     "mini-javascript-execution",
-  ]);
-
-  const nicheTools = new Set([
+    "python-execution",
+    "save_memory",
+    "update_memory",
+    "delete_memory",
+    "get_memories",
+    "create-temp-email",
+    "get-temp-email-messages",
+    "send-email",
+    "html_preview",
+    "fetch_image_as_base64",
+    "export-chat-messages",
+    "list-sms-numbers",
+    "get-sms-messages",
+    "create_skill",
+    "deploy_site",
+    "write_site_file",
+    "read_site_file",
+    "edit_site_file",
+    "video-player",
     "image-manager",
     "remove-background",
-    "enhance-image",
     "anime-conversion",
+    "enhance-image",
     "remove-watermark",
     "remove-object",
     "super-resolution",
@@ -132,30 +150,38 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     "blur-background",
     "edit-image",
     "analyze-image",
-    "generate-pdf",
+    "steel-browser",
     "generate-word-document",
     "generate-csv",
     "generate-text-file",
+    "generate-pdf",
+    "generate-presentation",
+    "process-ppt",
     "convert-file",
     "generate-qr-code",
     "generate-qr-code-with-logo",
-    "deploy_site",
-    "write_site_file",
-    "read_site_file",
-    "edit_site_file",
-    "create_skill",
-    "list-sms-numbers",
-    "get-sms-messages",
-    "create-temp-email",
-    "get-temp-email-messages",
   ]);
 
+  const wantsChartOrTable =
+    /\b(chart|graph|plot|pie|bar|line|table|visualiz)\b/i.test(userText);
+  const wantsCode =
+    /\b(python|javascript|js|execute|run code|calculate|script)\b/i.test(
+      userText,
+    );
+  const wantsMemory =
+    /\b(remember|memory|memories|forget|my name|my preference)\b/i.test(
+      userText,
+    );
+  const wantsWebScrapeOrBrowser =
+    /\b(https?:\/\/|scrape|crawl|browser|youtube|transcript|video)\b/i.test(
+      userText,
+    );
   const wantsImage =
     /\b(image|picture|photo|draw|paint|generate.*img|illustrat|avatar|logo|wallpaper|background|watermark|anime|upscale|enhance|restore|blur)\b/i.test(
       userText,
     );
   const wantsDoc =
-    /\b(pdf|word|docx|csv|excel|spreadsheet|text file|document|convert file|export)\b/i.test(
+    /\b(pdf|word|docx|csv|excel|spreadsheet|text file|document|convert file|export|ppt|powerpoint|presentation|slide)\b/i.test(
       userText,
     );
   const wantsQr = /\b(qr|barcode)\b/i.test(userText);
@@ -164,7 +190,7 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
       userText,
     );
   const wantsSmsOrMail =
-    /\b(sms|phone number|otp|verification code|temp mail|temporary email|disposable email)\b/i.test(
+    /\b(sms|phone number|otp|verification code|temp mail|temporary email|disposable email|send email)\b/i.test(
       userText,
     );
 
@@ -183,10 +209,40 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     let keep =
       alwaysKeep.has(name) ||
       previouslyCalledTools.has(name) ||
-      !nicheTools.has(name); // Always keep any custom / MCP tools!
+      !knownBuiltinTools.has(name); // Always keep any custom / MCP tools!
 
     if (!keep) {
       if (
+        wantsChartOrTable &&
+        (name === "createPieChart" ||
+          name === "createBarChart" ||
+          name === "createLineChart" ||
+          name === "createTable")
+      ) {
+        keep = true;
+      } else if (
+        wantsCode &&
+        (name === "python-execution" || name === "mini-javascript-execution")
+      ) {
+        keep = true;
+      } else if (
+        wantsMemory &&
+        (name === "save_memory" ||
+          name === "update_memory" ||
+          name === "delete_memory" ||
+          name === "get_memories")
+      ) {
+        keep = true;
+      } else if (
+        wantsWebScrapeOrBrowser &&
+        (name === "web-content" ||
+          name === "scrape-web-page" ||
+          name === "youtube-transcript" ||
+          name === "steel-browser" ||
+          name === "video-player")
+      ) {
+        keep = true;
+      } else if (
         wantsImage &&
         (name === "image-manager" ||
           name === "remove-background" ||
@@ -207,6 +263,8 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
           name === "generate-word-document" ||
           name === "generate-csv" ||
           name === "generate-text-file" ||
+          name === "generate-presentation" ||
+          name === "process-ppt" ||
           name === "convert-file")
       ) {
         keep = true;
@@ -217,7 +275,8 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
         keep = true;
       } else if (
         wantsSite &&
-        (name === "deploy_site" ||
+        (name === "html_preview" ||
+          name === "deploy_site" ||
           name === "write_site_file" ||
           name === "read_site_file" ||
           name === "edit_site_file" ||
@@ -229,7 +288,8 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
         (name === "list-sms-numbers" ||
           name === "get-sms-messages" ||
           name === "create-temp-email" ||
-          name === "get-temp-email-messages")
+          name === "get-temp-email-messages" ||
+          name === "send-email")
       ) {
         keep = true;
       }
@@ -278,28 +338,62 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
 }
 
 /**
- * Robustly parses tool calls leaked as raw JSON or markdown codeblocks in assistant text output.
+ * Robustly extracts a leaked JSON tool call from either full text or the end of a reasoning/content block.
+ * Also supports bare search query objects like {"query": "Bitcoin price live September 2026", "top_n": 5, ...}
+ * and returns the cleaned text with the leaked JSON removed.
  */
-function parseTextToolCall(
-  content: string,
-): { toolName: string; args: any } | null {
-  if (!content) return null;
-  let text = content.trim();
-  if (text.startsWith("```json") || text.startsWith("```")) {
-    text = text
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "")
-      .trim();
+function extractLeakedToolCall(
+  rawText: string,
+): { toolName: string; args: any; cleanedText: string } | null {
+  if (!rawText) return null;
+  const text = rawText.trim();
+  const lastClose = text.lastIndexOf("}");
+  if (lastClose === -1) return null;
+
+  let depth = 0;
+  let startIdx = -1;
+  let inStr = false;
+  let esc = false;
+  for (let i = lastClose; i >= 0; i--) {
+    const ch = text[i];
+    if (esc) {
+      esc = false;
+      continue;
+    }
+    if (ch === "\\") {
+      esc = true;
+      continue;
+    }
+    if (ch === '"') {
+      inStr = !inStr;
+      continue;
+    }
+    if (!inStr) {
+      if (ch === "}") depth++;
+      else if (ch === "{") {
+        depth--;
+        if (depth === 0) {
+          startIdx = i;
+          break;
+        }
+      }
+    }
   }
-  if (text.startsWith("<tool_call>") && text.endsWith("</tool_call>")) {
-    text = text.slice(11, -12).trim();
-  }
-  if (!text.startsWith("{") || !text.endsWith("}")) return null;
+
+  if (startIdx === -1) return null;
+  const jsonCandidate = text.slice(startIdx, lastClose + 1);
 
   try {
-    const parsed = JSON.parse(text);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    const parsed = JSON.parse(jsonCandidate);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return null;
+    }
+
+    const cleanSlice = () =>
+      (text.slice(0, startIdx) + text.slice(lastClose + 1))
+        .replace(/```(?:json)?\s*$/i, "")
+        .replace(/<\/?tool_call>\s*$/gi, "")
+        .trim();
 
     const toolName =
       parsed.tool ||
@@ -322,7 +416,35 @@ function parseTextToolCall(
           argsObj = { query: rawArgs };
         }
       }
-      return { toolName, args: argsObj };
+      // If it's a search tool, normalize arguments to { query } so extra keys like top_n/recency_days don't break schema
+      if (
+        (toolName === "web-search" ||
+          toolName === "web_search" ||
+          toolName === "search") &&
+        argsObj &&
+        typeof (argsObj.query || argsObj.q || argsObj.search_query) === "string"
+      ) {
+        return {
+          toolName: "web-search",
+          args: {
+            query: String(
+              argsObj.query || argsObj.q || argsObj.search_query,
+            ).trim(),
+          },
+          cleanedText: cleanSlice(),
+        };
+      }
+      return { toolName, args: argsObj, cleanedText: cleanSlice() };
+    }
+
+    // Bare search query JSON object: {"query": "Bitcoin price live September 2026", "top_n": 5, "recency_days": 1, "source": "news"}
+    const q = parsed.query || parsed.q || parsed.search_query;
+    if (typeof q === "string" && q.trim().length > 0) {
+      return {
+        toolName: "web-search",
+        args: { query: q.trim() },
+        cleanedText: cleanSlice(),
+      };
     }
   } catch {
     return null;
@@ -336,6 +458,7 @@ const groqWorkerProvider = createOpenAICompatible({
   apiKey: "dummy",
   baseURL: `${GROQ_WORKER_URL}/v1`,
   fetch: async (url, options) => {
+    let parsedBodyObj: any = null;
     // If the body requested stream: true, convert to stream: false to bypass worker JSON parse bug
     if (options && options.body) {
       try {
@@ -343,15 +466,15 @@ const groqWorkerProvider = createOpenAICompatible({
         if (bodyObj.stream) {
           bodyObj.stream = false;
         }
-        // Cap max_tokens so Groq doesn't reject the request for reserving >8,000 TPM
-        if (!bodyObj.max_tokens || bodyObj.max_tokens > 3072) {
-          bodyObj.max_tokens = 3072;
+        // Cap max_tokens to 2048 so multi-step requests (Step 1 + Step 2) stay well within Groq's 8,000 TPM limit
+        if (!bodyObj.max_tokens || bodyObj.max_tokens > 2048) {
+          bodyObj.max_tokens = 2048;
         }
         if (
           bodyObj.max_completion_tokens &&
-          bodyObj.max_completion_tokens > 3072
+          bodyObj.max_completion_tokens > 2048
         ) {
-          bodyObj.max_completion_tokens = 3072;
+          bodyObj.max_completion_tokens = 2048;
         }
         // Condense system prompt and compact tool results so request stays safely within Groq's 8,000 TPM limit
         if (Array.isArray(bodyObj.messages)) {
@@ -362,9 +485,9 @@ const groqWorkerProvider = createOpenAICompatible({
             if (
               m.role === "tool" &&
               typeof m.content === "string" &&
-              m.content.length > 3500
+              m.content.length > 2500
             ) {
-              return { ...m, content: m.content.substring(0, 3500) };
+              return { ...m, content: m.content.substring(0, 2500) };
             }
             return m;
           });
@@ -375,58 +498,134 @@ const groqWorkerProvider = createOpenAICompatible({
             bodyObj.messages || [],
           );
         }
+        parsedBodyObj = bodyObj;
         options.body = JSON.stringify(bodyObj);
       } catch (_e) {}
     }
 
-    // Automatic retry on 429 / 5xx to rotate to the next fresh Groq API key in the worker pool
+    // Automatic retry on 429 / 413 / 5xx to rotate to the next fresh Groq API key in the worker pool
     let res = await fetch(url, options);
     for (
       let retry = 0;
-      retry < 2 && (res.status === 429 || res.status >= 500);
+      retry < 3 &&
+      (res.status === 429 || res.status === 413 || res.status >= 500);
       retry++
     ) {
       res = await fetch(url, options);
     }
 
+    let recoveredJson: any = null;
     if (!res.ok) {
       try {
         const errText = await res.clone().text();
         console.error(`[GroqWorker HTTP ${res.status}]`, errText);
+        // If Groq rejected a tool call due to strict schema validation (400 tool_use_failed), recover from failed_generation or retry without tools!
+        if (res.status === 400 || res.status === 413) {
+          try {
+            const errJson = JSON.parse(errText);
+            const failedGen =
+              errJson?.error?.failed_generation || errJson?.failed_generation;
+            if (typeof failedGen === "string" && failedGen.trim().length > 0) {
+              const extracted = extractLeakedToolCall(failedGen);
+              if (extracted) {
+                recoveredJson = {
+                  id: "chatcmpl-oss-recovered",
+                  choices: [
+                    {
+                      message: {
+                        role: "assistant",
+                        reasoning: extracted.cleanedText,
+                        content: "",
+                        tool_calls: [
+                          {
+                            id: `fc_${Date.now()}`,
+                            type: "function",
+                            function: {
+                              name:
+                                extracted.toolName === "web_search"
+                                  ? "web-search"
+                                  : extracted.toolName,
+                              arguments: JSON.stringify(extracted.args),
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                };
+              }
+            }
+          } catch (_parseErr) {}
+
+          // If not recovered via failed_generation, retry immediately without tools / lower max_tokens so it never fails
+          if (!recoveredJson && parsedBodyObj) {
+            const fallbackBody = {
+              ...parsedBodyObj,
+              max_tokens: 1536,
+            };
+            delete fallbackBody.tools;
+            delete fallbackBody.tool_choice;
+            const retryRes = await fetch(url, {
+              ...options,
+              body: JSON.stringify(fallbackBody),
+            });
+            if (retryRes.ok) {
+              res = retryRes;
+            }
+          }
+        }
       } catch (_e) {}
-      return res;
+      if (!res.ok && !recoveredJson) {
+        return res;
+      }
     }
 
     try {
-      const json = await res.json();
+      const json = recoveredJson || (await res.json());
       const msg = json.choices?.[0]?.message || {};
-      const reasoning = msg.reasoning || msg.reasoning_content || "";
+      let reasoning = msg.reasoning || msg.reasoning_content || "";
       const content = msg.content || "";
       let toolCalls = msg.tool_calls;
       let effectiveContent = content;
 
-      // Normalize tool names on native tool_calls (e.g. web_search -> web-search)
+      // Normalize tool names and arguments on native tool_calls (e.g. web_search -> web-search, strip extra keys like top_n)
       if (Array.isArray(toolCalls) && toolCalls.length > 0) {
-        toolCalls = toolCalls.map((tc: any) => ({
-          ...tc,
-          function: {
-            ...tc.function,
-            name:
-              tc.function?.name === "web_search"
-                ? "web-search"
-                : tc.function?.name,
-          },
-        }));
+        toolCalls = toolCalls.map((tc: any) => {
+          const rawName = tc.function?.name;
+          const normName =
+            rawName === "web_search" || rawName === "search"
+              ? "web-search"
+              : rawName;
+          let normArgs = tc.function?.arguments;
+          if (normName === "web-search" && typeof normArgs === "string") {
+            try {
+              const p = JSON.parse(normArgs);
+              if (p && typeof (p.query || p.q || p.search_query) === "string") {
+                normArgs = JSON.stringify({
+                  query: String(p.query || p.q || p.search_query).trim(),
+                });
+              }
+            } catch {}
+          }
+          return {
+            ...tc,
+            function: {
+              ...tc.function,
+              name: normName,
+              arguments: normArgs,
+            },
+          };
+        });
       }
 
-      // If the model leaked a tool call as raw JSON in content instead of tool_calls, parse and recover it!
+      // If the model leaked a tool call as raw JSON in content OR at the end of reasoning instead of tool_calls, extract and recover it!
       if (!toolCalls || toolCalls.length === 0) {
-        const textTool = parseTextToolCall(content);
-        if (textTool) {
+        const fromContent = extractLeakedToolCall(effectiveContent);
+        if (fromContent) {
           const normalizedName =
-            textTool.toolName === "web_search"
+            fromContent.toolName === "web_search"
               ? "web-search"
-              : textTool.toolName;
+              : fromContent.toolName;
           toolCalls = [
             {
               id: `fc_${Date.now()}`,
@@ -434,13 +633,112 @@ const groqWorkerProvider = createOpenAICompatible({
               function: {
                 name: normalizedName,
                 arguments:
-                  typeof textTool.args === "string"
-                    ? textTool.args
-                    : JSON.stringify(textTool.args),
+                  typeof fromContent.args === "string"
+                    ? fromContent.args
+                    : JSON.stringify(fromContent.args),
               },
             },
           ];
-          effectiveContent = ""; // Clear content so raw JSON never leaks to user UI
+          effectiveContent = fromContent.cleanedText;
+        } else {
+          const fromReasoning = extractLeakedToolCall(reasoning);
+          if (fromReasoning) {
+            const normalizedName =
+              fromReasoning.toolName === "web_search"
+                ? "web-search"
+                : fromReasoning.toolName;
+            toolCalls = [
+              {
+                id: `fc_${Date.now()}`,
+                type: "function",
+                function: {
+                  name: normalizedName,
+                  arguments:
+                    typeof fromReasoning.args === "string"
+                      ? fromReasoning.args
+                      : JSON.stringify(fromReasoning.args),
+                },
+              },
+            ];
+            reasoning = fromReasoning.cleanedText;
+          }
+        }
+      }
+
+      const messagesList: any[] = parsedBodyObj?.messages || [];
+      const hasToolResultsInHistory = messagesList.some(
+        (m: any) => m.role === "tool",
+      );
+
+      // If Step 1 produced reasoning about needing to search/fetch live info, but emitted neither toolCalls nor content, synthesize web-search!
+      if (
+        (!toolCalls || toolCalls.length === 0) &&
+        !effectiveContent &&
+        reasoning &&
+        !hasToolResultsInHistory &&
+        /\b(web-search|web_search|search|fetch|current|live|price|rate)\b/i.test(
+          reasoning,
+        )
+      ) {
+        const lastUserMsg = [...messagesList]
+          .reverse()
+          .find((m: any) => m.role === "user");
+        const lastUserText =
+          typeof lastUserMsg?.content === "string"
+            ? lastUserMsg.content
+            : Array.isArray(lastUserMsg?.content)
+              ? lastUserMsg.content
+                  .map((p: any) => p.text || "")
+                  .join(" ")
+                  .trim()
+              : "";
+        if (lastUserText) {
+          const currentMonthYear = new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+          });
+          toolCalls = [
+            {
+              id: `fc_${Date.now()}`,
+              type: "function",
+              function: {
+                name: "web-search",
+                arguments: JSON.stringify({
+                  query: `${lastUserText.slice(0, 120)} ${currentMonthYear}`,
+                }),
+              },
+            },
+          ];
+        }
+      }
+
+      // If Step 2+ (after tool execution) STILL has no content and no tool calls, force a tool-free synthesis call or fallback to reasoning
+      if (
+        (!toolCalls || toolCalls.length === 0) &&
+        !effectiveContent &&
+        parsedBodyObj
+      ) {
+        try {
+          const synthesisBody = {
+            ...parsedBodyObj,
+            max_tokens: 1536,
+          };
+          delete synthesisBody.tools;
+          delete synthesisBody.tool_choice;
+          const synthRes = await fetch(url, {
+            ...options,
+            body: JSON.stringify(synthesisBody),
+          });
+          if (synthRes.ok) {
+            const synthJson = await synthRes.json();
+            const synthMsg = synthJson.choices?.[0]?.message || {};
+            if (synthMsg.content) {
+              effectiveContent = synthMsg.content;
+            }
+          }
+        } catch (_e) {}
+        if (!effectiveContent && reasoning) {
+          effectiveContent = reasoning;
         }
       }
 
