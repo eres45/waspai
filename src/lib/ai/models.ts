@@ -59,9 +59,28 @@ function condenseSystemPromptForGroq(prompt: string): string {
   return condensed + coreSearchDirective;
 }
 
+function compactJsonSchema(schema: any): any {
+  if (!schema || typeof schema !== "object") return schema;
+  const copy: any = { ...schema };
+  if (typeof copy.description === "string" && copy.description.length > 60) {
+    copy.description = copy.description.substring(0, 60);
+  }
+  if (copy.properties && typeof copy.properties === "object") {
+    const props: any = {};
+    for (const [k, v] of Object.entries(copy.properties)) {
+      props[k] = compactJsonSchema(v);
+    }
+    copy.properties = props;
+  }
+  if (copy.items && typeof copy.items === "object") {
+    copy.items = compactJsonSchema(copy.items);
+  }
+  return copy;
+}
+
 /**
- * Filters and compacts the 34+ tool schemas down to only relevant tools for Groq's 8,000 TPM budget.
- * Reduces tool token overhead from ~6,500 tokens to ~150-300 tokens so GPT-OSS 120B never hits 429 TPM limits.
+ * Filters and compacts the 34+ tool schemas down to a lean, high-signal schema set for Groq's 8,000 TPM budget.
+ * Keeps all core, search, memory, visualization, code, preview, and MCP tools while reducing token usage by ~90%.
  */
 function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
   if (!Array.isArray(tools) || tools.length === 0) return tools;
@@ -85,6 +104,52 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     }
   }
 
+  const alwaysKeep = new Set([
+    "web-search",
+    "web-content",
+    "save_memory",
+    "get_memories",
+    "update_memory",
+    "delete_memory",
+    "createBarChart",
+    "createLineChart",
+    "createPieChart",
+    "createTable",
+    "html_preview",
+    "python-execution",
+    "mini-javascript-execution",
+  ]);
+
+  const nicheTools = new Set([
+    "image-manager",
+    "remove-background",
+    "enhance-image",
+    "anime-conversion",
+    "remove-watermark",
+    "remove-object",
+    "super-resolution",
+    "restore-old-photo",
+    "blur-background",
+    "edit-image",
+    "analyze-image",
+    "generate-pdf",
+    "generate-word-document",
+    "generate-csv",
+    "generate-text-file",
+    "convert-file",
+    "generate-qr-code",
+    "generate-qr-code-with-logo",
+    "deploy_site",
+    "write_site_file",
+    "read_site_file",
+    "edit_site_file",
+    "create_skill",
+    "list-sms-numbers",
+    "get-sms-messages",
+    "create-temp-email",
+    "get-temp-email-messages",
+  ]);
+
   const wantsImage =
     /\b(image|picture|photo|draw|paint|generate.*img|illustrat|avatar|logo|wallpaper|background|watermark|anime|upscale|enhance|restore|blur)\b/i.test(
       userText,
@@ -95,15 +160,11 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     );
   const wantsQr = /\b(qr|barcode)\b/i.test(userText);
   const wantsSite =
-    /\b(html|website|web page|landing page|game|dashboard|widget|preview|deploy|app|ui)\b/i.test(
+    /\b(html|website|web page|landing page|game|dashboard|widget|preview|deploy|app|ui|skill)\b/i.test(
       userText,
     );
   const wantsSmsOrMail =
     /\b(sms|phone number|otp|verification code|temp mail|temporary email|disposable email)\b/i.test(
-      userText,
-    );
-  const wantsMem =
-    /\b(remember|memory|memories|forget|my preference|my name)\b/i.test(
       userText,
     );
 
@@ -119,69 +180,64 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     if (name === "web_search") continue;
     if (seenNames.has(name)) continue;
 
-    let keep = false;
-    if (name === "web-search" || previouslyCalledTools.has(name)) {
-      keep = true;
-    } else if (
-      wantsMem &&
-      (name === "save_memory" ||
-        name === "get_memories" ||
-        name === "update_memory" ||
-        name === "delete_memory")
-    ) {
-      keep = true;
-    } else if (
-      wantsImage &&
-      (name === "image-manager" ||
-        name === "remove-background" ||
-        name === "enhance-image" ||
-        name === "anime-conversion" ||
-        name === "remove-watermark" ||
-        name === "remove-object" ||
-        name === "super-resolution" ||
-        name === "restore-old-photo" ||
-        name === "blur-background" ||
-        name === "edit-image" ||
-        name === "analyze-image")
-    ) {
-      keep = true;
-    } else if (
-      wantsDoc &&
-      (name === "generate-pdf" ||
-        name === "generate-word-document" ||
-        name === "generate-csv" ||
-        name === "generate-text-file" ||
-        name === "convert-file")
-    ) {
-      keep = true;
-    } else if (
-      wantsQr &&
-      (name === "generate-qr-code" || name === "generate-qr-code-with-logo")
-    ) {
-      keep = true;
-    } else if (
-      wantsSite &&
-      (name === "html_preview" ||
-        name === "deploy_site" ||
-        name === "write_site_file" ||
-        name === "read_site_file" ||
-        name === "edit_site_file")
-    ) {
-      keep = true;
-    } else if (
-      wantsSmsOrMail &&
-      (name === "list-sms-numbers" ||
-        name === "get-sms-messages" ||
-        name === "create-temp-email" ||
-        name === "get-temp-email-messages")
-    ) {
-      keep = true;
+    let keep =
+      alwaysKeep.has(name) ||
+      previouslyCalledTools.has(name) ||
+      !nicheTools.has(name); // Always keep any custom / MCP tools!
+
+    if (!keep) {
+      if (
+        wantsImage &&
+        (name === "image-manager" ||
+          name === "remove-background" ||
+          name === "enhance-image" ||
+          name === "anime-conversion" ||
+          name === "remove-watermark" ||
+          name === "remove-object" ||
+          name === "super-resolution" ||
+          name === "restore-old-photo" ||
+          name === "blur-background" ||
+          name === "edit-image" ||
+          name === "analyze-image")
+      ) {
+        keep = true;
+      } else if (
+        wantsDoc &&
+        (name === "generate-pdf" ||
+          name === "generate-word-document" ||
+          name === "generate-csv" ||
+          name === "generate-text-file" ||
+          name === "convert-file")
+      ) {
+        keep = true;
+      } else if (
+        wantsQr &&
+        (name === "generate-qr-code" || name === "generate-qr-code-with-logo")
+      ) {
+        keep = true;
+      } else if (
+        wantsSite &&
+        (name === "deploy_site" ||
+          name === "write_site_file" ||
+          name === "read_site_file" ||
+          name === "edit_site_file" ||
+          name === "create_skill")
+      ) {
+        keep = true;
+      } else if (
+        wantsSmsOrMail &&
+        (name === "list-sms-numbers" ||
+          name === "get-sms-messages" ||
+          name === "create-temp-email" ||
+          name === "get-temp-email-messages")
+      ) {
+        keep = true;
+      }
     }
 
     if (!keep) continue;
     seenNames.add(name);
 
-    // Compact web-search schema so it takes <60 tokens and never confuses strict function validators
     if (name === "web-search") {
       filtered.push({
         type: "function",
@@ -210,9 +266,10 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
       function: {
         ...fn,
         description:
-          typeof fn.description === "string" && fn.description.length > 160
-            ? fn.description.substring(0, 160)
+          typeof fn.description === "string" && fn.description.length > 90
+            ? fn.description.substring(0, 90)
             : fn.description,
+        parameters: compactJsonSchema(fn.parameters),
       },
     });
   }
