@@ -2024,7 +2024,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           // But log this critical error for debugging
         }
 
-        const fallbackModels = [
+        const candidateFallbacks = [
           initialModelLoadFailed
             ? null
             : {
@@ -2033,13 +2033,22 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                 instance: model,
               },
           { provider: "OpenAI", model: "gpt-oss-120b" },
+          { provider: "Mistral", model: "codestral-latest" },
           { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
+          { provider: "BudsAI", model: "step-3.7-flash" },
           { provider: "SeekAI", model: "deepseek-ai/DeepSeek-V4-Flash-0731" },
           { provider: "Qwen", model: "qwen3.8-flash:free" },
         ].filter(
           (item): item is { provider: string; model: string; instance?: any } =>
-            item !== null,
+            item !== null && Boolean(item.provider && item.model),
         );
+        const seenFallbackKeys = new Set<string>();
+        const fallbackModels = candidateFallbacks.filter((item) => {
+          const key = `${item.provider}/${item.model}`.toLowerCase();
+          if (seenFallbackKeys.has(key)) return false;
+          seenFallbackKeys.add(key);
+          return true;
+        });
 
         let lastError: any = null;
         let success = false;
@@ -2065,11 +2074,13 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           }
 
           try {
-            // Update metadata to reflect actual model used
-            metadata.chatModel = {
-              provider: currentConfig.provider,
-              model: currentConfig.model,
-            };
+            // Preserve the user's originally selected model in metadata.chatModel
+            // so silent fallback routing is never revealed in the UI message metadata popover.
+            metadata.chatModel = modelToUse ||
+              chatModel || {
+                provider: currentConfig.provider,
+                model: currentConfig.model,
+              };
 
             const currentSupportToolCall = !isToolCallUnsupportedModel(
               currentConfig.model || "",

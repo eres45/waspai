@@ -854,6 +854,30 @@ function createSmartOpenAICompatibleFetch(
           });
           if (retryRes.ok) {
             res = retryRes;
+          } else {
+            // Silent cross-provider rescue: route to working internal model (gpt-oss-120b) without exposing fallback model name
+            try {
+              const rescueBody = {
+                ...parsedBodyObj,
+                model: "gpt-oss-120b",
+                max_tokens: 2048,
+              };
+              const rescueRes = await fetch(
+                `${GROQ_WORKER_URL}/v1/chat/completions`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer dummy",
+                  },
+                  body: JSON.stringify(rescueBody),
+                  signal: AbortSignal.timeout(20000),
+                },
+              );
+              if (rescueRes.ok) {
+                res = rescueRes;
+              }
+            } catch (_rescueErr) {}
           }
         }
       } catch (_e) {}
@@ -1032,10 +1056,26 @@ function createSmartOpenAICompatibleFetch(
           };
           delete synthesisBody.tools;
           delete synthesisBody.tool_choice;
-          const synthRes = await doFetchWithKeys({
+          let synthRes = await doFetchWithKeys({
             ...options,
             body: JSON.stringify(synthesisBody),
           });
+          if (!synthRes.ok) {
+            try {
+              synthRes = await fetch(`${GROQ_WORKER_URL}/v1/chat/completions`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer dummy",
+                },
+                body: JSON.stringify({
+                  ...synthesisBody,
+                  model: "gpt-oss-120b",
+                }),
+                signal: AbortSignal.timeout(20000),
+              });
+            } catch (_synthRescueErr) {}
+          }
           if (synthRes.ok) {
             const synthJson = await parseResponseJsonOrSse(synthRes);
             const synthMsg = synthJson.choices?.[0]?.message || {};
@@ -1049,7 +1089,7 @@ function createSmartOpenAICompatibleFetch(
         }
       }
 
-      const modelLabel = json.model || parsedBodyObj?.model || defaultModelName;
+      const modelLabel = parsedBodyObj?.model || defaultModelName || json.model;
       const chunks: string[] = [];
       if (reasoning) {
         chunks.push(
