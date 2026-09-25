@@ -565,9 +565,68 @@ function extractLeakedToolCall(
   return null;
 }
 
+function getLastUserMessageIndex(messages: any[]): number {
+  if (!Array.isArray(messages)) return -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]?.role === "user") {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function hasToolResultsAfterLastUserMessage(messages: any[]): boolean {
+  if (!Array.isArray(messages) || messages.length === 0) return false;
+  const lastUserIdx = getLastUserMessageIndex(messages);
+  if (lastUserIdx === -1) {
+    return messages.some((m: any) => m?.role === "tool");
+  }
+  return messages.slice(lastUserIdx + 1).some((m: any) => m?.role === "tool");
+}
+
+/**
+ * Strips raw tool_calls and role:"tool" messages from COMPLETED earlier turns (before lastUserIdx)
+ * so multi-turn conversations never mistake Turn 1's tool results for Turn 2's tool results,
+ * while preserving all tool_calls and role:"tool" messages for the active turn (after lastUserIdx).
+ */
+function prunePriorTurnToolMessages(messages: any[]): any[] {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+  const lastUserIdx = getLastUserMessageIndex(messages);
+  if (lastUserIdx <= 0) return messages;
+
+  const pruned: any[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+    if (i < lastUserIdx) {
+      if (m.role === "tool") {
+        // Skip raw tool outputs from completed prior turns (the assistant already answered them)
+        continue;
+      }
+      if (
+        m.role === "assistant" &&
+        Array.isArray(m.tool_calls) &&
+        m.tool_calls.length > 0
+      ) {
+        const textContent =
+          typeof m.content === "string" ? m.content.trim() : "";
+        if (textContent && textContent !== "OK.") {
+          pruned.push({
+            role: "assistant",
+            content: textContent,
+          });
+        }
+        continue;
+      }
+    }
+    pruned.push(m);
+  }
+  return pruned;
+}
+
 function flattenToolMessagesForSynthesis(messages: any[]): any[] {
+  const cleanedMessages = prunePriorTurnToolMessages(messages);
   const result: any[] = [];
-  for (const m of messages || []) {
+  for (const m of cleanedMessages || []) {
     if (m.role === "system" && typeof m.content === "string") {
       result.push({
         ...m,
@@ -654,8 +713,9 @@ function createSmartOpenAICompatibleFetch(
           bodyObj.max_completion_tokens = 2048;
         }
         if (Array.isArray(bodyObj.messages)) {
-          const hasPriorToolResults = bodyObj.messages.some(
-            (m: any) => m.role === "tool",
+          bodyObj.messages = prunePriorTurnToolMessages(bodyObj.messages);
+          const hasPriorToolResults = hasToolResultsAfterLastUserMessage(
+            bodyObj.messages,
           );
           bodyObj.messages = bodyObj.messages.map((m: any, mIdx: number) => {
             if (m.role === "system" && typeof m.content === "string") {
@@ -873,9 +933,8 @@ function createSmartOpenAICompatibleFetch(
     }
 
     const messagesList: any[] = parsedBodyObj?.messages || [];
-    const hasToolResultsInHistory = messagesList.some(
-      (m: any) => m.role === "tool",
-    );
+    const hasToolResultsInHistory =
+      hasToolResultsAfterLastUserMessage(messagesList);
     const lastUserMsg = [...messagesList]
       .reverse()
       .find((m: any) => m.role === "user");
@@ -1122,9 +1181,13 @@ function createSmartOpenAICompatibleFetch(
       reasoning = stripToolCallMarkup(reasoning);
 
       const isRefusingLiveSearch =
-        /\b(web-search tool isn't available|web search tool is not available|web-search is unavailable|can't retrieve live|cannot retrieve live|don't have access to live|no access to real-time)\b/i.test(
+        /\b(web-search tool isn't available|web search tool is not available|web-search is unavailable|can't retrieve live|cannot retrieve live|don't have access to live|no access to real-time|don['’]t have live web-search|no live web-search|unable to provide a citation-backed|run a fresh web search)\b/i.test(
           effectiveContent,
-        );
+        ) ||
+        (!hasToolResultsInHistory &&
+          /\b(we need to perform a web search|web-search results \(none yet\)|need to call web-search)\b/i.test(
+            reasoning,
+          ));
 
       // Prevent infinite tool loops: if Step 2+ already has tool results in history and the model tries to call web-search AGAIN (or falsely claims web-search is unavailable), clear both toolCalls and pre-tool filler so Step 2 forces final answer synthesis!
       if (
