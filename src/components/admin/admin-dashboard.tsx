@@ -5,419 +5,32 @@ import { format, formatDistanceToNow } from "date-fns";
 import { AdminDashboardStats } from "lib/admin/dashboard";
 import { getUserAvatar } from "lib/user/utils";
 import {
-  ArrowDownRight,
   ArrowUpRight,
-  Ban,
+  Bell,
+  Calendar as CalendarIcon,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
   ChevronRight,
-  Crown,
-  LayoutDashboard,
+  Clock,
+  ExternalLink,
+  HelpCircle,
+  LayoutGrid,
   LogOut,
   MessageSquare,
-  ShieldCheck,
-  TrendingUp,
+  MoreHorizontal,
+  Search,
+  Settings,
+  Shield,
+  Sparkles,
+  Star,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
-function AdminSidebar({ activeTab }: { activeTab: string }) {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await fetch("/api/admin-panel/auth", { method: "DELETE" });
-    router.refresh();
-  };
-
-  const nav = [
-    {
-      icon: LayoutDashboard,
-      label: "Dashboard",
-      href: "/admin",
-      id: "dashboard",
-    },
-    { icon: Users, label: "Users", href: "/admin", id: "users" },
-  ];
-
-  return (
-    <aside className="w-[220px] shrink-0 flex flex-col border-r border-white/[0.06] bg-white/[0.02] h-screen sticky top-0">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/[0.06]">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg">
-          <span className="text-white font-bold text-sm">W</span>
-        </div>
-        <div>
-          <p className="text-white font-semibold text-[14px] leading-none">
-            WaspAI
-          </p>
-          <p className="text-white/30 text-[11px] mt-0.5">Admin Panel</p>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {nav.map(({ icon: Icon, label, href, id }) => (
-          <Link
-            key={id}
-            href={href}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
-              activeTab === id
-                ? "bg-white/[0.08] text-white"
-                : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            {label}
-          </Link>
-        ))}
-      </nav>
-
-      {/* Bottom */}
-      <div className="px-3 pb-4 border-t border-white/[0.06] pt-4 space-y-1">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
-      </div>
-    </aside>
-  );
-}
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  delta,
-  deltaLabel,
-  iconColor,
-}: {
-  label: string;
-  value: number | string;
-  icon: React.ElementType;
-  delta?: number;
-  deltaLabel?: string;
-  iconColor: string;
-}) {
-  const positive = (delta ?? 0) >= 0;
-  return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 flex flex-col gap-3">
-      <div className="flex items-start justify-between">
-        <p className="text-[13px] text-white/40 font-medium">{label}</p>
-        <div className={`p-2 rounded-xl ${iconColor}`}>
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-      </div>
-      <p className="text-[32px] font-bold text-white leading-none tracking-tight">
-        {value}
-      </p>
-      {delta !== undefined && (
-        <div className="flex items-center gap-1.5">
-          {positive ? (
-            <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
-          ) : (
-            <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />
-          )}
-          <span
-            className={`text-[12px] font-semibold ${positive ? "text-emerald-400" : "text-red-400"}`}
-          >
-            {positive ? "+" : ""}
-            {delta}
-          </span>
-          {deltaLabel && (
-            <span className="text-[12px] text-white/30">{deltaLabel}</span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Bar Chart ────────────────────────────────────────────────────────────────
-function SignupsChart({ data }: { data: { month: string; count: number }[] }) {
-  const max = Math.max(...data.map((d) => d.count), 1);
-  return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-[15px] font-semibold text-white">New Users</p>
-          <p className="text-[12px] text-white/30 mt-0.5">Last 6 months</p>
-        </div>
-        <div className="flex items-center gap-2 text-[12px] text-white/30">
-          <span className="w-2.5 h-2.5 rounded-full bg-violet-500 inline-block" />
-          Signups
-        </div>
-      </div>
-      <div className="flex items-end gap-2 h-32">
-        {data.length === 0 ? (
-          <p className="text-white/20 text-sm self-center mx-auto">
-            No data yet
-          </p>
-        ) : (
-          data.map((d, i) => {
-            const height = Math.max((d.count / max) * 100, 4);
-            return (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center gap-1.5 group"
-              >
-                <div
-                  className="relative w-full flex items-end"
-                  style={{ height: "100px" }}
-                >
-                  {/* Tooltip */}
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center gap-1 bg-white/10 backdrop-blur-sm border border-white/10 rounded-lg px-2 py-1 text-[11px] text-white whitespace-nowrap z-10">
-                    {d.count} users
-                  </div>
-                  <div
-                    className="w-full rounded-t-lg bg-gradient-to-t from-violet-600 to-violet-400 opacity-80 group-hover:opacity-100 transition-all"
-                    style={{ height: `${height}%` }}
-                  />
-                </div>
-                <span className="text-[11px] text-white/30">{d.month}</span>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Recent Users ─────────────────────────────────────────────────────────────
-function RecentUsers({
-  users,
-}: {
-  users: AdminDashboardStats["recentUsers"];
-}) {
-  return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-[15px] font-semibold text-white">Recent Signups</p>
-        <Link
-          href="/admin"
-          className="text-[12px] text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1"
-        >
-          View all <ChevronRight className="w-3 h-3" />
-        </Link>
-      </div>
-      <div className="space-y-3">
-        {users.map((user) => (
-          <Link
-            key={user.id}
-            href={`/admin/users/${user.id}`}
-            className="flex items-center gap-3 group hover:bg-white/[0.03] rounded-xl p-2 -mx-2 transition-all"
-          >
-            <Avatar className="w-9 h-9 shrink-0">
-              <AvatarImage src={getUserAvatar(user) ?? ""} />
-              <AvatarFallback className="bg-white/10 text-white/60 text-[12px] font-semibold">
-                {user.name?.slice(0, 2).toUpperCase() ?? "??"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-white truncate">
-                {user.name}
-              </p>
-              <p className="text-[11px] text-white/30 truncate">{user.email}</p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {user.tier === "pro" && (
-                <span className="text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20 rounded-full px-2 py-0.5">
-                  Pro
-                </span>
-              )}
-              {user.banned && (
-                <span className="text-[10px] font-semibold bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-2 py-0.5">
-                  Banned
-                </span>
-              )}
-              <span className="text-[11px] text-white/20">
-                {formatDistanceToNow(new Date(user.createdAt), {
-                  addSuffix: true,
-                })}
-              </span>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Users Table ──────────────────────────────────────────────────────────────
-function UsersTableSection({
-  users,
-  total,
-  page,
-  limit,
-  query,
-}: {
-  users: AdminUserListItem[];
-  total: number;
-  page: number;
-  limit: number;
-  query?: string;
-}) {
-  const totalPages = Math.ceil(total / limit);
-
-  return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-        <div>
-          <p className="text-[15px] font-semibold text-white">All Users</p>
-          <p className="text-[12px] text-white/30 mt-0.5">
-            {total} total accounts
-          </p>
-        </div>
-        <form method="GET">
-          <div className="relative">
-            <input
-              name="query"
-              defaultValue={query}
-              placeholder="Search users…"
-              className="w-48 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 pl-8 text-[13px] text-white placeholder:text-white/20 outline-none focus:border-white/20 transition-all"
-            />
-            <svg
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <title>Search</title>
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-        </form>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-white/[0.06]">
-              {["User", "Email", "Role", "Tier", "Joined", "Status"].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="px-5 py-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr
-                key={user.id}
-                className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors"
-              >
-                <td className="px-5 py-3.5">
-                  <Link
-                    href={`/admin/users/${user.id}`}
-                    className="flex items-center gap-3 group"
-                  >
-                    <Avatar className="w-8 h-8 shrink-0">
-                      <AvatarImage src={getUserAvatar(user) ?? ""} />
-                      <AvatarFallback className="bg-white/10 text-white/60 text-[11px] font-semibold">
-                        {user.name?.slice(0, 2).toUpperCase() ?? "??"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-[13px] font-medium text-white group-hover:text-violet-300 transition-colors truncate max-w-[140px]">
-                      {user.name}
-                    </span>
-                  </Link>
-                </td>
-                <td className="px-5 py-3.5 text-[13px] text-white/50 truncate max-w-[180px]">
-                  {user.email}
-                </td>
-                <td className="px-5 py-3.5">
-                  <span
-                    className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${
-                      user.role === "admin"
-                        ? "bg-violet-500/15 text-violet-300 border border-violet-500/20"
-                        : "bg-white/[0.06] text-white/40 border border-white/[0.08]"
-                    }`}
-                  >
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5">
-                  <span
-                    className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${
-                      user.tier === "pro"
-                        ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-                        : "bg-white/[0.06] text-white/40 border border-white/[0.08]"
-                    }`}
-                  >
-                    {user.tier ?? "free"}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 text-[13px] text-white/40">
-                  {user.createdAt
-                    ? format(new Date(user.createdAt), "MMM d, yyyy")
-                    : "—"}
-                </td>
-                <td className="px-5 py-3.5">
-                  {user.banned ? (
-                    <span className="text-[11px] font-semibold bg-red-500/15 text-red-400 border border-red-500/20 rounded-full px-2 py-0.5">
-                      Banned
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full px-2 py-0.5">
-                      Active
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06]">
-          <p className="text-[12px] text-white/30">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            {page > 1 && (
-              <Link
-                href={`/admin?page=${page - 1}${query ? `&query=${query}` : ""}`}
-                className="px-3 py-1.5 rounded-lg border border-white/[0.08] text-[12px] text-white/50 hover:text-white hover:bg-white/[0.04] transition-all"
-              >
-                Previous
-              </Link>
-            )}
-            {page < totalPages && (
-              <Link
-                href={`/admin?page=${page + 1}${query ? `&query=${query}` : ""}`}
-                className="px-3 py-1.5 rounded-lg border border-white/[0.08] text-[12px] text-white/50 hover:text-white hover:bg-white/[0.04] transition-all"
-              >
-                Next
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
 export function AdminDashboard({
   stats,
   users,
@@ -433,120 +46,755 @@ export function AdminDashboard({
   limit: number;
   query?: string;
 }) {
-  const growth = stats.newUsersThisMonth - stats.newUsersLastMonth;
+  const router = useRouter();
+  const [activeNav, setActiveNav] = useState("dashboard");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [tierFilter, setTierFilter] = useState("all");
+  const [hoveredMonth, setHoveredMonth] = useState<number | null>(5);
+
+  const handleLogout = async () => {
+    await fetch("/api/admin-panel/auth", { method: "DELETE" });
+    router.refresh();
+  };
+
+  // Calendar days generation (current month)
+  const today = new Date();
+  const currentDayNum = today.getDate();
+  const daysHeader = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+  const calendarDays = [
+    { num: 27, currentMonth: false },
+    { num: 28, currentMonth: false },
+    { num: 29, currentMonth: false },
+    { num: 30, currentMonth: false },
+    { num: 1, currentMonth: true },
+    { num: 2, currentMonth: true },
+    { num: 3, currentMonth: true },
+    { num: 4, currentMonth: true },
+    { num: 5, currentMonth: true },
+    { num: 6, currentMonth: true },
+    { num: 7, currentMonth: true },
+    { num: 8, currentMonth: true },
+    { num: 9, currentMonth: true },
+    { num: 10, currentMonth: true },
+    { num: 11, currentMonth: true },
+    { num: 12, currentMonth: true },
+    { num: 13, currentMonth: true },
+    { num: currentDayNum, currentMonth: true, isToday: true },
+    { num: 15, currentMonth: true },
+    { num: 16, currentMonth: true },
+    { num: 17, currentMonth: true },
+    { num: 18, currentMonth: true },
+    { num: 19, currentMonth: true },
+    { num: 20, currentMonth: true },
+    { num: 21, currentMonth: true },
+    { num: 22, currentMonth: true },
+    { num: 23, currentMonth: true },
+    { num: 24, currentMonth: true },
+    { num: 25, currentMonth: true },
+    { num: 26, currentMonth: true },
+    { num: 27, currentMonth: true },
+    { num: 28, currentMonth: true },
+    { num: 1, currentMonth: false },
+    { num: 2, currentMonth: false },
+    { num: 3, currentMonth: false },
+  ];
+
+  // Filter users in table
+  const filteredUsers = users.filter((u) => {
+    if (statusFilter === "banned" && !u.banned) return false;
+    if (statusFilter === "active" && u.banned) return false;
+    if (statusFilter === "admin" && u.role !== "admin") return false;
+    if (tierFilter === "pro" && u.tier !== "pro") return false;
+    if (tierFilter === "free" && u.tier === "pro") return false;
+    return true;
+  });
+
+  const maxSignup = Math.max(...stats.monthlySignups.map((s) => s.count), 1);
+  const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="flex min-h-screen bg-[#161618] text-white">
-      <AdminSidebar activeTab="dashboard" />
+    <div className="min-h-screen bg-[#0d0e12] text-[#e1e4ea] p-2 md:p-4 lg:p-6 flex items-center justify-center font-sans antialiased">
+      {/* Outer Rounded Container mirroring reference image */}
+      <div className="w-full max-w-[1560px] min-h-[920px] bg-[#14151b] border border-white/[0.08] rounded-[28px] md:rounded-[36px] overflow-hidden shadow-2xl flex flex-col lg:flex-row">
+        {/* ============================================================ */}
+        {/* LEFT DOCK + SUB-SIDEBAR (Schedule & Queue)                   */}
+        {/* ============================================================ */}
+        <div className="w-full lg:w-[410px] shrink-0 bg-[#101116] border-b lg:border-b-0 lg:border-r border-white/[0.06] flex">
+          {/* Far-left Icon Rail */}
+          <div className="w-[72px] shrink-0 border-r border-white/[0.05] py-6 flex flex-col items-center justify-between bg-[#0e0f13]">
+            {/* Logo */}
+            <div className="flex flex-col items-center gap-6">
+              <Link
+                href="/admin"
+                className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-amber-400 p-[1px] shadow-lg flex items-center justify-center group"
+              >
+                <div className="w-full h-full bg-[#121319] rounded-[15px] flex items-center justify-center">
+                  <span className="font-extrabold text-white text-base tracking-tighter">
+                    W
+                  </span>
+                </div>
+              </Link>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-8 py-4 border-b border-white/[0.06] bg-[#161618]/80 backdrop-blur-xl">
-          <div>
-            <h1 className="text-[18px] font-bold text-white">Dashboard</h1>
-            <p className="text-[12px] text-white/30 mt-0.5">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
+              {/* Navigation Rail */}
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveNav("dashboard")}
+                  title="Dashboard"
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                    activeNav === "dashboard"
+                      ? "bg-violet-600/25 text-violet-300 shadow-[inset_0_0_12px_rgba(139,92,246,0.3)] border border-violet-500/30"
+                      : "text-white/35 hover:text-white/80 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveNav("users")}
+                  title="Users Management"
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                    activeNav === "users"
+                      ? "bg-violet-600/25 text-violet-300 shadow-[inset_0_0_12px_rgba(139,92,246,0.3)] border border-violet-500/30"
+                      : "text-white/35 hover:text-white/80 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <Users className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveNav("chats")}
+                  title="Chat Threads"
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                    activeNav === "chats"
+                      ? "bg-violet-600/25 text-violet-300 shadow-[inset_0_0_12px_rgba(139,92,246,0.3)] border border-violet-500/30"
+                      : "text-white/35 hover:text-white/80 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <MessageSquare className="w-5 h-5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveNav("calendar")}
+                  title="Calendar & Timeline"
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                    activeNav === "calendar"
+                      ? "bg-violet-600/25 text-violet-300 shadow-[inset_0_0_12px_rgba(139,92,246,0.3)] border border-violet-500/30"
+                      : "text-white/35 hover:text-white/80 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <CalendarIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={handleLogout}
+                title="Sign Out"
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white/30 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-[12px] font-bold text-white shadow-lg">
-              A
+
+          {/* Sub-Sidebar: My Schedule Calendar + Users Today List */}
+          <div className="flex-1 p-5 flex flex-col justify-between overflow-y-auto">
+            {/* CARD 1: My Schedule (Calendar Widget matching mockup) */}
+            <div className="bg-[#171821] border border-white/[0.06] rounded-[24px] p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[15px] font-semibold text-white tracking-tight">
+                  My Schedule
+                </span>
+                <div className="flex items-center gap-1 text-white/40">
+                  <button
+                    type="button"
+                    className="p-1 rounded-lg hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="p-1 rounded-lg hover:bg-white/[0.06] hover:text-white transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Day Headers */}
+              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                {daysHeader.map((d) => (
+                  <span
+                    key={d}
+                    className="text-[10px] font-medium text-white/35 uppercase tracking-wider"
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1 text-center text-[12px]">
+                {calendarDays.map((day, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-8 flex items-center justify-center rounded-xl cursor-pointer transition-all ${
+                      day.isToday
+                        ? "bg-violet-600 text-white font-bold shadow-[0_0_12px_rgba(139,92,246,0.6)]"
+                        : day.currentMonth
+                          ? "text-white/80 hover:bg-white/[0.05]"
+                          : "text-white/20"
+                    }`}
+                  >
+                    {day.num}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CARD 2: Today's Queue / Users Today (matching mockup) */}
+            <div className="mt-5 flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-semibold text-white tracking-tight">
+                    {stats.todayUsers.length || stats.totalUsers} Users active
+                    today
+                  </span>
+                </div>
+                <div className="w-7 h-7 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40">
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Scrollable list of recent active users */}
+              <div className="space-y-2 overflow-y-auto max-h-[360px] pr-1">
+                {stats.todayUsers.slice(0, 6).map((u, i) => (
+                  <div
+                    key={u.id || i}
+                    className="flex items-center justify-between p-2.5 rounded-2xl bg-[#171821] border border-white/[0.04] hover:border-white/[0.08] transition-all group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-9 h-9 rounded-xl border border-white/[0.08] shrink-0">
+                        <AvatarImage src={u.image ?? ""} />
+                        <AvatarFallback className="bg-gradient-to-br from-violet-600/30 to-purple-800/30 text-white/90 text-[11px] font-bold rounded-xl">
+                          {u.name?.slice(0, 2).toUpperCase() || "WA"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-white truncate leading-tight group-hover:text-violet-300 transition-colors">
+                          {u.name}
+                        </p>
+                        <p className="text-[11px] text-white/40 truncate mt-0.5">
+                          {u.tag}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 pl-2">
+                      {i === 0 ? (
+                        <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                          <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <span className="text-[11px] font-mono text-white/35 font-medium">
+                          {u.time}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="px-8 py-6 space-y-6">
-          {/* Stat Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              label="Total Users"
-              value={stats.totalUsers.toLocaleString()}
-              icon={Users}
-              delta={growth}
-              deltaLabel="vs last month"
-              iconColor="bg-violet-500/20"
-            />
-            <StatCard
-              label="New This Month"
-              value={stats.newUsersThisMonth}
-              icon={TrendingUp}
-              delta={growth}
-              deltaLabel="vs last month"
-              iconColor="bg-emerald-500/20"
-            />
-            <StatCard
-              label="Total Chats"
-              value={stats.totalChats.toLocaleString()}
-              icon={MessageSquare}
-              iconColor="bg-blue-500/20"
-            />
-            <StatCard
-              label="Pro Users"
-              value={stats.proUsers}
-              icon={Crown}
-              iconColor="bg-amber-500/20"
-            />
-          </div>
-
-          {/* Row 2: Chart + Recent Users */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-            <SignupsChart data={stats.monthlySignups} />
-            <RecentUsers users={stats.recentUsers} />
-          </div>
-
-          {/* Row 3: Secondary stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-violet-500/20">
-                <ShieldCheck className="w-5 h-5 text-violet-300" />
-              </div>
-              <div>
-                <p className="text-[12px] text-white/40">Admin Users</p>
-                <p className="text-[22px] font-bold text-white">
-                  {stats.adminUsers}
-                </p>
-              </div>
+        {/* ============================================================ */}
+        {/* RIGHT MAIN DASHBOARD CONTENT                                 */}
+        {/* ============================================================ */}
+        <div className="flex-1 bg-[#14151b] p-6 lg:p-8 flex flex-col justify-between overflow-y-auto">
+          {/* Top Header: Greeting + Search + Notifications + Profile */}
+          <div className="flex items-center justify-between pb-6 border-b border-white/[0.05]">
+            <div>
+              <h1 className="text-[26px] md:text-[28px] font-bold text-white tracking-tight">
+                Hello, Ronit!
+              </h1>
+              <p className="text-[13px] text-white/35 mt-0.5">
+                Here is your live Wasp AI platform operations overview
+              </p>
             </div>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-red-500/20">
-                <Ban className="w-5 h-5 text-red-400" />
+
+            <div className="flex items-center gap-3">
+              {/* Search */}
+              <div className="relative hidden md:block">
+                <input
+                  type="text"
+                  placeholder="Search accounts or data…"
+                  defaultValue={query}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      router.push(`/admin?query=${encodeURIComponent(val)}`);
+                    }
+                  }}
+                  className="w-56 h-10 rounded-2xl bg-white/[0.04] border border-white/[0.08] px-4 pl-9 text-[13px] text-white placeholder:text-white/25 outline-none focus:border-violet-500/40 focus:bg-white/[0.06] transition-all"
+                />
+                <Search className="w-4 h-4 text-white/30 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-              <div>
-                <p className="text-[12px] text-white/40">Banned Users</p>
-                <p className="text-[22px] font-bold text-white">
-                  {stats.bannedUsers}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-blue-500/20">
-                <MessageSquare className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-[12px] text-white/40">Total Messages</p>
-                <p className="text-[22px] font-bold text-white">
-                  {stats.totalMessages.toLocaleString()}
-                </p>
+
+              {/* Notification Bell */}
+              <button
+                type="button"
+                className="w-10 h-10 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors relative"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="size-2 rounded-full bg-emerald-400 absolute top-2.5 right-2.5 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              </button>
+
+              {/* Profile Avatar */}
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-500 p-[1px] shadow-md">
+                <div className="w-full h-full bg-[#181920] rounded-[15px] flex items-center justify-center font-bold text-[13px] text-white">
+                  R
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Full Users Table */}
-          <UsersTableSection
-            users={users}
-            total={total}
-            page={page}
-            limit={limit}
-            query={query}
-          />
+          {/* ============================================================ */}
+          {/* ROW 1: TOP 3 KPI CARDS (Peak Hours, Total Users, Rating)     */}
+          {/* ============================================================ */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+            {/* CARD 1: Peak Activity Hours */}
+            <div className="bg-[#181922] border border-white/[0.06] rounded-[24px] p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-white/50">
+                  Peak activity hours
+                </span>
+                <ArrowUpRight className="w-4 h-4 text-white/30" />
+              </div>
+              <div className="mt-4">
+                <div className="text-[28px] font-bold text-white tracking-tight flex items-baseline gap-2">
+                  {stats.peakHours.split(" ")[0]}
+                  <span className="text-[13px] font-semibold text-violet-400 bg-violet-500/15 border border-violet-500/20 px-2 py-0.5 rounded-lg">
+                    {stats.peakHours.split(" ")[1] || "PM"}
+                  </span>
+                </div>
+                <p className="text-[12px] text-white/30 mt-1">
+                  Highest AI message traffic window
+                </p>
+              </div>
+            </div>
+
+            {/* CARD 2: Total Users (with +13% and dual-color split bar) */}
+            <div className="bg-[#181922] border border-white/[0.06] rounded-[24px] p-6 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-white/50">
+                  Total users
+                </span>
+                <MoreHorizontal className="w-4 h-4 text-white/30 cursor-pointer" />
+              </div>
+              <div className="mt-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-[34px] font-extrabold text-white tracking-tight leading-none">
+                    {stats.totalUsers}
+                  </span>
+                  <span className="text-[11px] font-semibold bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 px-2.5 py-1 rounded-full flex items-center gap-1">
+                    +13% vs last month
+                  </span>
+                </div>
+
+                {/* Progress bar split */}
+                <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden mt-3 flex">
+                  <div
+                    className="h-full bg-violet-500 rounded-full"
+                    style={{
+                      width: `${Math.max(15, Math.min(85, (stats.proUsers / Math.max(1, stats.totalUsers)) * 100))}%`,
+                    }}
+                  />
+                  <div className="h-full bg-indigo-400/60 rounded-full flex-1 ml-1" />
+                </div>
+
+                {/* Legend dots */}
+                <div className="flex items-center gap-4 mt-2.5 text-[11px] text-white/40">
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-violet-500" />
+                    {stats.proUsers} Pro tier
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-indigo-400/60" />
+                    {stats.freeUsers} Free tier
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: Avg Rating / AI Satisfaction */}
+            <div className="bg-[#181922] border border-white/[0.06] rounded-[24px] p-6 flex flex-col justify-between shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-white/50">
+                  Avg model rating
+                </span>
+                <ArrowUpRight className="w-4 h-4 text-white/30" />
+              </div>
+              <div className="mt-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-[34px] font-extrabold text-amber-400 tracking-tight leading-none flex items-center gap-1.5">
+                    {stats.rating.toFixed(1)}
+                  </span>
+                  <span className="text-[11px] font-semibold bg-amber-500/15 border border-amber-500/25 text-amber-400 px-2.5 py-1 rounded-full">
+                    {stats.totalReviews} reviews
+                  </span>
+                </div>
+                <p className="text-[12px] text-white/30 mt-2">
+                  Multi-model response quality index
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* ROW 2: DUAL CHARTS (Activity Bar Chart + Working Hours Gauge)*/}
+          {/* ============================================================ */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 mt-6">
+            {/* CHART 1: Activity Bar Chart (Jan - Dec) */}
+            <div className="bg-[#181922] border border-white/[0.06] rounded-[24px] p-6 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <span className="text-[16px] font-bold text-white tracking-tight">
+                    User Growth & Activity
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-white/40 bg-white/[0.04] border border-white/[0.07] px-3 py-1 rounded-xl">
+                    Signups ▾
+                  </span>
+                  <span className="text-[11px] text-white/40 bg-white/[0.04] border border-white/[0.07] px-3 py-1 rounded-xl">
+                    Year ▾
+                  </span>
+                </div>
+              </div>
+
+              {/* The 12-Month Vertical Bars */}
+              <div className="flex items-end justify-between gap-2 h-44 pt-6 px-1">
+                {stats.monthlySignups.map((m, i) => {
+                  const barHeightPct = Math.max(
+                    14,
+                    (m.count / maxSignup) * 100,
+                  );
+                  const isHovered = hoveredMonth === i;
+                  return (
+                    <div
+                      key={m.month}
+                      onMouseEnter={() => setHoveredMonth(i)}
+                      className="flex-1 flex flex-col items-center gap-2 group cursor-pointer"
+                    >
+                      <div className="w-full h-32 flex items-end justify-center relative">
+                        {/* Interactive Tooltip above active/hovered bar */}
+                        {isHovered && (
+                          <div className="absolute -top-9 bg-[#23242e] border border-white/20 text-white text-[11px] font-semibold px-2.5 py-1 rounded-xl shadow-xl whitespace-nowrap z-20 animate-in fade-in zoom-in-95">
+                            {m.count} active
+                          </div>
+                        )}
+
+                        {/* Background Track Bar */}
+                        <div className="w-full max-w-[28px] h-full rounded-2xl bg-white/[0.04] flex items-end overflow-hidden p-[2px]">
+                          {/* Filled Bar */}
+                          <div
+                            className={`w-full rounded-xl transition-all duration-300 ${
+                              isHovered
+                                ? "bg-violet-500 shadow-[0_0_16px_rgba(139,92,246,0.6)]"
+                                : "bg-violet-600/40 group-hover:bg-violet-600/70"
+                            }`}
+                            style={{ height: `${barHeightPct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[11px] font-medium transition-colors ${
+                          isHovered ? "text-white font-bold" : "text-white/30"
+                        }`}
+                      >
+                        {m.month}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 text-[12px] text-white/40 pt-2 border-t border-white/[0.04]">
+                <span className="size-2 rounded-full bg-violet-500" />
+                Monthly verified registration volume
+              </div>
+            </div>
+
+            {/* CHART 2: Semi-Circle Workload Gauge ("Working hours" in mockup) */}
+            <div className="bg-[#181922] border border-white/[0.06] rounded-[24px] p-6 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[16px] font-bold text-white tracking-tight">
+                  Working hours
+                </span>
+                <span className="text-[11px] text-white/40 bg-white/[0.04] border border-white/[0.07] px-3 py-1 rounded-xl">
+                  Week ▾
+                </span>
+              </div>
+
+              {/* Gauge Graphic */}
+              <div className="relative flex flex-col items-center justify-center my-3">
+                <svg className="w-52 h-28" viewBox="0 0 200 110">
+                  <title>Working hours gauge</title>
+                  {/* Background Arc */}
+                  <path
+                    d="M 20 100 A 80 80 0 0 1 180 100"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth="18"
+                    strokeLinecap="round"
+                  />
+                  {/* Primary Blue/Violet Arc */}
+                  <path
+                    d="M 20 100 A 80 80 0 0 1 130 30"
+                    fill="none"
+                    stroke="#8b5cf6"
+                    strokeWidth="18"
+                    strokeLinecap="round"
+                  />
+                  {/* Accent Pink/Amber Arc */}
+                  <path
+                    d="M 134 32 A 80 80 0 0 1 176 96"
+                    fill="none"
+                    stroke="#ec4899"
+                    strokeWidth="18"
+                    strokeLinecap="round"
+                  />
+                </svg>
+
+                {/* Center Value */}
+                <div className="absolute bottom-2 text-center">
+                  <span className="text-[34px] font-black text-white leading-none">
+                    {stats.workload.totalHours}
+                  </span>
+                  <p className="text-[11px] font-medium text-white/35 mt-0.5">
+                    Total hours
+                  </p>
+                </div>
+              </div>
+
+              {/* Workload Breakdown */}
+              <div className="space-y-2 mt-2 pt-2 border-t border-white/[0.04]">
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="flex items-center gap-2 text-white/70">
+                    <span className="size-2 rounded-full bg-violet-500" />
+                    AI model chats
+                  </span>
+                  <span className="font-semibold text-white">
+                    {stats.workload.chatReception} hrs
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="flex items-center gap-2 text-white/70">
+                    <span className="size-2 rounded-full bg-indigo-400" />
+                    Document processing
+                  </span>
+                  <span className="font-semibold text-white">
+                    {stats.workload.documentProcessing} hrs
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="flex items-center gap-2 text-white/70">
+                    <span className="size-2 rounded-full bg-pink-500" />
+                    Tool execution
+                  </span>
+                  <span className="font-semibold text-white">
+                    {stats.workload.onlineConsultations} hrs
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* ROW 3: RECENT ACCOUNTS TABLE ("Appointment" section)         */}
+          {/* ============================================================ */}
+          <div className="bg-[#181922] border border-white/[0.06] rounded-[24px] p-6 shadow-sm mt-6">
+            {/* Table Header with Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+              <div>
+                <h3 className="text-[16px] font-bold text-white tracking-tight">
+                  User Accounts & Activity
+                </h3>
+                <p className="text-[12px] text-white/35 mt-0.5">
+                  {total} registered platform users
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-[#20212b] border border-white/[0.08] text-[12px] text-white/70 rounded-xl px-3 py-1.5 outline-none cursor-pointer hover:border-white/20 transition-all"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active Only</option>
+                  <option value="admin">Admins Only</option>
+                  <option value="banned">Banned</option>
+                </select>
+
+                {/* Tier Filter */}
+                <select
+                  value={tierFilter}
+                  onChange={(e) => setTierFilter(e.target.value)}
+                  className="bg-[#20212b] border border-white/[0.08] text-[12px] text-white/70 rounded-xl px-3 py-1.5 outline-none cursor-pointer hover:border-white/20 transition-all"
+                >
+                  <option value="all">All Tiers</option>
+                  <option value="pro">Pro Tier</option>
+                  <option value="free">Free Tier</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/[0.05] text-[11px] uppercase tracking-wider text-white/35 font-semibold">
+                    <th className="pb-3 pl-2">Name</th>
+                    <th className="pb-3 px-4">Status</th>
+                    <th className="pb-3 px-4">Joined Date</th>
+                    <th className="pb-3 px-4">Time</th>
+                    <th className="pb-3 px-4">Verification</th>
+                    <th className="pb-3 pr-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.03]">
+                  {filteredUsers.map((u) => {
+                    const createdDate = u.createdAt
+                      ? new Date(u.createdAt)
+                      : new Date();
+                    return (
+                      <tr
+                        key={u.id}
+                        className="hover:bg-white/[0.02] transition-colors group"
+                      >
+                        {/* Name + Avatar */}
+                        <td className="py-3.5 pl-2">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-9 h-9 rounded-xl border border-white/[0.08]">
+                              <AvatarImage src={getUserAvatar(u) ?? ""} />
+                              <AvatarFallback className="bg-white/10 text-white font-bold text-[11px] rounded-xl">
+                                {u.name?.slice(0, 2).toUpperCase() || "WA"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-[13px] font-semibold text-white group-hover:text-violet-300 transition-colors">
+                                {u.name}
+                              </p>
+                              <p className="text-[11px] text-white/35">
+                                {u.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Status Badges (Blue First visit, Yellow Follow-up, Green Discharge) */}
+                        <td className="py-3.5 px-4">
+                          {u.role === "admin" ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-500/30">
+                              Admin
+                            </span>
+                          ) : u.tier === "pro" ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                              Pro Subscriber
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                              Standard User
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Date */}
+                        <td className="py-3.5 px-4 text-[13px] text-white/60">
+                          {format(createdDate, "MMM d, yyyy")}
+                        </td>
+
+                        {/* Time */}
+                        <td className="py-3.5 px-4 text-[12px] text-white/40 font-mono">
+                          {format(createdDate, "h:mm a")}
+                        </td>
+
+                        {/* Verification (Paid / Pending in mockup) */}
+                        <td className="py-3.5 px-4">
+                          {u.banned ? (
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-rose-400">
+                              <span className="size-1.5 rounded-full bg-rose-400" />
+                              Banned
+                            </span>
+                          ) : u.tier === "pro" || u.role === "admin" ? (
+                            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-400">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              Verified Pro
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[12px] font-medium text-amber-300/80">
+                              <Clock className="w-3.5 h-3.5" />
+                              Active Free
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 pr-2 text-right">
+                          <Link
+                            href={`/admin/users/${u.id}`}
+                            className="inline-flex items-center gap-1 text-[12px] font-medium text-violet-400 hover:text-violet-300 transition-colors bg-white/[0.03] hover:bg-white/[0.08] px-3 py-1.5 rounded-xl border border-white/[0.06]"
+                          >
+                            Details
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 mt-2 border-t border-white/[0.05]">
+                <span className="text-[12px] text-white/35">
+                  Page {page} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  {page > 1 && (
+                    <Link
+                      href={`/admin?page=${page - 1}${query ? `&query=${query}` : ""}`}
+                      className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[12px] text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
+                    >
+                      Previous
+                    </Link>
+                  )}
+                  {page < totalPages && (
+                    <Link
+                      href={`/admin?page=${page + 1}${query ? `&query=${query}` : ""}`}
+                      className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[12px] text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
+                    >
+                      Next
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

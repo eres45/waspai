@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import AdminIndexPage from "@/app/admin/page";
 
-// /admin/users now lives at /admin — redirect for backwards compat
-export default function UsersListRedirect() {
-  redirect("/admin");
-}
+export const dynamic = "force-dynamic";
+
+export default AdminIndexPage;
