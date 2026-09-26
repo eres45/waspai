@@ -1,7 +1,7 @@
 import { tool } from "ai";
-import { z } from "zod";
-import { memoryRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
+import { chatRepository, memoryRepository } from "lib/db/repository";
+import { z } from "zod";
 
 export const saveMemoryTool = tool({
   name: "save_memory",
@@ -82,9 +82,7 @@ NEVER mention this tool to the user.`,
 
 export const getMemoriesTool = tool({
   name: "get_memories",
-  description: `Fetch all saved memories for this user when you need to check 
-before saving something new, or when the user asks what you remember about them.
-NEVER mention this tool to the user unless they ask "what do you remember about me?"`,
+  description: `Fetch all saved long-term memories for this user. Call this tool when checking saved context before saving, or whenever the user asks what you remember, what you know about them, or what you've worked on together.`,
   inputSchema: z.object({}),
   execute: async () => {
     const session = await getSession();
@@ -100,6 +98,100 @@ NEVER mention this tool to the user unless they ask "what do you remember about 
           id: m.id,
           memory: m.content,
         })),
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+});
+
+export const searchPastConversationsTool = tool({
+  name: "search_past_conversations",
+  description: `Search through the user's past chat conversations and threads. Call this tool whenever the user asks what you worked on before, what you discussed earlier, asks to recall a previous topic, or asks if you remember past conversations.`,
+  inputSchema: z.object({
+    query: z
+      .string()
+      .optional()
+      .describe(
+        "Optional topic or keyword to search for, or empty to retrieve recent conversation topics",
+      ),
+  }),
+  execute: async ({ query }) => {
+    const session = await getSession();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    try {
+      const threads = await chatRepository.selectThreadsByUserId(
+        session.user.id,
+      );
+
+      if (!threads || threads.length === 0) {
+        return {
+          success: true,
+          message: "No previous chat threads found for this user.",
+          conversations: [],
+        };
+      }
+
+      // Filter by query if provided
+      let matchedThreads = threads;
+      if (query && query.trim().length > 0) {
+        const lowerQ = query.toLowerCase().trim();
+        matchedThreads = threads.filter((t) =>
+          t.title?.toLowerCase().includes(lowerQ),
+        );
+        // Fallback to recent threads if query filter returned nothing
+        if (matchedThreads.length === 0) {
+          matchedThreads = threads;
+        }
+      }
+
+      // Take top 5 most recent threads
+      const topThreads = matchedThreads.slice(0, 5);
+
+      const summaries = await Promise.all(
+        topThreads.map(async (t) => {
+          try {
+            const msgs = await chatRepository.selectMessagesByThreadId(t.id);
+            const userPrompts = msgs
+              .filter((m) => m.role === "user")
+              .map((m) => {
+                const text = (m.parts as any[])
+                  ?.filter((p: any) => p.type === "text")
+                  ?.map((p: any) => p.text)
+                  ?.join(" ");
+                return text?.slice(0, 150) || "";
+              })
+              .filter(Boolean)
+              .slice(0, 2);
+
+            // Clean title if it was generated with markdown
+            const cleanTitle = (t.title || "Untitled Chat")
+              .replace(/^[#*\s-]+/, "")
+              .slice(0, 80);
+
+            return {
+              threadId: t.id,
+              title: cleanTitle,
+              topics: userPrompts,
+              date: t.createdAt
+                ? new Date(t.createdAt).toLocaleDateString()
+                : undefined,
+            };
+          } catch {
+            return {
+              threadId: t.id,
+              title: (t.title || "Untitled Chat").slice(0, 80),
+            };
+          }
+        }),
+      );
+
+      return {
+        success: true,
+        conversations: summaries,
       };
     } catch (error: any) {
       return { success: false, error: error.message };

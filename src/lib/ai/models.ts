@@ -1,10 +1,10 @@
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { LanguageModel } from "ai";
+import { ChatModel } from "app-types/chat";
 import {
   ANTHROPIC_FILE_MIME_TYPES,
   OPENAI_FILE_MIME_TYPES,
 } from "./file-support";
-import { ChatModel } from "app-types/chat";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 export const MULTIMODAL_WORKER_URL =
   "https://wasp-multimodal-worker.hhhlproxy.workers.dev";
@@ -127,6 +127,7 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     "generate-presentation",
     "save_memory",
     "get_memories",
+    "search_past_conversations",
     "image-manager",
     "web-content",
     "youtube-transcript",
@@ -150,6 +151,7 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     "update_memory",
     "delete_memory",
     "get_memories",
+    "search_past_conversations",
     "create-temp-email",
     "get-temp-email-messages",
     "send-email",

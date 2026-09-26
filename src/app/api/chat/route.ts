@@ -107,6 +107,7 @@ import {
   deleteMemoryTool,
   getMemoriesTool,
   saveMemoryTool,
+  searchPastConversationsTool,
   updateMemoryTool,
 } from "lib/ai/tools/memory-tools";
 import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
@@ -2040,6 +2041,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           update_memory: updateMemoryTool,
           delete_memory: deleteMemoryTool,
           get_memories: getMemoriesTool,
+          search_past_conversations: searchPastConversationsTool,
           // SMS Verification Tools
           "list-sms-numbers": listSmsNumbersTool,
           "get-sms-messages": getSmsMessagesTool,
