@@ -229,7 +229,7 @@ export const searchSkillsTool = tool({
     query: z
       .string()
       .describe(
-        "Search keywords, topic, or domain (e.g. 'youtube', 'competitor', 'code-review', 'seo', 'financial')",
+        "Search keywords, topic, or domain (e.g. 'aeo', 'react', 'seo', 'docker', 'incident', 'finance'). Use 1-3 core keywords for best results.",
       ),
     category: z
       .enum([
@@ -239,6 +239,10 @@ export const searchSkillsTool = tool({
         "writing",
         "research",
         "automation",
+        "security",
+        "devops",
+        "business",
+        "marketing",
         "other",
       ])
       .optional()

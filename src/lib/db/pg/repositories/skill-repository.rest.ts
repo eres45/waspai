@@ -2,15 +2,15 @@
  * Skill repository using Supabase REST API (production)
  */
 
-import { supabaseRest } from "../../supabase-rest";
 import type {
   Skill,
-  SkillSummary,
-  SkillRepository,
-  UserSkill,
   SkillRating,
+  SkillRepository,
+  SkillSummary,
+  UserSkill,
 } from "@/types/skill";
 import { generateUUID } from "lib/utils";
+import { supabaseRest } from "../../supabase-rest";
 
 const mapSkill = (data: any, withContent = false): SkillSummary | Skill => {
   const base: SkillSummary = {
@@ -68,16 +68,107 @@ export const skillRepositoryRest: SkillRepository = {
     if (category) query = query.eq("category", category);
     if (featured !== undefined) query = query.eq("is_featured", featured);
     if (tierRequired) query = query.eq("tier_required", tierRequired);
+
+    let rawSkillsData: any[] = [];
+
     if (search) {
-      query = query.or(
-        `title.ilike.%${search}%,description.ilike.%${search}%,name.ilike.%${search}%`,
+      const cleanSearch = search.trim();
+      const terms = cleanSearch
+        .toLowerCase()
+        .split(/[\s,+/_-]+/)
+        .filter((t) => t.length > 1);
+
+      // 1. Exact phrase search
+      const exactQuery = query.or(
+        `title.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,name.ilike.%${cleanSearch}%`,
       );
+      const { data: exactData, error: exactError } = await exactQuery;
+      if (exactError) throw exactError;
+      rawSkillsData = exactData || [];
+
+      // 2. Tokenized search fallback if fewer results than limit and multiple terms exist
+      if (rawSkillsData.length < limit && terms.length > 0) {
+        const orClauses = terms.flatMap((term) => [
+          `name.ilike.%${term}%`,
+          `title.ilike.%${term}%`,
+          `description.ilike.%${term}%`,
+        ]);
+        let tokenQuery = supabaseRest
+          .from("skill")
+          .select("*")
+          .eq("is_public", true)
+          .neq("name", "skill-creator")
+          .neq("name", "site-creator")
+          .neq("name", "game-creator")
+          .or(orClauses.join(","))
+          .limit(50);
+
+        if (category) tokenQuery = tokenQuery.eq("category", category);
+        const { data: tokenData } = await tokenQuery;
+
+        if (tokenData) {
+          const seen = new Set(rawSkillsData.map((d: any) => d.id));
+          for (const item of tokenData) {
+            if (!seen.has(item.id)) {
+              rawSkillsData.push(item);
+              seen.add(item.id);
+            }
+          }
+        }
+      }
+
+      // 3. Relevance ranking
+      rawSkillsData.sort((a: any, b: any) => {
+        let scoreA = 0;
+        let scoreB = 0;
+        const aName = (a.name || "").toLowerCase();
+        const bName = (b.name || "").toLowerCase();
+        const aTitle = (a.title || "").toLowerCase();
+        const bTitle = (b.title || "").toLowerCase();
+        const aDesc = (a.description || "").toLowerCase();
+        const bDesc = (b.description || "").toLowerCase();
+
+        if (
+          aName === cleanSearch.toLowerCase() ||
+          aTitle === cleanSearch.toLowerCase()
+        )
+          scoreA += 200;
+        if (
+          bName === cleanSearch.toLowerCase() ||
+          bTitle === cleanSearch.toLowerCase()
+        )
+          scoreB += 200;
+
+        for (const term of terms) {
+          if (aName === term) scoreA += 100;
+          if (bName === term) scoreB += 100;
+
+          if (aName.includes(term)) scoreA += 40;
+          if (bName.includes(term)) scoreB += 40;
+
+          if (aTitle.includes(term)) scoreA += 30;
+          if (bTitle.includes(term)) scoreB += 30;
+
+          if (aDesc.includes(term)) scoreA += 10;
+          if (bDesc.includes(term)) scoreB += 10;
+        }
+
+        if (a.is_featured) scoreA += 5;
+        if (b.is_featured) scoreB += 5;
+        scoreA += Math.min(a.install_count || 0, 50);
+        scoreB += Math.min(b.install_count || 0, 50);
+
+        return scoreB - scoreA;
+      });
+
+      rawSkillsData = rawSkillsData.slice(0, limit);
+    } else {
+      const { data, error } = await query;
+      if (error) throw error;
+      rawSkillsData = data || [];
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-
-    let skills = (data || []).map((d: any) => mapSkill(d)) as SkillSummary[];
+    let skills = rawSkillsData.map((d: any) => mapSkill(d)) as SkillSummary[];
 
     // Attach isInstalled flag if userId provided
     if (userId && skills.length > 0) {

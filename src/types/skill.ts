@@ -5,6 +5,10 @@ export type SkillCategory =
   | "writing"
   | "research"
   | "automation"
+  | "security"
+  | "devops"
+  | "business"
+  | "marketing"
   | "other";
 
 export type SkillTier = "free" | "pro" | "max";

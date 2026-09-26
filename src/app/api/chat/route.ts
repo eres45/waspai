@@ -1729,15 +1729,15 @@ CRITICAL INSTRUCTIONS:
           lastMessageText.length > 5
         ) {
           try {
-            // Extract clean search tokens from user query
+            // Extract clean search tokens from user query (support acronyms like AEO, SEO, SRE, etc.)
             const searchTokens = lastMessageText
               .replace(/[^a-zA-Z0-9\s-]/g, " ")
               .split(/\s+/)
-              .filter((w) => w.length > 3)
+              .filter((w) => w.length >= 2)
               .slice(0, 4)
               .join(" ");
 
-            if (searchTokens.length > 3) {
+            if (searchTokens.length >= 2) {
               const matchedSkills = await skillRepository.listSkills({
                 search: searchTokens,
                 limit: 1,
