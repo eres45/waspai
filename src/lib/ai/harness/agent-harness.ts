@@ -306,3 +306,6 @@ export function compactPriorTurnToolInvocations<T extends Record<string, any>>(
     };
   });
 }
+
+// Re-export Hermes Compounding Skill Distiller
+export * from "./skill-distiller";
