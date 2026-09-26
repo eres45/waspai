@@ -1774,9 +1774,9 @@ CRITICAL INSTRUCTIONS:
 
         // Add a block to let the AI know about its Private Skill Vault
         let skillLibraryOverviewPrompt = `\n\n<private_skill_vault>
-You have access to a Private Skill Vault containing specialized operational recipes, tools, and workflows.
-- **On-Demand Discovery**: When you encounter specialized, complex, or domain-specific tasks (e.g., deep research, video scripting, competitor analysis, code reviews, financial analysis, SEO, data transformations), call the \`search_skills\` tool to search your vault of 1,000+ skills by keywords or topic.
-- **On-Demand Loading**: Call the \`load_skill\` tool with a skill slug to retrieve its complete step-by-step procedural recipe, required tools, and failure recovery protocols before executing the task.
+You have access to a Private Autonomous Skill Vault containing over 2,500 specialized production recipes, protocols, and workflows.
+- **Autonomous Retrieval**: You must proactively and automatically use \`search_skills\` and \`load_skill\` whenever the user asks for domain-specific execution, architectural designs, security audits, performance reviews, marketing strategy, SRE incidents, or specialized technical tasks. Do NOT wait for the user to mention "skills" or "vault"—retrieve relevant skills autonomously in the background to inform your answers.
+- **On-Demand Loading**: Call \`load_skill\` with the matching skill slug to pull its complete procedural recipe, checklists, and self-healing protocols into working memory before answering.
 - **Compounding Distillation**: When you successfully complete a novel multi-step workflow, distill it into a reusable skill via \`create_skill\` so your private vault compounds knowledge over time.
 </private_skill_vault>`;
         if (installedSkillsList.length > 0) {
