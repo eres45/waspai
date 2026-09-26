@@ -16,7 +16,6 @@ import { BasicUser } from "app-types/user";
 import { Shortcuts, getShortcutKeyList } from "lib/keyboard-shortcuts";
 import { getIsUserAdmin } from "lib/user/utils";
 import {
-  Blocks,
   FolderOpenIcon,
   FolderSearchIcon,
   PlusIcon,
@@ -104,20 +103,6 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
-        {getIsUserAdmin(user) && (
-          <SidebarMenu>
-            <Tooltip>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild className="font-semibold">
-                  <Link href="/skills">
-                    <Blocks className="size-4" />
-                    Skills Vault (Admin)
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </Tooltip>
-          </SidebarMenu>
-        )}
         {getIsUserAdmin(user) && <AppSidebarAdmin />}
         <SidebarMenu className="group/projects">
           <Tooltip>

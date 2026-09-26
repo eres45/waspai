@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,21 +9,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ScrollArea } from "ui/scroll-area";
-import { toast } from "sonner";
 import {
-  Loader2,
-  Globe,
-  Eye,
-  Copy,
-  Trash2,
-  ExternalLink,
-  Calendar,
-  Search,
   ArrowLeft,
+  Calendar,
+  Copy,
+  ExternalLink,
+  Eye,
+  Globe,
+  Loader2,
+  Search,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Input } from "ui/input";
+import { ScrollArea } from "ui/scroll-area";
 
 interface DeployedSite {
   id: string;
@@ -120,10 +120,10 @@ export default function SitesManagePage() {
           <div>
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <Link
-                href="/skills"
+                href="/"
                 className="hover:text-foreground flex items-center gap-1"
               >
-                <ArrowLeft className="size-3.5" /> Back to Skills
+                <ArrowLeft className="size-3.5" /> Back to Chat
               </Link>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-foreground via-foreground/90 to-foreground/75 bg-clip-text">
