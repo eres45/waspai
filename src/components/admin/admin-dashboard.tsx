@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminUserListItem } from "app-types/admin";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { AdminDashboardStats } from "lib/admin/dashboard";
 import { getUserAvatar } from "lib/user/utils";
 import {
@@ -14,16 +14,11 @@ import {
   ChevronRight,
   Clock,
   ExternalLink,
-  HelpCircle,
   LayoutGrid,
   LogOut,
   MessageSquare,
   MoreHorizontal,
   Search,
-  Settings,
-  Shield,
-  Sparkles,
-  Star,
   Users,
 } from "lucide-react";
 import Link from "next/link";
