@@ -361,4 +361,42 @@ describe("sanitizeMessageToolCalls", () => {
     });
     expect(model).toBeDefined();
   });
+
+  describe("stitchContinuation (Auto-Continuation on Token Limits)", () => {
+    it("stitches partial code block without redundant duplicate fences", () => {
+      const { stitchContinuation } = modelsModule;
+      const prev =
+        "```python\nclass Food:\n    def respawn(self, occupied):\n        free_cells = ";
+      const cont =
+        "```python\n        free_cells = [(x, y) for x in range(self.width)]\n        return free_cells\n```";
+      const result = stitchContinuation(prev, cont);
+
+      expect(result).toBe(
+        "```python\nclass Food:\n    def respawn(self, occupied):\n        free_cells = [(x, y) for x in range(self.width)]\n        return free_cells\n```",
+      );
+    });
+
+    it("handles continuation without unclosed code block", () => {
+      const { stitchContinuation } = modelsModule;
+      const prev = "Here is the summary of the main points:\n1. First item";
+      const cont = "\n2. Second item\n3. Third item";
+      const result = stitchContinuation(prev, cont);
+
+      expect(result).toBe(
+        "Here is the summary of the main points:\n1. First item\n2. Second item\n3. Third item",
+      );
+    });
+
+    it("deduplicates repeated identical last lines", () => {
+      const { stitchContinuation } = modelsModule;
+      const prev = "def calculate_total(items):\n    total_sum = 0";
+      const cont =
+        "    total_sum = 0\n    for item in items:\n        total_sum += item";
+      const result = stitchContinuation(prev, cont);
+
+      expect(result).toBe(
+        "def calculate_total(items):\n    total_sum = 0\n    for item in items:\n        total_sum += item",
+      );
+    });
+  });
 });

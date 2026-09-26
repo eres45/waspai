@@ -2268,7 +2268,6 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                 })(),
               ),
               experimental_transform: smoothStream({ chunking: "word" }),
-              experimental_continueOnLimit: true,
               maxTokens: 8192,
               maxSteps: 15,
               maxRetries: 3,

@@ -410,6 +410,53 @@ function stripToolCallMarkup(text: string): string {
     .trim();
 }
 
+/**
+ * Stitches a continuation response into previous partial content cleanly,
+ * stripping redundant duplicate code fences or overlapping prefix lines.
+ */
+export function stitchContinuation(
+  previousContent: string,
+  continuationText: string,
+): string {
+  if (!continuationText) return previousContent;
+  let cleanCont = continuationText;
+
+  // 1. If previous content has an unclosed code block (odd number of ``` fences)
+  const codeFenceMatches = previousContent.match(/```/g) || [];
+  const insideCodeBlock = codeFenceMatches.length % 2 === 1;
+
+  if (insideCodeBlock) {
+    // If continuation started with redundant opening code fence, strip it
+    cleanCont = cleanCont.replace(/^```[a-zA-Z0-9_-]*\r?\n/, "");
+  }
+
+  // 2. Check if continuation repeats the last line of previousContent
+  const prevLines = previousContent.split("\n");
+  const lastLine = prevLines[prevLines.length - 1].trim();
+  if (lastLine.length > 5) {
+    const contLines = cleanCont.split("\n");
+    const firstContLine = contLines[0].trim();
+    if (firstContLine === lastLine) {
+      cleanCont = contLines.slice(1).join("\n");
+      if (!previousContent.endsWith("\n")) {
+        return `${previousContent}\n${cleanCont}`;
+      }
+    } else if (firstContLine.startsWith(lastLine)) {
+      cleanCont =
+        firstContLine.slice(lastLine.length).trimStart() +
+        "\n" +
+        contLines.slice(1).join("\n");
+    }
+  }
+
+  // If previousContent ends with a trailing space and cleanCont starts with a space, collapse
+  if (previousContent.endsWith(" ") && cleanCont.startsWith(" ")) {
+    cleanCont = cleanCont.trimStart();
+  }
+
+  return previousContent + cleanCont;
+}
+
 function makeToolCallId(index = 0): string {
   // 9 alphanumeric chars (a-zA-Z0-9) satisfies strict Mistral and OpenAI tool_call_id validation
   const rand = Math.random().toString(36).substring(2, 9).padEnd(7, "0");
@@ -1073,7 +1120,7 @@ function createSmartOpenAICompatibleFetch(
           const fallbackBody = {
             ...parsedBodyObj,
             messages: flattenToolMessagesForSynthesis(parsedBodyObj.messages),
-            max_tokens: 1536,
+            max_tokens: 8192,
           };
           delete fallbackBody.tools;
           delete fallbackBody.tool_choice;
@@ -1126,7 +1173,7 @@ function createSmartOpenAICompatibleFetch(
       const content = msg.content || "";
       let toolCalls = msg.tool_calls;
       let effectiveContent = content;
-      const upstreamFinishReason = firstChoice.finish_reason || "stop";
+      let upstreamFinishReason = firstChoice.finish_reason || "stop";
 
       // Normalize tool names and arguments on native tool_calls
       if (Array.isArray(toolCalls) && toolCalls.length > 0) {
@@ -1289,7 +1336,7 @@ function createSmartOpenAICompatibleFetch(
           const synthesisBody = {
             ...parsedBodyObj,
             messages: flattenToolMessagesForSynthesis(parsedBodyObj.messages),
-            max_tokens: 1536,
+            max_tokens: 8192,
           };
           delete synthesisBody.tools;
           delete synthesisBody.tool_choice;
@@ -1323,6 +1370,57 @@ function createSmartOpenAICompatibleFetch(
         } catch (_e) {}
         if (!effectiveContent && reasoning) {
           effectiveContent = reasoning;
+        }
+      }
+
+      // Auto-Continuation on Token Limit Truncation (Hermes / DeepSeek auto-continuation)
+      // If the model truncated mid-generation due to max output token limits (finish_reason === "length"),
+      // seamlessly query the model to continue generation until complete, preventing cutoff code or text.
+      let continuationRounds = 0;
+      const maxContinuationRounds = 3;
+      while (
+        upstreamFinishReason === "length" &&
+        effectiveContent &&
+        (!toolCalls || toolCalls.length === 0) &&
+        continuationRounds < maxContinuationRounds
+      ) {
+        continuationRounds++;
+        try {
+          const continuationMessages = [
+            ...(parsedBodyObj?.messages || []),
+            { role: "assistant", content: effectiveContent },
+            {
+              role: "user",
+              content:
+                "Your previous response was cut off mid-sentence due to output token limits. Please continue immediately from the exact character where you stopped, without repeating any previous text, code, explanation, or markdown fences.",
+            },
+          ];
+          const contBody = {
+            ...parsedBodyObj,
+            messages: continuationMessages,
+            max_tokens: 8192,
+          };
+          delete contBody.tools;
+          delete contBody.tool_choice;
+
+          const contRes = await doFetchWithKeys({
+            ...options,
+            body: JSON.stringify(contBody),
+          });
+          if (contRes.ok) {
+            const contJson = await parseResponseJsonOrSse(contRes);
+            const contChoice = contJson.choices?.[0] || {};
+            const contMsg = contChoice.message || {};
+            const contText = stripToolCallMarkup(contMsg.content || "");
+            if (contText) {
+              effectiveContent = stitchContinuation(effectiveContent, contText);
+            }
+            upstreamFinishReason = contChoice.finish_reason || "stop";
+          } else {
+            break;
+          }
+        } catch (_contErr) {
+          break;
         }
       }
 
