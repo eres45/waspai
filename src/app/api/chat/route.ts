@@ -122,6 +122,7 @@ import {
   getModelContextLimit,
 } from "lib/ai/context-limits";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
+import { createHarnessedToolkit } from "lib/ai/harness/agent-harness";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -2135,7 +2136,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
             );
             const currentIsToolCallAllowed = currentSupportToolCall;
             const currentVercelAITooles = currentIsToolCallAllowed
-              ? vercelAITooles
+              ? createHarnessedToolkit(vercelAITooles, { maxRepetitions: 2 })
               : undefined;
 
             logger.info(
