@@ -1,6 +1,9 @@
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import { hasAdminPermission } from "auth/permissions";
-import { getAdminDashboardStats } from "lib/admin/dashboard";
+import {
+  type AdminDashboardStats,
+  getAdminDashboardStats,
+} from "lib/admin/dashboard";
 import {
   ADMIN_USER_LIST_LIMIT,
   DEFAULT_SORT_BY,
@@ -34,18 +37,31 @@ export default async function AdminIndexPage({ searchParams }: PageProps) {
   const sortBy = params.sortBy ?? DEFAULT_SORT_BY;
   const sortDirection = params.sortDirection ?? DEFAULT_SORT_DIRECTION;
 
-  const [stats, usersResult] = await Promise.all([
-    getAdminDashboardStats(),
-    getAdminUsers({
-      searchValue: params.query,
-      searchField: "email",
-      searchOperator: "contains",
-      limit,
-      offset,
-      sortBy,
-      sortDirection,
-    }),
-  ]);
+  let stats: AdminDashboardStats;
+  let usersResult = { users: [], total: 0 };
+
+  try {
+    const [fetchedStats, fetchedUsers] = await Promise.all([
+      getAdminDashboardStats(),
+      getAdminUsers({
+        searchValue: params.query,
+        searchField: "email",
+        searchOperator: "contains",
+        limit,
+        offset,
+        sortBy,
+        sortDirection,
+      }).catch((err) => {
+        console.error("[admin] Error fetching admin users:", err);
+        return { users: [], total: 0 };
+      }),
+    ]);
+    stats = fetchedStats;
+    usersResult = fetchedUsers;
+  } catch (error) {
+    console.error("[admin] Error loading admin dashboard data:", error);
+    stats = await getAdminDashboardStats();
+  }
 
   return (
     <AdminDashboard

@@ -7,10 +7,14 @@ export default async function AdminLayout({
 }: {
   children: ReactNode;
 }) {
-  const isAdmin = await hasAdminPermission();
-  if (!isAdmin) {
+  try {
+    const isAdmin = await hasAdminPermission();
+    if (!isAdmin) {
+      return <AdminAccessGate />;
+    }
+    return <>{children}</>;
+  } catch (error) {
+    console.error("[admin-layout] Error checking admin permission:", error);
     return <AdminAccessGate />;
   }
-
-  return <>{children}</>;
 }

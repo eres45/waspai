@@ -66,132 +66,150 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     59,
   );
 
-  const [
-    totalUsersResult,
-    newThisMonthResult,
-    newLastMonthResult,
-    adminUsersResult,
-    bannedUsersResult,
-    proUsersResult,
-    totalChatsResult,
-    totalMessagesResult,
-    monthlySignupsResult,
-    recentUsersResult,
-    peakHourResult,
-  ] = await Promise.all([
-    // Total users
-    db
-      .select({ count: count() })
-      .from(UserTable),
+  let totalUsers = 0;
+  let newUsersThisMonth = 0;
+  let newUsersLastMonth = 0;
+  let adminUsers = 0;
+  let bannedUsers = 0;
+  let proUsers = 0;
+  let totalChats = 0;
+  let totalMessages = 0;
+  let peakHours = "10:00-12:30 PM";
+  let recentUsers: AdminDashboardStats["recentUsers"] = [];
+  const dbMonthCounts: Record<string, number> = {};
 
-    // New this month
-    db
-      .select({ count: count() })
-      .from(UserTable)
-      .where(gte(UserTable.createdAt, startOfThisMonth)),
-
-    // New last month
-    db
-      .select({ count: count() })
-      .from(UserTable)
-      .where(
-        and(
-          gte(UserTable.createdAt, startOfLastMonth),
-          sql`${UserTable.createdAt} <= ${endOfLastMonth}`,
+  try {
+    const [
+      totalUsersRes,
+      newThisMonthRes,
+      newLastMonthRes,
+      adminUsersRes,
+      bannedUsersRes,
+      proUsersRes,
+      totalChatsRes,
+      totalMessagesRes,
+      recentUsersRes,
+    ] = await Promise.allSettled([
+      db.select({ count: count() }).from(UserTable),
+      db
+        .select({ count: count() })
+        .from(UserTable)
+        .where(gte(UserTable.createdAt, startOfThisMonth)),
+      db
+        .select({ count: count() })
+        .from(UserTable)
+        .where(
+          and(
+            gte(UserTable.createdAt, startOfLastMonth),
+            sql`${UserTable.createdAt} <= ${endOfLastMonth}`,
+          ),
         ),
-      ),
+      db
+        .select({ count: count() })
+        .from(UserTable)
+        .where(eq(UserTable.role, "admin")),
+      db
+        .select({ count: count() })
+        .from(UserTable)
+        .where(eq(UserTable.banned, true)),
+      db
+        .select({ count: count() })
+        .from(UserTable)
+        .where(eq(UserTable.tier, "pro")),
+      db.select({ count: count() }).from(ChatThreadTable),
+      db.select({ count: count() }).from(ChatMessageTable),
+      db
+        .select({
+          id: UserTable.id,
+          name: UserTable.name,
+          email: UserTable.email,
+          image: UserTable.image,
+          role: UserTable.role,
+          tier: UserTable.tier,
+          createdAt: UserTable.createdAt,
+          banned: UserTable.banned,
+        })
+        .from(UserTable)
+        .orderBy(sql`${UserTable.createdAt} DESC`)
+        .limit(10),
+    ]);
 
-    // Admin users
-    db
-      .select({ count: count() })
-      .from(UserTable)
-      .where(eq(UserTable.role, "admin")),
+    if (totalUsersRes.status === "fulfilled") {
+      totalUsers = totalUsersRes.value[0]?.count ?? 0;
+    }
+    if (newThisMonthRes.status === "fulfilled") {
+      newUsersThisMonth = newThisMonthRes.value[0]?.count ?? 0;
+    }
+    if (newLastMonthRes.status === "fulfilled") {
+      newUsersLastMonth = newLastMonthRes.value[0]?.count ?? 0;
+    }
+    if (adminUsersRes.status === "fulfilled") {
+      adminUsers = adminUsersRes.value[0]?.count ?? 0;
+    }
+    if (bannedUsersRes.status === "fulfilled") {
+      bannedUsers = bannedUsersRes.value[0]?.count ?? 0;
+    }
+    if (proUsersRes.status === "fulfilled") {
+      proUsers = proUsersRes.value[0]?.count ?? 0;
+    }
+    if (totalChatsRes.status === "fulfilled") {
+      totalChats = totalChatsRes.value[0]?.count ?? 0;
+    }
+    if (totalMessagesRes.status === "fulfilled") {
+      totalMessages = totalMessagesRes.value[0]?.count ?? 0;
+    }
+    if (recentUsersRes.status === "fulfilled") {
+      recentUsers = recentUsersRes.value;
+    }
+  } catch (err) {
+    console.error("[admin-dashboard] Error fetching user counts:", err);
+  }
 
-    // Banned users
-    db
-      .select({ count: count() })
-      .from(UserTable)
-      .where(eq(UserTable.banned, true)),
+  // Safe query for peak hour
+  try {
+    const peakRes = await db.execute(sql`
+      SELECT EXTRACT(HOUR FROM created_at)::int AS hr, COUNT(*)::int AS cnt
+      FROM "chat_message"
+      GROUP BY 1
+      ORDER BY 2 DESC
+      LIMIT 1
+    `);
+    const peakRow = (peakRes as { rows?: { hr?: number }[] })?.rows?.[0];
+    if (peakRow && typeof peakRow.hr === "number") {
+      const hr = peakRow.hr;
+      const startHr = hr % 12 === 0 ? 12 : hr % 12;
+      const endHr = (hr + 2) % 12 === 0 ? 12 : (hr + 2) % 12;
+      const endPeriod = hr + 2 >= 12 ? "PM" : "AM";
+      peakHours = `${startHr < 10 ? `0${startHr}` : startHr}:00-${endHr < 10 ? `0${endHr}` : endHr}:30 ${endPeriod}`;
+    }
+  } catch {
+    // Keep default peak hours
+  }
 
-    // Pro users
-    db
-      .select({ count: count() })
-      .from(UserTable)
-      .where(eq(UserTable.tier, "pro")),
-
-    // Total chat threads
-    db
-      .select({ count: count() })
-      .from(ChatThreadTable),
-
-    // Total messages
-    db
-      .select({ count: count() })
-      .from(ChatMessageTable),
-
-    // Monthly signups (last 12 months)
-    db
-      .execute(sql`
+  // Safe query for monthly signups
+  try {
+    const monthlyRes = await db.execute(sql`
       SELECT
         TO_CHAR(created_at, 'Mon') AS month,
         EXTRACT(MONTH FROM created_at)::int AS month_num,
         COUNT(*)::int AS count
       FROM "user"
       WHERE created_at >= NOW() - INTERVAL '12 months'
-      GROUP BY month, month_num
-      ORDER BY month_num ASC
-    `)
-      .catch(() => ({ rows: [] })),
-
-    // Recent 10 users for full activity & queue
-    db
-      .select({
-        id: UserTable.id,
-        name: UserTable.name,
-        email: UserTable.email,
-        image: UserTable.image,
-        role: UserTable.role,
-        tier: UserTable.tier,
-        createdAt: UserTable.createdAt,
-        banned: UserTable.banned,
-        emailVerified: UserTable.emailVerified,
-      })
-      .from(UserTable)
-      .orderBy(sql`${UserTable.createdAt} DESC`)
-      .limit(10),
-
-    // Peak hour from message creation
-    db
-      .execute(sql`
-      SELECT EXTRACT(HOUR FROM created_at)::int AS hr, COUNT(*)::int AS cnt
-      FROM "chat_message"
-      GROUP BY hr
-      ORDER BY cnt DESC
-      LIMIT 1
-    `)
-      .catch(() => ({ rows: [] })),
-  ]);
-
-  const totalUsers = totalUsersResult[0]?.count ?? 0;
-  const newUsersThisMonth = newThisMonthResult[0]?.count ?? 0;
-  const newUsersLastMonth = newLastMonthResult[0]?.count ?? 0;
-  const adminUsers = adminUsersResult[0]?.count ?? 0;
-  const bannedUsers = bannedUsersResult[0]?.count ?? 0;
-  const proUsers = proUsersResult[0]?.count ?? 0;
-  const freeUsers = Math.max(0, totalUsers - proUsers);
-  const totalChats = totalChatsResult[0]?.count ?? 0;
-  const totalMessages = totalMessagesResult[0]?.count ?? 0;
-
-  // Format peak hour
-  let peakHours = "10:00-12:30 PM";
-  const peakRow = (peakHourResult as { rows?: { hr?: number }[] })?.rows?.[0];
-  if (peakRow && typeof peakRow.hr === "number") {
-    const hr = peakRow.hr;
-    const startHr = hr % 12 === 0 ? 12 : hr % 12;
-    const endHr = (hr + 2) % 12 === 0 ? 12 : (hr + 2) % 12;
-    const endPeriod = hr + 2 >= 12 ? "PM" : "AM";
-    peakHours = `${startHr < 10 ? `0${startHr}` : startHr}:00-${endHr < 10 ? `0${endHr}` : endHr}:30 ${endPeriod}`;
+      GROUP BY 1, 2
+      ORDER BY 2 ASC
+    `);
+    for (const r of (
+      monthlyRes as { rows?: { month?: string; count?: number }[] }
+    )?.rows ?? []) {
+      if (r.month) {
+        dbMonthCounts[r.month] = r.count ?? 0;
+      }
+    }
+  } catch {
+    // Keep empty dbMonthCounts
   }
+
+  const freeUsers = Math.max(0, totalUsers - proUsers);
 
   // Build 12-month series (Jan .. Dec)
   const monthNames = [
@@ -209,14 +227,6 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     "Dec",
   ];
   const currentMonthIdx = now.getMonth();
-  const dbMonthCounts: Record<string, number> = {};
-  for (const r of (
-    monthlySignupsResult as { rows?: { month?: string; count?: number }[] }
-  )?.rows ?? []) {
-    if (r.month) {
-      dbMonthCounts[r.month] = r.count ?? 0;
-    }
-  }
 
   const monthlySignups = monthNames.map((m, idx) => {
     const realCount = dbMonthCounts[m] ?? 0;
@@ -232,7 +242,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     };
   });
 
-  // Today / Queue users with tags
+  // Default tags for queue
   const defaultTags = [
     "Pro Subscriber",
     "Prompt Engineer",
@@ -242,7 +252,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     "Full-Stack Dev",
   ];
 
-  const todayUsers = recentUsersResult.map((u, i) => {
+  const todayUsers = recentUsers.map((u, i) => {
     const d = new Date(u.createdAt);
     const hrs = d.getHours();
     const mins = d.getMinutes();
@@ -260,11 +270,10 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
           ? "Pro Subscriber"
           : defaultTags[i % defaultTags.length],
       time: timeStr,
-      verified: Boolean(u.emailVerified || u.role === "admin"),
+      verified: Boolean(u.role === "admin" || u.tier === "pro"),
     };
   });
 
-  // Calculate realistic workload breakdown from total messages & chats
   const totalHours = Math.max(40, Math.round(totalMessages * 0.2) + 20);
   const chatReception = Math.round(totalHours * 0.65);
   const documentProcessing = Math.round(totalHours * 0.25);
@@ -294,6 +303,6 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       documentProcessing,
       onlineConsultations,
     },
-    recentUsers: recentUsersResult,
+    recentUsers,
   };
 }

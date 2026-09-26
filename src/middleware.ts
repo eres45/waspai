@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -40,8 +40,8 @@ export async function middleware(request: NextRequest) {
     return new Response("pong", { status: 200 });
   }
 
-  if (pathname === "/admin") {
-    return NextResponse.redirect(new URL("/admin/users", request.url));
+  if (pathname.startsWith("/admin")) {
+    return NextResponse.next();
   }
 
   if (
