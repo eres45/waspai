@@ -27,11 +27,11 @@ export function AdminAccessGate() {
   const adminCredentials = {
     primary: {
       email: "waspai@admin.in",
-      pass: "ronit@9325296264",
+      pass: "ronit@udita4550",
     },
     secondary: {
       email: "ronit@waspai.in",
-      pass: "ronit@1070576",
+      pass: "ronit@udita4550",
     },
   };
 

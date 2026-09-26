@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 
 // ─── Hardcoded admin credentials (server-only, never sent to client) ──────────
 const ADMIN_CREDENTIALS: Record<string, string> = {
-  "waspai@admin.in": "ronit@9325296264",
-  "ronit@waspai.in": "ronit@1070576",
+  "waspai@admin.in": "ronit@udita4550",
+  "ronit@waspai.in": "ronit@udita4550",
 };
 
 const COOKIE_NAME = "waspai_admin_session";
