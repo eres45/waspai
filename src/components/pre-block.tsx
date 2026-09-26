@@ -13,7 +13,7 @@ import { safe } from "ts-safe";
 import { cn } from "lib/utils";
 import { useTheme } from "next-themes";
 import { Button } from "ui/button";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, Download } from "lucide-react";
 import JsonView from "ui/json-view";
 import { useCopy } from "@/hooks/use-copy";
 import dynamic from "next/dynamic";
@@ -74,26 +74,99 @@ const PurePre = ({
   lang: string;
 }) => {
   const { copied, copy } = useCopy();
+  const [downloaded, setDownloaded] = useState(false);
+
+  const cleanLang = (lang || "").toLowerCase().trim();
+  const isDataOrTabular = cleanLang === "csv" || cleanLang === "tsv";
+
+  const handleDownload = () => {
+    try {
+      const mimeMap: Record<string, string> = {
+        csv: "text/csv;charset=utf-8;",
+        tsv: "text/tab-separated-values;charset=utf-8;",
+        json: "application/json;charset=utf-8;",
+        txt: "text/plain;charset=utf-8;",
+        text: "text/plain;charset=utf-8;",
+        md: "text/markdown;charset=utf-8;",
+        markdown: "text/markdown;charset=utf-8;",
+        html: "text/html;charset=utf-8;",
+        xml: "application/xml;charset=utf-8;",
+        sql: "application/sql;charset=utf-8;",
+        js: "application/javascript;charset=utf-8;",
+        javascript: "application/javascript;charset=utf-8;",
+        ts: "application/typescript;charset=utf-8;",
+        typescript: "application/typescript;charset=utf-8;",
+        py: "text/x-python;charset=utf-8;",
+        python: "text/x-python;charset=utf-8;",
+      };
+      const mimeType = mimeMap[cleanLang] || "text/plain;charset=utf-8;";
+      const ext = cleanLang === "text" ? "txt" : cleanLang || "txt";
+      const blob = new Blob([code], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `data-${Date.now()}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 2000);
+    } catch (err) {
+      console.error("Failed to download file:", err);
+    }
+  };
 
   return (
     <pre className={cn("relative", className)}>
       <div className="p-1.5 border-b mb-4 z-20 bg-secondary">
-        <div className="w-full flex z-20 py-0.5 px-4 items-center">
-          <span className="text-sm text-muted-foreground">{lang}</span>
-          <Button
-            size="icon"
-            variant={copied ? "secondary" : "ghost"}
-            className="ml-auto z-10 h-7 w-7 rounded-sm hover:bg-muted"
-            onClick={() => {
-              copy(code);
-            }}
-          >
-            {copied ? (
-              <CheckIcon className="size-3.5" />
-            ) : (
-              <CopyIcon className="size-3.5" />
-            )}
-          </Button>
+        <div className="w-full flex z-20 py-0.5 px-4 items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground uppercase text-[11px] tracking-wider">
+            {lang}
+          </span>
+          <div className="ml-auto flex items-center gap-1.5 z-10">
+            <Button
+              size={isDataOrTabular ? "sm" : "icon"}
+              variant={downloaded ? "secondary" : "ghost"}
+              className={cn(
+                "h-7 rounded-sm hover:bg-muted text-xs gap-1.5 font-normal",
+                isDataOrTabular ? "px-2" : "w-7",
+              )}
+              onClick={handleDownload}
+              title={`Download as .${cleanLang || "txt"}`}
+            >
+              {downloaded ? (
+                <>
+                  <CheckIcon className="size-3.5 text-green-500" />
+                  {isDataOrTabular && (
+                    <span className="text-[11px]">Downloaded</span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Download className="size-3.5" />
+                  {isDataOrTabular && (
+                    <span className="text-[11px]">Download CSV</span>
+                  )}
+                </>
+              )}
+            </Button>
+            <Button
+              size="icon"
+              variant={copied ? "secondary" : "ghost"}
+              className="h-7 w-7 rounded-sm hover:bg-muted"
+              onClick={() => {
+                copy(code);
+              }}
+              title="Copy code"
+            >
+              {copied ? (
+                <CheckIcon className="size-3.5" />
+              ) : (
+                <CopyIcon className="size-3.5" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 

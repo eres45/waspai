@@ -6,8 +6,8 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { PreBlock } from "./pre-block";
-import { isString, toAny } from "lib/utils";
-import { LinkIcon } from "lucide-react";
+import { cn, isString, toAny } from "lib/utils";
+import { LinkIcon, Download } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -132,7 +132,7 @@ const CANONICAL_SOURCE_URLS: Record<string, { label: string; url: string }> = {
   },
 };
 
-function normalizeMarkdownCitations(raw: string): string {
+export function normalizeMarkdownCitations(raw: string): string {
   if (!raw || typeof raw !== "string") return raw;
   return (
     raw
@@ -168,6 +168,17 @@ function normalizeMarkdownCitations(raw: string): string {
         }
         return "";
       })
+      // Sanitize internal storage proxy and worker URLs into safe local download anchors
+      .replace(
+        /https:\/\/[a-zA-Z0-9-]+\.(?:waspproxy|llamai|rutv|hhhlproxy)\.workers\.dev[^\s)"]*/g,
+        (match) => {
+          const fileMatch = match.match(
+            /([a-zA-Z0-9_.-]+\.(?:csv|tsv|json|txt|pdf|docx|png|jpg|jpeg))/i,
+          );
+          const fname = fileMatch ? fileMatch[1] : "data.csv";
+          return `#download-${fname}`;
+        },
+      )
   );
 }
 
@@ -261,31 +272,149 @@ const components: Partial<Components> = {
     );
   },
   a: ({ node, children, ...props }) => {
-    const href = ((props as any)?.href || "").replace(/[),.;]+$/, "");
+    const rawHref = ((props as any)?.href || "").replace(/[),.;]+$/, "");
+    const isDownloadAction =
+      rawHref.startsWith("#download-") ||
+      rawHref.includes("/file/placeholder") ||
+      rawHref.includes("placeholder") ||
+      ((rawHref.includes("workers.dev") || rawHref.includes("waspproxy")) &&
+        /\.(csv|tsv|json|txt|md)/i.test(rawHref));
+
     let domain = "";
     try {
-      if (href.startsWith("http")) {
-        domain = new URL(href).hostname.replace(/^www\./, "");
+      if (rawHref.startsWith("http") && !isDownloadAction) {
+        domain = new URL(rawHref).hostname.replace(/^www\./, "");
       }
     } catch {}
+
     const rawText = React.Children.toArray(children)
       .map((c) =>
         typeof c === "string" || typeof c === "number" ? String(c) : "",
       )
       .join("")
       .trim();
-    const displayLabel = getCleanDomainLabel(domain, rawText);
+
+    let displayLabel = "";
+    let downloadFilename = "schedule.csv";
+
+    if (isDownloadAction) {
+      if (rawHref.startsWith("#download-")) {
+        downloadFilename = decodeURIComponent(
+          rawHref.replace("#download-", ""),
+        );
+      } else {
+        const match = rawHref.match(
+          /([a-zA-Z0-9_.-]+\.(?:csv|tsv|json|txt|md))/i,
+        );
+        if (match) downloadFilename = match[1];
+      }
+      displayLabel =
+        rawText && rawText.toLowerCase() !== "source"
+          ? rawText
+          : downloadFilename;
+    } else {
+      displayLabel = getCleanDomainLabel(domain, rawText);
+    }
+
+    const handleDownloadClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (!isDownloadAction) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      try {
+        const article = e.currentTarget.closest("article");
+        let fileContent = "";
+
+        if (article) {
+          // 1. Look for pre/code elements containing tabular or CSV data
+          const preElements = article.querySelectorAll("pre");
+          for (const pre of Array.from(preElements)) {
+            const text = pre.textContent || "";
+            if (
+              text.includes(",") ||
+              text.includes("\t") ||
+              text.includes("\n")
+            ) {
+              fileContent = text;
+              break;
+            }
+          }
+
+          if (!fileContent) {
+            const codeElements = article.querySelectorAll("code");
+            for (const code of Array.from(codeElements)) {
+              const text = code.textContent || "";
+              if (text.includes(",") && text.includes("\n")) {
+                fileContent = text;
+                break;
+              }
+            }
+          }
+
+          // 2. Look for HTML table and convert to CSV if no pre/code found
+          if (!fileContent) {
+            const table = article.querySelector("table");
+            if (table) {
+              const rows = Array.from(table.querySelectorAll("tr"));
+              fileContent = rows
+                .map((tr) =>
+                  Array.from(tr.querySelectorAll("th, td"))
+                    .map((cell) => {
+                      const val = (cell.textContent || "").trim();
+                      return `"${val.replace(/"/g, '""')}"`;
+                    })
+                    .join(","),
+                )
+                .join("\n");
+            }
+          }
+
+          // 3. Fallback to article text if needed
+          if (!fileContent) {
+            fileContent = article.textContent || "";
+          }
+        }
+
+        if (fileContent) {
+          const ext = downloadFilename.split(".").pop()?.toLowerCase() || "csv";
+          const mime =
+            ext === "tsv"
+              ? "text/tab-separated-values;charset=utf-8;"
+              : ext === "json"
+                ? "application/json;charset=utf-8;"
+                : "text/csv;charset=utf-8;";
+          const blob = new Blob([fileContent], { type: mime });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = downloadFilename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        console.error("Failed to download CSV from link click:", err);
+      }
+    };
 
     return (
       <a
-        className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full text-[11px] font-medium bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60 transition-colors align-baseline no-underline leading-tight max-w-[180px]"
-        target="_blank"
-        rel="noreferrer"
+        className={cn(
+          "inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full text-[11px] font-medium bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60 transition-colors align-baseline no-underline leading-tight max-w-[200px]",
+          isDownloadAction &&
+            "cursor-pointer hover:border-primary/60 hover:text-primary active:scale-95 font-semibold",
+        )}
+        target={isDownloadAction ? undefined : "_blank"}
+        rel={isDownloadAction ? undefined : "noreferrer"}
         {...toAny(props)}
-        href={href}
-        title={href}
+        href={isDownloadAction ? `#` : rawHref}
+        onClick={isDownloadAction ? handleDownloadClick : undefined}
+        title={isDownloadAction ? `Download ${downloadFilename}` : rawHref}
       >
-        {domain ? (
+        {isDownloadAction ? (
+          <Download className="size-3 shrink-0 text-primary" />
+        ) : domain ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}

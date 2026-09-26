@@ -649,6 +649,7 @@ IMPORTANT: Your internal search context may contain noisy results or orphaned ci
 - NEVER include citations like [1], [2], [n] in your final response.
 - Ensure all words are fully spelled out (e.g., correct "EY" to "HEY", "Stonia" to "Estonia").
 - Do not repeat truncated or broken text from source snippets.
+- NEVER invent, hallucinate, or output fake file download URLs or placeholder links (such as workers.dev, /file/placeholder, or mock storage links). Deliver files ONLY through dedicated tools or clean markdown code blocks.
 - Provide a clean, professional, and natural response as if you performed the research yourself.
 `.trim();
 

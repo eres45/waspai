@@ -1267,10 +1267,14 @@ CRITICAL INSTRUCTIONS:
 
         const isPdfRequest = hasPdfKeywords;
         const pdfPrompt = isPdfRequest
-          ? `SYSTEM OVERRIDE: You contain a specialized "generate-pdf" tool.
-             YOU MUST call the "generate-pdf" tool to create the PDF requested by the user.
-             DO NOT REFUSE. DO NOT say you cannot create PDFs. YOU HAVE THE TOOL.
-             EXECUTE the tool call immediately.`
+          ? supportToolCall
+            ? `SYSTEM OVERRIDE: You contain a specialized "generate-pdf" tool.
+               YOU MUST call the "generate-pdf" tool to create the PDF requested by the user.
+               DO NOT REFUSE. DO NOT say you cannot create PDFs. YOU HAVE THE TOOL.
+               EXECUTE the tool call immediately.
+               CRITICAL: NEVER hallucinate or invent fake download URLs, placeholder links (such as workers.dev, /file/placeholder), or mock links.`
+            : `SYSTEM DIRECTIVE: Output the PDF document content in clean, structured Markdown sections.
+               CRITICAL: NEVER fabricate or hallucinate fake download URLs or placeholder links (such as workers.dev, /file/placeholder). Deliver the content directly in your response.`
           : "";
 
         // Detect Word document generation request from keywords (smart intent + document words)
@@ -1312,10 +1316,14 @@ CRITICAL INSTRUCTIONS:
 
         const isWordRequest = hasWordKeywords;
         const wordPrompt = isWordRequest
-          ? `SYSTEM OVERRIDE: You contain a specialized "generate-word-document" tool.
-             YOU MUST call the "generate-word-document" tool to create the Word file requested by the user.
-             DO NOT REFUSE. DO NOT say you cannot create Word documents. YOU HAVE THE TOOL.
-             EXECUTE the tool call immediately.`
+          ? supportToolCall
+            ? `SYSTEM OVERRIDE: You contain a specialized "generate-word-document" tool.
+               YOU MUST call the "generate-word-document" tool to create the Word file requested by the user.
+               DO NOT REFUSE. DO NOT say you cannot create Word documents. YOU HAVE THE TOOL.
+               EXECUTE the tool call immediately.
+               CRITICAL: NEVER hallucinate or invent fake download URLs, placeholder links (such as workers.dev, /file/placeholder), or mock links.`
+            : `SYSTEM DIRECTIVE: Output the Word document content in clean, structured Markdown sections.
+               CRITICAL: NEVER fabricate or hallucinate fake download URLs or placeholder links (such as workers.dev, /file/placeholder). Deliver the content directly in your response.`
           : "";
 
         // Detect CSV generation request from keywords (smart intent + table/csv words)
@@ -1355,10 +1363,16 @@ CRITICAL INSTRUCTIONS:
 
         const isCsvRequest = hasCsvKeywords;
         const csvPrompt = isCsvRequest
-          ? `SYSTEM OVERRIDE: You contain a specialized "generate-csv" tool.
-             YOU MUST call the "generate-csv" tool to create the CSV file requested by the user.
-             DO NOT REFUSE. DO NOT say you cannot create CSV files. YOU HAVE THE TOOL.
-             EXECUTE the tool call immediately.`
+          ? supportToolCall
+            ? `SYSTEM OVERRIDE: You contain a specialized "generate-csv" tool.
+               YOU MUST call the "generate-csv" tool to create the CSV file requested by the user.
+               DO NOT REFUSE. DO NOT say you cannot create CSV files. YOU HAVE THE TOOL.
+               EXECUTE the tool call immediately.
+               CRITICAL: NEVER hallucinate or invent fake download URLs, placeholder links (such as workers.dev, /file/placeholder), or mock links in your text.`
+            : `SYSTEM DIRECTIVE: Output the requested CSV data completely and accurately inside a standard \`\`\`csv ... \`\`\` markdown code block.
+               CRITICAL:
+               1. NEVER fabricate, hallucinate, or output fake download links or placeholder URLs (such as workers.dev, /file/placeholder, or any mock URL).
+               2. The user interface automatically provides an instant, interactive 1-click "Download CSV" button on all CSV code blocks. Inform the user that they can download the CSV file directly from the code block header.`
           : "";
 
         // Detect text file generation request from keywords (smart intent + text-file words)
@@ -1394,10 +1408,14 @@ CRITICAL INSTRUCTIONS:
 
         const isTextFileRequest = hasTextFileKeywords;
         const textFilePrompt = isTextFileRequest
-          ? `SYSTEM OVERRIDE: You contain a specialized "generate-text-file" tool.
-             YOU MUST call the "generate-text-file" tool to create the text file requested by the user.
-             DO NOT REFUSE. DO NOT say you cannot create text files. YOU HAVE THE TOOL.
-             EXECUTE the tool call immediately.`
+          ? supportToolCall
+            ? `SYSTEM OVERRIDE: You contain a specialized "generate-text-file" tool.
+               YOU MUST call the "generate-text-file" tool to create the text file requested by the user.
+               DO NOT REFUSE. DO NOT say you cannot create text files. YOU HAVE THE TOOL.
+               EXECUTE the tool call immediately.
+               CRITICAL: NEVER hallucinate or invent fake download URLs, placeholder links (such as workers.dev, /file/placeholder), or mock links.`
+            : `SYSTEM DIRECTIVE: Output the text file content cleanly inside a standard code block.
+               CRITICAL: NEVER fabricate or hallucinate fake download URLs or placeholder links (such as workers.dev, /file/placeholder). The interface provides a 1-click download button on all code blocks.`
           : "";
 
         // Detect QR code generation request from keywords
