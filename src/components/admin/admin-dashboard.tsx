@@ -13,7 +13,6 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
-  Settings,
   ShieldCheck,
   TrendingUp,
   Users,
