@@ -1,9 +1,14 @@
 "use client";
 
-import { AdminUserListItem } from "app-types/admin";
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { AdminDashboardStats } from "lib/admin/dashboard";
+import { AdminUserListItem } from "app-types/admin";
 import { getUserAvatar } from "lib/user/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import {
   ArrowUpRight,
   BarChart3,
@@ -27,11 +32,8 @@ import {
   Sun,
   Trash2,
   Users,
+  Zap,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
 export function AdminDashboard({
   stats,
@@ -98,8 +100,8 @@ export function AdminDashboard({
   const totalPages = Math.ceil(total / limit);
 
   // Stepped equalizer ticks for system health
-  const totalTicks = 24;
-  const activeTicks = 22; // 92% health
+  const totalTicks = 26;
+  const activeTicks = 24; // 92% health
 
   // Impression chart bars (6 columns matching reference)
   const impressionBars = [
@@ -112,18 +114,21 @@ export function AdminDashboard({
   ];
 
   return (
-    <div className="w-full min-h-screen bg-[#090a0f] text-[#d6d9e0] font-sans antialiased relative overflow-x-hidden selection:bg-violet-600/30">
-      {/* Background ethereal moonlight haze in top right */}
+    <div className="w-full min-h-screen bg-[#0e0f14] text-[#d6d9e0] font-sans antialiased relative overflow-x-hidden selection:bg-violet-600/30">
+      {/* Background ambient lighting from landing page hero */}
+      <div className="pointer-events-none absolute top-0 inset-x-0 h-[480px] bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,rgba(139,92,246,0.14),transparent_75%)]" />
+
+      {/* Top right ethereal moonlight blur matching uploaded mockup */}
       <div
-        className="pointer-events-none absolute top-[-100px] right-[-50px] w-[750px] h-[550px] rounded-full"
+        className="pointer-events-none absolute top-[-80px] right-[-60px] w-[680px] h-[520px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(139, 92, 246, 0.16) 0%, rgba(99, 102, 241, 0.08) 45%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(167, 139, 250, 0.18) 0%, rgba(99, 102, 241, 0.08) 50%, transparent 70%)",
           filter: "blur(90px)",
         }}
       />
       <div
-        className="pointer-events-none absolute top-[120px] right-[240px] w-[350px] h-[350px] rounded-full"
+        className="pointer-events-none absolute top-[90px] right-[260px] w-[320px] h-[320px] rounded-full"
         style={{
           background:
             "radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 65%)",
@@ -131,25 +136,29 @@ export function AdminDashboard({
         }}
       />
 
-      <div className="flex w-full min-h-screen">
+      <div className="flex w-full min-h-screen relative z-10">
         {/* ============================================================ */}
-        {/* LEFT SIDEBAR (Apex / Wasp AI Style)                          */}
+        {/* LEFT SIDEBAR (Wasp AI Brand & Apex Hierarchy)                */}
         {/* ============================================================ */}
-        <aside className="w-[260px] shrink-0 bg-[#0e1017]/95 border-r border-white/[0.06] flex flex-col justify-between p-5 relative z-10">
+        <aside className="w-[270px] shrink-0 bg-[#12131a]/95 border-r border-white/[0.08] flex flex-col justify-between p-5 backdrop-blur-2xl">
           <div>
-            {/* Brand Header */}
+            {/* Brand Header with official logo */}
             <div className="flex items-center justify-between px-2 py-1 mb-6">
               <Link href="/admin" className="flex items-center gap-3 group">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 p-[1px] shadow-lg">
-                  <div className="w-full h-full bg-[#12131c] rounded-[11px] flex items-center justify-center">
-                    <span className="font-extrabold text-white text-[15px] tracking-tight">
-                      W
-                    </span>
-                  </div>
+                <div className="relative w-8 h-8 rounded-xl overflow-hidden shadow-lg ring-1 ring-white/10 group-hover:ring-violet-500/40 transition-all">
+                  <Image
+                    src="/wasp-ai-logo.png"
+                    alt="Wasp AI Logo"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-                <div>
-                  <span className="font-bold text-[17px] text-white tracking-tight flex items-center gap-1.5">
-                    WaspAI
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-[17px] text-white tracking-tight">
+                    Wasp AI
+                  </span>
+                  <span className="text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded-md">
+                    ADMIN
                   </span>
                 </div>
               </Link>
@@ -168,7 +177,7 @@ export function AdminDashboard({
                 placeholder="Search"
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
-                className="w-full h-9 rounded-xl bg-[#141620] border border-white/[0.07] px-3 pl-8 pr-12 text-[13px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/40 transition-all"
+                className="w-full h-9 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 pl-8 pr-12 text-[13px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 focus:bg-white/[0.05] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
               />
               <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded-md">
@@ -178,7 +187,7 @@ export function AdminDashboard({
 
             {/* Navigation: MAIN */}
             <div className="space-y-1 mb-6">
-              <p className="px-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+              <p className="px-3 text-[11px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2">
                 Main
               </p>
 
@@ -187,7 +196,7 @@ export function AdminDashboard({
                 onClick={() => setActiveNav("dashboard")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
                   activeNav === "dashboard"
-                    ? "bg-[#1d202e] text-white border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
+                    ? "bg-[#1c1e2b] text-white border border-white/[0.1] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.08)]"
                     : "text-white/45 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
@@ -200,7 +209,7 @@ export function AdminDashboard({
                 onClick={() => setActiveNav("users")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
                   activeNav === "users"
-                    ? "bg-[#1d202e] text-white border border-white/[0.08]"
+                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
                     : "text-white/45 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
@@ -213,12 +222,12 @@ export function AdminDashboard({
                 onClick={() => setActiveNav("analytics")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
                   activeNav === "analytics"
-                    ? "bg-[#1d202e] text-white border border-white/[0.08]"
+                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
                     : "text-white/45 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
                 <BarChart3 className="w-4 h-4" />
-                Reporting
+                Reporting & Models
               </button>
 
               <button
@@ -226,7 +235,7 @@ export function AdminDashboard({
                 onClick={() => setActiveNav("calendar")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
                   activeNav === "calendar"
-                    ? "bg-[#1d202e] text-white border border-white/[0.08]"
+                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
                     : "text-white/45 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
@@ -239,18 +248,18 @@ export function AdminDashboard({
                 onClick={() => setActiveNav("projects")}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
                   activeNav === "projects"
-                    ? "bg-[#1d202e] text-white border border-white/[0.08]"
+                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
                     : "text-white/45 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
                 <FolderKanban className="w-4 h-4" />
-                Projects
+                Workflows & Projects
               </button>
             </div>
 
             {/* Navigation: HELP CENTER */}
             <div className="space-y-1">
-              <p className="px-3 text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-2">
+              <p className="px-3 text-[11px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2">
                 Help Center
               </p>
 
@@ -273,7 +282,7 @@ export function AdminDashboard({
           </div>
 
           {/* Bottom Card: "Verify this device" with QR frame */}
-          <div className="mt-6 rounded-2xl bg-[#13151f] border border-white/[0.06] p-4 text-center">
+          <div className="mt-6 rounded-2xl bg-[#161722] border border-white/[0.08] p-4 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
             <p className="text-[13px] font-semibold text-white tracking-tight">
               Verify this device
             </p>
@@ -289,7 +298,6 @@ export function AdminDashboard({
                 fill="currentColor"
               >
                 <title>QR Code</title>
-                {/* Simulated clean QR matrix */}
                 <rect x="10" y="10" width="24" height="24" rx="3" />
                 <rect x="66" y="10" width="24" height="24" rx="3" />
                 <rect x="10" y="66" width="24" height="24" rx="3" />
@@ -314,7 +322,7 @@ export function AdminDashboard({
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[12px] font-medium text-white/50 hover:text-white transition-colors flex items-center justify-center gap-1.5 mx-auto"
+              className="text-[12px] font-medium text-white/50 hover:text-rose-400 transition-colors flex items-center justify-center gap-1.5 mx-auto"
             >
               <LogOut className="w-3.5 h-3.5" />
               Sign out of panel
@@ -323,17 +331,23 @@ export function AdminDashboard({
         </aside>
 
         {/* ============================================================ */}
-        {/* RIGHT MAIN CONTENT AREA                                      */}
+        {/* RIGHT MAIN CONTENT AREA (Apex Layout + Landing Aesthetics)   */}
         {/* ============================================================ */}
         <main className="flex-1 p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto min-h-screen">
           {/* Top Bar: Title + Timeframe Tabs + Theme + Profile */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-[26px] font-bold text-white tracking-tight">
-              Dashboard
-            </h1>
+            <div>
+              <h1 className="text-[26px] md:text-[28px] font-extrabold text-white tracking-tight">
+                Dashboard
+              </h1>
+              <p className="text-[12px] text-white/35 mt-0.5">
+                Overview of Wasp AI multi-model intelligence and platform
+                operations
+              </p>
+            </div>
 
             {/* Timeframe segmented pill [ 12 months | 30 days | 7 days | 24 hours ] */}
-            <div className="flex items-center gap-1 bg-[#12141d] border border-white/[0.07] p-1 rounded-2xl shadow-inner">
+            <div className="flex items-center gap-1 bg-[#151722]/90 border border-white/[0.08] p-1 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]">
               {[
                 { id: "12m", label: "12 months" },
                 { id: "30d", label: "30 days" },
@@ -346,7 +360,7 @@ export function AdminDashboard({
                   onClick={() => setTimeframe(t.id as any)}
                   className={`px-3 py-1.5 rounded-xl text-[12px] font-medium transition-all ${
                     timeframe === t.id
-                      ? "bg-[#1f2230] text-white shadow-sm border border-white/[0.06]"
+                      ? "bg-[#212435] text-white shadow-sm border border-white/[0.08]"
                       : "text-white/40 hover:text-white/80"
                   }`}
                 >
@@ -361,7 +375,7 @@ export function AdminDashboard({
               <button
                 type="button"
                 onClick={() => setIsDark(!isDark)}
-                className="flex items-center gap-1.5 bg-[#12141d] border border-white/[0.07] p-1 rounded-2xl text-white/50"
+                className="flex items-center gap-1 bg-[#151722]/90 border border-white/[0.08] p-1 rounded-2xl text-white/50"
               >
                 <div
                   className={`p-1 rounded-xl ${isDark ? "bg-white/[0.08] text-white" : ""}`}
@@ -378,14 +392,14 @@ export function AdminDashboard({
               {/* Notification Bell */}
               <button
                 type="button"
-                className="w-9 h-9 rounded-xl bg-[#12141d] border border-white/[0.07] flex items-center justify-center text-white/60 hover:text-white relative"
+                className="w-9 h-9 rounded-xl bg-[#151722]/90 border border-white/[0.08] flex items-center justify-center text-white/60 hover:text-white relative"
               >
                 <Bell className="w-4 h-4" />
-                <span className="size-1.5 rounded-full bg-violet-400 absolute top-2 right-2" />
+                <span className="size-1.5 rounded-full bg-violet-400 absolute top-2 right-2 shadow-[0_0_6px_#a78bfa]" />
               </button>
 
               {/* Profile Chip */}
-              <div className="flex items-center gap-2.5 bg-[#12141d] border border-white/[0.07] py-1 pl-2.5 pr-1 rounded-2xl">
+              <div className="flex items-center gap-2.5 bg-[#151722]/90 border border-white/[0.08] py-1 pl-2.5 pr-1 rounded-2xl">
                 <span className="text-[12px] font-semibold text-white">
                   Ronit
                 </span>
@@ -397,7 +411,7 @@ export function AdminDashboard({
               {/* Select dates button */}
               <button
                 type="button"
-                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#12141d] border border-white/[0.07] text-[12px] font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-all"
+                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#151722]/90 border border-white/[0.08] text-[12px] font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-all"
               >
                 <Calendar className="w-3.5 h-3.5 text-white/40" />
                 Select dates
@@ -406,7 +420,7 @@ export function AdminDashboard({
               {/* Filters button */}
               <button
                 type="button"
-                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#12141d] border border-white/[0.07] text-[12px] font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-all"
+                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#151722]/90 border border-white/[0.08] text-[12px] font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-all"
               >
                 <Filter className="w-3.5 h-3.5 text-white/40" />
                 Filters
@@ -419,15 +433,15 @@ export function AdminDashboard({
           {/* ============================================================ */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Card 1: Today's revenue */}
-            <div className="rounded-[22px] bg-[#12141d]/90 border border-white/[0.06] p-5 shadow-sm relative overflow-hidden backdrop-blur-md">
+            <div className="rounded-[22px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] relative overflow-hidden backdrop-blur-xl">
               <span className="text-[12px] font-medium text-white/45">
                 Today&apos;s revenue
               </span>
               <div className="flex items-center justify-between mt-3">
-                <span className="text-[32px] font-extrabold text-white tracking-tight">
+                <span className="text-[32px] font-black text-white tracking-tight">
                   ${Math.max(1280, stats.proUsers * 29).toLocaleString()}
                 </span>
-                <span className="text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
                   <ArrowUpRight className="w-3 h-3" />
                   10%
                 </span>
@@ -435,15 +449,15 @@ export function AdminDashboard({
             </div>
 
             {/* Card 2: Today's orders / Chat Sessions */}
-            <div className="rounded-[22px] bg-[#12141d]/90 border border-white/[0.06] p-5 shadow-sm relative overflow-hidden backdrop-blur-md">
+            <div className="rounded-[22px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] relative overflow-hidden backdrop-blur-xl">
               <span className="text-[12px] font-medium text-white/45">
                 Today&apos;s orders &amp; chats
               </span>
               <div className="flex items-center justify-between mt-3">
-                <span className="text-[32px] font-extrabold text-white tracking-tight">
+                <span className="text-[32px] font-black text-white tracking-tight">
                   {Math.max(140, stats.totalChats).toLocaleString()}
                 </span>
-                <span className="text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
                   <ArrowUpRight className="w-3 h-3" />
                   12%
                 </span>
@@ -451,7 +465,7 @@ export function AdminDashboard({
             </div>
 
             {/* Card 3: Avg. order value */}
-            <div className="rounded-[22px] bg-[#12141d]/90 border border-white/[0.06] p-5 shadow-sm relative overflow-hidden backdrop-blur-md">
+            <div className="rounded-[22px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] relative overflow-hidden backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <span className="text-[12px] font-medium text-white/45">
                   Avg. order value
@@ -459,10 +473,10 @@ export function AdminDashboard({
                 <MoreVertical className="w-3.5 h-3.5 text-white/30 cursor-pointer" />
               </div>
               <div className="flex items-center justify-between mt-3">
-                <span className="text-[32px] font-extrabold text-white tracking-tight">
+                <span className="text-[32px] font-black text-white tracking-tight">
                   $91.42
                 </span>
-                <span className="text-[11px] font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                <span className="text-[11px] font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
                   <ArrowUpRight className="w-3 h-3 rotate-90" />
                   2%
                 </span>
@@ -475,13 +489,13 @@ export function AdminDashboard({
           {/* ============================================================ */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {/* LEFT: Total Revenue Card with Neon Glow Bar (Col 4) */}
-            <div className="lg:col-span-4 rounded-[24px] bg-[#12141d]/90 border border-white/[0.06] p-6 flex flex-col justify-between shadow-sm backdrop-blur-md">
+            <div className="lg:col-span-4 rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-medium text-white/50">
                     Total Revenue
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40">
+                  <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40">
                     <SlidersHorizontal className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -489,13 +503,13 @@ export function AdminDashboard({
                 {/* Big Metric */}
                 <div className="mt-3">
                   <span className="text-[40px] font-black text-white tracking-tight leading-none">
-                    $67K
+                    {revenueToggle === "monthly" ? "$67K" : "$804K"}
                   </span>
                   <div className="flex items-center gap-2 mt-1.5 text-[12px]">
                     <button
                       type="button"
                       onClick={() => setRevenueToggle("monthly")}
-                      className={`font-medium transition-colors ${
+                      className={`font-semibold transition-colors ${
                         revenueToggle === "monthly"
                           ? "text-white"
                           : "text-white/40"
@@ -507,7 +521,7 @@ export function AdminDashboard({
                     <button
                       type="button"
                       onClick={() => setRevenueToggle("yearly")}
-                      className={`font-medium transition-colors ${
+                      className={`font-semibold transition-colors ${
                         revenueToggle === "yearly"
                           ? "text-white"
                           : "text-white/40"
@@ -526,7 +540,7 @@ export function AdminDashboard({
                   </div>
 
                   {/* Outer track */}
-                  <div className="w-full h-3 rounded-full bg-[#1c1f2b] p-[2px] relative overflow-hidden">
+                  <div className="w-full h-3 rounded-full bg-[#1e202d] p-[2px] relative overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-cyan-300 relative shadow-[0_0_14px_rgba(103,232,249,0.8)]"
                       style={{ width: "68%" }}
@@ -544,7 +558,7 @@ export function AdminDashboard({
                 {/* 4-Metrics Sub-grid */}
                 <div className="grid grid-cols-4 gap-2 mt-6 pt-4 border-t border-white/[0.04]">
                   <div>
-                    <p className="text-[10px] text-white/35 uppercase">
+                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
                       Top sales
                     </p>
                     <p className="text-[13px] font-bold text-white mt-0.5">
@@ -552,7 +566,7 @@ export function AdminDashboard({
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-white/35 uppercase">
+                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
                       Workflows
                     </p>
                     <p className="text-[13px] font-bold text-white mt-0.5">
@@ -560,7 +574,7 @@ export function AdminDashboard({
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-white/35 uppercase">
+                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
                       API Calls
                     </p>
                     <p className="text-[13px] font-bold text-white mt-0.5">
@@ -568,7 +582,9 @@ export function AdminDashboard({
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-white/35 uppercase">Tools</p>
+                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
+                      Tools
+                    </p>
                     <p className="text-[13px] font-bold text-white mt-0.5">
                       10K
                     </p>
@@ -580,14 +596,14 @@ export function AdminDashboard({
               <div className="flex gap-2.5 mt-6">
                 <button
                   type="button"
-                  className="flex-1 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.07] text-[12px] font-medium text-white/70 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.07] text-[12px] font-semibold text-white/70 hover:text-white transition-all flex items-center justify-center gap-1.5"
                 >
                   <Download className="w-3.5 h-3.5 text-white/40" />
                   Download
                 </button>
                 <button
                   type="button"
-                  className="flex-1 py-2 rounded-xl bg-[#1d202e] border border-white/[0.08] hover:bg-[#25293b] text-[12px] font-medium text-white transition-all text-center"
+                  className="flex-1 py-2 rounded-xl bg-[#212435] border border-white/[0.08] hover:bg-[#2a2e42] text-[12px] font-semibold text-white transition-all text-center shadow-sm"
                 >
                   Track sales
                 </button>
@@ -597,7 +613,7 @@ export function AdminDashboard({
             {/* CENTER: Customer Rating + User Insight (Col 4) */}
             <div className="lg:col-span-4 flex flex-col gap-5">
               {/* Card 1: Customer Rating with glowing peak waveform */}
-              <div className="rounded-[24px] bg-[#12141d]/90 border border-white/[0.06] p-5 shadow-sm flex flex-col justify-between backdrop-blur-md">
+              <div className="rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] flex flex-col justify-between backdrop-blur-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-medium text-white/50">
                     Customer Rating
@@ -606,7 +622,7 @@ export function AdminDashboard({
 
                 <div className="flex items-center justify-between my-3">
                   <div>
-                    <p className="text-[10px] text-white/35 uppercase tracking-wider">
+                    <p className="text-[10px] text-white/35 uppercase tracking-wider font-bold">
                       Total Rating
                     </p>
                     <div className="flex items-center gap-1.5 mt-1">
@@ -633,7 +649,6 @@ export function AdminDashboard({
                         stroke="#6366f1"
                         strokeWidth="2.5"
                       />
-                      {/* Glowing peak point */}
                       <circle
                         cx="75"
                         cy="5"
@@ -648,19 +663,19 @@ export function AdminDashboard({
 
                 <div className="pt-2 border-t border-white/[0.04] text-[11px] text-white/35 flex items-center justify-between">
                   <span>Total work hours include extra models.</span>
-                  <span className="size-1.5 rounded-full bg-emerald-400" />
+                  <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
                 </div>
               </div>
 
               {/* Card 2: User Insight / Credit score with Stepped LED Equalizer */}
-              <div className="rounded-[24px] bg-[#12141d]/90 border border-white/[0.06] p-5 shadow-sm flex flex-col justify-between backdrop-blur-md">
+              <div className="rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] flex flex-col justify-between backdrop-blur-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] font-medium text-white/50">
                     User insight
                   </span>
                   <button
                     type="button"
-                    className="text-[11px] font-medium text-white/60 bg-white/[0.04] border border-white/[0.07] px-2.5 py-0.5 rounded-lg hover:text-white"
+                    className="text-[11px] font-medium text-white/70 bg-white/[0.04] border border-white/[0.08] px-2.5 py-0.5 rounded-lg hover:text-white transition-colors"
                   >
                     Details
                   </button>
@@ -679,7 +694,7 @@ export function AdminDashboard({
                 </div>
 
                 {/* Stepped LED Equalizer Bar (matching reference) */}
-                <div className="flex items-center gap-1.5 pt-1">
+                <div className="flex items-center gap-1 pt-1">
                   {Array.from({ length: totalTicks }).map((_, i) => (
                     <div
                       key={i}
@@ -695,7 +710,7 @@ export function AdminDashboard({
             </div>
 
             {/* RIGHT: Impressions Overview / 3D Illuminated Glass Bars (Col 4) */}
-            <div className="lg:col-span-4 rounded-[24px] bg-[#12141d]/90 border border-white/[0.06] p-6 flex flex-col justify-between shadow-sm backdrop-blur-md">
+            <div className="lg:col-span-4 rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[13px] font-medium text-white/50">
@@ -703,7 +718,7 @@ export function AdminDashboard({
                   </span>
                   <button
                     type="button"
-                    className="text-[11px] font-medium text-violet-400 hover:text-violet-300 transition-colors"
+                    className="text-[11px] font-semibold text-violet-400 hover:text-violet-300 transition-colors"
                   >
                     See All
                   </button>
@@ -711,10 +726,11 @@ export function AdminDashboard({
 
                 {/* Account & Impression Header */}
                 <div className="mt-1">
-                  <p className="text-[10px] text-white/35 uppercase font-mono">
+                  <p className="text-[10px] text-white/35 uppercase font-mono font-semibold tracking-wider flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 text-violet-400" />
                     WASP AI CORE ENGINE
                   </p>
-                  <p className="text-[26px] font-extrabold text-white tracking-tight mt-0.5">
+                  <p className="text-[26px] font-black text-white tracking-tight mt-0.5">
                     $440,364.20
                   </p>
                 </div>
@@ -728,7 +744,7 @@ export function AdminDashboard({
                       onClick={() => setChartRange(r)}
                       className={`px-2.5 py-0.5 rounded-lg font-medium transition-all ${
                         chartRange === r
-                          ? "bg-white/[0.1] text-white font-bold"
+                          ? "bg-white/[0.12] text-white font-bold shadow-sm"
                           : "text-white/35 hover:text-white/70"
                       }`}
                     >
@@ -746,19 +762,19 @@ export function AdminDashboard({
                     >
                       <div className="w-full h-28 flex items-end justify-center relative">
                         {/* Tooltip on hover */}
-                        <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1e202d] border border-white/20 text-white text-[10px] px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
+                        <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-[#212435] border border-white/20 text-white text-[10px] px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
                           {b.val}
                         </div>
                         {/* Glass bar column */}
                         <div
-                          className="w-full max-w-[20px] rounded-t-lg bg-gradient-to-t from-indigo-950 via-indigo-600/50 to-white/90 shadow-[0_0_12px_rgba(99,102,241,0.6)] group-hover:shadow-[0_0_18px_rgba(139,92,246,0.9)] transition-all relative overflow-hidden"
+                          className="w-full max-w-[20px] rounded-t-lg bg-gradient-to-t from-indigo-950/80 via-indigo-600/50 to-white/95 shadow-[0_0_12px_rgba(99,102,241,0.6)] group-hover:shadow-[0_0_18px_rgba(139,92,246,0.9)] transition-all relative overflow-hidden"
                           style={{ height: b.height }}
                         >
                           {/* Illuminated top highlight */}
                           <div className="absolute top-0 inset-x-0 h-1.5 bg-white shadow-[0_0_8px_#ffffff]" />
                         </div>
                       </div>
-                      <span className="text-[10px] text-white/30 font-medium">
+                      <span className="text-[10px] text-white/35 font-medium">
                         {b.label}
                       </span>
                     </div>
@@ -767,7 +783,7 @@ export function AdminDashboard({
               </div>
 
               <div className="pt-3 border-t border-white/[0.04] text-[11px] text-white/35 flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-violet-400" />
+                <span className="size-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#a78bfa]" />
                 Discover the impressions of your audience.
               </div>
             </div>
@@ -776,12 +792,12 @@ export function AdminDashboard({
           {/* ============================================================ */}
           {/* ROW 3: EMPLOYEES & USERS TABLE (Bottom Card)                 */}
           {/* ============================================================ */}
-          <div className="rounded-[24px] bg-[#12141d]/90 border border-white/[0.06] p-6 shadow-sm backdrop-blur-md">
+          <div className="rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
             {/* Header + Search bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
               <div>
                 <h3 className="text-[17px] font-bold text-white tracking-tight">
-                  Employees & Platform Users
+                  Employees &amp; Platform Users
                 </h3>
                 <p className="text-[12px] text-white/35 mt-0.5">
                   {total} registered accounts
@@ -795,7 +811,7 @@ export function AdminDashboard({
                   placeholder="Search"
                   value={tableSearch}
                   onChange={(e) => setTableSearch(e.target.value)}
-                  className="w-60 h-9 rounded-xl bg-[#171923] border border-white/[0.07] px-3 pl-8 pr-10 text-[12px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/40 transition-all"
+                  className="w-60 h-9 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 pl-8 pr-10 text-[12px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 focus:bg-white/[0.05] transition-all"
                 />
                 <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30">
@@ -896,17 +912,17 @@ export function AdminDashboard({
                             </span>
                           ) : u.role === "admin" ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-500/25">
-                              <span className="size-1.5 rounded-full bg-violet-400" />
+                              <span className="size-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#a78bfa]" />
                               Admin
                             </span>
                           ) : u.tier === "pro" ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <span className="size-1.5 rounded-full bg-emerald-400" />
+                              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
                               Paid
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                              <span className="size-1.5 rounded-full bg-amber-400" />
+                              <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
                               Free
                             </span>
                           )}
