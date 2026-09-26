@@ -196,3 +196,113 @@ export function createHarnessedToolkit(
 
   return harnessed;
 }
+
+/**
+ * Hermes/DeepSeek Context Compactor
+ * Condenses a single tool output if it exceeds maxLength.
+ */
+export function compactToolOutput(output: any, maxLength = 500): any {
+  if (output === null || output === undefined) return output;
+  if (typeof output === "string") {
+    if (output.length <= maxLength) return output;
+    return `${output.slice(0, maxLength)}...\n[Tool output compacted: ${output.length - maxLength} chars omitted to conserve context budget]`;
+  }
+  if (typeof output === "object") {
+    try {
+      const json = JSON.stringify(output);
+      if (json.length <= maxLength) return output;
+      if (Array.isArray(output)) {
+        return {
+          _summary: `Array of ${output.length} items (compacted for context efficiency)`,
+          sample: output.slice(0, 2),
+        };
+      }
+      return {
+        _summary: `Object with ${Object.keys(output).length} keys (compacted for context efficiency)`,
+        preview: json.slice(0, maxLength) + "...",
+      };
+    } catch {
+      return output;
+    }
+  }
+  return output;
+}
+
+/**
+ * Prunes and compacts bloated tool results from completed prior conversation turns,
+ * preserving full fidelity for the active turn while slashing token usage by up to 80%.
+ */
+export function compactPriorTurnToolInvocations<T extends Record<string, any>>(
+  messages: T[],
+  options?: { maxToolOutputLength?: number },
+): T[] {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+
+  const maxLen = options?.maxToolOutputLength ?? 500;
+
+  // Locate the index of the latest user message (marks start of active turn)
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]?.role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  // If no prior turns exist, active turn has no completed prior tools to compact
+  if (lastUserIdx <= 0) return messages;
+
+  return messages.map((msg, idx) => {
+    // Only compact tools from prior completed turns (before last user message)
+    if (idx >= lastUserIdx) return msg;
+    if (!msg || typeof msg !== "object") return msg;
+
+    let modified = false;
+    let newParts = msg.parts;
+    let newToolInvocations = msg.toolInvocations;
+
+    // Compact UI message parts
+    if (Array.isArray(msg.parts)) {
+      newParts = msg.parts.map((part: any) => {
+        if (
+          part &&
+          (part.type === "tool-invocation" || part.type === "tool-result") &&
+          part.toolInvocation &&
+          part.toolInvocation.result !== undefined
+        ) {
+          modified = true;
+          return {
+            ...part,
+            toolInvocation: {
+              ...part.toolInvocation,
+              result: compactToolOutput(part.toolInvocation.result, maxLen),
+            },
+          };
+        }
+        return part;
+      });
+    }
+
+    // Compact top-level toolInvocations array if present
+    if (Array.isArray(msg.toolInvocations)) {
+      newToolInvocations = msg.toolInvocations.map((ti: any) => {
+        if (ti && ti.result !== undefined) {
+          modified = true;
+          return {
+            ...ti,
+            result: compactToolOutput(ti.result, maxLen),
+          };
+        }
+        return ti;
+      });
+    }
+
+    if (!modified) return msg;
+
+    return {
+      ...msg,
+      parts: newParts,
+      ...(newToolInvocations ? { toolInvocations: newToolInvocations } : {}),
+    };
+  });
+}

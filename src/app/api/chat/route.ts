@@ -122,7 +122,10 @@ import {
   getModelContextLimit,
 } from "lib/ai/context-limits";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
-import { createHarnessedToolkit } from "lib/ai/harness/agent-harness";
+import {
+  createHarnessedToolkit,
+  compactPriorTurnToolInvocations,
+} from "lib/ai/harness/agent-harness";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -2219,9 +2222,13 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
 
                   const finalMessages = [...historyMessages, currentMessage];
 
+                  // 3.4. Compact bloated tool results from prior completed turns (Hermes/DeepSeek context optimization)
+                  const compactedMessages =
+                    compactPriorTurnToolInvocations(finalMessages);
+
                   // 3.5. Sanitize tool call arguments to be valid JSON objects for strict providers (like Sarvam)
                   const sanitizedMessages =
-                    sanitizeMessageToolCalls(finalMessages);
+                    sanitizeMessageToolCalls(compactedMessages);
 
                   // 3.6. Filter out unsupported file types from all messages in the context
                   // to prevent model API errors (e.g. sending PDF/DOCX to non-supporting vision models)

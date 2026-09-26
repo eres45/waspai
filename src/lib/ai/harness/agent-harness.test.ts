@@ -3,6 +3,8 @@ import {
   ActionCircuitBreaker,
   executeWithReflectiveEnvelope,
   createHarnessedToolkit,
+  compactToolOutput,
+  compactPriorTurnToolInvocations,
 } from "./agent-harness";
 
 describe("ActionCircuitBreaker (Hermes-inspired)", () => {
@@ -153,5 +155,83 @@ describe("createHarnessedToolkit", () => {
     const harnessed = createHarnessedToolkit(tools);
 
     expect(harnessed["client-tool"]).toBe(clientTool);
+  });
+});
+
+describe("Context Compaction (Hermes/DeepSeek-inspired)", () => {
+  it("compactToolOutput truncates strings longer than maxLength", () => {
+    const longString = "A".repeat(1000);
+    const compacted = compactToolOutput(longString, 100);
+
+    expect(compacted.length).toBeLessThan(longString.length);
+    expect(compacted).toContain("[Tool output compacted:");
+    expect(compacted).toContain("900 chars omitted");
+  });
+
+  it("compactToolOutput summarizes large arrays", () => {
+    const largeArray = Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      name: `item-${i}`,
+    }));
+    const compacted = compactToolOutput(largeArray, 50);
+
+    expect(compacted._summary).toContain("Array of 20 items");
+    expect(compacted.sample.length).toBe(2);
+  });
+
+  it("compactPriorTurnToolInvocations preserves active turn while compacting prior turns", () => {
+    const messages = [
+      {
+        id: "msg-1",
+        role: "user",
+        parts: [{ type: "text", text: "Question 1" }],
+      },
+      {
+        id: "msg-2",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-invocation",
+            toolInvocation: {
+              toolName: "web-search",
+              args: { q: "old query" },
+              result: "Old very long search result ".repeat(50),
+            },
+          },
+        ],
+      },
+      {
+        id: "msg-3",
+        role: "user",
+        parts: [{ type: "text", text: "Question 2 (Active Turn)" }],
+      },
+      {
+        id: "msg-4",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-invocation",
+            toolInvocation: {
+              toolName: "web-search",
+              args: { q: "active query" },
+              result: "Active fresh result ".repeat(50),
+            },
+          },
+        ],
+      },
+    ];
+
+    const result = compactPriorTurnToolInvocations(messages, {
+      maxToolOutputLength: 100,
+    });
+
+    // Prior turn (msg-2) should be compacted
+    const priorResult = (result[1].parts[0] as any).toolInvocation.result;
+    expect(priorResult).toContain("[Tool output compacted:");
+
+    // Active turn (msg-4) should NOT be compacted (100% full fresh data)
+    const activeResult = (result[3].parts[0] as any).toolInvocation.result;
+    expect(activeResult).not.toContain("[Tool output compacted:");
+    expect(activeResult).toEqual("Active fresh result ".repeat(50));
   });
 });
