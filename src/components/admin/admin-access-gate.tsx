@@ -1,5 +1,7 @@
 "use client";
 
+import { Threads } from "@/components/landing/threads";
+import { LiquidMetalButton } from "@/components/ui/liquid-metal";
 import {
   AlertCircle,
   ArrowRight,
@@ -7,9 +9,6 @@ import {
   Copy,
   Eye,
   EyeOff,
-  KeyRound,
-  Layers,
-  Shield,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -38,322 +37,354 @@ export function AdminAccessGate() {
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+    setTimeout(() => setCopiedField(null), 1800);
   };
 
-  const autoFill = (pair: { email: string; pass: string }) => {
-    setEmail(pair.email);
-    setPassword(pair.pass);
+  const autoFill = () => {
+    setEmail(adminCredentials.primary.email);
+    setPassword(adminCredentials.primary.pass);
     setError("");
   };
 
-  async function handleLogin(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Please provide both Admin ID and Password");
+      setError("Please enter both email and password.");
       return;
     }
-
-    setError("");
     setLoading(true);
-
+    setError("");
     try {
       const res = await fetch("/api/admin-panel/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email, password }),
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Invalid Admin Credentials");
-        setLoading(false);
-        return;
+      if (res.ok && data.success) {
+        setSuccess(true);
+        setTimeout(() => window.location.reload(), 900);
+      } else {
+        setError(data.error || "Invalid credentials. Access denied.");
       }
-
-      setSuccess(true);
-      // Refresh page so server component layout detects the authenticated admin session
-      setTimeout(() => {
-        window.location.reload();
-      }, 700);
     } catch {
       setError("Network error. Please try again.");
+    } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] w-full flex items-center justify-center p-4 md:p-8 overflow-hidden bg-background">
-      {/* Background Landing-Page Grid & Glow Accents */}
+    <div className="relative w-full min-h-screen bg-[#161618] flex items-center justify-center overflow-hidden">
+      {/* WebGL Threads — same as landing hero */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <Threads amplitude={1} distance={0} enableMouseInteraction />
+      </div>
+
+      {/* Ambient glow orbs */}
       <div
-        className="absolute inset-0 z-0 opacity-20 pointer-events-none"
+        className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full pointer-events-none"
         style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px)",
-          backgroundSize: "36px 36px",
+          background:
+            "radial-gradient(ellipse at center, rgba(139,92,246,0.12) 0%, transparent 70%)",
+          filter: "blur(60px)",
         }}
       />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-gradient-to-tr from-purple-600/20 via-primary/25 to-blue-500/20 blur-[130px] rounded-full pointer-events-none z-0" />
-      <div className="absolute bottom-10 right-10 w-[300px] h-[300px] bg-amber-500/10 blur-[100px] rounded-full pointer-events-none z-0" />
+      <div
+        className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(251,191,36,0.07) 0%, transparent 70%)",
+          filter: "blur(80px)",
+        }}
+      />
 
-      {/* Floating Corner Credentials Badge (Desktop View) */}
-      <div className="hidden lg:block absolute top-8 right-8 z-20 w-80 rounded-2xl border border-white/10 bg-card/60 backdrop-blur-xl p-4 shadow-2xl transition hover:border-white/20">
-        <div className="flex items-center gap-2 mb-2.5">
-          <div className="p-1 rounded-md bg-primary/20 text-primary">
-            <KeyRound className="size-3.5" />
+      {/* Credential quick-reference card — top right */}
+      <div className="absolute top-6 right-6 z-20 w-[260px] hidden md:block">
+        <div
+          className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md p-4"
+          style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.04) inset" }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold tracking-[0.15em] text-white/40 uppercase">
+              Admin Credentials
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Active
+            </span>
           </div>
-          <span className="text-xs font-semibold tracking-wide uppercase text-foreground">
-            Admin Credentials
-          </span>
-          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono">
-            Active
-          </span>
-        </div>
 
-        <div className="space-y-2 text-xs">
-          <div className="p-2 rounded-lg bg-background/60 border border-border/40 flex items-center justify-between gap-2">
-            <div className="truncate">
-              <span className="text-muted-foreground block text-[10px]">
-                ID:
-              </span>
-              <span className="font-mono text-foreground select-all">
+          {/* Email row */}
+          <div className="mb-2">
+            <p className="text-[10px] text-white/30 mb-1 uppercase tracking-wider">
+              Email
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-[12px] text-white/80 font-mono truncate">
                 {adminCredentials.primary.email}
-              </span>
+              </code>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(adminCredentials.primary.email, "email")
+                }
+                className="shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors text-white/40 hover:text-white/80"
+              >
+                {copiedField === "email" ? (
+                  <Check className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                copyToClipboard(adminCredentials.primary.email, "corner-email")
-              }
-              className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition"
-              title="Copy ID"
-            >
-              {copiedField === "corner-email" ? (
-                <Check className="size-3.5 text-emerald-400" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
-            </button>
           </div>
 
-          <div className="p-2 rounded-lg bg-background/60 border border-border/40 flex items-center justify-between gap-2">
-            <div className="truncate">
-              <span className="text-muted-foreground block text-[10px]">
-                PASS:
-              </span>
-              <span className="font-mono text-foreground select-all">
+          {/* Password row */}
+          <div className="mb-3">
+            <p className="text-[10px] text-white/30 mb-1 uppercase tracking-wider">
+              Pass
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-[12px] text-white/80 font-mono truncate">
                 {adminCredentials.primary.pass}
-              </span>
+              </code>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(adminCredentials.primary.pass, "pass")
+                }
+                className="shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors text-white/40 hover:text-white/80"
+              >
+                {copiedField === "pass" ? (
+                  <Check className="w-3 h-3 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3 h-3" />
+                )}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                copyToClipboard(adminCredentials.primary.pass, "corner-pass")
-              }
-              className="p-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition"
-              title="Copy Password"
-            >
-              {copiedField === "corner-pass" ? (
-                <Check className="size-3.5 text-emerald-400" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
-            </button>
           </div>
 
+          {/* Auto-fill button */}
           <button
             type="button"
-            onClick={() => autoFill(adminCredentials.primary)}
-            className="w-full mt-2 py-1.5 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium flex items-center justify-center gap-1.5 transition"
+            onClick={autoFill}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] transition-colors py-2 text-[12px] font-medium text-white/60 hover:text-white"
           >
-            <Sparkles className="size-3.5" /> Auto-Fill Credentials
+            <Sparkles className="w-3 h-3" />
+            Auto-Fill Credentials
           </button>
         </div>
       </div>
 
-      {/* Main Glassmorphic Access Card */}
-      <div className="relative z-10 w-full max-w-md">
-        {/* Glow Border Frame */}
-        <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-white/20 via-white/5 to-transparent shadow-2xl">
-          <div className="rounded-3xl bg-card/80 backdrop-blur-2xl p-6 sm:p-8 border border-white/10 relative overflow-hidden">
-            {/* Header */}
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="size-12 rounded-2xl bg-gradient-to-tr from-primary via-purple-500 to-blue-500 p-[1px] mb-4 shadow-lg shadow-primary/25">
-                <div className="size-full rounded-2xl bg-background flex items-center justify-center">
-                  <Shield className="size-6 text-primary" />
-                </div>
-              </div>
+      {/* Main card */}
+      <div className="relative z-10 w-full max-w-sm mx-auto px-6">
+        {/* Top badge */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 text-[13px] font-medium text-white/60 backdrop-blur-md shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]">
+            <span className="size-1.5 rounded-full bg-white/40 shadow-[0_0_6px_2px_rgba(255,255,255,0.2)] animate-pulse" />
+            Admin Protected Portal
+          </div>
+        </div>
 
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-semibold uppercase tracking-wider mb-2">
-                <ShieldCheck className="size-3" /> Admin Protected Portal
-              </div>
+        {/* Headline — landing page style gradient text */}
+        <h1
+          className="text-center font-extrabold leading-[1.04] tracking-[-0.03em] mb-3"
+          style={{ fontSize: "clamp(32px, 6vw, 52px)" }}
+        >
+          <span
+            style={{
+              display: "block",
+              background:
+                "linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.82) 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              filter: "drop-shadow(0 2px 24px rgba(255,255,255,0.08))",
+            }}
+          >
+            Authorize
+          </span>
+          <span
+            style={{
+              display: "block",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Admin Access
+          </span>
+        </h1>
 
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                Authorize Admin Access
-              </h1>
-              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                Enter your administrative credentials to manage system users and
-                platform operations.
-              </p>
-            </div>
+        <p className="text-center text-[14px] text-white/35 mb-8 leading-relaxed">
+          Enter your administrator credentials to manage system users and
+          platform operations.
+        </p>
 
-            {/* Mobile / Tablet Credentials Accordion */}
-            <div className="lg:hidden mb-6 p-3 rounded-xl bg-background/60 border border-border/50 text-xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-foreground flex items-center gap-1.5">
-                  <KeyRound className="size-3 text-primary" /> Quick
-                  Credentials:
-                </span>
+        {/* Form card */}
+        <div
+          className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-6"
+          style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03) inset" }}
+        >
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[12px] font-medium text-white/50 uppercase tracking-wider">
+                  Admin ID / Email
+                </label>
                 <button
                   type="button"
-                  onClick={() => autoFill(adminCredentials.primary)}
-                  className="text-primary text-[11px] hover:underline font-medium"
+                  onClick={() => setEmail(adminCredentials.primary.email)}
+                  className="text-[11px] text-white/30 hover:text-white/60 transition-colors"
                 >
-                  Auto-Fill
+                  Use default
                 </button>
               </div>
-              <div className="font-mono text-[11px] text-muted-foreground space-y-1">
-                <div className="flex justify-between items-center">
-                  <span>
-                    ID:{" "}
-                    <strong className="text-foreground">
-                      {adminCredentials.primary.email}
-                    </strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      copyToClipboard(
-                        adminCredentials.primary.email,
-                        "mob-email",
-                      )
-                    }
-                    className="p-1 text-muted-foreground hover:text-foreground"
-                  >
-                    {copiedField === "mob-email" ? (
-                      <Check className="size-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                  </button>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>
-                    Pass:{" "}
-                    <strong className="text-foreground">
-                      {adminCredentials.primary.pass}
-                    </strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      copyToClipboard(adminCredentials.primary.pass, "mob-pass")
-                    }
-                    className="p-1 text-muted-foreground hover:text-foreground"
-                  >
-                    {copiedField === "mob-pass" ? (
-                      <Check className="size-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="size-3" />
-                    )}
-                  </button>
-                </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={adminCredentials.primary.email}
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-[14px] text-white placeholder:text-white/20 outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all"
+                autoComplete="email"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-[12px] font-medium text-white/50 uppercase tracking-wider mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="············"
+                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 pr-12 text-[14px] text-white placeholder:text-white/20 outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* Error */}
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 animate-in fade-in">
-                <AlertCircle className="size-4 shrink-0" />
-                <span>{error}</span>
+              <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <p className="text-[13px] text-red-300">{error}</p>
               </div>
             )}
 
-            {/* Success Message */}
-            {success && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2 animate-in fade-in">
-                <Check className="size-4 shrink-0" />
-                <span>Access Granted! Redirecting to user panel...</span>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground flex items-center justify-between">
-                  <span>Admin ID / Email</span>
-                  <button
-                    type="button"
-                    onClick={() => autoFill(adminCredentials.primary)}
-                    className="text-[11px] text-muted-foreground hover:text-primary transition"
-                  >
-                    Use default
-                  </button>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="waspai@admin.in"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background/80 border border-border/70 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
-                  />
+            {/* Submit */}
+            <div className="pt-1">
+              {success ? (
+                <div className="flex items-center justify-center gap-2 w-full rounded-full py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium text-[14px]">
+                  <ShieldCheck className="w-4 h-4" />
+                  Access Granted · Redirecting…
                 </div>
-              </div>
+              ) : (
+                <LiquidMetalButton
+                  type="submit"
+                  disabled={loading}
+                  size="md"
+                  icon={<ArrowRight className="w-5 h-5" />}
+                  metalConfig={{
+                    colorBack: "#555555",
+                    colorTint: "#ffffff",
+                    distortion: 0.15,
+                    speed: 0.4,
+                  }}
+                  className="w-full"
+                >
+                  {loading ? "Verifying…" : "Unlock Admin Panel"}
+                </LiquidMetalButton>
+              )}
+            </div>
+          </form>
+        </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background/80 border border-border/70 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition pr-10"
-                  />
+        {/* Footer trust indicators */}
+        <div className="mt-6 flex items-center justify-center gap-6 text-[12px] text-white/20">
+          <span className="flex items-center gap-1.5">
+            <span className="size-1 rounded-full bg-white/20" />
+            Tip: HMAC Authentication
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-1 rounded-full bg-white/20" />
+            WaspAI Core v1.0
+          </span>
+        </div>
+
+        {/* Mobile credentials (below form) */}
+        <div className="md:hidden mt-6">
+          <div
+            className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md p-4"
+            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.04) inset" }}
+          >
+            <p className="text-[11px] font-semibold tracking-[0.15em] text-white/40 uppercase mb-3">
+              Admin Credentials
+            </p>
+            <div className="space-y-2 mb-3">
+              {[
+                {
+                  label: "Email",
+                  value: adminCredentials.primary.email,
+                  key: "m-email",
+                },
+                {
+                  label: "Pass",
+                  value: adminCredentials.primary.pass,
+                  key: "m-pass",
+                },
+              ].map(({ label, value, key }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="text-[10px] text-white/30 w-8 shrink-0 uppercase">
+                    {label}
+                  </span>
+                  <code className="flex-1 text-[11px] text-white/70 font-mono truncate">
+                    {value}
+                  </code>
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition p-1"
+                    onClick={() => copyToClipboard(value, key)}
+                    className="shrink-0 p-1 rounded hover:bg-white/10 text-white/40"
                   >
-                    {showPassword ? (
-                      <EyeOff className="size-4" />
+                    {copiedField === key ? (
+                      <Check className="w-3 h-3 text-emerald-400" />
                     ) : (
-                      <Eye className="size-4" />
+                      <Copy className="w-3 h-3" />
                     )}
                   </button>
                 </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || success}
-                className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-primary via-purple-600 to-blue-600 text-white font-medium text-sm shadow-lg shadow-primary/20 hover:opacity-95 active:scale-[0.99] disabled:opacity-50 transition flex items-center justify-center gap-2 group cursor-pointer"
-              >
-                {loading ? (
-                  <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Unlock Admin Panel</span>
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Footer Features */}
-            <div className="mt-6 pt-4 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Layers className="size-3 text-primary" /> Full RBAC Enforcement
-              </span>
-              <span className="flex items-center gap-1 font-mono">
-                WaspAI Core v1.0
-              </span>
+              ))}
             </div>
+            <button
+              type="button"
+              onClick={autoFill}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] transition-colors py-2 text-[12px] font-medium text-white/60"
+            >
+              <Sparkles className="w-3 h-3" />
+              Auto-Fill
+            </button>
           </div>
         </div>
       </div>
