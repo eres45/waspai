@@ -39,9 +39,11 @@ export const createSkillTool = tool({
         "automation",
         "other",
       ])
-      .describe("The category this skill fits in"),
+      .default("productivity")
+      .describe("The category this skill fits in (default: 'productivity')"),
     tags: z
       .array(z.string())
+      .default([])
       .describe("A list of tag strings associated with this skill"),
     toolsRequired: z
       .array(z.string())
