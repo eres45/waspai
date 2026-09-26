@@ -168,9 +168,17 @@ async function upsertSkillToVault(skillData: RawSkillInput): Promise<boolean> {
       `🔄 Updated existing skill: ${enriched.title} (${enriched.slug})`,
     );
   } else {
+    const { data: user } = await supabase
+      .from("user")
+      .select("id")
+      .limit(1)
+      .maybeSingle();
+    const authorId = user?.id || "bce2f946-477b-4e99-b336-555c5ebdcc49";
+
     const { error: insertErr } = await supabase.from("skill").insert({
       id: crypto.randomUUID(),
       ...row,
+      author_id: authorId,
       created_at: new Date().toISOString(),
       install_count: 0,
     });
@@ -181,6 +189,79 @@ async function upsertSkillToVault(skillData: RawSkillInput): Promise<boolean> {
     console.log(`✨ Inserted new skill: ${enriched.title} (${enriched.slug})`);
   }
   return true;
+}
+
+async function upsertBatchToVault(skills: RawSkillInput[]): Promise<number> {
+  console.log(
+    `⚡ Preparing high-speed batch upsert for ${skills.length} skills...`,
+  );
+  const chunkSize = 50;
+  let successCount = 0;
+
+  // Resolve valid author ID from user table
+  const { data: user } = await supabase
+    .from("user")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+  const authorId = user?.id || "bce2f946-477b-4e99-b336-555c5ebdcc49";
+
+  for (let i = 0; i < skills.length; i += chunkSize) {
+    const chunk = skills.slice(i, i + chunkSize);
+    const rows = chunk.map((s) => {
+      const name = sanitizeSkillSlug(s.name || s.slug || s.title || "unnamed");
+      const title = s.title || name;
+      const description = s.description || `Specialized skill for ${title}`;
+      const category = s.category || "productivity";
+      const rawContent = s.content || `# ${title}\n${description}`;
+
+      const enriched = autoEnrichSkillContent(rawContent, {
+        name,
+        title,
+        description,
+        category: category as any,
+        tags: s.tags,
+        toolsRequired: s.toolsRequired || s.tools_required || undefined,
+      });
+
+      return {
+        name: enriched.slug,
+        title: enriched.title,
+        description: enriched.description,
+        content: enriched.content,
+        category: enriched.category,
+        tags: enriched.tags,
+        tools_required: enriched.toolsRequired,
+        author_id: authorId,
+        is_public: true,
+        is_verified: true,
+        tier_required: (s.tierRequired || "free") as SkillTier,
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+    const { error } = await supabase
+      .from("skill")
+      .upsert(rows, { onConflict: "name" });
+    if (error) {
+      console.warn(
+        `⚠️ Batch chunk ${i / chunkSize + 1} warning (${error.message}). Falling back to individual upserts...`,
+      );
+      for (const item of chunk) {
+        const ok = await upsertSkillToVault(item);
+        if (ok) successCount++;
+      }
+    } else {
+      successCount += rows.length;
+      process.stdout.write(
+        `   Processed ${Math.min(i + chunkSize, skills.length)} / ${skills.length} skills...\r`,
+      );
+    }
+  }
+  console.log(
+    `\n✅ High-speed batch upsert completed: ${successCount} skills processed.`,
+  );
+  return successCount;
 }
 
 async function collectFiles(targetPath: string): Promise<string[]> {
@@ -241,10 +322,8 @@ Examples:
       if (f.endsWith(".json")) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            const ok = await upsertSkillToVault(item);
-            if (ok) count++;
-          }
+          const importedCount = await upsertBatchToVault(parsed);
+          count += importedCount;
         } else if (typeof parsed === "object") {
           const ok = await upsertSkillToVault(parsed);
           if (ok) count++;
