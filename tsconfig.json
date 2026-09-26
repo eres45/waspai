@@ -51,6 +51,7 @@
     "dist/**/*",
     ".next/**/*",
     "WaspAI app/**/*",
-    "backup_waspai/**/*"
+    "backup_waspai/**/*",
+    "scratch/**/*"
   ]
 }

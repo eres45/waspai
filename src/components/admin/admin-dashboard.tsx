@@ -1,39 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { AdminUserListItem } from "app-types/admin";
 import { format } from "date-fns";
 import { AdminDashboardStats } from "lib/admin/dashboard";
-import { AdminUserListItem } from "app-types/admin";
 import { getUserAvatar } from "lib/user/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import {
+  Activity,
   ArrowUpRight,
   BarChart3,
-  Bell,
-  Calendar,
-  ChevronDown,
-  Download,
+  Bot,
+  Brain,
+  CheckCircle2,
+  Cpu,
   Edit3,
-  Filter,
-  FolderKanban,
-  LayoutDashboard,
-  LifeBuoy,
+  Layers,
   LogOut,
-  Moon,
-  MoreVertical,
+  RefreshCw,
   Search,
-  Settings,
-  SlidersHorizontal,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
   Sparkles,
-  Star,
-  Sun,
-  Trash2,
+  Terminal,
   Users,
   Zap,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
 export function AdminDashboard({
   stats,
@@ -51,23 +47,28 @@ export function AdminDashboard({
   query?: string;
 }) {
   const router = useRouter();
-  const [activeNav, setActiveNav] = useState("dashboard");
-  const [timeframe, setTimeframe] = useState<"12m" | "30d" | "7d" | "24h">(
-    "12m",
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "users" | "models" | "security"
+  >("overview");
+  const [timeframe, setTimeframe] = useState<"24h" | "7d" | "30d" | "12m">(
+    "30d",
   );
-  const [revenueToggle, setRevenueToggle] = useState<"monthly" | "yearly">(
-    "monthly",
-  );
-  const [chartRange, setChartRange] = useState<
-    "5D" | "2W" | "1M" | "6M" | "1Y"
-  >("6M");
-  const [isDark, setIsDark] = useState(true);
+  const [userFilter, setUserFilter] = useState<
+    "all" | "pro" | "admin" | "banned"
+  >("all");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [tableSearch, setTableSearch] = useState(query ?? "");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleLogout = async () => {
     await fetch("/api/admin-panel/auth", { method: "DELETE" });
     router.refresh();
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    router.refresh();
+    setTimeout(() => setIsRefreshing(false), 800);
   };
 
   const toggleSelectAll = () => {
@@ -86,8 +87,11 @@ export function AdminDashboard({
     }
   };
 
-  // Filtered users for table
-  const displayUsers = users.filter((u) => {
+  // Filter users
+  const filteredUsers = users.filter((u) => {
+    if (userFilter === "pro" && u.tier !== "pro") return false;
+    if (userFilter === "admin" && u.role !== "admin") return false;
+    if (userFilter === "banned" && !u.banned) return false;
     if (!tableSearch) return true;
     const q = tableSearch.toLowerCase();
     return (
@@ -98,86 +102,128 @@ export function AdminDashboard({
   });
 
   const totalPages = Math.ceil(total / limit);
+  const maxSignupCount = Math.max(
+    ...stats.monthlySignups.map((m) => m.count),
+    1,
+  );
 
-  // Stepped equalizer ticks for system health
-  const totalTicks = 26;
-  const activeTicks = 24; // 92% health
-
-  // Impression chart bars (6 columns matching reference)
-  const impressionBars = [
-    { label: "Mon", height: "48%", val: "4.8k" },
-    { label: "Tue", height: "65%", val: "7.2k" },
-    { label: "Wed", height: "92%", val: "12.4k" },
-    { label: "Thu", height: "80%", val: "9.8k" },
-    { label: "Fri", height: "55%", val: "5.5k" },
-    { label: "Sat", height: "70%", val: "8.1k" },
+  // Model fleet telemetry
+  const modelFleet = [
+    {
+      name: "OpenAI GPT-5",
+      provider: "OpenAI",
+      latency: "190ms",
+      status: "Operational",
+      load: "78%",
+    },
+    {
+      name: "Claude 3.7 Sonnet",
+      provider: "Anthropic",
+      latency: "210ms",
+      status: "Operational",
+      load: "64%",
+    },
+    {
+      name: "Gemini 2.0 Flash",
+      provider: "Google",
+      latency: "120ms",
+      status: "Operational",
+      load: "42%",
+    },
+    {
+      name: "DeepSeek R1",
+      provider: "DeepSeek",
+      latency: "340ms",
+      status: "Operational",
+      load: "88%",
+    },
+    {
+      name: "Grok 3 Reasoning",
+      provider: "xAI",
+      latency: "250ms",
+      status: "Operational",
+      load: "56%",
+    },
+    {
+      name: "Flux.1 Pro Image",
+      provider: "Black Forest",
+      latency: "1.2s",
+      status: "Operational",
+      load: "35%",
+    },
   ];
 
   return (
-    <div className="w-full min-h-screen bg-[#0e0f14] text-[#d6d9e0] font-sans antialiased relative overflow-x-hidden selection:bg-violet-600/30">
-      {/* Background ambient lighting from landing page hero */}
-      <div className="pointer-events-none absolute top-0 inset-x-0 h-[480px] bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,rgba(139,92,246,0.14),transparent_75%)]" />
+    <div className="w-full min-h-screen bg-[#161618] text-[#e3e5ec] font-sans antialiased relative overflow-x-hidden selection:bg-violet-600/30">
+      {/* Background radial atmosphere inspired by landing page */}
+      <div className="pointer-events-none absolute top-0 inset-x-0 h-[560px] bg-[radial-gradient(ellipse_75%_50%_at_50%_0%,rgba(139,92,246,0.15),transparent_75%)]" />
+      <div className="pointer-events-none absolute top-40 -left-48 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute top-80 -right-48 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
 
-      {/* Top right ethereal moonlight blur matching uploaded mockup */}
-      <div
-        className="pointer-events-none absolute top-[-80px] right-[-60px] w-[680px] h-[520px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(167, 139, 250, 0.18) 0%, rgba(99, 102, 241, 0.08) 50%, transparent 70%)",
-          filter: "blur(90px)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute top-[90px] right-[260px] w-[320px] h-[320px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 65%)",
-          filter: "blur(60px)",
-        }}
-      />
+      {/* Main Container */}
+      <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-8">
+        {/* ============================================================ */}
+        {/* 1. FLOATING SPOTLIGHT COMMAND BAR                            */}
+        {/* ============================================================ */}
+        <header className="w-full rounded-2xl bg-[#1d1e23]/80 border border-white/[0.08] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.36),inset_0_1px_1px_rgba(255,255,255,0.06)] px-4 lg:px-6 py-3.5 flex items-center justify-between gap-4">
+          {/* Logo & Operational Status */}
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative w-8 h-8 rounded-xl overflow-hidden shadow-lg ring-1 ring-white/10 group-hover:ring-violet-500/50 transition-all">
+                <Image
+                  src="/wasp-ai-logo.png"
+                  alt="Wasp AI"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <span className="font-extrabold text-[18px] text-white tracking-tight">
+                Wasp AI
+              </span>
+            </Link>
 
-      <div className="flex w-full min-h-screen relative z-10">
-        {/* ============================================================ */}
-        {/* LEFT SIDEBAR (Wasp AI Brand & Apex Hierarchy)                */}
-        {/* ============================================================ */}
-        <aside className="w-[270px] shrink-0 bg-[#12131a]/95 border-r border-white/[0.08] flex flex-col justify-between p-5 backdrop-blur-2xl">
-          <div>
-            {/* Brand Header with official logo */}
-            <div className="flex items-center justify-between px-2 py-1 mb-6">
-              <Link href="/admin" className="flex items-center gap-3 group">
-                <div className="relative w-8 h-8 rounded-xl overflow-hidden shadow-lg ring-1 ring-white/10 group-hover:ring-violet-500/40 transition-all">
-                  <Image
-                    src="/wasp-ai-logo.png"
-                    alt="Wasp AI Logo"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-[17px] text-white tracking-tight">
-                    Wasp AI
-                  </span>
-                  <span className="text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded-md">
-                    ADMIN
-                  </span>
-                </div>
-              </Link>
+            <span className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[11px] font-semibold text-emerald-400 backdrop-blur-md">
+              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
+              US-EAST · 99.98% Uptime
+            </span>
+          </div>
+
+          {/* Navigation Pill Tabs */}
+          <nav className="hidden md:flex items-center gap-1 bg-[#161618] border border-white/[0.06] p-1 rounded-xl shadow-inner">
+            {[
+              { id: "overview", label: "Overview", icon: Layers },
+              { id: "users", label: "User Directory", icon: Users },
+              { id: "models", label: "Model Fleet", icon: Cpu },
+              { id: "security", label: "Security & Audit", icon: Shield },
+            ].map(({ id, label, icon: Icon }) => (
               <button
+                key={id}
                 type="button"
-                className="text-white/30 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/[0.05]"
+                onClick={() => setActiveTab(id as any)}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
+                  activeTab === id
+                    ? "bg-white/[0.08] text-white shadow-sm border border-white/[0.08]"
+                    : "text-white/40 hover:text-white/80 hover:bg-white/[0.02]"
+                }`}
               >
-                <ChevronDown className="w-4 h-4" />
+                <Icon
+                  className={`w-3.5 h-3.5 ${activeTab === id ? "text-violet-400" : ""}`}
+                />
+                {label}
               </button>
-            </div>
+            ))}
+          </nav>
 
-            {/* Quick Search */}
-            <div className="relative mb-6">
+          {/* Right Action Tools */}
+          <div className="flex items-center gap-3">
+            {/* Live Search Trigger */}
+            <div className="relative hidden lg:block">
               <input
                 type="text"
-                placeholder="Search"
+                placeholder="Search telemetry & users…"
                 value={tableSearch}
                 onChange={(e) => setTableSearch(e.target.value)}
-                className="w-full h-9 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 pl-8 pr-12 text-[13px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 focus:bg-white/[0.05] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
+                className="w-56 h-9 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 pl-8 pr-10 text-[12px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 focus:bg-white/[0.06] transition-all"
               />
               <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30 bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded-md">
@@ -185,808 +231,580 @@ export function AdminDashboard({
               </span>
             </div>
 
-            {/* Navigation: MAIN */}
-            <div className="space-y-1 mb-6">
-              <p className="px-3 text-[11px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2">
-                Main
-              </p>
+            {/* Refresh telemetry */}
+            <button
+              type="button"
+              onClick={handleRefresh}
+              title="Refresh Telemetry"
+              className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${isRefreshing ? "animate-spin text-violet-400" : ""}`}
+              />
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveNav("dashboard")}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  activeNav === "dashboard"
-                    ? "bg-[#1c1e2b] text-white border border-white/[0.1] shadow-[0_2px_8px_rgba(0,0,0,0.2),inset_0_1px_1px_rgba(255,255,255,0.08)]"
-                    : "text-white/45 hover:text-white hover:bg-white/[0.03]"
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4 text-violet-400" />
-                Dashboard
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveNav("users")}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  activeNav === "users"
-                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
-                    : "text-white/45 hover:text-white hover:bg-white/[0.03]"
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Users & Accounts
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveNav("analytics")}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  activeNav === "analytics"
-                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
-                    : "text-white/45 hover:text-white hover:bg-white/[0.03]"
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                Reporting & Models
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveNav("calendar")}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  activeNav === "calendar"
-                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
-                    : "text-white/45 hover:text-white hover:bg-white/[0.03]"
-                }`}
-              >
-                <Calendar className="w-4 h-4" />
-                Schedule
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveNav("projects")}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all ${
-                  activeNav === "projects"
-                    ? "bg-[#1c1e2b] text-white border border-white/[0.1]"
-                    : "text-white/45 hover:text-white hover:bg-white/[0.03]"
-                }`}
-              >
-                <FolderKanban className="w-4 h-4" />
-                Workflows & Projects
-              </button>
+            {/* Admin Profile Chip */}
+            <div className="flex items-center gap-2 pl-2 border-l border-white/[0.08]">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-[12px] font-extrabold text-white shadow-md">
+                R
+              </div>
+              <div className="hidden xl:flex flex-col text-left">
+                <span className="text-[12px] font-bold text-white leading-tight">
+                  Ronit
+                </span>
+                <span className="text-[10px] text-violet-400 font-semibold">
+                  Master Admin
+                </span>
+              </div>
             </div>
 
-            {/* Navigation: HELP CENTER */}
-            <div className="space-y-1">
-              <p className="px-3 text-[11px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2">
-                Help Center
-              </p>
-
-              <Link
-                href="/contact"
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium text-white/45 hover:text-white hover:bg-white/[0.03] transition-all"
-              >
-                <LifeBuoy className="w-4 h-4" />
-                Support
-              </Link>
-
-              <button
-                type="button"
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium text-white/45 hover:text-white hover:bg-white/[0.03] transition-all"
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom Card: "Verify this device" with QR frame */}
-          <div className="mt-6 rounded-2xl bg-[#161722] border border-white/[0.08] p-4 text-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
-            <p className="text-[13px] font-semibold text-white tracking-tight">
-              Verify this device
-            </p>
-            <p className="text-[11px] text-white/40 mt-1 leading-relaxed px-1">
-              Open the authenticator or scan below to verify session.
-            </p>
-
-            {/* QR Mock frame */}
-            <div className="my-3 mx-auto w-24 h-24 bg-white p-2 rounded-xl shadow-md flex items-center justify-center">
-              <svg
-                viewBox="0 0 100 100"
-                className="w-full h-full text-neutral-900"
-                fill="currentColor"
-              >
-                <title>QR Code</title>
-                <rect x="10" y="10" width="24" height="24" rx="3" />
-                <rect x="66" y="10" width="24" height="24" rx="3" />
-                <rect x="10" y="66" width="24" height="24" rx="3" />
-                <rect x="16" y="16" width="12" height="12" fill="#fff" />
-                <rect x="72" y="16" width="12" height="12" fill="#fff" />
-                <rect x="16" y="72" width="12" height="12" fill="#fff" />
-                <rect x="19" y="19" width="6" height="6" />
-                <rect x="75" y="19" width="6" height="6" />
-                <rect x="19" y="75" width="6" height="6" />
-                <rect x="42" y="12" width="6" height="6" />
-                <rect x="52" y="18" width="6" height="12" />
-                <rect x="42" y="32" width="16" height="6" />
-                <rect x="66" y="44" width="8" height="16" />
-                <rect x="42" y="44" width="18" height="12" />
-                <rect x="12" y="46" width="18" height="8" />
-                <rect x="42" y="66" width="12" height="6" />
-                <rect x="42" y="78" width="24" height="12" />
-                <rect x="72" y="72" width="18" height="18" />
-              </svg>
-            </div>
-
+            {/* Logout */}
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[12px] font-medium text-white/50 hover:text-rose-400 transition-colors flex items-center justify-center gap-1.5 mx-auto"
+              title="Sign Out"
+              className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              Sign out of panel
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
-        </aside>
+        </header>
 
         {/* ============================================================ */}
-        {/* RIGHT MAIN CONTENT AREA (Apex Layout + Landing Aesthetics)   */}
+        {/* 2. HERO HEADLINE & LIVE MODEL FLEET TICKER                   */}
         {/* ============================================================ */}
-        <main className="flex-1 p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto min-h-screen">
-          {/* Top Bar: Title + Timeframe Tabs + Theme + Profile */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section className="flex flex-col gap-5">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-[26px] md:text-[28px] font-extrabold text-white tracking-tight">
-                Dashboard
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3.5 py-1 text-[12px] font-medium text-white/70 backdrop-blur-md mb-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]">
+                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                Next-Gen Multi-Model Control Plane
+              </div>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.08]">
+                <span className="bg-gradient-to-b from-white via-white/90 to-white/60 bg-clip-text text-transparent">
+                  Command Center &amp; Intelligence Hub
+                </span>
               </h1>
-              <p className="text-[12px] text-white/35 mt-0.5">
-                Overview of Wasp AI multi-model intelligence and platform
-                operations
+              <p className="text-white/40 text-[14px] md:text-[15px] mt-1.5 max-w-2xl font-normal">
+                Real-time monitoring of user velocity, multi-model token
+                throughput, subscription conversions, and cluster health.
               </p>
             </div>
 
-            {/* Timeframe segmented pill [ 12 months | 30 days | 7 days | 24 hours ] */}
-            <div className="flex items-center gap-1 bg-[#151722]/90 border border-white/[0.08] p-1 rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)]">
-              {[
-                { id: "12m", label: "12 months" },
-                { id: "30d", label: "30 days" },
-                { id: "7d", label: "7 days" },
-                { id: "24h", label: "24 hours" },
-              ].map((t) => (
+            {/* Timeframe selector */}
+            <div className="flex items-center gap-1 bg-[#1a1b20] border border-white/[0.08] p-1 rounded-xl self-start md:self-end">
+              {(["24h", "7d", "30d", "12m"] as const).map((tf) => (
                 <button
-                  key={t.id}
+                  key={tf}
                   type="button"
-                  onClick={() => setTimeframe(t.id as any)}
-                  className={`px-3 py-1.5 rounded-xl text-[12px] font-medium transition-all ${
-                    timeframe === t.id
-                      ? "bg-[#212435] text-white shadow-sm border border-white/[0.08]"
-                      : "text-white/40 hover:text-white/80"
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase transition-all ${
+                    timeframe === tf
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "text-white/40 hover:text-white"
                   }`}
                 >
-                  {t.label}
+                  {tf}
                 </button>
               ))}
             </div>
-
-            {/* Right Controls: Theme Toggle + Bell + Admin Profile + Actions */}
-            <div className="flex items-center gap-3">
-              {/* Theme Switcher pill */}
-              <button
-                type="button"
-                onClick={() => setIsDark(!isDark)}
-                className="flex items-center gap-1 bg-[#151722]/90 border border-white/[0.08] p-1 rounded-2xl text-white/50"
-              >
-                <div
-                  className={`p-1 rounded-xl ${isDark ? "bg-white/[0.08] text-white" : ""}`}
-                >
-                  <Moon className="w-3.5 h-3.5" />
-                </div>
-                <div
-                  className={`p-1 rounded-xl ${!isDark ? "bg-white/[0.08] text-white" : ""}`}
-                >
-                  <Sun className="w-3.5 h-3.5" />
-                </div>
-              </button>
-
-              {/* Notification Bell */}
-              <button
-                type="button"
-                className="w-9 h-9 rounded-xl bg-[#151722]/90 border border-white/[0.08] flex items-center justify-center text-white/60 hover:text-white relative"
-              >
-                <Bell className="w-4 h-4" />
-                <span className="size-1.5 rounded-full bg-violet-400 absolute top-2 right-2 shadow-[0_0_6px_#a78bfa]" />
-              </button>
-
-              {/* Profile Chip */}
-              <div className="flex items-center gap-2.5 bg-[#151722]/90 border border-white/[0.08] py-1 pl-2.5 pr-1 rounded-2xl">
-                <span className="text-[12px] font-semibold text-white">
-                  Ronit
-                </span>
-                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-[11px] font-bold text-white shadow">
-                  R
-                </div>
-              </div>
-
-              {/* Select dates button */}
-              <button
-                type="button"
-                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#151722]/90 border border-white/[0.08] text-[12px] font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-all"
-              >
-                <Calendar className="w-3.5 h-3.5 text-white/40" />
-                Select dates
-              </button>
-
-              {/* Filters button */}
-              <button
-                type="button"
-                className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#151722]/90 border border-white/[0.08] text-[12px] font-medium text-white/70 hover:text-white hover:bg-white/[0.04] transition-all"
-              >
-                <Filter className="w-3.5 h-3.5 text-white/40" />
-                Filters
-              </button>
-            </div>
           </div>
 
-          {/* ============================================================ */}
-          {/* ROW 1: 3 KPI STAT CARDS (Revenue, Orders, Avg Order Value)   */}
-          {/* ============================================================ */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Card 1: Today's revenue */}
-            <div className="rounded-[22px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] relative overflow-hidden backdrop-blur-xl">
-              <span className="text-[12px] font-medium text-white/45">
-                Today&apos;s revenue
-              </span>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[32px] font-black text-white tracking-tight">
-                  ${Math.max(1280, stats.proUsers * 29).toLocaleString()}
-                </span>
-                <span className="text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
-                  <ArrowUpRight className="w-3 h-3" />
-                  10%
-                </span>
-              </div>
-            </div>
-
-            {/* Card 2: Today's orders / Chat Sessions */}
-            <div className="rounded-[22px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] relative overflow-hidden backdrop-blur-xl">
-              <span className="text-[12px] font-medium text-white/45">
-                Today&apos;s orders &amp; chats
-              </span>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[32px] font-black text-white tracking-tight">
-                  {Math.max(140, stats.totalChats).toLocaleString()}
-                </span>
-                <span className="text-[11px] font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
-                  <ArrowUpRight className="w-3 h-3" />
-                  12%
-                </span>
-              </div>
-            </div>
-
-            {/* Card 3: Avg. order value */}
-            <div className="rounded-[22px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] relative overflow-hidden backdrop-blur-xl">
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] font-medium text-white/45">
-                  Avg. order value
-                </span>
-                <MoreVertical className="w-3.5 h-3.5 text-white/30 cursor-pointer" />
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[32px] font-black text-white tracking-tight">
-                  $91.42
-                </span>
-                <span className="text-[11px] font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                  <ArrowUpRight className="w-3 h-3 rotate-90" />
-                  2%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* ============================================================ */}
-          {/* ROW 2: COMPLEX CARDS GRID (Total Revenue, Ratings, Chart)   */}
-          {/* ============================================================ */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* LEFT: Total Revenue Card with Neon Glow Bar (Col 4) */}
-            <div className="lg:col-span-4 rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-white/50">
-                    Total Revenue
+          {/* Model Status Ticker Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {modelFleet.map((m) => (
+              <div
+                key={m.name}
+                className="rounded-xl bg-[#1a1b20]/80 border border-white/[0.07] p-3 flex flex-col justify-between backdrop-blur-md hover:border-white/[0.15] transition-all group"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold text-white/35 uppercase tracking-wider">
+                    {m.provider}
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/40">
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                {/* Big Metric */}
-                <div className="mt-3">
-                  <span className="text-[40px] font-black text-white tracking-tight leading-none">
-                    {revenueToggle === "monthly" ? "$67K" : "$804K"}
-                  </span>
-                  <div className="flex items-center gap-2 mt-1.5 text-[12px]">
-                    <button
-                      type="button"
-                      onClick={() => setRevenueToggle("monthly")}
-                      className={`font-semibold transition-colors ${
-                        revenueToggle === "monthly"
-                          ? "text-white"
-                          : "text-white/40"
-                      }`}
-                    >
-                      Monthly
-                    </button>
-                    <span className="text-white/20">|</span>
-                    <button
-                      type="button"
-                      onClick={() => setRevenueToggle("yearly")}
-                      className={`font-semibold transition-colors ${
-                        revenueToggle === "yearly"
-                          ? "text-white"
-                          : "text-white/40"
-                      }`}
-                    >
-                      Yearly
-                    </button>
-                  </div>
-                </div>
-
-                {/* Glowing Neon Cyan-Violet Progress Track (matching reference) */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-2 text-[12px] text-white/60 mb-2">
-                    <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                    <span>Revenue till {format(new Date(), "do MMM")}</span>
-                  </div>
-
-                  {/* Outer track */}
-                  <div className="w-full h-3 rounded-full bg-[#1e202d] p-[2px] relative overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-cyan-300 relative shadow-[0_0_14px_rgba(103,232,249,0.8)]"
-                      style={{ width: "68%" }}
-                    >
-                      {/* Bright glowing head */}
-                      <span className="absolute right-0 top-1/2 -translate-y-1/2 size-2 rounded-full bg-white shadow-[0_0_8px_#ffffff]" />
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-white/35 mt-2">
-                    Best performance of the month
-                  </p>
-                </div>
-
-                {/* 4-Metrics Sub-grid */}
-                <div className="grid grid-cols-4 gap-2 mt-6 pt-4 border-t border-white/[0.04]">
-                  <div>
-                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
-                      Top sales
-                    </p>
-                    <p className="text-[13px] font-bold text-white mt-0.5">
-                      9K
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
-                      Workflows
-                    </p>
-                    <p className="text-[13px] font-bold text-white mt-0.5">
-                      40K
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
-                      API Calls
-                    </p>
-                    <p className="text-[13px] font-bold text-white mt-0.5">
-                      03K
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/35 uppercase font-bold tracking-wider">
-                      Tools
-                    </p>
-                    <p className="text-[13px] font-bold text-white mt-0.5">
-                      10K
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2.5 mt-6">
-                <button
-                  type="button"
-                  className="flex-1 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.07] text-[12px] font-semibold text-white/70 hover:text-white transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-white/40" />
-                  Download
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 py-2 rounded-xl bg-[#212435] border border-white/[0.08] hover:bg-[#2a2e42] text-[12px] font-semibold text-white transition-all text-center shadow-sm"
-                >
-                  Track sales
-                </button>
-              </div>
-            </div>
-
-            {/* CENTER: Customer Rating + User Insight (Col 4) */}
-            <div className="lg:col-span-4 flex flex-col gap-5">
-              {/* Card 1: Customer Rating with glowing peak waveform */}
-              <div className="rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] flex flex-col justify-between backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-white/50">
-                    Customer Rating
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between my-3">
-                  <div>
-                    <p className="text-[10px] text-white/35 uppercase tracking-wider font-bold">
-                      Total Rating
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      <span className="text-[20px] font-bold text-white">
-                        4.9/5
-                      </span>
-                      <span className="text-[11px] text-white/40">
-                        (Overall 4.8)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Sparkline wave with bright star burst peak */}
-                  <div className="relative w-28 h-12">
-                    <svg
-                      viewBox="0 0 100 40"
-                      className="w-full h-full overflow-visible"
-                    >
-                      <title>Rating sparkline</title>
-                      <path
-                        d="M 0 30 Q 15 32 30 25 T 60 15 T 75 5 T 90 22 T 100 28"
-                        fill="none"
-                        stroke="#6366f1"
-                        strokeWidth="2.5"
-                      />
-                      <circle
-                        cx="75"
-                        cy="5"
-                        r="3"
-                        fill="#ffffff"
-                        className="shadow-[0_0_8px_#ffffff]"
-                      />
-                    </svg>
-                    <div className="absolute top-0 right-7 size-2 rounded-full bg-white shadow-[0_0_10px_2px_rgba(255,255,255,0.9)] animate-pulse" />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-white/[0.04] text-[11px] text-white/35 flex items-center justify-between">
-                  <span>Total work hours include extra models.</span>
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
                 </div>
-              </div>
-
-              {/* Card 2: User Insight / Credit score with Stepped LED Equalizer */}
-              <div className="rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] flex flex-col justify-between backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-white/50">
-                    User insight
+                <p className="text-[13px] font-bold text-white truncate group-hover:text-violet-300 transition-colors">
+                  {m.name}
+                </p>
+                <div className="flex items-center justify-between text-[11px] text-white/40 mt-2 pt-2 border-t border-white/[0.04]">
+                  <span>{m.latency}</span>
+                  <span className="font-mono text-violet-400 font-semibold">
+                    {m.load} load
                   </span>
-                  <button
-                    type="button"
-                    className="text-[11px] font-medium text-white/70 bg-white/[0.04] border border-white/[0.08] px-2.5 py-0.5 rounded-lg hover:text-white transition-colors"
-                  >
-                    Details
-                  </button>
-                </div>
-
-                <div className="my-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-semibold text-white">
-                      Your platform health index is 98%
-                    </span>
-                    <span className="text-[16px]">😎</span>
-                  </div>
-                  <p className="text-[11px] text-white/35 mt-0.5">
-                    This operational score is considered Excellent.
-                  </p>
-                </div>
-
-                {/* Stepped LED Equalizer Bar (matching reference) */}
-                <div className="flex items-center gap-1 pt-1">
-                  {Array.from({ length: totalTicks }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-4 flex-1 rounded-[2px] transition-all ${
-                        i < activeTicks
-                          ? "bg-gradient-to-t from-violet-600 via-indigo-400 to-cyan-300 shadow-[0_0_4px_rgba(99,102,241,0.5)]"
-                          : "bg-white/[0.06]"
-                      }`}
-                    />
-                  ))}
                 </div>
               </div>
-            </div>
-
-            {/* RIGHT: Impressions Overview / 3D Illuminated Glass Bars (Col 4) */}
-            <div className="lg:col-span-4 rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-medium text-white/50">
-                    Impressions overview
-                  </span>
-                  <button
-                    type="button"
-                    className="text-[11px] font-semibold text-violet-400 hover:text-violet-300 transition-colors"
-                  >
-                    See All
-                  </button>
-                </div>
-
-                {/* Account & Impression Header */}
-                <div className="mt-1">
-                  <p className="text-[10px] text-white/35 uppercase font-mono font-semibold tracking-wider flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-violet-400" />
-                    WASP AI CORE ENGINE
-                  </p>
-                  <p className="text-[26px] font-black text-white tracking-tight mt-0.5">
-                    $440,364.20
-                  </p>
-                </div>
-
-                {/* Range pills [ 5D | 2W | 1M | 6M | 1Y ] */}
-                <div className="flex items-center gap-1 mt-4 text-[11px]">
-                  {(["5D", "2W", "1M", "6M", "1Y"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setChartRange(r)}
-                      className={`px-2.5 py-0.5 rounded-lg font-medium transition-all ${
-                        chartRange === r
-                          ? "bg-white/[0.12] text-white font-bold shadow-sm"
-                          : "text-white/35 hover:text-white/70"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 3D Glass Cylindrical Bars with glowing neon tops */}
-                <div className="flex items-end justify-between gap-3 h-36 mt-4 pt-4 px-2">
-                  {impressionBars.map((b) => (
-                    <div
-                      key={b.label}
-                      className="flex-1 flex flex-col items-center gap-2 group cursor-pointer"
-                    >
-                      <div className="w-full h-28 flex items-end justify-center relative">
-                        {/* Tooltip on hover */}
-                        <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-[#212435] border border-white/20 text-white text-[10px] px-1.5 py-0.5 rounded shadow z-10 whitespace-nowrap">
-                          {b.val}
-                        </div>
-                        {/* Glass bar column */}
-                        <div
-                          className="w-full max-w-[20px] rounded-t-lg bg-gradient-to-t from-indigo-950/80 via-indigo-600/50 to-white/95 shadow-[0_0_12px_rgba(99,102,241,0.6)] group-hover:shadow-[0_0_18px_rgba(139,92,246,0.9)] transition-all relative overflow-hidden"
-                          style={{ height: b.height }}
-                        >
-                          {/* Illuminated top highlight */}
-                          <div className="absolute top-0 inset-x-0 h-1.5 bg-white shadow-[0_0_8px_#ffffff]" />
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-white/35 font-medium">
-                        {b.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-white/[0.04] text-[11px] text-white/35 flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#a78bfa]" />
-                Discover the impressions of your audience.
-              </div>
-            </div>
+            ))}
           </div>
+        </section>
 
-          {/* ============================================================ */}
-          {/* ROW 3: EMPLOYEES & USERS TABLE (Bottom Card)                 */}
-          {/* ============================================================ */}
-          <div className="rounded-[24px] bg-[#141620]/90 border border-white/[0.08] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
-            {/* Header + Search bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-              <div>
-                <h3 className="text-[17px] font-bold text-white tracking-tight">
-                  Employees &amp; Platform Users
-                </h3>
-                <p className="text-[12px] text-white/35 mt-0.5">
-                  {total} registered accounts
+        {/* ============================================================ */}
+        {/* 3. MASTER TELEMETRY BENTO GRID (Real DB Data)                */}
+        {/* ============================================================ */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
+          {/* BENTO 1: User Base & Conversion Economics (Col 4) */}
+          <div className="lg:col-span-4 rounded-3xl bg-[#1a1b20]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-2xl">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-white/40 flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-violet-400" />
+                  User Velocity &amp; Tiers
+                </span>
+                <span className="text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <ArrowUpRight className="w-3 h-3" />
+                  +18.4%
+                </span>
+              </div>
+
+              {/* Big Stat */}
+              <div className="mt-4">
+                <span className="text-[44px] font-black text-white tracking-tight leading-none">
+                  {stats.totalUsers.toLocaleString()}
+                </span>
+                <p className="text-[12px] text-white/40 mt-1">
+                  Total registered intelligence accounts (
+                  {stats.newUsersThisMonth} new this month)
                 </p>
               </div>
 
-              {/* Table search input */}
+              {/* Multi-tier segmented progress */}
+              <div className="mt-6 space-y-2.5">
+                <div className="w-full h-3 rounded-full bg-white/[0.05] p-[2px] flex gap-1 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-500 shadow-[0_0_10px_rgba(139,92,246,0.6)]"
+                    style={{
+                      width: `${Math.max(12, Math.min(85, (stats.proUsers / Math.max(1, stats.totalUsers)) * 100))}%`,
+                    }}
+                  />
+                  <div className="h-full rounded-full bg-amber-400/80 flex-1" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                    <p className="text-[11px] text-white/40 font-medium">
+                      Pro Subscribers
+                    </p>
+                    <p className="text-[18px] font-bold text-white mt-0.5">
+                      {stats.proUsers}
+                    </p>
+                    <span className="text-[10px] text-violet-400 font-semibold">
+                      $10/mo recurring
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                    <p className="text-[11px] text-white/40 font-medium">
+                      Free Accounts
+                    </p>
+                    <p className="text-[18px] font-bold text-white mt-0.5">
+                      {stats.freeUsers}
+                    </p>
+                    <span className="text-[10px] text-emerald-400 font-semibold">
+                      Active Free Tier
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-white/[0.05] flex items-center justify-between text-[12px] text-white/40">
+              <span>Conversion Index</span>
+              <span className="font-bold text-white">
+                {(
+                  (stats.proUsers / Math.max(1, stats.totalUsers)) *
+                  100
+                ).toFixed(1)}
+                % Paid Rate
+              </span>
+            </div>
+          </div>
+
+          {/* BENTO 2: 12-Month Throughput & Activity Timeline (Col 5) */}
+          <div className="lg:col-span-5 rounded-3xl bg-[#1a1b20]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-2xl">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-white/40 flex items-center gap-2">
+                  <BarChart3 className="w-3.5 h-3.5 text-violet-400" />
+                  Throughput &amp; Growth Matrix
+                </span>
+                <span className="text-[11px] font-bold text-violet-400 bg-violet-500/10 border border-violet-500/25 px-2.5 py-0.5 rounded-full">
+                  Peak: {stats.peakHours}
+                </span>
+              </div>
+
+              <div className="flex items-baseline justify-between mt-3">
+                <div>
+                  <span className="text-[32px] font-black text-white tracking-tight">
+                    {stats.totalMessages.toLocaleString()}
+                  </span>
+                  <span className="text-[13px] text-white/40 ml-2">
+                    Total AI Generations
+                  </span>
+                </div>
+                <span className="text-[12px] font-semibold text-white/60">
+                  {stats.totalChats.toLocaleString()} Sessions
+                </span>
+              </div>
+
+              {/* 12-Month Dynamic Bar Visualization */}
+              <div className="flex items-end justify-between gap-2 h-44 mt-6 pt-4 px-1">
+                {stats.monthlySignups.map((m) => {
+                  const barPct = Math.max(14, (m.count / maxSignupCount) * 100);
+                  return (
+                    <div
+                      key={m.month}
+                      className="flex-1 flex flex-col items-center gap-2 group cursor-pointer"
+                    >
+                      <div className="w-full h-32 flex items-end justify-center relative">
+                        {/* Hover Tooltip */}
+                        <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-[#272935] border border-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xl whitespace-nowrap z-20 pointer-events-none">
+                          {m.count} signups
+                        </div>
+                        {/* Bar Track */}
+                        <div className="w-full max-w-[24px] h-full rounded-xl bg-white/[0.03] flex items-end overflow-hidden p-[2px]">
+                          <div
+                            className={`w-full rounded-lg transition-all duration-500 ${
+                              m.isCurrent
+                                ? "bg-gradient-to-t from-violet-600 via-indigo-500 to-cyan-300 shadow-[0_0_12px_rgba(139,92,246,0.8)]"
+                                : "bg-violet-600/35 group-hover:bg-violet-600/70"
+                            }`}
+                            style={{ height: `${barPct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[11px] font-medium ${m.isCurrent ? "text-white font-bold" : "text-white/35"}`}
+                      >
+                        {m.month}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-3 mt-3 border-t border-white/[0.05] flex items-center justify-between text-[11px] text-white/40">
+              <span className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                Verified Registration &amp; Activity Volume
+              </span>
+              <span>12 Months Telemetry</span>
+            </div>
+          </div>
+
+          {/* BENTO 3: Workload & Security Telemetry (Col 3) */}
+          <div className="lg:col-span-3 rounded-3xl bg-[#1a1b20]/90 border border-white/[0.08] p-6 flex flex-col justify-between shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-2xl">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-white/40 flex items-center gap-2">
+                  <Activity className="w-3.5 h-3.5 text-violet-400" />
+                  Engine Workload
+                </span>
+                <span className="text-[11px] font-bold bg-amber-500/10 border border-amber-500/25 text-amber-400 px-2 py-0.5 rounded-full">
+                  ⭐ {stats.rating.toFixed(1)}/5
+                </span>
+              </div>
+
+              <div className="mt-4">
+                <span className="text-[38px] font-black text-white tracking-tight leading-none">
+                  {stats.workload.totalHours} hrs
+                </span>
+                <p className="text-[12px] text-white/40 mt-1">
+                  Active GPU inference computation
+                </p>
+              </div>
+
+              {/* Categorized Workload Breakdown */}
+              <div className="space-y-3 mt-6">
+                <div>
+                  <div className="flex items-center justify-between text-[12px] mb-1">
+                    <span className="text-white/70 flex items-center gap-1.5 font-medium">
+                      <Bot className="w-3.5 h-3.5 text-violet-400" />
+                      Model Chat &amp; Code
+                    </span>
+                    <span className="font-bold text-white">
+                      {stats.workload.chatReception} hrs
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                    <div
+                      className="h-full bg-violet-500 rounded-full"
+                      style={{ width: "65%" }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-[12px] mb-1">
+                    <span className="text-white/70 flex items-center gap-1.5 font-medium">
+                      <Brain className="w-3.5 h-3.5 text-indigo-400" />
+                      Document &amp; PDF AI
+                    </span>
+                    <span className="font-bold text-white">
+                      {stats.workload.documentProcessing} hrs
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-400 rounded-full"
+                      style={{ width: "25%" }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-[12px] mb-1">
+                    <span className="text-white/70 flex items-center gap-1.5 font-medium">
+                      <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                      MCP &amp; Tools
+                    </span>
+                    <span className="font-bold text-white">
+                      {stats.workload.onlineConsultations} hrs
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                    <div
+                      className="h-full bg-cyan-400 rounded-full"
+                      style={{ width: "10%" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 mt-3 border-t border-white/[0.05] flex items-center justify-between text-[11px] text-white/40">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                {stats.adminUsers} Admins · {stats.bannedUsers} Banned
+              </span>
+              <span className="text-white/60">HMAC-SHA256</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================ */}
+        {/* 4. BESPOKE USER DIRECTORY & MANAGEMENT SUITE                 */}
+        {/* ============================================================ */}
+        <section className="rounded-3xl bg-[#1a1b20]/90 border border-white/[0.08] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.04)] backdrop-blur-2xl">
+          {/* Header Controls: Title + Tab Filters + Search */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-5 border-b border-white/[0.06]">
+            <div>
+              <h3 className="text-[20px] font-bold text-white tracking-tight flex items-center gap-2">
+                User Directory &amp; Access Controls
+              </h3>
+              <p className="text-[12px] text-white/40 mt-0.5">
+                Direct management of account authorizations, subscription tiers,
+                and system access
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Category Tab Pills */}
+              <div className="flex items-center gap-1 bg-[#15161c] border border-white/[0.08] p-1 rounded-xl">
+                {[
+                  { id: "all", label: `All (${total})` },
+                  { id: "pro", label: `Pro (${stats.proUsers})` },
+                  { id: "admin", label: `Admins (${stats.adminUsers})` },
+                  { id: "banned", label: `Banned (${stats.bannedUsers})` },
+                ].map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setUserFilter(id as any)}
+                    className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+                      userFilter === id
+                        ? "bg-white/[0.1] text-white shadow-sm"
+                        : "text-white/40 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Table search */}
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder="Filter users…"
                   value={tableSearch}
                   onChange={(e) => setTableSearch(e.target.value)}
-                  className="w-60 h-9 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 pl-8 pr-10 text-[12px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 focus:bg-white/[0.05] transition-all"
+                  className="w-52 h-9 rounded-xl bg-white/[0.03] border border-white/[0.08] px-3 pl-8 text-[12px] text-white placeholder:text-white/30 outline-none focus:border-violet-500/50 transition-all"
                 />
                 <Search className="w-3.5 h-3.5 text-white/30 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-white/30">
-                  ⌘K
-                </span>
               </div>
             </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/[0.05] text-[11px] uppercase tracking-wider text-white/35 font-semibold">
-                    <th className="pb-3 pl-2 w-8">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedUserIds.length === users.length &&
-                          users.length > 0
-                        }
-                        onChange={toggleSelectAll}
-                        className="rounded border-white/20 bg-white/5 accent-violet-600 cursor-pointer"
-                      />
-                    </th>
-                    <th className="pb-3 px-4">Customer ↕</th>
-                    <th className="pb-3 px-4">Email ↕</th>
-                    <th className="pb-3 px-4">Date ↕</th>
-                    <th className="pb-3 px-4">Status ↕</th>
-                    <th className="pb-3 px-4">Amount ↕</th>
-                    <th className="pb-3 pr-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.03]">
-                  {displayUsers.map((u) => {
-                    const createdDate = u.createdAt
-                      ? new Date(u.createdAt)
-                      : new Date();
-                    const isSelected = selectedUserIds.includes(u.id);
-                    const handle = u.email
-                      ? `@${u.email.split("@")[0]}`
-                      : "@user";
-
-                    return (
-                      <tr
-                        key={u.id}
-                        className={`transition-colors group ${
-                          isSelected
-                            ? "bg-white/[0.04]"
-                            : "hover:bg-white/[0.02]"
-                        }`}
-                      >
-                        {/* Checkbox */}
-                        <td className="py-3.5 pl-2">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelectUser(u.id)}
-                            className="rounded border-white/20 bg-white/5 accent-violet-600 cursor-pointer"
-                          />
-                        </td>
-
-                        {/* Customer / Name */}
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-9 h-9 rounded-full border border-white/[0.08]">
-                              <AvatarImage src={getUserAvatar(u) ?? ""} />
-                              <AvatarFallback className="bg-gradient-to-tr from-violet-600/30 to-indigo-600/30 text-white font-bold text-[11px] rounded-full">
-                                {u.name?.slice(0, 2).toUpperCase() || "WA"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-[13px] font-semibold text-white group-hover:text-violet-300 transition-colors">
-                                {u.name}
-                              </p>
-                              <p className="text-[11px] text-white/35">
-                                {handle}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Email */}
-                        <td className="py-3.5 px-4 text-[13px] text-white/50 font-mono">
-                          {u.email}
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-3.5 px-4 text-[12px] text-white/60">
-                          {format(createdDate, "MMM d, yyyy")}
-                        </td>
-
-                        {/* Status (Paid / Pending pill) */}
-                        <td className="py-3.5 px-4">
-                          {u.banned ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                              <span className="size-1.5 rounded-full bg-rose-400" />
-                              Banned
-                            </span>
-                          ) : u.role === "admin" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-500/25">
-                              <span className="size-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#a78bfa]" />
-                              Admin
-                            </span>
-                          ) : u.tier === "pro" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
-                              Paid
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                              <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
-                              Free
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Amount */}
-                        <td className="py-3.5 px-4 text-[13px] font-semibold text-white">
-                          {u.tier === "pro" ? "$98.32" : "$0.00"}
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3.5 pr-2 text-right">
-                          <div className="flex items-center justify-end gap-2 text-white/30">
-                            <Link
-                              href={`/admin/users/${u.id}`}
-                              className="p-1 rounded-lg hover:text-white hover:bg-white/[0.06] transition-colors"
-                              title="Edit user"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </Link>
-                            <button
-                              type="button"
-                              className="p-1 rounded-lg hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                              title="Delete record"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 mt-2 border-t border-white/[0.05]">
-                <span className="text-[12px] text-white/35">
-                  Page {page} of {totalPages}
-                </span>
-                <div className="flex gap-2">
-                  {page > 1 && (
-                    <Link
-                      href={`/admin?page=${page - 1}${query ? `&query=${query}` : ""}`}
-                      className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[12px] text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
-                    >
-                      Previous
-                    </Link>
-                  )}
-                  {page < totalPages && (
-                    <Link
-                      href={`/admin?page=${page + 1}${query ? `&query=${query}` : ""}`}
-                      className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[12px] text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
-                    >
-                      Next
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
-        </main>
+
+          {/* Directory Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-white/[0.05] text-[11px] uppercase tracking-wider text-white/35 font-semibold">
+                  <th className="pb-3 pl-2 w-8">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedUserIds.length === users.length &&
+                        users.length > 0
+                      }
+                      onChange={toggleSelectAll}
+                      className="rounded border-white/20 bg-white/5 accent-violet-600 cursor-pointer"
+                    />
+                  </th>
+                  <th className="pb-3 px-4">User Account</th>
+                  <th className="pb-3 px-4">Email</th>
+                  <th className="pb-3 px-4">Role</th>
+                  <th className="pb-3 px-4">Subscription Tier</th>
+                  <th className="pb-3 px-4">Registration</th>
+                  <th className="pb-3 px-4">Status</th>
+                  <th className="pb-3 pr-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.03]">
+                {filteredUsers.map((u) => {
+                  const createdDate = u.createdAt
+                    ? new Date(u.createdAt)
+                    : new Date();
+                  const isSelected = selectedUserIds.includes(u.id);
+
+                  return (
+                    <tr
+                      key={u.id}
+                      className={`transition-colors group ${
+                        isSelected ? "bg-white/[0.04]" : "hover:bg-white/[0.02]"
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <td className="py-3.5 pl-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectUser(u.id)}
+                          className="rounded border-white/20 bg-white/5 accent-violet-600 cursor-pointer"
+                        />
+                      </td>
+
+                      {/* User Account / Avatar */}
+                      <td className="py-3.5 px-4">
+                        <Link
+                          href={`/admin/users/${u.id}`}
+                          className="flex items-center gap-3 group/link"
+                        >
+                          <Avatar className="w-9 h-9 rounded-xl border border-white/[0.08] shadow-sm">
+                            <AvatarImage src={getUserAvatar(u) ?? ""} />
+                            <AvatarFallback className="bg-gradient-to-tr from-violet-600/30 to-indigo-600/30 text-white font-bold text-[11px] rounded-xl">
+                              {u.name?.slice(0, 2).toUpperCase() || "WA"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-[13px] font-bold text-white group-hover/link:text-violet-300 transition-colors">
+                              {u.name || "Anonymous User"}
+                            </p>
+                            <p className="text-[11px] text-white/35 font-mono">
+                              ID: {u.id.slice(0, 8)}…
+                            </p>
+                          </div>
+                        </Link>
+                      </td>
+
+                      {/* Email */}
+                      <td className="py-3.5 px-4 text-[13px] text-white/60 font-mono">
+                        {u.email}
+                      </td>
+
+                      {/* Role Badge */}
+                      <td className="py-3.5 px-4">
+                        {u.role === "admin" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/30">
+                            <ShieldCheck className="w-3 h-3 text-violet-400" />
+                            Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.05] text-white/60 border border-white/[0.08]">
+                            Member
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Tier Badge */}
+                      <td className="py-3.5 px-4">
+                        {u.tier === "pro" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+                            <Zap className="w-3 h-3 text-amber-400" />
+                            Pro Tier
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-white/[0.05] text-white/50 border border-white/[0.08]">
+                            Free Tier
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Registration Date */}
+                      <td className="py-3.5 px-4 text-[12px] text-white/50 font-mono">
+                        {format(createdDate, "MMM d, yyyy")}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4">
+                        {u.banned ? (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-400">
+                            <ShieldAlert className="w-3 h-3 text-rose-400" />
+                            Banned
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            Active
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 pr-2 text-right">
+                        <div className="flex items-center justify-end gap-2 text-white/30">
+                          <Link
+                            href={`/admin/users/${u.id}`}
+                            className="p-1.5 rounded-lg hover:text-white hover:bg-white/[0.06] transition-colors"
+                            title="Inspect User Details"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-5 mt-3 border-t border-white/[0.05]">
+              <span className="text-[12px] text-white/35 font-mono">
+                Showing page {page} of {totalPages} ({total} accounts)
+              </span>
+              <div className="flex gap-2">
+                {page > 1 && (
+                  <Link
+                    href={`/admin?page=${page - 1}${query ? `&query=${query}` : ""}`}
+                    className="px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[12px] font-semibold text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
+                  >
+                    Previous
+                  </Link>
+                )}
+                {page < totalPages && (
+                  <Link
+                    href={`/admin?page=${page + 1}${query ? `&query=${query}` : ""}`}
+                    className="px-3.5 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[12px] font-semibold text-white/70 hover:text-white hover:bg-white/[0.08] transition-all"
+                  >
+                    Next
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
