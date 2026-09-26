@@ -1,19 +1,14 @@
-import {
-  notFound,
-  redirect,
-  unauthorized,
-  unstable_rethrow,
-} from "next/navigation";
-import { getUserAccounts, getUser } from "lib/user/server";
 import { UserDetail } from "@/components/user/user-detail/user-detail";
 import {
   UserStatsCardLoader,
   UserStatsCardLoaderSkeleton,
 } from "@/components/user/user-detail/user-stats-card-loader";
+import { getUser, getUserAccounts } from "lib/user/server";
+import { notFound } from "next/navigation";
 
-import { Suspense } from "react";
+import { hasAdminPermission } from "auth/permissions";
 import { getSession } from "auth/server";
-import { requireAdminPermission } from "auth/permissions";
+import { Suspense } from "react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -21,16 +16,11 @@ interface PageProps {
 
 export default async function UserDetailPage({ params }: PageProps) {
   const { id } = await params;
-  try {
-    await requireAdminPermission();
-  } catch (error) {
-    unstable_rethrow(error);
-    unauthorized();
+  const isAdmin = await hasAdminPermission();
+  if (!isAdmin) {
+    return null;
   }
   const session = await getSession();
-  if (!session) {
-    redirect("/login");
-  }
   const [user, userAccountInfo] = await Promise.all([
     getUser(id),
     getUserAccounts(id),
@@ -43,7 +33,7 @@ export default async function UserDetailPage({ params }: PageProps) {
   return (
     <UserDetail
       user={user}
-      currentUserId={session.user.id}
+      currentUserId={session?.user?.id || "admin"}
       userAccountInfo={userAccountInfo}
       userStatsSlot={
         <Suspense fallback={<UserStatsCardLoaderSkeleton />}>

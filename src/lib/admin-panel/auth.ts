@@ -1,6 +1,6 @@
 import "server-only";
-import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "crypto";
+import { cookies } from "next/headers";
 
 // ─── Hardcoded admin credentials (server-only, never sent to client) ──────────
 const ADMIN_CREDENTIALS: Record<string, string> = {
@@ -78,7 +78,7 @@ export async function setAdminSession(email: string): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: COOKIE_MAX_AGE,
-    path: "/admin-panel",
+    path: "/",
   });
 }
 

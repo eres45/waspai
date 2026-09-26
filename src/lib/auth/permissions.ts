@@ -1,9 +1,9 @@
 import "server-only";
-import { getSession } from "./auth-instance";
 import { getIsUserAdmin } from "lib/user/utils";
+import { getSession } from "./auth-instance";
 import { admin, editor, user as userRole } from "./roles";
 import type { BetterAuthRole } from "./types";
-import { parseRoleString, isBetterAuthRole } from "./types";
+import { isBetterAuthRole, parseRoleString } from "./types";
 
 /**
  * Simple permission helpers that wrap Better Auth's role system
@@ -21,6 +21,14 @@ import { parseRoleString, isBetterAuthRole } from "./types";
  */
 export async function hasAdminPermission(): Promise<boolean> {
   try {
+    try {
+      const { getAdminSession } = await import("lib/admin-panel/auth");
+      const adminEmail = await getAdminSession();
+      if (adminEmail) return true;
+    } catch {
+      // Ignore errors when checking admin session cookie (e.g. outside request context in unit tests)
+    }
+
     const session = await getSession();
     if (!session?.user) return false;
 
