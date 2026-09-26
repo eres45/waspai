@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import logger from "@/lib/logger";
 import { supabaseAuth } from "@/lib/auth/supabase-auth";
-import { cookies } from "next/headers";
 import { userRepositoryRest } from "@/lib/db/pg/repositories/user-repository.rest";
 import { sendWelcomeEmail } from "@/lib/email";
+import logger from "@/lib/logger";
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,11 +46,17 @@ export async function GET(request: NextRequest) {
           const user = data.user;
           const email = user.email || "";
           const name =
+            user.user_metadata?.full_name ||
             user.user_metadata?.name ||
             user.user_metadata?.preferred_username ||
+            user.user_metadata?.user_name ||
             email.split("@")[0] ||
-            "GitHub User";
-          const avatarUrl = user.user_metadata?.avatar_url || null;
+            "User";
+          const avatarUrl =
+            user.user_metadata?.avatar_url ||
+            user.user_metadata?.picture ||
+            user.user_metadata?.image ||
+            null;
 
           // Create or update user in database with avatar
           let dbUserRole: string | null = null;
@@ -102,7 +108,7 @@ export async function GET(request: NextRequest) {
           const enrichedUser = {
             ...data.user,
             name: name,
-            image: avatarUrl,
+            image: avatarUrl || (data.user as any)?.image || null,
             // Include role from database so admin checks work correctly
             role: dbUserRole ?? data.user.role ?? "user",
           };

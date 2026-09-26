@@ -1,8 +1,8 @@
-import { getSession } from "auth/server";
-import { NextRequest, NextResponse } from "next/server";
-import { userRepository } from "@/lib/db/repository";
-import logger from "logger";
 import crypto from "crypto";
+import { userRepository } from "@/lib/db/repository";
+import { getSession } from "auth/server";
+import logger from "logger";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,14 +78,34 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const sessionImage = (session.user as any).image || null;
+
     // Use real session values as immediate fallback (so UI is correct even
     // before the DB write above completes on first hit).
     const resolvedEmail =
-      isPlaceholderEmail && sessionEmail ? sessionEmail : dbUser.email || "";
+      isPlaceholderEmail && sessionEmail
+        ? sessionEmail
+        : dbUser.email || sessionEmail || "";
     const resolvedName =
-      (!dbUser.name || dbUser.name === "Synced User") && sessionName
+      (!dbUser.name ||
+        dbUser.name === "Synced User" ||
+        dbUser.name === "GitHub User") &&
+      sessionName
         ? sessionName
-        : dbUser.name || resolvedEmail.split("@")[0] || "User";
+        : dbUser.name || sessionName || resolvedEmail.split("@")[0] || "User";
+    const resolvedImage = dbUser.image || sessionImage || null;
+
+    // Auto-repair missing avatar in DB if session has it
+    if (!dbUser.image && sessionImage) {
+      try {
+        await userRepository.updateUserDetails({
+          userId: dbUser.id,
+          image: sessionImage,
+        });
+      } catch (imgErr) {
+        logger.error("[user/details] Failed to backfill image:", imgErr);
+      }
+    }
     // ─────────────────────────────────────────────────────────────────────────
 
     const now = new Date().toISOString();
@@ -94,7 +114,7 @@ export async function GET(request: NextRequest) {
       id: dbUser.id,
       email: resolvedEmail,
       name: resolvedName,
-      image: dbUser.image || null,
+      image: resolvedImage,
       createdAt: dbUser.createdAt || now,
       updatedAt: dbUser.updatedAt || now,
       lastLogin: dbUser.lastLogin || now,

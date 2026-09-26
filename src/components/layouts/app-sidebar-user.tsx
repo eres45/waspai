@@ -1,49 +1,49 @@
 "use client";
 
+import { signOutAction } from "@/app/api/auth/actions";
+import { appStore } from "@/app/store";
+import { useThemeStyle } from "@/hooks/use-theme-style";
+import { getLocaleAction } from "@/i18n/get-locale";
+import { BasicUser } from "app-types/user";
+import { authClient } from "auth/client";
+import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
+import { getUserAvatar } from "lib/user/utils";
+import { capitalizeFirstLetter, cn, fetcher } from "lib/utils";
 import {
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenu,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSubContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-} from "ui/dropdown-menu";
-import { AvatarFallback, AvatarImage, Avatar } from "ui/avatar";
-import { SidebarMenuButton, SidebarMenuItem, SidebarMenu } from "ui/sidebar";
-import {
-  ChevronsUpDown,
-  LogOutIcon,
-  Palette,
-  Languages,
-  Sun,
-  MoonStar,
   ChevronRight,
-  Settings,
+  ChevronsUpDown,
   CreditCard,
+  Languages,
+  LogOutIcon,
+  MoonStar,
+  Palette,
+  Settings,
+  Sun,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { appStore } from "@/app/store";
-import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
-import { capitalizeFirstLetter, cn, fetcher } from "lib/utils";
-import { authClient } from "auth/client";
-import { useTranslations } from "next-intl";
-import { signOutAction } from "@/app/api/auth/actions";
 import { useCallback } from "react";
 import useSWR from "swr";
-import { getLocaleAction } from "@/i18n/get-locale";
+import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { DiscordIcon } from "ui/discord-icon";
-import { useThemeStyle } from "@/hooks/use-theme-style";
-import { BasicUser } from "app-types/user";
-import { getUserAvatar } from "lib/user/utils";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "ui/dropdown-menu";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "ui/sidebar";
 import { Skeleton } from "ui/skeleton";
 
 export function AppSidebarUserInner(props: {
@@ -51,7 +51,7 @@ export function AppSidebarUserInner(props: {
 }) {
   const { data: user } = useSWR<BasicUser>(`/api/user/details`, fetcher, {
     fallbackData: props.user,
-    revalidateOnMount: false,
+    revalidateOnMount: !props.user?.image,
     revalidateOnFocus: false,
     shouldRetryOnError: false,
     refreshInterval: 1000 * 60 * 5,
@@ -91,12 +91,22 @@ export function AppSidebarUserInner(props: {
                     alt={user?.name || "User"}
                   />
                   <AvatarFallback>
-                    {user?.name?.slice(0, 1) || ""}
+                    {user?.name?.slice(0, 1) ||
+                      user?.email?.slice(0, 1)?.toUpperCase() ||
+                      "U"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate" data-testid="sidebar-user-email">
-                  {user?.email}
-                </span>
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                  <span className="truncate font-medium text-sm text-sidebar-foreground">
+                    {user?.name || user?.email?.split("@")[0] || "User"}
+                  </span>
+                  <span
+                    className="truncate text-xs text-muted-foreground"
+                    data-testid="sidebar-user-email"
+                  >
+                    {user?.email}
+                  </span>
+                </div>
                 <ChevronsUpDown className="ml-auto" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>

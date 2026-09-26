@@ -1,7 +1,7 @@
-import { supabaseRest } from "../../supabase-rest";
-import logger from "@/lib/logger";
-import { UserRepository, UserPreferences, User } from "app-types/user";
 import crypto from "crypto";
+import logger from "@/lib/logger";
+import { User, UserPreferences, UserRepository } from "app-types/user";
+import { supabaseRest } from "../../supabase-rest";
 
 const mapUserToEntity = (data: any): any => {
   if (!data) return null;
@@ -52,18 +52,19 @@ export const userRepositoryRest: UserRepository = {
       // 2. Existing name is "Synced User" (placeholder fix)
       // 3. Existing name/image is missing/empty
 
-      const isPlaceholder = existingUser?.name === "Synced User";
-      const hasName = !!existingUser?.name;
-      const hasImage = !!existingUser?.image;
+      const isPlaceholderName =
+        !existingUser?.name ||
+        existingUser.name === "Synced User" ||
+        existingUser.name === "GitHub User" ||
+        existingUser.name === "User";
 
-      if (!existingUser || isPlaceholder || !hasName) {
-        userData.name = name || "";
+      if (!existingUser || isPlaceholderName) {
+        if (name) userData.name = name;
       }
 
-      if (!existingUser || !hasImage) {
-        if (avatarUrl) {
-          userData.image = avatarUrl;
-        }
+      // Always update avatar if OAuth provides a valid avatarUrl
+      if (avatarUrl) {
+        userData.image = avatarUrl;
       }
 
       // If it's a completely new user, set created_at and referral_code
