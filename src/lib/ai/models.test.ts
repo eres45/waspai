@@ -96,14 +96,9 @@ describe("customModelProvider file support metadata", () => {
       expect(getModelTier(m.name)).toBe("Free");
     }
 
-    // Tool call support is per-model; ox-alpha, deepseek-v4-flash, and glm-5.3-flash do NOT support tool calls
-    const toolUnsupported = ["ox-alpha", "deepseek-v4-flash", "glm-5.3-flash"];
+    // Tool call support: all registered models support tool calls via smart provider
     for (const m of allModels) {
-      if (toolUnsupported.includes(m.name)) {
-        expect(isToolCallUnsupportedModel(m.name)).toBe(true);
-      } else {
-        expect(isToolCallUnsupportedModel(m.name)).toBe(false);
-      }
+      expect(isToolCallUnsupportedModel(m.name)).toBe(false);
     }
 
     // Mistral model instantiation & alias resolution

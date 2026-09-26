@@ -733,14 +733,18 @@ function createSmartOpenAICompatibleFetch(
         if (bodyObj.stream) {
           bodyObj.stream = false;
         }
-        if (!bodyObj.max_tokens || bodyObj.max_tokens > 2048) {
-          bodyObj.max_tokens = 2048;
+        // Allow up to 8192 output tokens so large code, documentation, and reasoning models don't get truncated
+        const targetMaxTokens = 8192;
+        if (!bodyObj.max_tokens || bodyObj.max_tokens < targetMaxTokens) {
+          bodyObj.max_tokens = targetMaxTokens;
+        } else if (bodyObj.max_tokens > targetMaxTokens) {
+          bodyObj.max_tokens = targetMaxTokens;
         }
-        if (
-          bodyObj.max_completion_tokens &&
-          bodyObj.max_completion_tokens > 2048
-        ) {
-          bodyObj.max_completion_tokens = 2048;
+        if (bodyObj.max_completion_tokens) {
+          bodyObj.max_completion_tokens = Math.min(
+            Math.max(bodyObj.max_completion_tokens, targetMaxTokens),
+            targetMaxTokens,
+          );
         }
         if (Array.isArray(bodyObj.messages)) {
           bodyObj.messages = prunePriorTurnToolMessages(bodyObj.messages);
@@ -849,6 +853,7 @@ function createSmartOpenAICompatibleFetch(
       } catch (_jsonErr) {
         let accReasoning = "";
         let accContent = "";
+        let accFinishReason: string | null = null;
         let modelId = defaultModelName;
         let respId = "chatcmpl-sse";
         const toolCallMap = new Map<number, any>();
@@ -863,6 +868,9 @@ function createSmartOpenAICompatibleFetch(
             if (chunk.model) modelId = chunk.model;
             const choice = chunk.choices?.[0];
             if (!choice) continue;
+            if (choice.finish_reason) {
+              accFinishReason = choice.finish_reason;
+            }
             const d = choice.delta || choice.message || {};
             if (d.reasoning || d.reasoning_content) {
               accReasoning += d.reasoning || d.reasoning_content;
@@ -895,6 +903,7 @@ function createSmartOpenAICompatibleFetch(
           choices: [
             {
               index: 0,
+              finish_reason: accFinishReason || "stop",
               message: {
                 role: "assistant",
                 reasoning: accReasoning,
@@ -922,7 +931,7 @@ function createSmartOpenAICompatibleFetch(
           const r = await fetch(url, {
             ...reqOptions,
             headers,
-            signal: AbortSignal.timeout(22000),
+            signal: AbortSignal.timeout(60000),
           });
           lastRes = r;
           if (r.ok) return r;
@@ -1080,7 +1089,7 @@ function createSmartOpenAICompatibleFetch(
               const rescueBody = {
                 ...parsedBodyObj,
                 model: "gpt-oss-120b",
-                max_tokens: 2048,
+                max_tokens: 8192,
               };
               const rescueRes = await fetch(
                 `${GROQ_WORKER_URL}/v1/chat/completions`,
@@ -1091,7 +1100,7 @@ function createSmartOpenAICompatibleFetch(
                     Authorization: "Bearer dummy",
                   },
                   body: JSON.stringify(rescueBody),
-                  signal: AbortSignal.timeout(20000),
+                  signal: AbortSignal.timeout(45000),
                 },
               );
               if (rescueRes.ok) {
@@ -1111,11 +1120,13 @@ function createSmartOpenAICompatibleFetch(
 
     try {
       const json = recoveredJson || (await parseResponseJsonOrSse(res));
-      const msg = json.choices?.[0]?.message || {};
+      const firstChoice = json.choices?.[0] || {};
+      const msg = firstChoice.message || {};
       let reasoning = msg.reasoning || msg.reasoning_content || "";
       const content = msg.content || "";
       let toolCalls = msg.tool_calls;
       let effectiveContent = content;
+      const upstreamFinishReason = firstChoice.finish_reason || "stop";
 
       // Normalize tool names and arguments on native tool_calls
       if (Array.isArray(toolCalls) && toolCalls.length > 0) {
@@ -1413,7 +1424,7 @@ function createSmartOpenAICompatibleFetch(
                 {
                   index: 0,
                   delta: {},
-                  finish_reason: "stop",
+                  finish_reason: upstreamFinishReason || "stop",
                 },
               ],
               usage: json.usage,
