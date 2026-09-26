@@ -314,8 +314,9 @@ export function AdminDashboard({
             <button
               type="button"
               onClick={handleLogout}
-              className="text-[12px] font-medium text-white/50 hover:text-white transition-colors"
+              className="text-[12px] font-medium text-white/50 hover:text-white transition-colors flex items-center justify-center gap-1.5 mx-auto"
             >
+              <LogOut className="w-3.5 h-3.5" />
               Sign out of panel
             </button>
           </div>
