@@ -78,8 +78,23 @@ export const skillRepositoryRest: SkillRepository = {
         .split(/[\s,+/_-]+/)
         .filter((t) => t.length > 1);
 
+      let searchQuery = supabaseRest
+        .from("skill")
+        .select("*")
+        .eq("is_public", true)
+        .neq("name", "skill-creator")
+        .neq("name", "site-creator")
+        .neq("name", "game-creator")
+        .limit(50);
+
+      if (category) searchQuery = searchQuery.eq("category", category);
+      if (featured !== undefined)
+        searchQuery = searchQuery.eq("is_featured", featured);
+      if (tierRequired)
+        searchQuery = searchQuery.eq("tier_required", tierRequired);
+
       // 1. Exact phrase search
-      const exactQuery = query.or(
+      const exactQuery = searchQuery.or(
         `title.ilike.%${cleanSearch}%,description.ilike.%${cleanSearch}%,name.ilike.%${cleanSearch}%`,
       );
       const { data: exactData, error: exactError } = await exactQuery;
