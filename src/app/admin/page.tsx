@@ -1,4 +1,5 @@
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import type { AdminUserListItem } from "app-types/admin";
 import { hasAdminPermission } from "auth/permissions";
 import {
   type AdminDashboardStats,
@@ -38,7 +39,10 @@ export default async function AdminIndexPage({ searchParams }: PageProps) {
   const sortDirection = params.sortDirection ?? DEFAULT_SORT_DIRECTION;
 
   let stats: AdminDashboardStats;
-  let usersResult = { users: [], total: 0 };
+  let usersResult: { users: AdminUserListItem[]; total: number } = {
+    users: [],
+    total: 0,
+  };
 
   try {
     const [fetchedStats, fetchedUsers] = await Promise.all([
