@@ -1,45 +1,41 @@
 "use client";
 
+import { UploadedFile, appStore } from "@/app/store";
+import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
+import { ChatMention, ChatModel } from "app-types/chat";
 import {
   AudioWaveformIcon,
   ChevronDown,
   CornerRightUp,
+  Edit2,
   FileIcon,
   FileTextIcon,
   ImagesIcon,
   Loader2,
+  MicIcon,
   PaperclipIcon,
   PlusIcon,
-  MicIcon,
   Square,
   XIcon,
-  Edit2,
-  Film,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "ui/button";
-import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
-import { SelectModel } from "./select-model";
-import { appStore, UploadedFile } from "@/app/store";
 import { useShallow } from "zustand/shallow";
-import { ChatMention, ChatModel } from "app-types/chat";
-import dynamic from "next/dynamic";
+import { SelectModel } from "./select-model";
 import { ToolModeDropdown } from "./tool-mode-dropdown";
 
-import { ToolSelectDropdown } from "./tool-select-dropdown";
-import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
-import { useTranslations } from "next-intl";
+import { useFileUpload } from "@/hooks/use-presigned-upload";
+import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
+import { cn, generateUUID } from "@/lib/utils";
 import { Editor } from "@tiptap/react";
 import { WorkflowSummary } from "app-types/workflow";
-import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
-import equal from "lib/equal";
-import { MCPIcon } from "ui/mcp-icon";
+import { cleanModelDisplayName } from "lib/ai/model-display-names";
 import { DefaultToolName } from "lib/ai/tools";
-import { DefaultToolIcon } from "./default-tool-icon";
-import { OpenAIIcon } from "ui/openai-icon";
-import { GrokIcon } from "ui/grok-icon";
+import equal from "lib/equal";
+import { useTranslations } from "next-intl";
+import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { ClaudeIcon } from "ui/claude-icon";
-import { GeminiIcon } from "ui/gemini-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,18 +46,21 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
-import { cn, generateUUID } from "@/lib/utils";
-import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
-import { useFileUpload } from "@/hooks/use-presigned-upload";
-import { cleanModelDisplayName } from "lib/ai/model-display-names";
+import { GeminiIcon } from "ui/gemini-icon";
+import { GrokIcon } from "ui/grok-icon";
+import { MCPIcon } from "ui/mcp-icon";
+import { OpenAIIcon } from "ui/openai-icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { UploadLimitBadge } from "./chat/upload-limit-badge";
+import { DefaultToolIcon } from "./default-tool-icon";
+import { ToolSelectDropdown } from "./tool-select-dropdown";
 
-import { EMOJI_DATA } from "lib/const";
-import { AgentSummary } from "app-types/agent";
-import { FileUIPart, TextUIPart } from "ai";
-import { toast } from "sonner";
-import { isFilePartSupported, isIngestSupported } from "@/lib/ai/file-support";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
+import { isFilePartSupported, isIngestSupported } from "@/lib/ai/file-support";
+import { FileUIPart, TextUIPart } from "ai";
+import { AgentSummary } from "app-types/agent";
+import { EMOJI_DATA } from "lib/const";
+import { toast } from "sonner";
 import { DictateButton } from "./dictate-button";
 
 interface PromptInputProps {
@@ -124,7 +123,6 @@ export default function PromptInput({
     threadFiles,
     threadImageToolModel,
     editImageState,
-    videoGenState,
     storeChatModel,
     appStoreMutate,
   ] = appStore(
@@ -134,7 +132,6 @@ export default function PromptInput({
       state.threadFiles,
       state.threadImageToolModel,
       state.editImageState,
-      state.videoGenState,
       state.chatModel,
       state.mutate,
     ]),
@@ -366,35 +363,6 @@ export default function PromptInput({
           [threadId]: model,
         },
       }));
-
-      // Focus on the input
-      editorRef.current?.commands.focus();
-    },
-    [threadId, appStoreMutate],
-  );
-
-  const handleGenerateVideo = useCallback(
-    (model?: string) => {
-      if (!model) {
-        appStoreMutate({
-          videoGenState: {
-            isOpen: false,
-            model: undefined,
-          },
-        });
-        return;
-      }
-      if (!threadId) return;
-
-      setIsUploadDropdownOpen(false);
-
-      // Store the model and focus on input for user to type prompt
-      appStoreMutate({
-        videoGenState: {
-          isOpen: false,
-          model,
-        },
-      });
 
       // Focus on the input
       editorRef.current?.commands.focus();
@@ -635,11 +603,6 @@ export default function PromptInput({
                 editImageModel: editImageState.model,
               }
             : {}),
-          ...(videoGenState?.model
-            ? {
-                videoGenModel: videoGenState.model,
-              }
-            : {}),
         },
       });
       appStoreMutate((prev) => ({
@@ -650,10 +613,6 @@ export default function PromptInput({
         editImageState: {
           isOpen: false,
           selectedImageUrl: undefined,
-          model: undefined,
-        },
-        videoGenState: {
-          isOpen: false,
           model: undefined,
         },
         threadImageToolModel: {
@@ -993,71 +952,6 @@ export default function PromptInput({
                         </DropdownMenuSubContent>
                       </DropdownMenuPortal>
                     </DropdownMenuSub>
-
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="cursor-pointer">
-                        <Film className="mr-4 size-4 text-muted-foreground" />
-                        <span className="mr-4">Generate Video</span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuPortal>
-                        <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              appStoreMutate({
-                                videoGenState: {
-                                  isOpen: false,
-                                  model: "sora",
-                                },
-                              });
-                              editorRef.current?.commands.focus();
-                            }}
-                            className="cursor-pointer text-xs"
-                          >
-                            <span className="mr-2 size-4 flex items-center justify-center">
-                              🎬
-                            </span>
-                            SORA Standard
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              appStoreMutate({
-                                videoGenState: {
-                                  isOpen: false,
-                                  model: "sora-cinematic",
-                                },
-                              });
-                              editorRef.current?.commands.focus();
-                            }}
-                            className="cursor-pointer text-xs"
-                          >
-                            <span className="mr-2 size-4 flex items-center justify-center">
-                              🎥
-                            </span>
-                            SORA Cinematic
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setIsUploadDropdownOpen(false);
-                              appStoreMutate({
-                                videoGenState: {
-                                  isOpen: false,
-                                  model: "sora-anime",
-                                },
-                              });
-                              editorRef.current?.commands.focus();
-                            }}
-                            className="cursor-pointer text-xs"
-                          >
-                            <span className="mr-2 size-4 flex items-center justify-center">
-                              🌸
-                            </span>
-                            SORA Anime
-                          </DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                      </DropdownMenuPortal>
-                    </DropdownMenuSub>
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -1071,7 +965,6 @@ export default function PromptInput({
                       onSelectWorkflow={onSelectWorkflow}
                       onSelectAgent={onSelectAgent}
                       onGenerateImage={handleGenerateImage}
-                      onGenerateVideo={handleGenerateVideo}
                       onEditImage={handleEditImage}
                       mentions={mentions}
                     />
@@ -1117,27 +1010,6 @@ export default function PromptInput({
                       <XIcon className="size-3 group-hover/edit-image:opacity-100 opacity-0 transition-opacity duration-200" />
                     </Button>
                   )}
-
-                {!toolDisabled && videoGenState && videoGenState.model && (
-                  <Button
-                    variant={"ghost"}
-                    size={"sm"}
-                    className="rounded-full hover:bg-input! p-2! group/video-gen text-primary"
-                    onClick={() => {
-                      // Close the video gen mode
-                      appStoreMutate({
-                        videoGenState: {
-                          isOpen: false,
-                          model: undefined,
-                        },
-                      });
-                    }}
-                  >
-                    <Film className="size-3.5" />
-                    {videoGenState.model}
-                    <XIcon className="size-3 group-hover/video-gen:opacity-100 opacity-0 transition-opacity duration-200" />
-                  </Button>
-                )}
 
                 <div className="flex-1" />
 
