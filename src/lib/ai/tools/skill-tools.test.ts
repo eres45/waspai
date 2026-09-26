@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createSkillTool } from "./skill-tools";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createSkillTool,
+  loadSkillTool,
+  searchSkillsTool,
+} from "./skill-tools";
 
 const mockGetSession = vi.fn();
 vi.mock("auth/server", () => ({
@@ -10,6 +14,7 @@ const mockSkillRepository = {
   getSkillByName: vi.fn(),
   createSkill: vi.fn(),
   installSkill: vi.fn(),
+  listSkills: vi.fn(),
 };
 
 vi.mock("lib/db/repository", () => ({
@@ -18,6 +23,7 @@ vi.mock("lib/db/repository", () => ({
       mockSkillRepository.getSkillByName(...args),
     createSkill: (...args: any[]) => mockSkillRepository.createSkill(...args),
     installSkill: (...args: any[]) => mockSkillRepository.installSkill(...args),
+    listSkills: (...args: any[]) => mockSkillRepository.listSkills(...args),
   },
 }));
 
@@ -155,6 +161,132 @@ describe("createSkillTool with Hermes Compounding Distillation", () => {
     expect(mockSkillRepository.installSkill).toHaveBeenCalledWith(
       "user-123",
       "existing-123",
+    );
+  });
+});
+
+describe("searchSkillsTool (Private Skill Vault)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns matching skills without leaking heavy procedural content", async () => {
+    mockSkillRepository.listSkills.mockResolvedValue([
+      {
+        id: "skill-1",
+        name: "competitor-analyst",
+        title: "Competitor Analyst",
+        description: "Analyze market competitors and produce PDF",
+        category: "research",
+        tags: ["market", "competitor"],
+        toolsRequired: ["web-search", "generate-pdf"],
+        content: "LONG RECIPE CONTENT THAT SHOULD NOT BE LEAKED IN SEARCH",
+      },
+    ]);
+
+    const result = await (searchSkillsTool.execute as any)({
+      query: "competitor",
+      category: "research",
+      limit: 5,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(1);
+    expect(result.skills[0].name).toBe("competitor-analyst");
+    expect(result.skills[0].title).toBe("Competitor Analyst");
+    expect(result.skills[0].content).toBeUndefined(); // content pruned to keep search metadata lean
+    expect(result.instruction).toContain("load_skill");
+    expect(mockSkillRepository.listSkills).toHaveBeenCalledWith({
+      search: "competitor",
+      category: "research",
+      limit: 5,
+    });
+  });
+
+  it("returns a helpful message when no skills match the search query", async () => {
+    mockSkillRepository.listSkills.mockResolvedValue([]);
+
+    const result = await (searchSkillsTool.execute as any)({
+      query: "quantum-teleportation",
+      limit: 5,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(0);
+    expect(result.skills).toEqual([]);
+    expect(result.message).toContain("No skills found in the vault matching");
+  });
+
+  it("handles repository failure gracefully", async () => {
+    mockSkillRepository.listSkills.mockRejectedValue(
+      new Error("Database connection error"),
+    );
+
+    const result = await (searchSkillsTool.execute as any)({
+      query: "error-test",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Database connection error");
+  });
+});
+
+describe("loadSkillTool (Private Skill Vault)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("loads full recipe and tool requirements for an existing skill", async () => {
+    mockSkillRepository.getSkillByName.mockResolvedValue({
+      id: "skill-2",
+      name: "youtube-summarizer",
+      title: "YouTube Summarizer",
+      description: "Extract transcripts and summarize key chapters",
+      category: "media",
+      toolsRequired: ["video-perception"],
+      content: "# YouTube Summarizer\n\n## Step 1: Extract transcript",
+    });
+
+    const result = await (loadSkillTool.execute as any)({
+      name: "youtube-summarizer",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.name).toBe("youtube-summarizer");
+    expect(result.title).toBe("YouTube Summarizer");
+    expect(result.recipe).toBe(
+      "# YouTube Summarizer\n\n## Step 1: Extract transcript",
+    );
+    expect(result.toolsRequired).toContain("video-perception");
+    expect(result.instruction).toContain("loaded into your working memory");
+  });
+
+  it("returns error if skill is not found or has empty content", async () => {
+    mockSkillRepository.getSkillByName.mockResolvedValue(null);
+
+    const result = await (loadSkillTool.execute as any)({
+      name: "non-existent-skill",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("was not found in your private vault");
+  });
+
+  it("sanitizes slug before lookup", async () => {
+    mockSkillRepository.getSkillByName.mockResolvedValue({
+      id: "skill-3",
+      name: "code-reviewer",
+      title: "Code Reviewer",
+      content: "# Instructions",
+    });
+
+    await (loadSkillTool.execute as any)({
+      name: "Code Reviewer / Senior",
+    });
+
+    // Sanitized to lowercase alphanumeric + hyphens
+    expect(mockSkillRepository.getSkillByName).toHaveBeenCalledWith(
+      "code-reviewer-senior",
     );
   });
 });

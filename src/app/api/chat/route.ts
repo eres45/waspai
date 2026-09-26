@@ -1,26 +1,39 @@
 import {
+  UIMessage,
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
   smoothStream,
   stepCountIs,
   streamText,
-  UIMessage,
 } from "ai";
 import { AllowedMCPServer } from "app-types/mcp";
 
-import {
-  customModelProvider,
-  isToolCallUnsupportedModel,
-  isImageInputUnsupportedModel,
-  buildDynamicModelsInfo,
-  sanitizeMessageToolCalls,
-  getModelTier,
-} from "lib/ai/models";
-import { createReverseModelMapping } from "lib/ai/model-display-names";
-import { AppDefaultToolkit } from "lib/ai/tools";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
+import { createReverseModelMapping } from "lib/ai/model-display-names";
+import {
+  buildDynamicModelsInfo,
+  customModelProvider,
+  getModelTier,
+  isImageInputUnsupportedModel,
+  isToolCallUnsupportedModel,
+  sanitizeMessageToolCalls,
+} from "lib/ai/models";
+import { AppDefaultToolkit } from "lib/ai/tools";
 
+import {
+  ChatMention,
+  ChatMetadata,
+  chatApiSchemaRequestBodySchema,
+} from "app-types/chat";
+import {
+  PROXY_CLEANUP_PROMPT,
+  buildMcpServerCustomizationsSystemPrompt,
+  buildSearchModelSystemPrompt,
+  buildToolCallUnsupportedModelSystemPrompt,
+  buildUserSystemPrompt,
+  buildWaspModelSystemPrompt,
+} from "lib/ai/prompts";
 import {
   agentRepository,
   chatRepository,
@@ -30,102 +43,93 @@ import {
 } from "lib/db/repository";
 import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 import globalLogger from "logger";
-import {
-  buildMcpServerCustomizationsSystemPrompt,
-  buildUserSystemPrompt,
-  buildToolCallUnsupportedModelSystemPrompt,
-  buildSearchModelSystemPrompt,
-  PROXY_CLEANUP_PROMPT,
-  buildWaspModelSystemPrompt,
-} from "lib/ai/prompts";
-import {
-  chatApiSchemaRequestBodySchema,
-  ChatMention,
-  ChatMetadata,
-} from "app-types/chat";
 
 import { errorIf, safe } from "ts-safe";
 
-import {
-  excludeToolExecution,
-  handleError,
-  manualToolExecuteByLastMessage,
-  mergeSystemPrompt,
-  extractInProgressToolPart,
-  filterMcpServerCustomizations,
-  loadMcpTools,
-  loadWorkFlowTools,
-  loadAppDefaultTools,
-  convertToSavePart,
-} from "./shared.chat";
-import {
-  rememberAgentAction,
-  rememberMcpServerCustomizationsAction,
-} from "./actions";
-import { getUnifiedSession } from "lib/auth/unified-session";
-import { colorize } from "consola/utils";
-import { generateUUID } from "lib/utils";
-import {
-  nanoBananaTool,
-  openaiImageTool,
-  analyzeImageTool,
-} from "lib/ai/tools/image";
-import {
-  removeBackgroundTool,
-  enhanceImageTool,
-  animeConversionTool,
-  removeWatermarkTool,
-  removeObjectTool,
-  superResolutionTool,
-  restoreOldPhotoTool,
-  blurBackgroundTool,
-  editImageTool,
-} from "lib/ai/tools/image/edit-image";
-import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
-import {
-  wordDocumentTool,
-  csvGeneratorTool,
-  textFileTool,
-} from "lib/ai/tools/document-generator";
+import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
+import { ImageToolName } from "@/lib/ai/tools";
+import { chatExportTool } from "@/lib/ai/tools/chat-export";
+import { deploySiteTool } from "@/lib/ai/tools/deploy-site";
+import { editSiteFileTool } from "@/lib/ai/tools/edit-site-file";
+import { fileConverterTool } from "@/lib/ai/tools/file-converter";
+import { htmlPreviewTool } from "@/lib/ai/tools/html-preview";
 import {
   qrCodeGeneratorTool,
   qrCodeWithLogoTool,
 } from "@/lib/ai/tools/qr-code-generator";
-import { htmlPreviewTool } from "@/lib/ai/tools/html-preview";
-import { chatExportTool } from "@/lib/ai/tools/chat-export";
-import { deploySiteTool } from "@/lib/ai/tools/deploy-site";
-import { createSkillTool } from "@/lib/ai/tools/skill-tools";
-import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
 import { readSiteFileTool } from "@/lib/ai/tools/read-site-file";
-import { editSiteFileTool } from "@/lib/ai/tools/edit-site-file";
-import { fileConverterTool } from "@/lib/ai/tools/file-converter";
-import { webSearchTool } from "@/lib/ai/tools/web/web-search";
 import {
-  listSmsNumbersTool,
+  createSkillTool,
+  loadSkillTool,
+  searchSkillsTool,
+} from "@/lib/ai/tools/skill-tools";
+import {
   getSmsMessagesTool,
+  listSmsNumbersTool,
 } from "@/lib/ai/tools/web/sms-tool";
 import {
   createTempEmailTool,
   getTempEmailMessagesTool,
 } from "@/lib/ai/tools/web/temp-mail";
-import { ImageToolName } from "@/lib/ai/tools";
-import { buildCsvIngestionPreviewParts } from "@/lib/ai/ingest/csv-ingest";
+import { webSearchTool } from "@/lib/ai/tools/web/web-search";
+import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
+import { colorize } from "consola/utils";
 import {
-  saveMemoryTool,
-  updateMemoryTool,
+  getModelContextLimit,
+  truncateTextToLimit,
+} from "lib/ai/context-limits";
+import {
+  compactPriorTurnToolInvocations,
+  createHarnessedToolkit,
+} from "lib/ai/harness/agent-harness";
+import {
+  csvGeneratorTool,
+  textFileTool,
+  wordDocumentTool,
+} from "lib/ai/tools/document-generator";
+import {
+  analyzeImageTool,
+  nanoBananaTool,
+  openaiImageTool,
+} from "lib/ai/tools/image";
+import {
+  animeConversionTool,
+  blurBackgroundTool,
+  editImageTool,
+  enhanceImageTool,
+  removeBackgroundTool,
+  removeObjectTool,
+  removeWatermarkTool,
+  restoreOldPhotoTool,
+  superResolutionTool,
+} from "lib/ai/tools/image/edit-image";
+import {
   deleteMemoryTool,
   getMemoriesTool,
+  saveMemoryTool,
+  updateMemoryTool,
 } from "lib/ai/tools/memory-tools";
+import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
+import { getUnifiedSession } from "lib/auth/unified-session";
 import { serverFileStorage } from "lib/file-storage";
-import {
-  truncateTextToLimit,
-  getModelContextLimit,
-} from "lib/ai/context-limits";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
+import { generateUUID } from "lib/utils";
 import {
-  createHarnessedToolkit,
-  compactPriorTurnToolInvocations,
-} from "lib/ai/harness/agent-harness";
+  rememberAgentAction,
+  rememberMcpServerCustomizationsAction,
+} from "./actions";
+import {
+  convertToSavePart,
+  excludeToolExecution,
+  extractInProgressToolPart,
+  filterMcpServerCustomizations,
+  handleError,
+  loadAppDefaultTools,
+  loadMcpTools,
+  loadWorkFlowTools,
+  manualToolExecuteByLastMessage,
+  mergeSystemPrompt,
+} from "./shared.chat";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -1715,6 +1719,48 @@ CRITICAL INSTRUCTIONS:
           }
         }
 
+        // On-Demand Private Skill Vault Auto-Matcher (Claude Code / Hermes pattern)
+        // If no specific skill was pre-loaded, check if the prompt matches an expert recipe in the private vault
+        if (
+          !isSkillCreationRequest &&
+          !isSiteCreationRequest &&
+          !isGameCreationRequest &&
+          combinedSkillContents.length === 0 &&
+          lastMessageText.length > 5
+        ) {
+          try {
+            // Extract clean search tokens from user query
+            const searchTokens = lastMessageText
+              .replace(/[^a-zA-Z0-9\s-]/g, " ")
+              .split(/\s+/)
+              .filter((w) => w.length > 3)
+              .slice(0, 4)
+              .join(" ");
+
+            if (searchTokens.length > 3) {
+              const matchedSkills = await skillRepository.listSkills({
+                search: searchTokens,
+                limit: 1,
+              });
+              if (matchedSkills && matchedSkills.length > 0) {
+                const fullMatched = await skillRepository.getSkillById(
+                  matchedSkills[0].id,
+                );
+                if (fullMatched?.content) {
+                  combinedSkillContents.push(
+                    `<!-- EPHEMERAL_SKILL: ${fullMatched.name} -->\n${fullMatched.content}`,
+                  );
+                  logger.info(
+                    `Auto-activated on-demand skill '${fullMatched.name}' from private vault for active turn`,
+                  );
+                }
+              }
+            }
+          } catch (e) {
+            logger.warn("On-demand skill matching error:", e);
+          }
+        }
+
         // Build skill instructions prompt block
         let skillsSystemPrompt = "";
         if (combinedSkillContents.length > 0) {
@@ -1726,23 +1772,22 @@ CRITICAL INSTRUCTIONS:
             .join("\n\n");
         }
 
-        // Add a block to let the AI know about the user's Skill Library
-        let skillLibraryOverviewPrompt = "";
+        // Add a block to let the AI know about its Private Skill Vault
+        let skillLibraryOverviewPrompt = `\n\n<private_skill_vault>
+You have access to a Private Skill Vault containing specialized operational recipes, tools, and workflows.
+- **On-Demand Discovery**: When you encounter specialized, complex, or domain-specific tasks (e.g., deep research, video scripting, competitor analysis, code reviews, financial analysis, SEO, data transformations), call the \`search_skills\` tool to search your vault of 1,000+ skills by keywords or topic.
+- **On-Demand Loading**: Call the \`load_skill\` tool with a skill slug to retrieve its complete step-by-step procedural recipe, required tools, and failure recovery protocols before executing the task.
+- **Compounding Distillation**: When you successfully complete a novel multi-step workflow, distill it into a reusable skill via \`create_skill\` so your private vault compounds knowledge over time.
+</private_skill_vault>`;
         if (installedSkillsList.length > 0) {
-          skillLibraryOverviewPrompt = `\n\n[User's Skill Library Overview]
-You have access to the user's Skill Library. The user currently has the following ${
-            installedSkillsList.length
-          } skill(s) installed:
+          skillLibraryOverviewPrompt += `\n\n[Active Skills Overview]
+The user currently has ${installedSkillsList.length} priority skill(s) active:
 ${installedSkillsList
   .map(
     (item) =>
-      `- **${item.skill.title}** (Slug: \`${item.skill.name}\`, Category: ${
-        item.skill.category
-      }) - ${item.isActive ? "Active" : "Inactive"}: ${item.skill.description}`,
+      `- **${item.skill.title}** (\`${item.skill.name}\`): ${item.skill.description}`,
   )
-  .join("\n")}
-
-Always be aware of these installed skills. If a user asks "how many skills do we have/installed?", answer accurately based on this list. If the user mentions one of these skills (or wants you to use it), tell them they can activate it or mention it, or if it is already Active, follow its guidelines to help them.`;
+  .join("\n")}`;
         }
 
         // Load User Memories
@@ -1934,6 +1979,8 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
             },
           },
           create_skill: createSkillTool,
+          search_skills: searchSkillsTool,
+          load_skill: loadSkillTool,
           write_site_file: {
             ...writeSiteFileTool,
             execute: async (args: any, options: any) => {

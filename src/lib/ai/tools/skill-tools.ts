@@ -1,12 +1,12 @@
 import { tool } from "ai";
-import { z } from "zod";
-import { skillRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import {
   autoEnrichSkillContent,
   distillHermesSkill,
   sanitizeSkillSlug,
 } from "lib/ai/harness/skill-distiller";
+import { skillRepository } from "lib/db/repository";
+import { z } from "zod";
 
 export const createSkillTool = tool({
   name: "create_skill",
@@ -214,6 +214,120 @@ export const createSkillTool = tool({
         }
       }
       return { success: false, error: error.message };
+    }
+  },
+});
+
+/**
+ * On-Demand Skill Search Tool (Private Skill Vault)
+ * Allows the AI to query the private vault of 1,000+ skills by topic, keyword, or domain.
+ */
+export const searchSkillsTool = tool({
+  name: "search_skills",
+  description: `Search your private Skill Vault for specialized AI operational skills, procedural recipes, or expert workflows by keyword, topic, or category. Call this tool when encountering specialized tasks (e.g. video analysis, competitor reports, deep research, code audits, SEO, marketing) to see if an expert skill recipe exists in your vault.`,
+  inputSchema: z.object({
+    query: z
+      .string()
+      .describe(
+        "Search keywords, topic, or domain (e.g. 'youtube', 'competitor', 'code-review', 'seo', 'financial')",
+      ),
+    category: z
+      .enum([
+        "productivity",
+        "coding",
+        "media",
+        "writing",
+        "research",
+        "automation",
+        "other",
+      ])
+      .optional()
+      .describe("Optional category to filter skills"),
+    limit: z
+      .number()
+      .default(5)
+      .describe("Maximum number of skills to return (default: 5)"),
+  }),
+  execute: async ({ query, category, limit }) => {
+    try {
+      const skills = await skillRepository.listSkills({
+        search: query,
+        category,
+        limit: Math.min(limit || 5, 10),
+      });
+
+      if (!skills || skills.length === 0) {
+        return {
+          success: true,
+          count: 0,
+          skills: [],
+          message: `No skills found in the vault matching "${query}". You can proceed using your general capabilities or distill a new skill via create_skill once complete.`,
+        };
+      }
+
+      return {
+        success: true,
+        count: skills.length,
+        skills: skills.map((s) => ({
+          name: s.name,
+          title: s.title,
+          description: s.description,
+          category: s.category,
+          tags: s.tags,
+          toolsRequired: s.toolsRequired,
+        })),
+        instruction:
+          "To load the full procedural recipe and step-by-step instructions for any skill above, call 'load_skill' with its name slug.",
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || "Failed to search skill vault",
+      };
+    }
+  },
+});
+
+/**
+ * On-Demand Skill Loader Tool (Private Skill Vault)
+ * Loads the complete procedural recipe and required tools for a specific skill from the private vault.
+ */
+export const loadSkillTool = tool({
+  name: "load_skill",
+  description: `Loads the full procedural recipe, step-by-step instructions, and failure recovery protocols for a specific skill from your private Skill Vault on demand. Call this tool to obtain the exact recipe before executing a specialized task.`,
+  inputSchema: z.object({
+    name: z
+      .string()
+      .describe(
+        "Exact slug name of the skill to load (e.g. 'competitor-intelligence-analyst', 'youtube-summarizer')",
+      ),
+  }),
+  execute: async ({ name }) => {
+    const slug = sanitizeSkillSlug(name);
+    try {
+      const skill = await skillRepository.getSkillByName(slug);
+      if (!skill || !skill.content) {
+        return {
+          success: false,
+          error: `Skill '${slug}' was not found in your private vault. You can use 'search_skills' to discover available skills.`,
+        };
+      }
+
+      return {
+        success: true,
+        name: skill.name,
+        title: skill.title,
+        description: skill.description,
+        category: skill.category,
+        toolsRequired: skill.toolsRequired || [],
+        recipe: skill.content,
+        instruction: `The full recipe for '${skill.title}' is now loaded into your working memory. Follow its Step-by-Step Procedure and Failure Modes & Self-Healing protocols to complete the user's task.`,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || `Failed to load skill '${slug}'`,
+      };
     }
   },
 });

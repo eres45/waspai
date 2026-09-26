@@ -63,6 +63,8 @@ export enum DefaultToolName {
   ListSmsNumbers = "list-sms-numbers",
   GetSmsMessages = "get-sms-messages",
   CreateSkill = "create_skill",
+  SearchSkills = "search_skills",
+  LoadSkill = "load_skill",
   DeploySite = "deploy_site",
   WriteSiteFile = "write_site_file",
   ReadSiteFile = "read_site_file",

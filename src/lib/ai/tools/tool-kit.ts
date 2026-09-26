@@ -1,52 +1,56 @@
-import { createPieChartTool } from "./visualization/create-pie-chart";
-import { createBarChartTool } from "./visualization/create-bar-chart";
-import { createLineChartTool } from "./visualization/create-line-chart";
-import { createTableTool } from "./visualization/create-table";
-import { webSearchTool, webContentTool } from "./web/web-search";
-import { scrapeWebPageTool } from "./web/scrape-web-page";
-import { AppDefaultToolkit, DefaultToolName } from ".";
 import { Tool } from "ai";
-import { httpFetchTool } from "./http/fetch";
+import { AppDefaultToolkit, DefaultToolName } from ".";
+import { steelBrowserTool } from "./browser/steel-browser";
+import { chatExportTool } from "./chat-export";
 import { jsExecutionTool } from "./code/js-run-tool";
 import { pythonExecutionTool } from "./code/python-run-tool";
+import { deploySiteTool } from "./deploy-site";
 import {
-  saveMemoryTool,
-  updateMemoryTool,
-  deleteMemoryTool,
-  getMemoriesTool,
-} from "./memory-tools";
-import { youtubeTranscriptTool } from "./web/youtube-transcript";
-import { createTempEmailTool, getTempEmailMessagesTool } from "./web/temp-mail";
-import { sendEmailTool } from "./web/social-down";
-import { videoPlayerTool } from "./web/video-player";
-import { listSmsNumbersTool, getSmsMessagesTool } from "./web/sms-tool";
-import { steelBrowserTool } from "./browser/steel-browser";
-import {
-  removeBackgroundTool,
-  animeConversionTool,
-  enhanceImageTool,
-  removeWatermarkTool,
-  removeObjectTool,
-  superResolutionTool,
-  restoreOldPhotoTool,
-  blurBackgroundTool,
-} from "./image/edit-image";
-import {
-  wordDocumentTool,
   csvGeneratorTool,
   textFileTool,
+  wordDocumentTool,
 } from "./document-generator";
-import { pdfGeneratorTool } from "./pdf-generator";
-import { fileConverterTool } from "./file-converter";
-import { presentationGeneratorTool } from "./presentation-generator";
-import { pptProcessorTool } from "./ppt-processor";
-import { analyzeImageTool } from "./image/analyze-image";
-import { qrCodeGeneratorTool, qrCodeWithLogoTool } from "./qr-code-generator";
-import { htmlPreviewTool } from "./html-preview";
-import { chatExportTool } from "./chat-export";
-import { createSkillTool } from "./skill-tools";
-import { deploySiteTool } from "./deploy-site";
 import { fetchImageAsBase64Tool } from "./fetch-image-as-base64";
+import { fileConverterTool } from "./file-converter";
+import { htmlPreviewTool } from "./html-preview";
+import { httpFetchTool } from "./http/fetch";
+import { analyzeImageTool } from "./image/analyze-image";
+import {
+  animeConversionTool,
+  blurBackgroundTool,
+  enhanceImageTool,
+  removeBackgroundTool,
+  removeObjectTool,
+  removeWatermarkTool,
+  restoreOldPhotoTool,
+  superResolutionTool,
+} from "./image/edit-image";
+import {
+  deleteMemoryTool,
+  getMemoriesTool,
+  saveMemoryTool,
+  updateMemoryTool,
+} from "./memory-tools";
+import { pdfGeneratorTool } from "./pdf-generator";
+import { pptProcessorTool } from "./ppt-processor";
+import { presentationGeneratorTool } from "./presentation-generator";
+import { qrCodeGeneratorTool, qrCodeWithLogoTool } from "./qr-code-generator";
+import {
+  createSkillTool,
+  loadSkillTool,
+  searchSkillsTool,
+} from "./skill-tools";
+import { createBarChartTool } from "./visualization/create-bar-chart";
+import { createLineChartTool } from "./visualization/create-line-chart";
+import { createPieChartTool } from "./visualization/create-pie-chart";
+import { createTableTool } from "./visualization/create-table";
+import { scrapeWebPageTool } from "./web/scrape-web-page";
+import { getSmsMessagesTool, listSmsNumbersTool } from "./web/sms-tool";
+import { sendEmailTool } from "./web/social-down";
+import { createTempEmailTool, getTempEmailMessagesTool } from "./web/temp-mail";
+import { videoPlayerTool } from "./web/video-player";
+import { webContentTool, webSearchTool } from "./web/web-search";
+import { youtubeTranscriptTool } from "./web/youtube-transcript";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -87,6 +91,8 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.ListSmsNumbers]: listSmsNumbersTool,
     [DefaultToolName.GetSmsMessages]: getSmsMessagesTool,
     [DefaultToolName.CreateSkill]: createSkillTool,
+    [DefaultToolName.SearchSkills]: searchSkillsTool,
+    [DefaultToolName.LoadSkill]: loadSkillTool,
     [DefaultToolName.DeploySite]: deploySiteTool,
   },
   [AppDefaultToolkit.Media]: {

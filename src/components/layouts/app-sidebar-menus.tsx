@@ -7,30 +7,30 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "ui/sidebar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { SidebarMenu, SidebarMenuItem } from "ui/sidebar";
 import { SidebarGroupContent } from "ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
-import { SidebarGroup } from "ui/sidebar";
-import Link from "next/link";
-import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
-import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { MCPIcon } from "ui/mcp-icon";
-import { WriteIcon } from "ui/write-icon";
+import { useArchives } from "@/hooks/queries/use-archives";
+import { BasicUser } from "app-types/user";
+import { Shortcuts, getShortcutKeyList } from "lib/keyboard-shortcuts";
+import { getIsUserAdmin } from "lib/user/utils";
 import {
+  Blocks,
   FolderOpenIcon,
   FolderSearchIcon,
   PlusIcon,
   Waypoints,
-  Blocks,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { MCPIcon } from "ui/mcp-icon";
+import { SidebarGroup } from "ui/sidebar";
 import { Skeleton } from "ui/skeleton";
-import { useArchives } from "@/hooks/queries/use-archives";
+import { WriteIcon } from "ui/write-icon";
 import { ArchiveDialog } from "../archive-dialog";
-import { getIsUserAdmin } from "lib/user/utils";
-import { BasicUser } from "app-types/user";
 import { AppSidebarAdmin } from "./app-sidebar-menu-admin";
 
 export function AppSidebarMenus({ user }: { user?: BasicUser }) {
@@ -104,18 +104,20 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
-        <SidebarMenu>
-          <Tooltip>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild className="font-semibold">
-                <Link href="/skills">
-                  <Blocks className="size-4" />
-                  Skills
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </Tooltip>
-        </SidebarMenu>
+        {getIsUserAdmin(user) && (
+          <SidebarMenu>
+            <Tooltip>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild className="font-semibold">
+                  <Link href="/skills">
+                    <Blocks className="size-4" />
+                    Skills Vault (Admin)
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </Tooltip>
+          </SidebarMenu>
+        )}
         {getIsUserAdmin(user) && <AppSidebarAdmin />}
         <SidebarMenu className="group/projects">
           <Tooltip>
