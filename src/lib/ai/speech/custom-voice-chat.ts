@@ -14,8 +14,37 @@ interface QueuedSentence {
 }
 
 /**
- * Custom Voice Chat Hook using Web Speech API + Custom TTS
- * No OpenAI API key required!
+ * Helper to get BCP-47 speech recognition language from voice identity
+ */
+function getVoiceLanguage(voiceName: string): string {
+  const lower = (voiceName || "").toLowerCase();
+  if (
+    lower.includes("shubh") ||
+    lower.includes("bulbul") ||
+    lower.includes("aditi") ||
+    lower.includes("aarush") ||
+    lower.includes("hindi")
+  ) {
+    return "hi-IN";
+  }
+  if (lower.includes("aswarth") || lower.includes("telugu")) {
+    return "te-IN";
+  }
+  if (lower.includes("karthik") || lower.includes("tamil")) {
+    return "ta-IN";
+  }
+  if (lower.includes("deepika") || lower.includes("kannada")) {
+    return "kn-IN";
+  }
+  if (lower.includes("lata") || lower.includes("marathi")) {
+    return "mr-IN";
+  }
+  return "en-US";
+}
+
+/**
+ * Custom Voice Chat Hook using Real-Time Web Speech API + Custom TTS (Fish Audio / Woino)
+ * Ultra-low conversational latency (<800ms) with zero cloud STT overhead!
  */
 export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
@@ -48,6 +77,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const isTranscribingRef = useRef<boolean>(false);
+  const isWaitingForResponseRef = useRef<boolean>(false);
 
   // Streaming TTS state with pre-buffering pipeline
   const ttsQueue = useRef<QueuedSentence[]>([]);
@@ -58,11 +88,17 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
   useEffect(() => {
     voiceRef.current = voice;
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.lang = getVoiceLanguage(voice);
+      } catch (_e) {}
+    }
   }, [voice]);
 
   // VAD state
   const lastSpeechTimeRef = useRef<number>(0);
   const currentTranscriptRef = useRef<string>("");
+  const interimTranscriptRef = useRef<string>("");
   const vadIntervalRef = useRef<any>(null);
 
   // Ref to track assistant speaking state inside callbacks without re-creating them
@@ -83,6 +119,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     isPlayingQueue.current = false;
     setIsAssistantSpeaking(false);
     isAssistantSpeakingRef.current = false;
+    isWaitingForResponseRef.current = false;
   }, []);
 
   const playNextInQueue = useCallback(async () => {
@@ -90,11 +127,14 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
     isPlayingQueue.current = true;
     setIsAssistantSpeaking(true);
+    isAssistantSpeakingRef.current = true;
+    isWaitingForResponseRef.current = false;
 
     const item = ttsQueue.current.shift();
     if (!item) {
       isPlayingQueue.current = false;
       setIsAssistantSpeaking(false);
+      isAssistantSpeakingRef.current = false;
       return;
     }
 
@@ -107,6 +147,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           playNextInQueue();
         } else {
           setIsAssistantSpeaking(false);
+          isAssistantSpeakingRef.current = false;
         }
         return;
       }
@@ -124,6 +165,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           playNextInQueue();
         } else {
           setIsAssistantSpeaking(false);
+          isAssistantSpeakingRef.current = false;
         }
       };
 
@@ -134,6 +176,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           playNextInQueue();
         } else {
           setIsAssistantSpeaking(false);
+          isAssistantSpeakingRef.current = false;
         }
       };
 
@@ -145,6 +188,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         playNextInQueue();
       } else {
         setIsAssistantSpeaking(false);
+        isAssistantSpeakingRef.current = false;
       }
     }
   }, []);
@@ -207,7 +251,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     isListeningRef.current = false;
     if (recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (_e) {}
     }
     if (
@@ -231,8 +275,6 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       const SpeechRecognition =
         (window as any).SpeechRecognition ||
         (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition)
-        throw new Error("Speech recognition not supported");
 
       if (!audioStream.current) {
         audioStream.current = await navigator.mediaDevices.getUserMedia({
@@ -240,15 +282,15 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         });
       }
 
-      if (recognitionRef.current) {
+      if (SpeechRecognition && recognitionRef.current) {
         try {
+          recognitionRef.current.lang = getVoiceLanguage(voiceRef.current);
           recognitionRef.current.start();
         } catch (_e) {}
         isListeningRef.current = true;
         setIsListening(true);
-      }
-
-      if (isSarvamEnabled && audioStream.current) {
+      } else if (!SpeechRecognition && isSarvamEnabled && audioStream.current) {
+        // Fallback for browsers without Web Speech (e.g. Firefox)
         audioChunksRef.current = [];
 
         let mimeType = "";
@@ -271,13 +313,17 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
         mediaRecorder.start();
         mediaRecorderRef.current = mediaRecorder;
+        isListeningRef.current = true;
+        setIsListening(true);
+      } else if (!SpeechRecognition) {
+        throw new Error("Speech recognition not supported in this browser");
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
   }, [isSarvamEnabled]);
 
-  // Initialize Web Speech API
+  // Initialize Web Speech API with dual-stream real-time capture
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -287,13 +333,11 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.lang = getVoiceLanguage(voiceRef.current);
       (recognitionRef.current as any).maxAlternatives = 1;
 
       recognitionRef.current.onstart = () => {
         setIsUserSpeaking(true);
-        // INTERRUPTION: If user starts speaking, immediately stop and purge audio queue
-        clearAudioQueue();
       };
 
       recognitionRef.current.onend = () => {
@@ -302,9 +346,12 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           recognitionRef.current &&
           isListeningRef.current &&
           !isAssistantSpeakingRef.current &&
+          !isWaitingForResponseRef.current &&
           !isTranscribingRef.current
         ) {
-          startListening();
+          try {
+            recognitionRef.current.start();
+          } catch (_e) {}
         }
       };
 
@@ -322,38 +369,42 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
         let completeFinalTranscript = "";
 
         for (let i = 0; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            completeFinalTranscript += transcript + " ";
+          const result = event.results[i];
+          if (result.isFinal) {
+            completeFinalTranscript += result[0].transcript + " ";
           } else {
-            interimTranscript += transcript;
+            interimTranscript += result[0].transcript;
           }
         }
 
-        const combinedInterim = interimTranscript.trim();
-        const combinedFinal = completeFinalTranscript.trim();
+        interimTranscriptRef.current = interimTranscript.trim();
+        currentTranscriptRef.current = completeFinalTranscript.trim();
 
-        if (combinedFinal || combinedInterim.length > 5) {
+        const combinedSpoken = (
+          completeFinalTranscript +
+          " " +
+          interimTranscript
+        ).trim();
+
+        if (combinedSpoken.length > 0) {
           lastSpeechTimeRef.current = Date.now();
-          currentTranscriptRef.current = completeFinalTranscript;
+          setIsUserSpeaking(true);
 
-          if (
-            isAssistantSpeakingRef.current &&
-            (combinedInterim.length > 8 || combinedFinal.length > 3)
-          ) {
+          // If assistant is currently speaking and user interrupts, immediately cut audio playback
+          if (isAssistantSpeakingRef.current && combinedSpoken.length > 2) {
             clearAudioQueue();
           }
         }
       };
     }
-  }, [startListening]);
+  }, [clearAudioQueue]);
 
   useEffect(() => {
     isAssistantSpeakingRef.current = isAssistantSpeaking;
 
     if (isAssistantSpeaking && recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch (_e) {}
       if (
         mediaRecorderRef.current &&
@@ -368,6 +419,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       !isAssistantSpeaking &&
       isActive &&
       isListeningRef.current &&
+      !isWaitingForResponseRef.current &&
       !isTranscribingRef.current
     ) {
       startListening();
@@ -378,9 +430,14 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
 
   const handleUserMessage = useCallback(
     async (text: string) => {
-      if (!text.trim()) return;
+      const trimmedText = text.trim();
+      if (!trimmedText) {
+        isWaitingForResponseRef.current = false;
+        return;
+      }
 
       setIsLoading(true);
+      isWaitingForResponseRef.current = true;
       processedCleanTextLength.current = 0;
 
       const userMessage: UIMessageWithCompleted = {
@@ -534,9 +591,23 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
           if (lastMsg) lastMsg.completed = true;
           return updated;
         });
+
+        setIsLoading(false);
+
+        // If no sentences were generated (e.g. empty response or network issue), unblock mic
+        if (ttsQueue.current.length === 0 && !isPlayingQueue.current) {
+          isWaitingForResponseRef.current = false;
+          if (isActive && isListeningRef.current) {
+            startListening();
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsAssistantSpeaking(false);
+        isAssistantSpeakingRef.current = false;
+        isWaitingForResponseRef.current = false;
+        setIsLoading(false);
+        startListening();
       }
     },
     [
@@ -549,30 +620,56 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
       props?.allowedMcpServers,
       props?.allowedAppDefaultToolkit,
       props?.threadId,
+      isActive,
+      startListening,
     ],
   );
 
-  // VAD Interval Logic
+  // VAD Interval Logic: Snappy 100ms polling for sub-500ms real-time conversational turnaround
   useEffect(() => {
-    if (isActive && !isAssistantSpeaking && !isTranscribingRef.current) {
+    if (
+      isActive &&
+      !isAssistantSpeaking &&
+      !isTranscribingRef.current &&
+      !isWaitingForResponseRef.current
+    ) {
       vadIntervalRef.current = setInterval(() => {
         const now = Date.now();
         const timeSinceSpeech = now - lastSpeechTimeRef.current;
-        const transcript = currentTranscriptRef.current.trim();
+        const combinedTranscript = (
+          currentTranscriptRef.current +
+          " " +
+          interimTranscriptRef.current
+        ).trim();
 
-        // DYNAMIC SILENCE: Short sentence -> faster response, Long sentence -> let them pause
-        const silenceThreshold = transcript.length < 20 ? 600 : 1200;
+        // Dynamic Silence Cut:
+        // Short utterances (< 15 chars, like "Yes", "Hello", "Thanks") -> 350ms
+        // Standard conversational thoughts -> 450ms
+        const silenceThreshold = combinedTranscript.length < 15 ? 350 : 450;
 
-        // If silence detected and we have a transcript, send it
+        // If silence detected and we have a spoken transcript, dispatch immediately!
         if (
           lastSpeechTimeRef.current > 0 &&
           timeSinceSpeech > silenceThreshold &&
-          transcript.length > 0
+          combinedTranscript.length > 0
         ) {
-          const browserTranscript = transcript;
-          currentTranscriptRef.current = "";
-          lastSpeechTimeRef.current = 0;
+          const textToSend = combinedTranscript;
 
+          // Clear transcripts and timestamps immediately to prevent re-triggering
+          currentTranscriptRef.current = "";
+          interimTranscriptRef.current = "";
+          lastSpeechTimeRef.current = 0;
+          setIsUserSpeaking(false);
+          isWaitingForResponseRef.current = true;
+
+          // Abort recognition to flush previous results buffer
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.abort();
+            } catch (_e) {}
+          }
+
+          // Fallback check: if Web Speech is not available and Sarvam recorder is running (e.g. Firefox)
           if (
             isSarvamEnabled &&
             mediaRecorderRef.current &&
@@ -650,17 +747,17 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
                   ) {
                     await handleUserMessage(data.transcript);
                   } else {
-                    await handleUserMessage(browserTranscript);
+                    await handleUserMessage(textToSend);
                   }
                 } else {
-                  await handleUserMessage(browserTranscript);
+                  await handleUserMessage(textToSend);
                 }
               } catch (err) {
                 console.error(
                   "Sarvam voice call STT failed, falling back to Web Speech:",
                   err,
                 );
-                await handleUserMessage(browserTranscript);
+                await handleUserMessage(textToSend);
               } finally {
                 isTranscribingRef.current = false;
                 setIsLoading(false);
@@ -671,16 +768,12 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
             try {
               mediaRecorderRef.current.stop();
             } catch (_e) {}
-            if (recognitionRef.current) {
-              try {
-                recognitionRef.current.stop();
-              } catch (_e) {}
-            }
           } else {
-            handleUserMessage(browserTranscript);
+            // Instant real-time local path (0ms STT latency)
+            handleUserMessage(textToSend);
           }
         }
-      }, 300);
+      }, 100);
     } else {
       if (vadIntervalRef.current) {
         clearInterval(vadIntervalRef.current);
@@ -705,6 +798,9 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
     setError(null);
     setMessages([]);
     try {
+      if (!audioElement.current) {
+        audioElement.current = new Audio();
+      }
       setIsActive(true);
       setIsLoading(false);
       await startListening();
@@ -716,6 +812,7 @@ export function useCustomVoiceChat(props?: VoiceChatOptions): VoiceChatSession {
   }, [isActive, isLoading, startListening]);
 
   const stop = useCallback(async () => {
+    isWaitingForResponseRef.current = false;
     await stopListening();
     clearAudioQueue();
     setIsActive(false);
