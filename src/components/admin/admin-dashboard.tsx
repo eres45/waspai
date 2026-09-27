@@ -48,7 +48,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
 export function AdminDashboard({
@@ -58,6 +58,7 @@ export function AdminDashboard({
   page,
   limit,
   query,
+  initialNav,
 }: {
   stats: AdminDashboardStats;
   users: AdminUserListItem[];
@@ -65,22 +66,34 @@ export function AdminDashboard({
   page: number;
   limit: number;
   query?: string;
+  initialNav?: string;
 }) {
   const router = useRouter();
 
+  const validNavs = [
+    "overview",
+    "funnels",
+    "retention",
+    "revenue",
+    "users",
+    "events",
+    "models",
+    "segments",
+    "reports",
+    "insights",
+  ] as const;
+
+  type NavType = (typeof validNavs)[number];
+
+  const defaultNav: NavType =
+    initialNav && validNavs.includes(initialNav as NavType)
+      ? (initialNav as NavType)
+      : query
+        ? "users"
+        : "overview";
+
   // Navigation state
-  const [activeNav, setActiveNav] = useState<
-    | "overview"
-    | "funnels"
-    | "retention"
-    | "revenue"
-    | "users"
-    | "events"
-    | "models"
-    | "segments"
-    | "reports"
-    | "insights"
-  >("overview");
+  const [activeNav, setActiveNav] = useState<NavType>(defaultNav);
 
   const [timeRange, setTimeRange] = useState<
     "Last 7 days" | "Last 30 days" | "Last 90 days" | "All time"
@@ -132,15 +145,6 @@ export function AdminDashboard({
       showToast("Telemetry refreshed from database!");
     }, 700);
   };
-
-  // Background real-time telemetry auto-sync with database every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      router.refresh();
-      setLastUpdated(new Date());
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [router]);
 
   const toggleSelectAll = () => {
     if (selectedUserIds.length === users.length) {
@@ -3083,12 +3087,18 @@ export function AdminDashboard({
                               : "N/A"}
                           </td>
                           <td className="py-3.5 px-3 text-right">
-                            <Link
-                              href={`/admin/users?query=${encodeURIComponent(u.email || "")}`}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTableSearch(u.email || "");
+                                showToast(
+                                  `Filtered for ${u.email || u.name || u.id}`,
+                                );
+                              }}
                               className="px-2.5 py-1 rounded-md bg-[#222227] hover:bg-[#2c2c33] text-white text-[11px] font-semibold transition-all"
                             >
                               Inspect
-                            </Link>
+                            </button>
                           </td>
                         </tr>
                       );

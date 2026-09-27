@@ -148,20 +148,16 @@ export interface AdminDashboardStats {
 async function fetchAllMessageDates(
   supabase: any,
 ): Promise<{ created_at: string | null }[]> {
-  const messageDates: { created_at: string | null }[] = [];
-  let offset = 0;
-  const CHUNK_SIZE = 1000;
-  while (offset < 25000) {
-    const { data: chunk, error } = await supabase
+  try {
+    const { data } = await supabase
       .from("chat_message")
       .select("created_at")
-      .range(offset, offset + CHUNK_SIZE - 1);
-    if (error || !chunk || chunk.length === 0) break;
-    messageDates.push(...chunk);
-    if (chunk.length < CHUNK_SIZE) break;
-    offset += CHUNK_SIZE;
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    return data || [];
+  } catch {
+    return [];
   }
-  return messageDates;
 }
 
 async function fetchStatsViaSupabaseRest(): Promise<{
@@ -186,6 +182,7 @@ async function fetchStatsViaSupabaseRest(): Promise<{
   ecosystem: AdminDashboardStats["ecosystem"];
   modelFleet: AdminDashboardStats["modelFleet"];
   systemHealth: AdminDashboardStats["systemHealth"];
+  peakHours: string;
 }> {
   const supabaseUrl =
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -238,6 +235,7 @@ async function fetchStatsViaSupabaseRest(): Promise<{
       },
       modelFleet: [],
       systemHealth: { totalErrors24h: 0, recentErrors: [] },
+      peakHours: "02:00-04:30 PM",
     };
   }
 
@@ -663,6 +661,29 @@ async function fetchStatsViaSupabaseRest(): Promise<{
   const parsedProUsers = proUsers ?? 0;
   const freeUsers = Math.max(0, parsedTotalUsers - parsedProUsers);
 
+  let peakHours = "02:00-04:30 PM";
+  if (allMessageDates && allMessageDates.length > 0) {
+    const hourCounts: Record<number, number> = {};
+    for (const m of allMessageDates) {
+      if (m.created_at) {
+        const hr = new Date(m.created_at).getHours();
+        hourCounts[hr] = (hourCounts[hr] || 0) + 1;
+      }
+    }
+    let topHour = 14;
+    let maxCnt = 0;
+    for (const [hr, cnt] of Object.entries(hourCounts)) {
+      if (cnt > maxCnt) {
+        maxCnt = cnt;
+        topHour = Number(hr);
+      }
+    }
+    const startHr = topHour % 12 === 0 ? 12 : topHour % 12;
+    const endHr = (topHour + 2) % 12 === 0 ? 12 : (topHour + 2) % 12;
+    const endPeriod = topHour + 2 >= 12 ? "PM" : "AM";
+    peakHours = `${startHr < 10 ? `0${startHr}` : startHr}:00-${endHr < 10 ? `0${endHr}` : endHr}:30 ${endPeriod}`;
+  }
+
   return {
     totalUsers: parsedTotalUsers,
     newUsersThisMonth: newUsersThisMonth ?? 0,
@@ -685,6 +706,7 @@ async function fetchStatsViaSupabaseRest(): Promise<{
     ecosystem,
     modelFleet,
     systemHealth,
+    peakHours,
   };
 }
 
@@ -760,9 +782,9 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const dbMonthCounts: Record<string, number> = {};
   let activityByDay: Record<string, number> = {};
   let monthlySignups: AdminDashboardStats["monthlySignups"] = [];
-
+  let pgConnected = false;
   try {
-    const results = await Promise.allSettled([
+    const pgPromise = Promise.allSettled([
       // 0: totalUsers
       db
         .select({ count: count() })
@@ -933,10 +955,18 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         .select({ count: count() })
         .from(BrowserUsageTable),
     ]);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("PG query timeout")), 2000),
+    );
+    const results = await Promise.race([pgPromise, timeoutPromise]);
 
     // 0: totalUsers
-    if (results[0].status === "fulfilled") {
+    if (
+      results[0].status === "fulfilled" &&
+      (results[0].value[0]?.count ?? 0) > 0
+    ) {
       totalUsers = results[0].value[0]?.count ?? 0;
+      pgConnected = true;
     }
     // 1: newThisMonth
     if (results[1].status === "fulfilled") {
@@ -1164,6 +1194,9 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         activityByDay = restData.activityByDay;
       if (restData.monthlySignups.length > 0)
         monthlySignups = restData.monthlySignups;
+      if (restData.peakHours) {
+        peakHours = restData.peakHours;
+      }
     }
   }
 
@@ -1315,48 +1348,49 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     }
   }
 
-  // Safe query for peak hour
-  try {
-    const peakRes = await db.execute(sql`
-      SELECT EXTRACT(HOUR FROM created_at)::int AS hr, COUNT(*)::int AS cnt
-      FROM "chat_message"
-      GROUP BY 1
-      ORDER BY 2 DESC
-      LIMIT 1
-    `);
-    const peakRow = (peakRes as { rows?: { hr?: number }[] })?.rows?.[0];
-    if (peakRow && typeof peakRow.hr === "number") {
-      const hr = peakRow.hr;
-      const startHr = hr % 12 === 0 ? 12 : hr % 12;
-      const endHr = (hr + 2) % 12 === 0 ? 12 : (hr + 2) % 12;
-      const endPeriod = hr + 2 >= 12 ? "PM" : "AM";
-      peakHours = `${startHr < 10 ? `0${startHr}` : startHr}:00-${endHr < 10 ? `0${endHr}` : endHr}:30 ${endPeriod}`;
-    }
-  } catch {
-    // Keep default peak hours
-  }
-
-  // Safe query for monthly signups
-  try {
-    const monthlyRes = await db.execute(sql`
-      SELECT
-        TO_CHAR(created_at, 'Mon') AS month,
-        EXTRACT(MONTH FROM created_at)::int AS month_num,
-        COUNT(*)::int AS count
-      FROM "user"
-      WHERE created_at >= NOW() - INTERVAL '12 months'
-      GROUP BY 1, 2
-      ORDER BY 2 ASC
-    `);
-    for (const r of (
-      monthlyRes as { rows?: { month?: string; count?: number }[] }
-    )?.rows ?? []) {
-      if (r.month) {
-        dbMonthCounts[r.month] = r.count ?? 0;
+  // Safe query for peak hour and monthly signups (only if direct PG is connected)
+  if (pgConnected) {
+    try {
+      const peakRes = await db.execute(sql`
+        SELECT EXTRACT(HOUR FROM created_at)::int AS hr, COUNT(*)::int AS cnt
+        FROM "chat_message"
+        GROUP BY 1
+        ORDER BY 2 DESC
+        LIMIT 1
+      `);
+      const peakRow = (peakRes as { rows?: { hr?: number }[] })?.rows?.[0];
+      if (peakRow && typeof peakRow.hr === "number") {
+        const hr = peakRow.hr;
+        const startHr = hr % 12 === 0 ? 12 : hr % 12;
+        const endHr = (hr + 2) % 12 === 0 ? 12 : (hr + 2) % 12;
+        const endPeriod = hr + 2 >= 12 ? "PM" : "AM";
+        peakHours = `${startHr < 10 ? `0${startHr}` : startHr}:00-${endHr < 10 ? `0${endHr}` : endHr}:30 ${endPeriod}`;
       }
+    } catch {
+      // Keep default peak hours
     }
-  } catch {
-    // Keep empty dbMonthCounts
+
+    try {
+      const monthlyRes = await db.execute(sql`
+        SELECT
+          TO_CHAR(created_at, 'Mon') AS month,
+          EXTRACT(MONTH FROM created_at)::int AS month_num,
+          COUNT(*)::int AS count
+        FROM "user"
+        WHERE created_at >= NOW() - INTERVAL '12 months'
+        GROUP BY 1, 2
+        ORDER BY 2 ASC
+      `);
+      for (const r of (
+        monthlyRes as { rows?: { month?: string; count?: number }[] }
+      )?.rows ?? []) {
+        if (r.month) {
+          dbMonthCounts[r.month] = r.count ?? 0;
+        }
+      }
+    } catch {
+      // Keep empty dbMonthCounts
+    }
   }
 
   const freeUsers = Math.max(0, totalUsers - proUsers);

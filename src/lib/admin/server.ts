@@ -50,14 +50,18 @@ export async function getAdminUsers(
   await getSession();
 
   try {
-    // Use our custom repository with improved search
-    const result = await pgAdminRepository.getUsers({
+    // Use our custom repository with improved search, raced with a 1.5s timeout
+    const pgPromise = pgAdminRepository.getUsers({
       ...query,
       limit: query?.limit ?? ADMIN_USER_LIST_LIMIT,
       offset: query?.offset ?? 0,
       sortBy: query?.sortBy ?? DEFAULT_SORT_BY,
       sortDirection: query?.sortDirection ?? DEFAULT_SORT_DIRECTION,
     });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("PG query timeout")), 1500),
+    );
+    const result = await Promise.race([pgPromise, timeoutPromise]);
 
     if (result && result.total > 0) {
       return result;

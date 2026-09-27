@@ -21,6 +21,7 @@ interface PageProps {
     query?: string;
     sortBy?: string;
     sortDirection?: "asc" | "desc";
+    tab?: string;
   }>;
 }
 
@@ -75,6 +76,7 @@ export default async function AdminIndexPage({ searchParams }: PageProps) {
       page={page}
       limit={limit}
       query={params.query}
+      initialNav={params.tab}
     />
   );
 }
