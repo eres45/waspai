@@ -129,88 +129,75 @@ export function AdminDashboard({
 
   const totalPages = Math.ceil(total / limit);
 
-  // Discrete Block Heatmap Matrix Data (Exact pattern matching reference image)
-  // 8 day columns: Sun, Mon, Tue, Wed, Thu, Fri, Sat, Sun
-  // Each day has ghost blocks (last week) and orange blocks (this week)
-  const heatmapDays = [
-    {
-      day: "Sun",
-      count: "17,240",
-      cols: [
-        { thisWeek: 5, lastWeek: 8 },
-        { thisWeek: 9, lastWeek: 11 },
-        { thisWeek: 7, lastWeek: 10 },
-      ],
-    },
-    {
-      day: "Mon",
-      count: "14,810",
-      cols: [
-        { thisWeek: 5, lastWeek: 8 },
-        { thisWeek: 7, lastWeek: 10 },
-        { thisWeek: 4, lastWeek: 7 },
-      ],
-    },
-    {
-      day: "Tue",
-      count: "23,900",
-      cols: [
-        { thisWeek: 8, lastWeek: 9 },
-        { thisWeek: 12, lastWeek: 11 },
-        { thisWeek: 14, lastWeek: 13 },
-        { thisWeek: 11, lastWeek: 10 },
-      ],
-    },
-    {
-      day: "Wed",
-      count: "24,815",
-      cols: [
-        { thisWeek: 10, lastWeek: 11 },
-        { thisWeek: 15, lastWeek: 13 },
-        { thisWeek: 16, lastWeek: 14 },
-        { thisWeek: 12, lastWeek: 11 },
-      ],
-    },
-    {
-      day: "Thu",
-      count: "11,200",
-      cols: [
-        { thisWeek: 5, lastWeek: 7 },
-        { thisWeek: 6, lastWeek: 8 },
-        { thisWeek: 4, lastWeek: 6 },
-      ],
-    },
-    {
-      day: "Fri",
-      count: "19,450",
-      cols: [
-        { thisWeek: 7, lastWeek: 8 },
-        { thisWeek: 11, lastWeek: 10 },
-        { thisWeek: 13, lastWeek: 12 },
-        { thisWeek: 9, lastWeek: 8 },
-      ],
-    },
-    {
-      day: "Sat",
-      count: "13,100",
-      cols: [
-        { thisWeek: 5, lastWeek: 7 },
-        { thisWeek: 7, lastWeek: 8 },
-        { thisWeek: 6, lastWeek: 7 },
-      ],
-    },
-    {
-      day: "Sun",
-      count: "14,600",
-      cols: [
-        { thisWeek: 6, lastWeek: 8 },
-        { thisWeek: 8, lastWeek: 9 },
-        { thisWeek: 8, lastWeek: 9 },
-        { thisWeek: 5, lastWeek: 7 },
-      ],
-    },
+  // =========================================================================
+  // GITHUB-STYLE 33-COLUMN × 16-ROW VOXEL HEATMAP MATRIX
+  // Replicating media_1790513900120.png pixel-for-pixel
+  // =========================================================================
+  const gridColumns = [
+    // Col 0: Leftmost baseline block
+    { orange: 1, grey: 0, count: "1,200" },
+
+    // Sun (Cols 1 - 4)
+    { orange: 2, grey: 4, count: "4,820" },
+    { orange: 3, grey: 8, count: "8,910" },
+    { orange: 7, grey: 10, count: "14,350" },
+    { orange: 11, grey: 10, count: "17,240" },
+
+    // Mon (Cols 5 - 8)
+    { orange: 7, grey: 9, count: "13,800" },
+    { orange: 2, grey: 9, count: "9,120" },
+    { orange: 4, grey: 9, count: "11,400" },
+    { orange: 5, grey: 9, floating: [7, 8], count: "14,810" },
+
+    // Tue (Cols 9 - 12)
+    { orange: 4, grey: 7, count: "10,200" },
+    { orange: 6, grey: 9, count: "14,600" },
+    { orange: 9, grey: 11, count: "19,800" },
+    { orange: 14, grey: 15, count: "23,900" },
+
+    // Wed (Cols 13 - 16)
+    { orange: 11, grey: 11, count: "21,400" },
+    { orange: 5, grey: 7, count: "13,900" },
+    { orange: 2, grey: 8, count: "9,500" },
+    { orange: 2, grey: 8, count: "9,200" },
+
+    // Thu (Cols 17 - 20)
+    { orange: 6, grey: 7, count: "11,200" },
+    { orange: 7, grey: 9, count: "13,400" },
+    { orange: 6, grey: 8, count: "12,100" },
+    { orange: 4, grey: 6, count: "8,900" },
+
+    // Fri (Cols 21 - 24)
+    { orange: 8, grey: 9, count: "15,800" },
+    { orange: 12, grey: 12, count: "19,450" },
+    { orange: 13, grey: 13, count: "20,100" },
+    { orange: 9, grey: 10, count: "16,200" },
+
+    // Sat (Cols 25 - 28)
+    { orange: 7, grey: 8, count: "13,100" },
+    { orange: 6, grey: 8, count: "12,400" },
+    { orange: 5, grey: 7, count: "10,800" },
+    { orange: 4, grey: 6, count: "8,900" },
+
+    // Sun 2 (Cols 29 - 32)
+    { orange: 7, grey: 9, count: "14,600" },
+    { orange: 8, grey: 10, count: "15,900" },
+    { orange: 8, grey: 10, count: "15,400" },
+    { orange: 5, grey: 7, count: "11,100" },
   ];
-  const maxMatrixBlocks = 16; // 16 vertical slots corresponding to 0k to 25k
+
+  const totalMatrixRows = 16; // 16 vertical slots from 0k to 25k
+
+  const daysLabelList = [
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun",
+  ];
 
   // Retention spline chart points (Sun .. Sun)
   const retentionCurve = [
@@ -231,7 +218,7 @@ export function AdminDashboard({
       {/* ============================================================ */}
       <aside
         className={`${
-          sidebarCollapsed ? "w-16" : "w-[260px]"
+          sidebarCollapsed ? "w-16" : "w-[260px] sm:w-[270px]"
         } shrink-0 bg-[#121215] border-r border-[#222227] flex flex-col justify-between transition-all duration-300 select-none z-30 min-h-screen`}
       >
         <div className="flex flex-col">
@@ -540,7 +527,7 @@ export function AdminDashboard({
       </aside>
 
       {/* ============================================================ */}
-      {/* 2. MAIN CONTENT AREA (Pixel-Perfect Reference Match)         */}
+      {/* 2. MAIN CONTENT AREA (100% Full-Width Edge-to-Edge)           */}
       {/* ============================================================ */}
       <main className="flex-1 w-full min-w-0 flex flex-col p-6 sm:p-8 lg:p-9 gap-6 overflow-y-auto">
         {/* Main Page Header */}
@@ -678,17 +665,17 @@ export function AdminDashboard({
             {/* Top 4 KPI Metrics Row */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: Weekly active users */}
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 flex flex-col justify-between shadow-sm">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[#1e293b] text-blue-400 flex items-center justify-center">
-                      <Users className="w-3.5 h-3.5" />
+                    <div className="w-7 h-7 rounded-md bg-[#1e293b] text-blue-400 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
                     </div>
                     <span className="text-[12px] text-[#a1a1aa] font-medium">
                       Weekly active users
                     </span>
                   </div>
-                  <div className="mt-3 text-[26px] font-bold text-white tracking-tight leading-none">
+                  <div className="mt-3 text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
                     24,815
                   </div>
                 </div>
@@ -699,17 +686,17 @@ export function AdminDashboard({
               </div>
 
               {/* Card 2: Week-1 retention */}
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 flex flex-col justify-between shadow-sm">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[#332219] text-orange-400 flex items-center justify-center">
-                      <MessageSquare className="w-3.5 h-3.5" />
+                    <div className="w-7 h-7 rounded-md bg-[#332219] text-orange-400 flex items-center justify-center">
+                      <MessageSquare className="w-4 h-4" />
                     </div>
                     <span className="text-[12px] text-[#a1a1aa] font-medium">
                       Week-1 retention
                     </span>
                   </div>
-                  <div className="mt-3 text-[26px] font-bold text-white tracking-tight leading-none">
+                  <div className="mt-3 text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
                     38.6%
                   </div>
                 </div>
@@ -720,17 +707,17 @@ export function AdminDashboard({
               </div>
 
               {/* Card 3: Activation rate */}
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 flex flex-col justify-between shadow-sm">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[#162a38] text-sky-400 flex items-center justify-center">
-                      <Zap className="w-3.5 h-3.5" />
+                    <div className="w-7 h-7 rounded-md bg-[#162a38] text-sky-400 flex items-center justify-center">
+                      <Zap className="w-4 h-4" />
                     </div>
                     <span className="text-[12px] text-[#a1a1aa] font-medium">
                       Activation rate
                     </span>
                   </div>
-                  <div className="mt-3 text-[26px] font-bold text-white tracking-tight leading-none">
+                  <div className="mt-3 text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
                     33.9%
                   </div>
                 </div>
@@ -741,17 +728,17 @@ export function AdminDashboard({
               </div>
 
               {/* Card 4: Net MRR */}
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 flex flex-col justify-between shadow-sm">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-[#132c23] text-emerald-400 flex items-center justify-center">
-                      <DollarSign className="w-3.5 h-3.5" />
+                    <div className="w-7 h-7 rounded-md bg-[#132c23] text-emerald-400 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4" />
                     </div>
                     <span className="text-[12px] text-[#a1a1aa] font-medium">
                       Net MRR
                     </span>
                   </div>
-                  <div className="mt-3 text-[26px] font-bold text-white tracking-tight leading-none">
+                  <div className="mt-3 text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
                     $84,320
                   </div>
                 </div>
@@ -763,9 +750,9 @@ export function AdminDashboard({
             </section>
 
             {/* ============================================================ */}
-            {/* BIG CENTER HEATMAP / DISCRETE BLOCK MATRIX ("Active users")   */}
+            {/* BIG GITHUB-STYLE PIXEL MATRIX ("Active users")                */}
             {/* ============================================================ */}
-            <section className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 shadow-sm flex flex-col justify-between">
+            <section className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 sm:p-7 shadow-sm flex flex-col justify-between">
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -773,7 +760,7 @@ export function AdminDashboard({
                     Active users
                   </span>
                   <div className="flex items-baseline gap-2.5 mt-1">
-                    <span className="text-[26px] font-bold text-white tracking-tight leading-none">
+                    <span className="text-[30px] sm:text-[34px] font-bold text-white tracking-tight leading-none">
                       24,815
                     </span>
                     <span className="flex items-center gap-1 text-[11px] text-[#f87171] font-medium">
@@ -786,73 +773,92 @@ export function AdminDashboard({
                 {/* Legend */}
                 <div className="flex items-center gap-4 text-[12px] text-[#a1a1aa]">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#2a2a30]" />
+                    <span className="w-3 h-3 rounded-[3px] bg-[#2d2d34]" />
                     <span>Last week</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#e05326]" />
-                    <span className="text-white">This week</span>
+                    <span className="w-3 h-3 rounded-[3px] bg-[#e05326]" />
+                    <span className="text-white font-medium">This week</span>
                   </div>
                 </div>
               </div>
 
               {/* Heatmap Grid Matrix with Y-Axis */}
-              <div className="mt-8 flex gap-4">
-                {/* Y-Axis Labels */}
-                <div className="flex flex-col justify-between text-[11px] font-mono text-[#52525b] pb-7 pt-1 select-none">
-                  <span>25k</span>
-                  <span>20k</span>
-                  <span>15k</span>
-                  <span>10k</span>
-                  <span>5k</span>
-                  <span>0k</span>
+              <div className="mt-8 flex gap-3 sm:gap-4">
+                {/* Y-Axis Labels with subtle tick indicator */}
+                <div className="flex flex-col justify-between text-[11px] font-mono text-[#52525b] pb-7 pt-0.5 select-none shrink-0 w-8">
+                  <div className="flex items-center justify-between">
+                    <span>25k</span>
+                    <span className="text-[#3f3f46]">—</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>20k</span>
+                    <span className="text-[#3f3f46]">—</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>15k</span>
+                    <span className="text-[#3f3f46]">—</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>10k</span>
+                    <span className="text-[#3f3f46]">—</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>5k</span>
+                    <span className="text-[#3f3f46]">—</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>0k</span>
+                    <span className="text-[#3f3f46]">—</span>
+                  </div>
                 </div>
 
-                {/* Grid Columns */}
-                <div className="flex-1 flex items-end justify-between gap-3 sm:gap-6 overflow-x-auto pb-1">
-                  {heatmapDays.map((dayGroup, idx) => (
-                    <div
-                      key={`${dayGroup.day}-${idx}`}
-                      className="flex-1 flex flex-col items-center gap-2"
-                    >
-                      {/* Voxel / Discrete Block Stacks for this day (3 or 4 sub-columns) */}
-                      <div className="w-full flex items-end justify-center gap-[2px] sm:gap-[3px]">
-                        {dayGroup.cols.map((col, colIdx) => (
-                          <div
-                            key={colIdx}
-                            className="flex-1 flex flex-col-reverse gap-[3px] items-center"
-                          >
-                            {Array.from({ length: maxMatrixBlocks }).map(
-                              (_, blockIdx) => {
-                                const isThisWeek = blockIdx < col.thisWeek;
-                                const isLastWeekGhost =
-                                  !isThisWeek && blockIdx < col.lastWeek;
+                {/* 33-Column GitHub-Style Continuous Tile Matrix */}
+                <div className="flex-1 flex flex-col overflow-x-auto pb-1">
+                  {/* Grid Rows / Columns */}
+                  <div className="w-full flex items-end justify-between gap-[2px] sm:gap-[3px]">
+                    {gridColumns.map((col, colIdx) => (
+                      <div
+                        key={colIdx}
+                        className="flex-1 flex flex-col-reverse gap-[2.5px] sm:gap-[3px] items-center"
+                      >
+                        {Array.from({ length: totalMatrixRows }).map(
+                          (_, rowIdx) => {
+                            const isBaseline = rowIdx === 0;
+                            const isThisWeek =
+                              isBaseline ||
+                              rowIdx < col.orange ||
+                              Boolean(col.floating?.includes(rowIdx));
+                            const isLastWeekGhost =
+                              !isThisWeek && rowIdx < col.grey;
 
-                                return (
-                                  <div
-                                    key={blockIdx}
-                                    title={`${dayGroup.day}: ${dayGroup.count} active users`}
-                                    className={`w-full h-[12px] sm:h-[13px] rounded-[2.5px] transition-all ${
-                                      isThisWeek
-                                        ? "bg-[#e05326] shadow-[0_0_8px_rgba(224,83,38,0.35)]"
-                                        : isLastWeekGhost
-                                          ? "bg-[#25252b]"
-                                          : "bg-[#18181d]/50"
-                                    }`}
-                                  />
-                                );
-                              },
-                            )}
-                          </div>
-                        ))}
+                            return (
+                              <div
+                                key={rowIdx}
+                                title={`Col ${colIdx}: ${col.count} active users`}
+                                className={`w-full aspect-square rounded-[3px] sm:rounded-[3.5px] transition-all ${
+                                  isThisWeek
+                                    ? "bg-[#e05326] shadow-[0_0_8px_rgba(224,83,38,0.25)]"
+                                    : isLastWeekGhost
+                                      ? "bg-[#2d2d34]"
+                                      : "bg-[#1a1a1f]/80 hover:bg-white/[0.06]"
+                                }`}
+                              />
+                            );
+                          },
+                        )}
                       </div>
+                    ))}
+                  </div>
 
-                      {/* Day Label */}
-                      <span className="text-[11px] font-medium text-[#71717a] mt-1 select-none">
-                        {dayGroup.day}
-                      </span>
-                    </div>
-                  ))}
+                  {/* 8 Day X-Axis Labels (Aligned exactly under the 4-column day spans) */}
+                  <div className="w-full flex items-center justify-between text-[11px] font-medium text-[#71717a] mt-2.5 pl-2 select-none">
+                    {daysLabelList.map((day, idx) => (
+                      <div key={idx} className="flex-1 text-center">
+                        <span>{day}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
@@ -862,13 +868,13 @@ export function AdminDashboard({
             {/* ============================================================ */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Card 1: Conversions */}
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-6 flex flex-col justify-between shadow-sm">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-6 sm:p-7 flex flex-col justify-between shadow-sm">
                 <div>
                   <span className="text-[12px] text-[#a1a1aa] font-medium">
                     Conversions
                   </span>
                   <div className="mt-1 flex items-baseline gap-2.5">
-                    <span className="text-[26px] font-bold text-white tracking-tight leading-none">
+                    <span className="text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
                       24,815
                     </span>
                     <span className="flex items-center gap-1 text-[11px] text-sky-400 font-medium">
@@ -879,7 +885,7 @@ export function AdminDashboard({
 
                   {/* Multi-segmented Horizontal Progress Slices */}
                   <div className="mt-6">
-                    <div className="w-full h-3 rounded-full overflow-hidden flex gap-[2px]">
+                    <div className="w-full h-3.5 sm:h-4 rounded-full overflow-hidden flex gap-[2px]">
                       {/* Segment 1: Blue (42.0%) */}
                       <div
                         className="h-full bg-[#2563eb] rounded-l-full"
@@ -965,7 +971,7 @@ export function AdminDashboard({
               </div>
 
               {/* Card 2: Weekly retention */}
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-6 flex flex-col justify-between shadow-sm">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-6 sm:p-7 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -973,7 +979,7 @@ export function AdminDashboard({
                         Weekly retention
                       </span>
                       <div className="mt-1 flex items-baseline gap-2">
-                        <span className="text-[26px] font-bold text-white tracking-tight leading-none">
+                        <span className="text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
                           38.6%
                         </span>
                         <span className="flex items-center gap-1 text-[11px] text-[#f87171] font-medium">
@@ -991,7 +997,9 @@ export function AdminDashboard({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-3 h-0.5 bg-[#e05326]" />
-                        <span className="text-white">This week</span>
+                        <span className="text-white font-medium">
+                          This week
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -999,7 +1007,7 @@ export function AdminDashboard({
                   {/* SVG Retention Spline Chart */}
                   <div className="mt-6 flex gap-3">
                     {/* Y-Axis */}
-                    <div className="flex flex-col justify-between text-[10px] font-mono text-[#52525b] pb-6 select-none h-28">
+                    <div className="flex flex-col justify-between text-[10px] font-mono text-[#52525b] pb-6 select-none h-32 sm:h-36">
                       <span>100</span>
                       <span>75</span>
                       <span>50</span>
@@ -1009,7 +1017,7 @@ export function AdminDashboard({
 
                     {/* Chart Canvas */}
                     <div className="flex-1 flex flex-col justify-between">
-                      <div className="w-full h-28 relative">
+                      <div className="w-full h-32 sm:h-36 relative">
                         <svg
                           className="w-full h-full overflow-visible"
                           viewBox="0 0 460 90"
@@ -1099,7 +1107,7 @@ export function AdminDashboard({
         {/* VIEW 2: USERS DIRECTORY SUB-VIEW (When Users Nav is clicked) */}
         {/* ============================================================ */}
         {activeNav === "users" && (
-          <section className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 shadow-sm flex flex-col gap-6">
+          <section className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 sm:p-7 shadow-sm flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
               <div>
                 <h3 className="text-lg font-bold text-white">
