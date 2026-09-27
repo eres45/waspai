@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
+import { cleanModelDisplayName } from "@/lib/ai/model-display-names";
 import { getAdminSession } from "lib/admin-panel/auth";
 import { supabaseRest } from "lib/db/supabase-rest";
+import { redirect } from "next/navigation";
 import AdminDashboard from "./AdminDashboard";
 
 const defaultStats = {
@@ -209,7 +210,7 @@ async function getDashboardStats() {
 
     const modelBreakdown = Object.entries(modelGroup)
       .map(([model, data]) => ({
-        model,
+        model: cleanModelDisplayName(model) || model,
         tokens: data.tokens,
         count: data.count,
       }))

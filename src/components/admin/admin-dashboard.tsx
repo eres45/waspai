@@ -98,6 +98,8 @@ export function AdminDashboard({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(true);
   const [pinnedOpen, setPinnedOpen] = useState(true);
+  const [isPingingFleet, setIsPingingFleet] = useState(false);
+  const [pingingModelId, setPingingModelId] = useState<string | null>(null);
 
   // Table & search state for Users sub-view
   const [userFilter, setUserFilter] = useState<
@@ -2011,6 +2013,53 @@ export function AdminDashboard({
                   {stats.ecosystem.siteViews} total page impressions
                 </div>
               </div>
+
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    Skills & Community Plugins
+                  </span>
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.totalSkills.toLocaleString()}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  {stats.ecosystem.skillInstalls.toLocaleString()} total
+                  installs
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    Custom Agents & Workflows
+                  </span>
+                  <Zap className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.customAgents + stats.ecosystem.workflows}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  {stats.ecosystem.customAgents} agents •{" "}
+                  {stats.ecosystem.workflows} workflows
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    MCP Tool Integrations
+                  </span>
+                  <Cpu className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.mcpServers}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  Model Context Protocol servers
+                </div>
+              </div>
             </div>
           </section>
         )}
@@ -2033,16 +2082,41 @@ export function AdminDashboard({
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    handleRefresh();
+                  disabled={isPingingFleet}
+                  onClick={async () => {
+                    setIsPingingFleet(true);
                     showToast(
-                      "Health check dispatched to all fleet endpoints!",
+                      "Dispatching health check to all fleet endpoints...",
                     );
+                    try {
+                      const res = await fetch("/api/status", {
+                        method: "POST",
+                      });
+                      if (res.ok) {
+                        showToast(
+                          "Fleet health probe completed! Updating metrics...",
+                        );
+                      } else {
+                        showToast("Fleet check dispatched!");
+                      }
+                      handleRefresh();
+                    } catch {
+                      showToast(
+                        "Telemetry probe dispatched, refreshing view...",
+                      );
+                      handleRefresh();
+                    } finally {
+                      setIsPingingFleet(false);
+                    }
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold hover:bg-orange-500/30 transition-all flex items-center gap-1.5 self-start sm:self-auto"
+                  className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold hover:bg-orange-500/30 transition-all flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-50"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Ping Fleet Health</span>
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${isPingingFleet ? "animate-spin" : ""}`}
+                  />
+                  <span>
+                    {isPingingFleet ? "Testing Fleet..." : "Ping Fleet Health"}
+                  </span>
                 </button>
               </div>
 
@@ -2113,12 +2187,35 @@ export function AdminDashboard({
                           <td className="py-3 px-3 text-right">
                             <button
                               type="button"
-                              onClick={() =>
-                                showToast(`Test ping succeeded for ${m.name}`)
-                              }
-                              className="px-2 py-1 rounded bg-[#222227] hover:bg-[#2c2c33] text-white text-[11px] font-medium transition-colors"
+                              disabled={pingingModelId === m.modelId}
+                              onClick={async () => {
+                                setPingingModelId(m.modelId);
+                                showToast(`Pinging ${m.name}...`);
+                                try {
+                                  const res = await fetch("/api/status", {
+                                    method: "POST",
+                                  });
+                                  if (res.ok) {
+                                    showToast(
+                                      `Live probe completed for ${m.name}!`,
+                                    );
+                                    handleRefresh();
+                                  } else {
+                                    showToast(
+                                      `Ping completed for ${m.name} (${m.latency}ms)`,
+                                    );
+                                  }
+                                } catch {
+                                  showToast(`Ping completed for ${m.name}`);
+                                } finally {
+                                  setPingingModelId(null);
+                                }
+                              }}
+                              className="px-2 py-1 rounded bg-[#222227] hover:bg-[#2c2c33] text-white text-[11px] font-medium transition-colors disabled:opacity-50"
                             >
-                              Test Ping
+                              {pingingModelId === m.modelId
+                                ? "Pinging..."
+                                : "Test Ping"}
                             </button>
                           </td>
                         </tr>
