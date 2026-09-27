@@ -40,7 +40,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
 export function AdminDashboard({
@@ -106,6 +106,8 @@ export function AdminDashboard({
   const [tableSearch, setTableSearch] = useState(query ?? "");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+
   const handleLogout = async () => {
     await fetch("/api/admin-panel/auth", { method: "DELETE" });
     router.refresh();
@@ -114,11 +116,21 @@ export function AdminDashboard({
   const handleRefresh = () => {
     setIsRefreshing(true);
     router.refresh();
+    setLastUpdated(new Date());
     setTimeout(() => {
       setIsRefreshing(false);
       showToast("Telemetry refreshed from database!");
     }, 700);
   };
+
+  // Background real-time telemetry auto-sync with database every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+      setLastUpdated(new Date());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   const toggleSelectAll = () => {
     if (selectedUserIds.length === users.length) {
@@ -754,7 +766,13 @@ export function AdminDashboard({
                 <RefreshCw
                   className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-orange-400" : ""}`}
                 />
-                <span>Updated 2mins ago</span>
+                <span>
+                  Updated{" "}
+                  {Math.floor((Date.now() - lastUpdated.getTime()) / 60000) ===
+                  0
+                    ? "just now"
+                    : `${Math.floor((Date.now() - lastUpdated.getTime()) / 60000)}m ago`}
+                </span>
               </button>
             </div>
           </div>
