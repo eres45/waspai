@@ -1,4 +1,5 @@
 import "server-only";
+import { createClient } from "@supabase/supabase-js";
 import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 import { pgDb as db } from "lib/db/pg/db.pg";
 import {
@@ -130,6 +131,232 @@ export interface AdminDashboardStats {
     createdAt: Date;
     banned: boolean | null;
   }[];
+
+  // 10. Real Day-by-Day Activity Map (YYYY-MM-DD -> total messages/events)
+  activityByDay: Record<string, number>;
+}
+
+async function fetchAllMessageDates(
+  supabase: any,
+): Promise<{ created_at: string | null }[]> {
+  const messageDates: { created_at: string | null }[] = [];
+  let offset = 0;
+  const CHUNK_SIZE = 1000;
+  while (offset < 25000) {
+    const { data: chunk, error } = await supabase
+      .from("chat_message")
+      .select("created_at")
+      .range(offset, offset + CHUNK_SIZE - 1);
+    if (error || !chunk || chunk.length === 0) break;
+    messageDates.push(...chunk);
+    if (chunk.length < CHUNK_SIZE) break;
+    offset += CHUNK_SIZE;
+  }
+  return messageDates;
+}
+
+async function fetchStatsViaSupabaseRest(): Promise<{
+  totalUsers: number;
+  newUsersThisMonth: number;
+  newUsersLastMonth: number;
+  adminUsers: number;
+  bannedUsers: number;
+  proUsers: number;
+  verifiedUsers: number;
+  totalChats: number;
+  totalMessages: number;
+  messagesToday: number;
+  activeSessions: number;
+  recentUsers: AdminDashboardStats["recentUsers"];
+  activityByDay: Record<string, number>;
+  monthlySignups: AdminDashboardStats["monthlySignups"];
+}> {
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "";
+  if (!supabaseUrl || !supabaseKey) {
+    return {
+      totalUsers: 0,
+      newUsersThisMonth: 0,
+      newUsersLastMonth: 0,
+      adminUsers: 0,
+      bannedUsers: 0,
+      proUsers: 0,
+      verifiedUsers: 0,
+      totalChats: 0,
+      totalMessages: 0,
+      messagesToday: 0,
+      activeSessions: 0,
+      recentUsers: [],
+      activityByDay: {},
+      monthlySignups: [],
+    };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const now = new Date();
+  const startOfThisMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1,
+  ).toISOString();
+  const startOfLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1,
+  ).toISOString();
+  const endOfLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    0,
+    23,
+    59,
+    59,
+  ).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    { count: totalUsers },
+    { count: newUsersThisMonth },
+    { count: newUsersLastMonth },
+    { count: adminUsers },
+    { count: bannedUsers },
+    { count: proUsers },
+    { count: verifiedUsers },
+    { count: totalChats },
+    { count: totalMessages },
+    { count: messagesToday },
+    { data: recentUserRows },
+    allMessageDates,
+    { data: allUserDates },
+    { count: activeSessionsCount },
+  ] = await Promise.all([
+    supabase.from("user").select("*", { count: "exact", head: true }),
+    supabase
+      .from("user")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", startOfThisMonth),
+    supabase
+      .from("user")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", startOfLastMonth)
+      .lte("created_at", endOfLastMonth),
+    supabase
+      .from("user")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "admin"),
+    supabase
+      .from("user")
+      .select("*", { count: "exact", head: true })
+      .eq("banned", true),
+    supabase
+      .from("user")
+      .select("*", { count: "exact", head: true })
+      .eq("tier", "pro"),
+    supabase
+      .from("user")
+      .select("*", { count: "exact", head: true })
+      .eq("email_verified", true),
+    supabase.from("chat_thread").select("*", { count: "exact", head: true }),
+    supabase.from("chat_message").select("*", { count: "exact", head: true }),
+    supabase
+      .from("chat_message")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", oneDayAgo),
+    supabase
+      .from("user")
+      .select("id, name, email, image, role, tier, created_at, banned")
+      .order("created_at", { ascending: false })
+      .limit(10),
+    fetchAllMessageDates(supabase),
+    supabase.from("user").select("created_at"),
+    supabase
+      .from("session")
+      .select("*", { count: "exact", head: true })
+      .gte("expires_at", now.toISOString()),
+  ]);
+
+  const activityByDay: Record<string, number> = {};
+  if (allMessageDates) {
+    for (const m of allMessageDates) {
+      if (m.created_at) {
+        const d = new Date(m.created_at).toISOString().slice(0, 10);
+        activityByDay[d] = (activityByDay[d] || 0) + 1;
+      }
+    }
+  }
+  if (allUserDates) {
+    for (const u of allUserDates) {
+      if (u.created_at) {
+        const d = new Date(u.created_at).toISOString().slice(0, 10);
+        activityByDay[d] = (activityByDay[d] || 0) + 1;
+      }
+    }
+  }
+
+  const monthCounts: Record<string, number> = {};
+  if (allUserDates) {
+    for (const u of allUserDates) {
+      if (u.created_at) {
+        const m = new Date(u.created_at).toLocaleString("default", {
+          month: "short",
+        });
+        monthCounts[m] = (monthCounts[m] || 0) + 1;
+      }
+    }
+  }
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const currentMonthIdx = now.getMonth();
+  const monthlySignups = monthNames.map((m, idx) => ({
+    month: m,
+    count: monthCounts[m] ?? 0,
+    isCurrent: idx === currentMonthIdx,
+  }));
+
+  const mappedRecentUsers = (recentUserRows ?? []).map((u: any) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    image: u.image,
+    role: u.role,
+    tier: u.tier,
+    createdAt: new Date(u.created_at),
+    banned: u.banned,
+  }));
+
+  return {
+    totalUsers: totalUsers ?? 0,
+    newUsersThisMonth: newUsersThisMonth ?? 0,
+    newUsersLastMonth: newUsersLastMonth ?? 0,
+    adminUsers: adminUsers ?? 0,
+    bannedUsers: bannedUsers ?? 0,
+    proUsers: proUsers ?? 0,
+    verifiedUsers: verifiedUsers ?? 0,
+    totalChats: totalChats ?? 0,
+    totalMessages: totalMessages ?? 0,
+    messagesToday: messagesToday ?? 0,
+    activeSessions: activeSessionsCount ?? 0,
+    recentUsers: mappedRecentUsers,
+    activityByDay,
+    monthlySignups,
+  };
 }
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
@@ -198,6 +425,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
 
   let recentUsers: AdminDashboardStats["recentUsers"] = [];
   const dbMonthCounts: Record<string, number> = {};
+  let activityByDay: Record<string, number> = {};
+  let monthlySignups: AdminDashboardStats["monthlySignups"] = [];
 
   try {
     const results = await Promise.allSettled([
@@ -521,6 +750,66 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     console.error("[admin-dashboard] Error fetching user counts:", err);
   }
 
+  // Fallback to Supabase REST client if direct PG returned 0 users or failed
+  if (totalUsers === 0) {
+    const restData = await fetchStatsViaSupabaseRest();
+    if (restData.totalUsers > 0) {
+      totalUsers = restData.totalUsers;
+      newUsersThisMonth = restData.newUsersThisMonth;
+      newUsersLastMonth = restData.newUsersLastMonth;
+      adminUsers = restData.adminUsers;
+      bannedUsers = restData.bannedUsers;
+      proUsers = restData.proUsers;
+      verifiedUsers = restData.verifiedUsers;
+      totalChats = restData.totalChats;
+      totalMessages = restData.totalMessages;
+      messagesToday = restData.messagesToday;
+      activeSessions = restData.activeSessions;
+      if (restData.recentUsers.length > 0) recentUsers = restData.recentUsers;
+      if (Object.keys(restData.activityByDay).length > 0)
+        activityByDay = restData.activityByDay;
+      if (restData.monthlySignups.length > 0)
+        monthlySignups = restData.monthlySignups;
+    }
+  }
+
+  // Ensure activityByDay has real message/user activity timestamps
+  if (Object.keys(activityByDay).length === 0) {
+    try {
+      const supabaseUrl =
+        process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const supabaseKey =
+        process.env.SUPABASE_SERVICE_ROLE_KEY ||
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+        "";
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const allMessageDates = await fetchAllMessageDates(supabase);
+        if (allMessageDates) {
+          for (const m of allMessageDates) {
+            if (m.created_at) {
+              const d = new Date(m.created_at).toISOString().slice(0, 10);
+              activityByDay[d] = (activityByDay[d] || 0) + 1;
+            }
+          }
+        }
+        const { data: allUserDates } = await supabase
+          .from("user")
+          .select("created_at");
+        if (allUserDates) {
+          for (const u of allUserDates) {
+            if (u.created_at) {
+              const d = new Date(u.created_at).toISOString().slice(0, 10);
+              activityByDay[d] = (activityByDay[d] || 0) + 1;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[admin-dashboard] Could not fetch real activity dates:", e);
+    }
+  }
+
   // Provide high-fidelity default fleet if modelStatus table has not yet collected probes
   if (modelFleet.length === 0) {
     modelFleet = [
@@ -631,20 +920,16 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     "Dec",
   ];
   const currentMonthIdx = now.getMonth();
-
-  const monthlySignups = monthNames.map((m, idx) => {
-    const realCount = dbMonthCounts[m] ?? 0;
-    return {
-      month: m,
-      count:
-        realCount > 0
-          ? realCount
-          : idx <= currentMonthIdx
-            ? Math.max(1, (idx + 1) * 3)
-            : 0,
-      isCurrent: idx === currentMonthIdx,
-    };
-  });
+  if (monthlySignups.length === 0) {
+    monthlySignups = monthNames.map((m, idx) => {
+      const realCount = dbMonthCounts[m] ?? 0;
+      return {
+        month: m,
+        count: realCount,
+        isCurrent: idx === currentMonthIdx,
+      };
+    });
+  }
 
   // Default tags for queue
   const defaultTags = [
@@ -717,5 +1002,6 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       onlineConsultations,
     },
     recentUsers,
+    activityByDay,
   };
 }

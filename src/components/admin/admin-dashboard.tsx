@@ -186,10 +186,9 @@ export function AdminDashboard({
   const baseActive =
     stats.activeSessions > 0
       ? stats.activeSessions
-      : Math.max(
-          stats.todayUsers.length * 3,
-          stats.totalUsers > 0 ? stats.totalUsers : 1,
-        );
+      : stats.totalUsers > 0
+        ? stats.totalUsers
+        : 0;
 
   const displayActiveUsers =
     userSegment === "new"
@@ -215,7 +214,7 @@ export function AdminDashboard({
           Math.round((stats.verifiedUsers / stats.totalUsers) * 1000) / 10,
           100,
         )
-      : 38.6;
+      : 0;
 
   const realActivation =
     stats.totalUsers > 0
@@ -226,7 +225,7 @@ export function AdminDashboard({
           ) / 10,
           100,
         )
-      : 33.9;
+      : 0;
 
   const realMrr = stats.proUsers * 20;
 
@@ -318,49 +317,97 @@ export function AdminDashboard({
   // =========================================================================
   // GITHUB-STYLE 2D CONTRIBUTION CALENDAR HEATMAP
   // Dense 104-week × 7-day matrix covering the whole section with small boxes
-  // Each cell value: 0 = no activity, 1–4 = intensity levels
+  // Driven 100% by real database platform activity (activityByDay)
   // =========================================================================
   const GRID_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const GRID_WEEKS = 104;
 
-  // Seeded pseudo-random for deterministic demo data
-  const seededRand = (seed: number) => {
-    const x = Math.sin(seed + 1) * 10000;
-    return x - Math.floor(x);
-  };
+  // Real Calendar date computation across 104 weeks using UTC
+  const now = new Date();
+  const currentDayOfWeek = now.getUTCDay();
+  const currentWeekSunday = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - currentDayOfWeek,
+    ),
+  );
 
-  // Build 7×104 matrix — weekdays have more activity, recent weeks slightly higher
-  const activityGrid: number[][] = GRID_DAYS.map((_, dayIdx) =>
+  interface HeatmapCell {
+    level: number;
+    count: number;
+    date: Date;
+    dateKey: string;
+    isFuture: boolean;
+    formattedDate: string;
+  }
+
+  // Build 7×104 matrix mapped to real database activity
+  const activityGrid: HeatmapCell[][] = GRID_DAYS.map((_, dayIdx) =>
     Array.from({ length: GRID_WEEKS }, (__, weekIdx) => {
-      const r = seededRand(dayIdx * 100 + weekIdx);
-      const isWeekend = dayIdx === 0 || dayIdx === 6;
-      const recency = weekIdx / GRID_WEEKS;
-      const prob = isWeekend ? 0.35 + recency * 0.15 : 0.55 + recency * 0.2;
-      if (r > prob) return 0;
-      const intensity = seededRand(dayIdx * 7 + weekIdx * 3 + 42);
-      if (intensity < 0.35) return 1;
-      if (intensity < 0.65) return 2;
-      if (intensity < 0.88) return 3;
-      return 4;
+      const weeksAgo = GRID_WEEKS - 1 - weekIdx;
+      const cellDate = new Date(
+        currentWeekSunday.getTime() -
+          weeksAgo * 7 * 86400000 +
+          dayIdx * 86400000,
+      );
+      const dateKey = cellDate.toISOString().slice(0, 10);
+      const isFuture = cellDate.getTime() > now.getTime();
+      const count = isFuture ? 0 : (stats.activityByDay?.[dateKey] ?? 0);
+
+      let level = 0;
+      if (count > 0) {
+        if (count <= 2) level = 1;
+        else if (count <= 10) level = 2;
+        else if (count <= 30) level = 3;
+        else level = 4;
+      }
+
+      const formattedDate = cellDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      });
+
+      return {
+        level,
+        count,
+        date: cellDate,
+        dateKey,
+        isFuture,
+        formattedDate,
+      };
     }),
   );
 
-  // Month labels across 104 weeks (rolling 24 months, clean bi-monthly milestones)
-  const monthLabels = [
-    { label: "Oct '24", col: 0 },
-    { label: "Dec '24", col: 8 },
-    { label: "Feb '25", col: 17 },
-    { label: "Apr '25", col: 26 },
-    { label: "Jun '25", col: 34 },
-    { label: "Aug '25", col: 43 },
-    { label: "Oct '25", col: 52 },
-    { label: "Dec '25", col: 60 },
-    { label: "Feb '26", col: 69 },
-    { label: "Apr '26", col: 78 },
-    { label: "Jun '26", col: 86 },
-    { label: "Aug '26", col: 95 },
-    { label: "Sep '26", col: 101 },
-  ];
+  // Dynamically compute month labels across 104 weeks (spaced ~8 weeks apart)
+  const monthLabels: { label: string; col: number }[] = [];
+  let lastLabeledCol = -99;
+  for (let weekIdx = 0; weekIdx < GRID_WEEKS; weekIdx++) {
+    const weeksAgo = GRID_WEEKS - 1 - weekIdx;
+    const colSunday = new Date(
+      currentWeekSunday.getTime() - weeksAgo * 7 * 86400000,
+    );
+    if (weekIdx - lastLabeledCol >= 8) {
+      const monthName = colSunday.toLocaleString("en-US", {
+        month: "short",
+        timeZone: "UTC",
+      });
+      const yearShort = colSunday.getUTCFullYear().toString().slice(2);
+      monthLabels.push({
+        label: `${monthName} '${yearShort}`,
+        col: weekIdx,
+      });
+      lastLabeledCol = weekIdx;
+    }
+  }
+
+  const totalHeatmapEvents = Object.values(stats.activityByDay ?? {}).reduce(
+    (acc, val) => acc + val,
+    0,
+  );
 
   // Dynamic retention curve based on real retention percentage
   const retentionCurve = [
@@ -1164,9 +1211,15 @@ export function AdminDashboard({
                           className="flex-1 flex flex-col gap-[1.5px] sm:gap-[2px]"
                         >
                           {GRID_DAYS.map((_, dayIdx) => {
-                            const level = activityGrid[dayIdx]?.[weekIdx] ?? 0;
-                            const cellColor =
-                              level === 0
+                            const cell = activityGrid[dayIdx]?.[weekIdx];
+                            const level = cell?.level ?? 0;
+                            const isFuture = cell?.isFuture ?? false;
+                            const count = cell?.count ?? 0;
+                            const formattedDate = cell?.formattedDate ?? "";
+
+                            const cellColor = isFuture
+                              ? "bg-[#141417]/30 border border-white/[0.02]"
+                              : level === 0
                                 ? "bg-[#1c1c21] hover:bg-[#28282f]"
                                 : level === 1
                                   ? "bg-[#6e230f]/80 hover:bg-[#7e2912]"
@@ -1178,7 +1231,11 @@ export function AdminDashboard({
                             return (
                               <div
                                 key={dayIdx}
-                                title={`${GRID_DAYS[dayIdx]}, Week ${weekIdx + 1}: ${level > 0 ? `${level * 240} active users` : "No activity"}`}
+                                title={
+                                  isFuture
+                                    ? `${formattedDate} (Upcoming)`
+                                    : `${formattedDate}: ${count > 0 ? `${count} events / messages` : "No activity"}`
+                                }
                                 className={`w-full aspect-square rounded-[2px] transition-colors duration-100 cursor-pointer ${cellColor}`}
                               />
                             );
@@ -1193,7 +1250,8 @@ export function AdminDashboard({
               {/* GitHub-style bottom footer */}
               <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[#71717a] pt-2.5 border-t border-white/[0.04]">
                 <span className="hover:text-[#a1a1aa] cursor-pointer transition-colors">
-                  Learn how we count active users
+                  {totalHeatmapEvents.toLocaleString()} platform events recorded
+                  across 104 weeks
                 </span>
                 <div className="flex items-center gap-1.5 self-end sm:self-auto">
                   <span>Less</span>
