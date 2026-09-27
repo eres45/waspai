@@ -104,6 +104,7 @@ export function AdminDashboard({
   const [roleFilter, setRoleFilter] = useState<
     "all" | "pro" | "free" | "admin"
   >("all");
+  const [revenueCurrency, setRevenueCurrency] = useState<"USD" | "INR">("USD");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -365,7 +366,85 @@ export function AdminDashboard({
         )
       : 0;
 
-  const realMrr = stats.proUsers * 20;
+  // Number of ultra tier users in database
+  const ultraUsersCount = useMemo(() => {
+    return users.filter((u) => (u.tier as string) === "ultra").length;
+  }, [users]);
+
+  // Pro users count
+  const actualProUsers = useMemo(() => {
+    return Math.max(0, stats.proUsers - ultraUsersCount);
+  }, [stats.proUsers, ultraUsersCount]);
+
+  // Real MRR calculated from active paying tiers and selected currency
+  const calculatedMrr = useMemo(() => {
+    if (revenueCurrency === "INR") {
+      return actualProUsers * 399 + ultraUsersCount * 999;
+    }
+    return actualProUsers * 10 + ultraUsersCount * 32;
+  }, [revenueCurrency, actualProUsers, ultraUsersCount]);
+
+  const realMrr = calculatedMrr;
+  const currencySymbol = revenueCurrency === "INR" ? "₹" : "$";
+
+  // Timeframe revenue run rate
+  const timeframeRevenue = useMemo(() => {
+    switch (timeRange) {
+      case "Last 7 days":
+        return Math.round((calculatedMrr / 4.33) * 10) / 10;
+      case "Last 30 days":
+        return calculatedMrr;
+      case "Last 90 days":
+        return calculatedMrr * 3;
+      case "All time":
+      default:
+        return calculatedMrr * 12;
+    }
+  }, [calculatedMrr, timeRange]);
+
+  const timeframeRevenueLabel = useMemo(() => {
+    switch (timeRange) {
+      case "Last 7 days":
+        return "7-Day Run Rate";
+      case "Last 30 days":
+        return "Monthly Recurring Revenue";
+      case "Last 90 days":
+        return "Quarterly Run Rate";
+      case "All time":
+      default:
+        return "Annual Run Rate (ARR)";
+    }
+  }, [timeRange]);
+
+  // Cohort users count for ARPU
+  const cohortUsersCount = useMemo(() => {
+    if (userSegment === "power") return Math.max(stats.proUsers, 1);
+    if (userSegment === "new") return Math.max(newUsersInTimeRange, 1);
+    return Math.max(activeUsersInTimeRange, 1);
+  }, [
+    userSegment,
+    stats.proUsers,
+    newUsersInTimeRange,
+    activeUsersInTimeRange,
+  ]);
+
+  const arpu = useMemo(() => {
+    return (calculatedMrr / cohortUsersCount).toFixed(2);
+  }, [calculatedMrr, cohortUsersCount]);
+
+  // Paid conversion percentage for the selected segment
+  const paidConversionRate = useMemo(() => {
+    if (userSegment === "power") return "100.0";
+    if (cohortUsersCount === 0) return "0.0";
+    return ((stats.proUsers / cohortUsersCount) * 100).toFixed(1);
+  }, [userSegment, stats.proUsers, cohortUsersCount]);
+
+  // Paying user records from users list
+  const payingUsersList = useMemo(() => {
+    return users.filter(
+      (u) => u.tier === "pro" || (u.tier as string) === "ultra",
+    );
+  }, [users]);
 
   const totalBase = Math.max(stats.totalUsers, 1);
   const funnelSteps = [
@@ -2202,109 +2281,215 @@ export function AdminDashboard({
         {/* ============================================================ */}
         {activeNav === "revenue" && (
           <section className="flex flex-col gap-6 animate-in fade-in duration-200">
+            {/* Currency & Cohort Filter Strip */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[#161619] border border-white/[0.06]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">
+                  {currencySymbol}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Revenue Telemetry & Cohorts</span>
+                    <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+                      Live Database Sync
+                    </span>
+                  </h4>
+                  <p className="text-[12px] text-[#71717a]">
+                    Showing {timeRange.toLowerCase()} •{" "}
+                    {userSegment === "all"
+                      ? "All Registered Users"
+                      : userSegment === "power"
+                        ? "Paying Subscribers (Power Cohort)"
+                        : userSegment === "new"
+                          ? "New Signups Cohort"
+                          : "Returning Active Users"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Currency Toggle */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-[#111114] p-1 rounded-lg border border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRevenueCurrency("USD");
+                    showToast("Switched currency to USD ($)");
+                  }}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                    revenueCurrency === "USD"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "text-[#71717a] hover:text-white"
+                  }`}
+                >
+                  $ USD
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRevenueCurrency("INR");
+                    showToast("Switched currency to INR (₹)");
+                  }}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                    revenueCurrency === "INR"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "text-[#71717a] hover:text-white"
+                  }`}
+                >
+                  ₹ INR
+                </button>
+              </div>
+            </div>
+
             {/* Top Revenue KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
                 <span className="text-[12px] text-[#a1a1aa] font-medium">
-                  Monthly Recurring Revenue
+                  {timeframeRevenueLabel}
                 </span>
                 <div className="mt-2 text-[30px] font-bold text-white tracking-tight">
-                  ${realMrr.toLocaleString()}
+                  {currencySymbol}
+                  {timeframeRevenue.toLocaleString()}
                 </div>
                 <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
                   <span className="size-1.5 rounded-full bg-emerald-400" />
-                  <span>{stats.proUsers} Pro accounts @ $20/mo</span>
+                  <span>
+                    {userSegment === "power"
+                      ? "100% Pro subscriber cohort"
+                      : `${stats.proUsers} paid account(s) @ ${currencySymbol}${calculatedMrr.toLocaleString()}/mo`}
+                  </span>
                 </div>
               </div>
+
               <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
                 <span className="text-[12px] text-[#a1a1aa] font-medium">
                   Annual Run Rate (ARR)
                 </span>
                 <div className="mt-2 text-[30px] font-bold text-white tracking-tight">
-                  ${(realMrr * 12).toLocaleString()}
+                  {currencySymbol}
+                  {(calculatedMrr * 12).toLocaleString()}
                 </div>
                 <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
                   <ArrowUpRight className="w-3.5 h-3.5" />
-                  <span>Annualized projection</span>
+                  <span>12-month forward projection</span>
                 </div>
               </div>
+
               <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
                 <span className="text-[12px] text-[#a1a1aa] font-medium">
                   Average Revenue Per User
                 </span>
                 <div className="mt-2 text-[30px] font-bold text-white tracking-tight">
-                  $
-                  {stats.totalUsers > 0
-                    ? (realMrr / stats.totalUsers).toFixed(2)
-                    : "0.00"}
+                  {currencySymbol}
+                  {arpu}
                 </div>
                 <div className="mt-2 text-[11px] text-[#71717a] font-medium">
-                  Across all registered accounts
+                  Across {cohortUsersCount} accounts in {userSegment} cohort
                 </div>
               </div>
+
               <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
                 <span className="text-[12px] text-[#a1a1aa] font-medium">
                   Paid Conversion
                 </span>
                 <div className="mt-2 text-[30px] font-bold text-white tracking-tight">
-                  {overallConversionPct}%
+                  {paidConversionRate}%
                 </div>
                 <div className="mt-2 text-[11px] text-sky-400 flex items-center gap-1 font-medium">
                   <span>
-                    {stats.proUsers} paid of {stats.totalUsers} total
+                    {stats.proUsers} paid of {cohortUsersCount} in segment
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Subscription Tier Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="rounded-xl bg-[#161619] border border-orange-500/20 p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 1. Pro Plan */}
+              <div className="rounded-xl bg-[#161619] border border-orange-500/20 p-5 sm:p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full blur-2xl" />
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-400">
                       Pro Plan
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-orange-500/20 text-orange-300 font-semibold">
-                      $20 / month
+                      {currencySymbol}
+                      {revenueCurrency === "INR" ? "399" : "10"} / mo
                     </span>
                   </div>
-                  <div className="mt-4 text-[32px] font-bold text-white">
-                    {stats.proUsers}
+                  <div className="mt-3 text-[30px] font-bold text-white">
+                    {actualProUsers}
                   </div>
                   <p className="mt-1 text-xs text-[#a1a1aa]">
-                    Paying members with unlimited AI models, fast generation,
-                    and custom workflows.
+                    Advanced reasoning models, fast generation, and custom MCP
+                    tools.
                   </p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between text-xs">
                   <span className="text-[#71717a]">Monthly Yield:</span>
                   <span className="font-mono font-bold text-emerald-400">
-                    ${realMrr.toLocaleString()}/mo
+                    {currencySymbol}
+                    {(
+                      actualProUsers * (revenueCurrency === "INR" ? 399 : 10)
+                    ).toLocaleString()}
+                    /mo
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-6 flex flex-col justify-between shadow-sm">
+              {/* 2. Ultra Plan */}
+              <div className="rounded-xl bg-[#161619] border border-amber-500/20 p-5 sm:p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full blur-2xl" />
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                      Ultra Plan
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/20 text-amber-300 font-semibold">
+                      {currencySymbol}
+                      {revenueCurrency === "INR" ? "999" : "32"} / mo
+                    </span>
+                  </div>
+                  <div className="mt-3 text-[30px] font-bold text-white">
+                    {ultraUsersCount}
+                  </div>
+                  <p className="mt-1 text-xs text-[#a1a1aa]">
+                    Frontier models, priority cloud browser, video and audio
+                    synthesis.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                  <span className="text-[#71717a]">Monthly Yield:</span>
+                  <span className="font-mono font-bold text-emerald-400">
+                    {currencySymbol}
+                    {(
+                      ultraUsersCount * (revenueCurrency === "INR" ? 999 : 32)
+                    ).toLocaleString()}
+                    /mo
+                  </span>
+                </div>
+              </div>
+
+              {/* 3. Free Tier */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-[#a1a1aa]">
                       Free Tier
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-white/5 text-[#a1a1aa] font-semibold">
-                      $0 / month
+                      {currencySymbol}0 / mo
                     </span>
                   </div>
-                  <div className="mt-4 text-[32px] font-bold text-white">
+                  <div className="mt-3 text-[30px] font-bold text-white">
                     {stats.freeUsers}
                   </div>
                   <p className="mt-1 text-xs text-[#a1a1aa]">
-                    Standard tier users with daily free search, chat, and basic
-                    model access.
+                    Standard accounts with daily free searches, chat, and basic
+                    models.
                   </p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between text-xs">
                   <span className="text-[#71717a]">Upgrade Pipeline:</span>
                   <span className="font-mono font-bold text-white">
                     {stats.freeUsers} prospects
@@ -2312,27 +2497,28 @@ export function AdminDashboard({
                 </div>
               </div>
 
-              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-6 flex flex-col justify-between shadow-sm">
+              {/* 4. Referrals & Growth */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 flex flex-col justify-between shadow-sm">
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                      Referrals & Growth
+                    <span className="text-xs font-bold uppercase tracking-wider text-sky-400">
+                      Referrals & Viral
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/20 text-amber-300 font-semibold">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-sky-500/20 text-sky-300 font-semibold">
                       Organic
                     </span>
                   </div>
-                  <div className="mt-4 text-[32px] font-bold text-white">
+                  <div className="mt-3 text-[30px] font-bold text-white">
                     {stats.totalReferrals}
                   </div>
                   <p className="mt-1 text-xs text-[#a1a1aa]">
-                    Total invites and member invitations processed across the
-                    platform.
+                    Member invitations and organic referral conversions across
+                    the platform.
                   </p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs">
+                <div className="mt-5 pt-3.5 border-t border-white/[0.06] flex items-center justify-between text-xs">
                   <span className="text-[#71717a]">Organic Share:</span>
-                  <span className="font-mono font-bold text-amber-400">
+                  <span className="font-mono font-bold text-sky-400">
                     {stats.totalUsers > 0
                       ? (
                           (stats.totalReferrals / stats.totalUsers) *
@@ -2342,6 +2528,132 @@ export function AdminDashboard({
                     % of accounts
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Active Customers & Subscriptions Live Table */}
+            <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-white/[0.06]">
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Paying Customers & Subscription Roster
+                  </h3>
+                  <p className="text-xs text-[#71717a] mt-0.5">
+                    Live database records of accounts with active subscription
+                    tiers
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#71717a] font-mono">
+                    {payingUsersList.length > 0
+                      ? `${payingUsersList.length} subscriber(s) recorded`
+                      : "Filtered by active user base"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-white/[0.06] text-[#71717a] font-mono">
+                      <th className="py-2.5 px-3">Subscriber</th>
+                      <th className="py-2.5 px-3">Subscription Tier</th>
+                      <th className="py-2.5 px-3">Monthly Yield</th>
+                      <th className="py-2.5 px-3">Customer Since</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.03]">
+                    {(payingUsersList.length > 0
+                      ? payingUsersList
+                      : users.slice(0, 5)
+                    ).map((u) => {
+                      const isPaying =
+                        u.tier === "pro" || (u.tier as string) === "ultra";
+                      const isUltra = (u.tier as string) === "ultra";
+                      const rate = isUltra
+                        ? revenueCurrency === "INR"
+                          ? "₹999/mo"
+                          : "$32/mo"
+                        : isPaying
+                          ? revenueCurrency === "INR"
+                            ? "₹399/mo"
+                            : "$10/mo"
+                          : `${currencySymbol}0/mo`;
+
+                      return (
+                        <tr key={u.id} className="hover:bg-white/[0.02]">
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-7 h-7 border border-white/10">
+                                <AvatarImage
+                                  src={getUserAvatar(u)}
+                                  alt={u.name || "Customer"}
+                                />
+                                <AvatarFallback className="bg-orange-950 text-orange-200 font-bold text-xs">
+                                  {(u.name || u.email || "U")[0].toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-semibold text-white">
+                                  {u.name || "Subscriber Account"}
+                                </div>
+                                <span className="text-[11px] text-[#71717a] font-mono">
+                                  {u.email}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                isUltra
+                                  ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
+                                  : isPaying
+                                    ? "bg-orange-500/15 border border-orange-500/30 text-orange-400"
+                                    : "bg-white/[0.04] text-[#a1a1aa]"
+                              }`}
+                            >
+                              {isUltra
+                                ? "Ultra Member"
+                                : isPaying
+                                  ? "Pro Member"
+                                  : "Free Prospect"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-mono font-semibold text-emerald-400">
+                            {rate}
+                          </td>
+                          <td className="py-3 px-3 text-[#71717a]">
+                            {u.createdAt
+                              ? format(new Date(u.createdAt), "MMM d, yyyy")
+                              : "Active"}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-medium">
+                              <span className="size-1.5 rounded-full bg-emerald-400" />
+                              <span>Active</span>
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTableSearch(u.email || "");
+                                setActiveNav("users");
+                                showToast(`Inspecting customer ${u.email}`);
+                              }}
+                              className="px-2.5 py-1 rounded-md bg-[#222227] hover:bg-[#2c2c33] text-white text-[11px] font-semibold transition-all"
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>
