@@ -750,17 +750,17 @@ export function AdminDashboard({
             </section>
 
             {/* ============================================================ */}
-            {/* BIG GITHUB-STYLE PIXEL MATRIX ("Active users")                */}
+            {/* COMPACT GITHUB-STYLE PIXEL MATRIX ("Active users")           */}
             {/* ============================================================ */}
-            <section className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 sm:p-7 shadow-sm flex flex-col justify-between">
+            <section className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 sm:p-6 shadow-sm flex flex-col justify-between">
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <span className="text-[12px] text-[#a1a1aa] font-medium block">
                     Active users
                   </span>
-                  <div className="flex items-baseline gap-2.5 mt-1">
-                    <span className="text-[30px] sm:text-[34px] font-bold text-white tracking-tight leading-none">
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
                       24,815
                     </span>
                     <span className="flex items-center gap-1 text-[11px] text-[#f87171] font-medium">
@@ -773,20 +773,20 @@ export function AdminDashboard({
                 {/* Legend */}
                 <div className="flex items-center gap-4 text-[12px] text-[#a1a1aa]">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-[3px] bg-[#2d2d34]" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#2d2d34]" />
                     <span>Last week</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-[3px] bg-[#e05326]" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#e05326]" />
                     <span className="text-white font-medium">This week</span>
                   </div>
                 </div>
               </div>
 
               {/* Heatmap Grid Matrix with Y-Axis */}
-              <div className="mt-8 flex gap-3 sm:gap-4">
-                {/* Y-Axis Labels with subtle tick indicator */}
-                <div className="flex flex-col justify-between text-[11px] font-mono text-[#52525b] pb-7 pt-0.5 select-none shrink-0 w-8">
+              <div className="mt-5 flex gap-3 sm:gap-4">
+                {/* Y-Axis Labels with subtle tick indicator matching 158px grid height */}
+                <div className="flex flex-col justify-between text-[10px] font-mono text-[#52525b] h-[158px] select-none shrink-0 w-7">
                   <div className="flex items-center justify-between">
                     <span>25k</span>
                     <span className="text-[#3f3f46]">—</span>
@@ -813,14 +813,14 @@ export function AdminDashboard({
                   </div>
                 </div>
 
-                {/* 33-Column GitHub-Style Continuous Tile Matrix */}
+                {/* 33-Column GitHub-Style Continuous Small Tile Matrix */}
                 <div className="flex-1 flex flex-col overflow-x-auto pb-1">
                   {/* Grid Rows / Columns */}
-                  <div className="w-full flex items-end justify-between gap-[2px] sm:gap-[3px]">
+                  <div className="w-full flex items-end justify-between gap-[2px] sm:gap-[2.5px]">
                     {gridColumns.map((col, colIdx) => (
                       <div
                         key={colIdx}
-                        className="flex-1 flex flex-col-reverse gap-[2.5px] sm:gap-[3px] items-center"
+                        className="flex-1 max-w-[28px] flex flex-col-reverse gap-[2px] items-center"
                       >
                         {Array.from({ length: totalMatrixRows }).map(
                           (_, rowIdx) => {
@@ -836,9 +836,9 @@ export function AdminDashboard({
                               <div
                                 key={rowIdx}
                                 title={`Col ${colIdx}: ${col.count} active users`}
-                                className={`w-full aspect-square rounded-[3px] sm:rounded-[3.5px] transition-all ${
+                                className={`w-full h-[8px] sm:h-[8.5px] rounded-[1.5px] transition-all ${
                                   isThisWeek
-                                    ? "bg-[#e05326] shadow-[0_0_8px_rgba(224,83,38,0.25)]"
+                                    ? "bg-[#e05326] shadow-[0_0_5px_rgba(224,83,38,0.25)]"
                                     : isLastWeekGhost
                                       ? "bg-[#2d2d34]"
                                       : "bg-[#1a1a1f]/80 hover:bg-white/[0.06]"
@@ -852,7 +852,7 @@ export function AdminDashboard({
                   </div>
 
                   {/* 8 Day X-Axis Labels (Aligned exactly under the 4-column day spans) */}
-                  <div className="w-full flex items-center justify-between text-[11px] font-medium text-[#71717a] mt-2.5 pl-2 select-none">
+                  <div className="w-full flex items-center justify-between text-[11px] font-medium text-[#71717a] mt-2 select-none">
                     {daysLabelList.map((day, idx) => (
                       <div key={idx} className="flex-1 text-center">
                         <span>{day}</span>
