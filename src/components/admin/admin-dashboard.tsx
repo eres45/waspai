@@ -9,6 +9,8 @@ import {
   ArrowUpRight,
   BarChart3,
   Bell,
+  Bot,
+  Brain,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -19,9 +21,14 @@ import {
   Download,
   FileText,
   Filter,
+  GitBranch,
+  Globe,
+  HardDrive,
+  Image as ImageIcon,
   LayoutGrid,
   LogOut,
   MessageSquare,
+  Music,
   PanelLeft,
   PieChart,
   Plus,
@@ -34,6 +41,7 @@ import {
   Sparkles,
   TrendingUp,
   Users,
+  Video,
   X,
   Zap,
 } from "lucide-react";
@@ -293,6 +301,15 @@ export function AdminDashboard({
         verifiedUsers: stats.verifiedUsers,
         totalChats: stats.totalChats,
         totalMessages: stats.totalMessages,
+        messagesToday: stats.messagesToday,
+        imageGenerations: stats.dailyUsage.imageGen,
+        customAgents: stats.ecosystem.customAgents,
+        workflows: stats.ecosystem.workflows,
+        webSearches: stats.dailyUsage.webSearch,
+        fileUploads: stats.ecosystem.fileUploads,
+        characters: stats.ecosystem.characters,
+        userMemories: stats.ecosystem.userMemories,
+        browserUsage: stats.ecosystem.browserUsage,
         activeSessions: stats.activeSessions,
         systemErrors24h: stats.systemHealth.totalErrors24h,
       },
@@ -605,7 +622,14 @@ export function AdminDashboard({
               {exploreOpen && (
                 <div className="mt-1.5 space-y-0.5">
                   {[
-                    { id: "models", label: "Dashboard", icon: Cpu },
+                    {
+                      id: "models",
+                      label: "AI Model Fleet",
+                      icon: Cpu,
+                      badge: `${stats.modelFleet.length}`,
+                      badgeColor:
+                        "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30",
+                    },
                     { id: "segments", label: "Segments", icon: PieChart },
                     {
                       id: "reports",
@@ -1123,6 +1147,273 @@ export function AdminDashboard({
                 <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[#34d399] font-medium">
                   <span className="size-1.5 rounded-full bg-[#10b981]" />
                   <span>{stats.proUsers} active Pro accounts ($20/mo)</span>
+                </div>
+              </div>
+            </section>
+
+            {/* ============================================================ */}
+            {/* PLATFORM OPERATIONS & AI WORKLOAD TELEMETRY                  */}
+            {/* ============================================================ */}
+            <section className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-0.5">
+                <div>
+                  <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-orange-400" />
+                    <span>Platform Operations & AI Workloads</span>
+                  </h3>
+                  <p className="text-[12px] text-[#71717a]">
+                    Real-time operational workloads, creative generations,
+                    agents, and system storage
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-[#a1a1aa] bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Live Database Sync</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                {/* 1. Total Messages */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-blue-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        Total Messages
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.totalMessages.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-blue-400 font-medium truncate">
+                      +{stats.messagesToday} today
+                    </span>
+                    <span className="font-mono">
+                      {stats.totalChats.toLocaleString()} threads
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Total Image Generations */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-orange-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        Image Generations
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.dailyUsage.imageGen.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-orange-400 font-medium">
+                      Flux & Midjourney
+                    </span>
+                    <span className="font-mono">AI Canvas</span>
+                  </div>
+                </div>
+
+                {/* 3. Total Custom Agents */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-amber-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        Custom Agents
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <Bot className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.ecosystem.customAgents.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-amber-400 font-medium">
+                      Autonomous
+                    </span>
+                    <span className="font-mono">Configured</span>
+                  </div>
+                </div>
+
+                {/* 4. Total Workflows */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-violet-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        AI Workflows
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
+                        <GitBranch className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.ecosystem.workflows.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-violet-400 font-medium">
+                      Visual DAGs
+                    </span>
+                    <span className="font-mono">Pipelines</span>
+                  </div>
+                </div>
+
+                {/* 5. Grounded Web Searches */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-emerald-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        Web Searches
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <Search className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.dailyUsage.webSearch.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-emerald-400 font-medium">
+                      Google & DuckDuckGo
+                    </span>
+                    <span className="font-mono">Grounding</span>
+                  </div>
+                </div>
+
+                {/* 6. Knowledge Files */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-cyan-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        Knowledge Files
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                        <HardDrive className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.ecosystem.fileUploads.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-cyan-400 font-medium">
+                      {stats.mediaPipeline.filesStorageMb.toFixed(1)} MB storage
+                    </span>
+                    <span className="font-mono">RAG Store</span>
+                  </div>
+                </div>
+
+                {/* 7. AI Characters */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-rose-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        AI Characters
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.ecosystem.characters.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-rose-400 font-medium">
+                      Roleplay & System
+                    </span>
+                    <span className="font-mono">Personas</span>
+                  </div>
+                </div>
+
+                {/* 8. User Long-Term Memories */}
+                <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-fuchsia-500/30 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[12px] text-[#a1a1aa] font-medium">
+                        User Memories
+                      </span>
+                      <div className="w-7 h-7 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center">
+                        <Brain className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="mt-2.5 text-[26px] sm:text-[28px] font-bold text-white tracking-tight leading-none">
+                      {stats.ecosystem.userMemories.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-3.5 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[#71717a]">
+                    <span className="text-fuchsia-400 font-medium">
+                      Cross-Session
+                    </span>
+                    <span className="font-mono">Memory Bank</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Extended Ecosystem Telemetry Strip */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                <div className="rounded-lg bg-[#161619]/80 border border-white/[0.05] px-3.5 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Video className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-[11px] text-[#a1a1aa] font-medium">
+                      Media Synthesis
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-white font-semibold">
+                    {stats.mediaPipeline.totalVideos} videos •{" "}
+                    {stats.mediaPipeline.totalMusic} music
+                  </span>
+                </div>
+
+                <div className="rounded-lg bg-[#161619]/80 border border-white/[0.05] px-3.5 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="text-[11px] text-[#a1a1aa] font-medium">
+                      Deployed Sites
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-white font-semibold">
+                    {stats.ecosystem.deployedSites} sites (
+                    {stats.ecosystem.siteViews} views)
+                  </span>
+                </div>
+
+                <div className="rounded-lg bg-[#161619]/80 border border-white/[0.05] px-3.5 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[11px] text-[#a1a1aa] font-medium">
+                      Skills Ecosystem
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-white font-semibold">
+                    {stats.ecosystem.totalSkills.toLocaleString()} plugins (
+                    {stats.ecosystem.skillInstalls.toLocaleString()} installs)
+                  </span>
+                </div>
+
+                <div className="rounded-lg bg-[#161619]/80 border border-white/[0.05] px-3.5 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[11px] text-[#a1a1aa] font-medium">
+                      AI Fleet Models
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-white font-semibold">
+                    {stats.modelFleet.length} models •{" "}
+                    {stats.ecosystem.browserUsage} browser sesh
+                  </span>
                 </div>
               </div>
             </section>
@@ -1908,7 +2199,13 @@ export function AdminDashboard({
                     stats.dailyUsage.imageGen +
                     stats.mediaPipeline.totalFiles +
                     stats.mediaPipeline.totalMusic +
-                    stats.mediaPipeline.totalVideos
+                    stats.mediaPipeline.totalVideos +
+                    stats.ecosystem.fileUploads +
+                    stats.ecosystem.characters +
+                    stats.ecosystem.userMemories +
+                    stats.ecosystem.customAgents +
+                    stats.ecosystem.workflows +
+                    stats.ecosystem.browserUsage
                   ).toLocaleString()}
                 </div>
               </div>
@@ -1988,7 +2285,7 @@ export function AdminDashboard({
                   <span className="text-xs text-[#a1a1aa] font-medium">
                     Audio & Music Synthesis
                   </span>
-                  <FileText className="w-4 h-4 text-violet-400" />
+                  <Music className="w-4 h-4 text-violet-400" />
                 </div>
                 <div className="mt-2 text-2xl font-bold text-white">
                   {stats.mediaPipeline.totalMusic}
@@ -2030,22 +2327,104 @@ export function AdminDashboard({
                 </div>
               </div>
 
+              {/* Custom AI Agents */}
               <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#a1a1aa] font-medium">
-                    Custom Agents & Workflows
+                    Custom AI Agents
                   </span>
-                  <Zap className="w-4 h-4 text-amber-400" />
+                  <Bot className="w-4 h-4 text-amber-400" />
                 </div>
                 <div className="mt-2 text-2xl font-bold text-white">
-                  {stats.ecosystem.customAgents + stats.ecosystem.workflows}
+                  {stats.ecosystem.customAgents.toLocaleString()}
                 </div>
                 <div className="mt-2 text-[11px] text-[#71717a] font-mono">
-                  {stats.ecosystem.customAgents} agents •{" "}
-                  {stats.ecosystem.workflows} workflows
+                  Autonomous reasoning assistants
                 </div>
               </div>
 
+              {/* AI Workflows */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    AI Workflows
+                  </span>
+                  <GitBranch className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.workflows.toLocaleString()}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  Visual DAG pipeline automations
+                </div>
+              </div>
+
+              {/* Knowledge Files */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    Knowledge Files & Storage
+                  </span>
+                  <HardDrive className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.fileUploads.toLocaleString()}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  {stats.mediaPipeline.filesStorageMb.toFixed(1)} MB stored
+                  attachments & docs
+                </div>
+              </div>
+
+              {/* AI Characters & Personas */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    AI Characters & Personas
+                  </span>
+                  <Users className="w-4 h-4 text-rose-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.characters.toLocaleString()}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  Configured roleplay & custom personalities
+                </div>
+              </div>
+
+              {/* Long-Term User Memories */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    Long-Term User Memories
+                  </span>
+                  <Brain className="w-4 h-4 text-fuchsia-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.userMemories.toLocaleString()}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  Cross-session persistent memory store
+                </div>
+              </div>
+
+              {/* Cloud Browser Automation */}
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#a1a1aa] font-medium">
+                    Cloud Browser Automation
+                  </span>
+                  <Globe className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="mt-2 text-2xl font-bold text-white">
+                  {stats.ecosystem.browserUsage.toLocaleString()}
+                </div>
+                <div className="mt-2 text-[11px] text-[#71717a] font-mono">
+                  Live headless browser automation runs
+                </div>
+              </div>
+
+              {/* MCP Tool Integrations */}
               <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#a1a1aa] font-medium">
@@ -2807,7 +3186,28 @@ export function AdminDashboard({
                 <div className="flex items-center justify-between font-semibold text-white">
                   <span>Chat Volume:</span>
                   <span className="font-mono text-white">
-                    {stats.totalMessages.toLocaleString()} msgs
+                    {stats.totalMessages.toLocaleString()} msgs (
+                    {stats.totalChats} threads)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-white">
+                  <span>Image Generations:</span>
+                  <span className="font-mono text-orange-400">
+                    {stats.dailyUsage.imageGen.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-white">
+                  <span>Custom Agents & Workflows:</span>
+                  <span className="font-mono text-amber-400">
+                    {stats.ecosystem.customAgents} agents •{" "}
+                    {stats.ecosystem.workflows} workflows
+                  </span>
+                </div>
+                <div className="flex items-center justify-between font-semibold text-white">
+                  <span>Knowledge Files & Memories:</span>
+                  <span className="font-mono text-cyan-400">
+                    {stats.ecosystem.fileUploads} files •{" "}
+                    {stats.ecosystem.userMemories} memories
                   </span>
                 </div>
               </div>
@@ -2835,6 +3235,11 @@ export function AdminDashboard({
                             conversionRate: `${overallConversionPct}%`,
                             retentionRate: `${realRetention}%`,
                             messages: stats.totalMessages,
+                            messagesToday: stats.messagesToday,
+                            imageGenerations: stats.dailyUsage.imageGen,
+                            customAgents: stats.ecosystem.customAgents,
+                            workflows: stats.ecosystem.workflows,
+                            knowledgeFiles: stats.ecosystem.fileUploads,
                           },
                         },
                         null,

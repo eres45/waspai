@@ -6,6 +6,8 @@ import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 import { pgDb as db } from "lib/db/pg/db.pg";
 import {
   AgentTable,
+  BrowserUsageTable,
+  CharacterTable,
   ChatMessageTable,
   ChatThreadTable,
   DeployedSiteTable,
@@ -17,6 +19,7 @@ import {
   SkillTable,
   SystemErrorTable,
   UserDailyUsageTable,
+  UserMemoryTable,
   UserTable,
   VideoGenQueueTable,
   WorkflowTable,
@@ -91,6 +94,10 @@ export interface AdminDashboardStats {
     mcpServers: number;
     customAgents: number;
     workflows: number;
+    characters: number;
+    userMemories: number;
+    fileUploads: number;
+    browserUsage: number;
   };
 
   // 6. Live Model Fleet
@@ -224,6 +231,10 @@ async function fetchStatsViaSupabaseRest(): Promise<{
         mcpServers: 0,
         customAgents: 0,
         workflows: 0,
+        characters: 0,
+        userMemories: 0,
+        fileUploads: 0,
+        browserUsage: 0,
       },
       modelFleet: [],
       systemHealth: { totalErrors24h: 0, recentErrors: [] },
@@ -288,6 +299,10 @@ async function fetchStatsViaSupabaseRest(): Promise<{
     { data: recentErrorsRows },
     { data: statusRows },
     dynamicInfo,
+    { count: fileUploadsCount },
+    { count: charactersCount },
+    { count: userMemoriesCount },
+    { count: browserUsageCount },
   ] = await Promise.all([
     supabase.from("user").select("*", { count: "exact", head: true }),
     supabase
@@ -393,6 +408,10 @@ async function fetchStatsViaSupabaseRest(): Promise<{
       )
       .order("tested_at", { ascending: false }),
     buildDynamicModelsInfo().catch(() => []),
+    supabase.from("file_uploads").select("*", { count: "exact", head: true }),
+    supabase.from("character").select("*", { count: "exact", head: true }),
+    supabase.from("user_memory").select("*", { count: "exact", head: true }),
+    supabase.from("browser_usage").select("*", { count: "exact", head: true }),
   ]);
 
   const activityByDay: Record<string, number> = {};
@@ -604,6 +623,10 @@ async function fetchStatsViaSupabaseRest(): Promise<{
     mcpServers: mcpServersCount ?? 0,
     customAgents: agentsCount ?? 0,
     workflows: workflowsCount ?? 0,
+    characters: charactersCount ?? 0,
+    userMemories: userMemoriesCount ?? 0,
+    fileUploads: fileUploadsCount ?? 0,
+    browserUsage: browserUsageCount ?? 0,
   };
 
   const mediaPipeline: AdminDashboardStats["mediaPipeline"] = {
@@ -614,8 +637,8 @@ async function fetchStatsViaSupabaseRest(): Promise<{
     totalVideos: totalVideos ?? 0,
     totalMusic: totalMusic ?? 0,
     musicStorageMb: Math.round((totalMusic ?? 0) * 4.2 * 10) / 10,
-    totalFiles: 0,
-    filesStorageMb: 0,
+    totalFiles: fileUploadsCount ?? 0,
+    filesStorageMb: Math.round((fileUploadsCount ?? 0) * 1.8 * 10) / 10,
   };
 
   const dailyUsage: AdminDashboardStats["dailyUsage"] = {
@@ -721,6 +744,10 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     mcpServers: 0,
     customAgents: 0,
     workflows: 0,
+    characters: 0,
+    userMemories: 0,
+    fileUploads: 0,
+    browserUsage: 0,
   };
 
   let modelFleet: ModelFleetItem[] = [];
@@ -893,6 +920,18 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         .from(SystemErrorTable)
         .orderBy(desc(SystemErrorTable.createdAt))
         .limit(10),
+      // 25: characters
+      db
+        .select({ count: count() })
+        .from(CharacterTable),
+      // 26: userMemories
+      db
+        .select({ count: count() })
+        .from(UserMemoryTable),
+      // 27: browserUsage
+      db
+        .select({ count: count() })
+        .from(BrowserUsageTable),
     ]);
 
     // 0: totalUsers
@@ -994,6 +1033,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       mediaPipeline.totalFiles = results[16].value[0]?.count ?? 0;
       const bytes = Number(results[16].value[0]?.totalBytes ?? 0);
       mediaPipeline.filesStorageMb = Math.round(bytes / (1024 * 1024));
+      ecosystem.fileUploads = results[16].value[0]?.count ?? 0;
     }
 
     // 17: deployedSites
@@ -1076,6 +1116,21 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         statusCode: e.statusCode,
         createdAt: e.createdAt,
       }));
+    }
+
+    // 25: characters
+    if (results[25].status === "fulfilled") {
+      ecosystem.characters = results[25].value[0]?.count ?? 0;
+    }
+
+    // 26: userMemories
+    if (results[26].status === "fulfilled") {
+      ecosystem.userMemories = results[26].value[0]?.count ?? 0;
+    }
+
+    // 27: browserUsage
+    if (results[27].status === "fulfilled") {
+      ecosystem.browserUsage = results[27].value[0]?.count ?? 0;
     }
   } catch (err) {
     console.error("[admin-dashboard] Error fetching user counts:", err);
