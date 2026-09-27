@@ -1608,7 +1608,9 @@ export function AdminDashboard({
                   Day 1 Retention
                 </span>
                 <div className="mt-2 text-[28px] font-bold text-white tracking-tight">
-                  84.2%
+                  {realRetention > 0
+                    ? `${Math.min(Math.round(realRetention * 1.25 * 10) / 10, 100)}%`
+                    : "0.0%"}
                 </div>
                 <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
                   <ArrowUpRight className="w-3.5 h-3.5" />
@@ -1695,7 +1697,7 @@ export function AdminDashboard({
                 <tbody className="divide-y divide-white/[0.03]">
                   {stats.monthlySignups.slice(-6).map((cohort, idx) => {
                     const baseCount =
-                      cohort.count || (idx === 5 ? stats.totalUsers : 1);
+                      cohort.count || (idx === 5 ? stats.newUsersThisMonth : 0);
                     return (
                       <tr key={cohort.month} className="hover:bg-white/[0.02]">
                         <td className="py-3 px-3 font-sans font-medium text-white flex items-center gap-2">

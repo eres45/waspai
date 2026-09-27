@@ -1,10 +1,13 @@
+import crypto from "crypto";
+import logger from "@/lib/logger";
+import { supabaseServer } from "@/lib/supabase-server";
 import {
   BasicUserWithLastLogin,
   User,
   UserPreferences,
   UserRepository,
 } from "app-types/user";
-import crypto from "crypto";
+import { count, eq, getTableColumns, sql } from "drizzle-orm";
 import { pgDb as db, pgDb } from "../db.pg";
 import {
   AccountTable,
@@ -13,9 +16,6 @@ import {
   SessionTable,
   UserTable,
 } from "../schema.pg";
-import { count, eq, getTableColumns, sql } from "drizzle-orm";
-import { supabaseServer } from "@/lib/supabase-server";
-import logger from "@/lib/logger";
 
 // Helper function to get user columns without password
 const getUserColumnsWithoutPassword = () => {
@@ -182,19 +182,69 @@ export const pgUserRepository: UserRepository = {
   getUserById: async (
     userId: string,
   ): Promise<BasicUserWithLastLogin | null> => {
-    const [result] = await pgDb
-      .select({
-        ...getUserColumnsWithoutPassword(),
-        lastLogin: sql<Date | null>`(
-          SELECT MAX(${SessionTable.updatedAt}) 
-          FROM ${SessionTable} 
-          WHERE ${SessionTable.userId} = ${UserTable.id}
-        )`.as("lastLogin"),
-      })
-      .from(UserTable)
-      .where(eq(UserTable.id, userId));
+    try {
+      const [result] = await pgDb
+        .select({
+          ...getUserColumnsWithoutPassword(),
+          lastLogin: sql<Date | null>`(
+            SELECT MAX(${SessionTable.updatedAt}) 
+            FROM ${SessionTable} 
+            WHERE ${SessionTable.userId} = ${UserTable.id}
+          )`.as("lastLogin"),
+        })
+        .from(UserTable)
+        .where(eq(UserTable.id, userId));
 
-    return result || null;
+      if (result) return result;
+    } catch (e) {
+      logger.warn(
+        `[User PG] pgDb getUserById failed, trying Supabase REST:`,
+        e,
+      );
+    }
+
+    try {
+      const { data, error }: { data: any; error: any } = await (
+        supabaseServer as any
+      )
+        .from("user")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (data && !error) {
+        return {
+          id: data.id,
+          name: data.name ?? "",
+          email: data.email ?? "",
+          emailVerified: Boolean(data.email_verified),
+          image: data.image ?? null,
+          role: data.role ?? "user",
+          tier: data.tier ?? "free",
+          banned: Boolean(data.banned),
+          banReason: data.ban_reason ?? null,
+          banExpires: data.ban_expires ? new Date(data.ban_expires) : null,
+          createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+          updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
+          welcomeEmailSent: Boolean(data.welcome_email_sent),
+          referralCode: data.referral_code ?? null,
+          referredBy: data.referred_by ?? null,
+          referralCount: data.referral_count ?? 0,
+          referralRewardClaimed: Boolean(data.referral_reward_claimed),
+          referralWidgetHidden: Boolean(data.referral_widget_hidden),
+          tierExpiresAt: data.tier_expires_at
+            ? new Date(data.tier_expires_at)
+            : null,
+          lastSignInIp: data.last_sign_in_ip ?? null,
+          twoFactorEnabled: Boolean(data.two_factor_enabled),
+          lastLogin: null,
+        } as unknown as BasicUserWithLastLogin;
+      }
+    } catch (err) {
+      logger.error(`[User PG] Supabase fallback getUserById failed:`, err);
+    }
+
+    return null;
   },
 
   getUserCount: async () => {
