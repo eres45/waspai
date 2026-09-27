@@ -1,0 +1,72 @@
+[
+  {
+    "id": "task-101",
+    "title": "Monitor AI Fleet Latency & Provider Failovers",
+    "description": "Verify OpenAI, Anthropic, and Groq health endpoints; ensure multi-key rotation and automated failover are triggering within < 800ms.",
+    "assignedToUserId": "admin-lead",
+    "assignedToName": "Lead Ops Admin",
+    "assignedToEmail": "admin@waspai.in",
+    "priority": "high",
+    "status": "in_progress",
+    "category": "ai_fleet",
+    "dueDate": "Today",
+    "createdAt": "2026-09-26T19:23:10.667Z",
+    "updatedAt": "2026-09-27T17:23:10.667Z"
+  },
+  {
+    "id": "task-102",
+    "title": "Verify Payment Webhooks & Pro Subscriptions",
+    "description": "Cross-examine Razorpay & Stripe subscription lifecycle events, instant tier upgrades, and automated invoice emailing.",
+    "assignedToUserId": "admin-billing",
+    "assignedToName": "Billing Specialist",
+    "assignedToEmail": "billing@waspai.in",
+    "priority": "urgent",
+    "status": "completed",
+    "category": "billing",
+    "dueDate": "Completed",
+    "createdAt": "2026-09-25T19:23:10.667Z",
+    "updatedAt": "2026-09-27T14:23:10.667Z"
+  },
+  {
+    "id": "task-103",
+    "title": "Audit High-Velocity User Queries & Spam Limits",
+    "description": "Inspect rate limit telemetry across anonymous and free tier chat sessions to prevent abusive scraping and token exhaustion.",
+    "assignedToUserId": "admin-sec",
+    "assignedToName": "Security Officer",
+    "assignedToEmail": "security@waspai.in",
+    "priority": "medium",
+    "status": "pending",
+    "category": "security",
+    "dueDate": "Tomorrow",
+    "createdAt": "2026-09-27T07:23:10.667Z",
+    "updatedAt": "2026-09-27T07:23:10.667Z"
+  },
+  {
+    "id": "task-104",
+    "title": "Triage Support Tickets & Model Hallucination Reports",
+    "description": "Review user-flagged chat messages, evaluate model accuracy regressions, and update system prompt instructions if necessary.",
+    "assignedToUserId": "admin-support",
+    "assignedToName": "Customer Success",
+    "assignedToEmail": "support@waspai.in",
+    "priority": "high",
+    "status": "in_progress",
+    "category": "support",
+    "dueDate": "In 2 days",
+    "createdAt": "2026-09-27T13:23:10.667Z",
+    "updatedAt": "2026-09-27T18:23:10.667Z"
+  },
+  {
+    "id": "task-105",
+    "title": "Optimize Vector Index & Document Upload Queues",
+    "description": "Verify PGVector similarity indexing performance on multi-megabyte PDF and code uploads in the ecosystem hub.",
+    "assignedToUserId": "admin-infra",
+    "assignedToName": "Infra Engineer",
+    "assignedToEmail": "infra@waspai.in",
+    "priority": "low",
+    "status": "pending",
+    "dueDate": "Next week",
+    "category": "infrastructure",
+    "createdAt": "2026-09-26T07:23:10.667Z",
+    "updatedAt": "2026-09-26T07:23:10.667Z"
+  }
+]

@@ -143,6 +143,16 @@ export interface AdminDashboardStats {
 
   // 10. Real Day-by-Day Activity Map (YYYY-MM-DD -> total messages/events)
   activityByDay: Record<string, number>;
+
+  // 11. Team Admins Roster
+  teamAdmins: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+    role: string;
+    createdAt?: Date | string;
+  }[];
 }
 
 async function fetchAllMessageDates(
@@ -175,6 +185,7 @@ async function fetchStatsViaSupabaseRest(): Promise<{
   messagesToday: number;
   activeSessions: number;
   recentUsers: AdminDashboardStats["recentUsers"];
+  teamAdmins: AdminDashboardStats["teamAdmins"];
   activityByDay: Record<string, number>;
   monthlySignups: AdminDashboardStats["monthlySignups"];
   dailyUsage: AdminDashboardStats["dailyUsage"];
@@ -206,6 +217,7 @@ async function fetchStatsViaSupabaseRest(): Promise<{
       messagesToday: 0,
       activeSessions: 0,
       recentUsers: [],
+      teamAdmins: [],
       activityByDay: {},
       monthlySignups: [],
       dailyUsage: { webSearch: 0, imageGen: 0, chatMessage: 0 },
@@ -474,6 +486,29 @@ async function fetchStatsViaSupabaseRest(): Promise<{
     banned: u.banned,
   }));
 
+  let teamAdminRows: any[] = [];
+  try {
+    const { data: fetchedAdmins } = await supabase
+      .from("user")
+      .select("id, name, email, image, role, created_at")
+      .eq("role", "admin")
+      .limit(50);
+    if (fetchedAdmins) teamAdminRows = fetchedAdmins;
+  } catch {
+    // ignore
+  }
+
+  const mappedTeamAdmins: AdminDashboardStats["teamAdmins"] = (
+    teamAdminRows ?? []
+  ).map((u: any) => ({
+    id: u.id,
+    name: u.name || "Admin Member",
+    email: u.email,
+    image: u.image || null,
+    role: u.role || "admin",
+    createdAt: u.created_at ? new Date(u.created_at) : undefined,
+  }));
+
   // Build real model fleet from active app models and live probes
   const statusMap = new Map<string, any>();
   if (statusRows) {
@@ -699,6 +734,7 @@ async function fetchStatsViaSupabaseRest(): Promise<{
     messagesToday: messagesToday ?? 0,
     activeSessions: activeSessionsCount ?? 0,
     recentUsers: mappedRecentUsers,
+    teamAdmins: mappedTeamAdmins,
     activityByDay,
     monthlySignups,
     dailyUsage,
@@ -779,6 +815,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   };
 
   let recentUsers: AdminDashboardStats["recentUsers"] = [];
+  let teamAdmins: AdminDashboardStats["teamAdmins"] = [];
   const dbMonthCounts: Record<string, number> = {};
   let activityByDay: Record<string, number> = {};
   let monthlySignups: AdminDashboardStats["monthlySignups"] = [];
@@ -954,6 +991,19 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       db
         .select({ count: count() })
         .from(BrowserUsageTable),
+      // 28: teamAdmins
+      db
+        .select({
+          id: UserTable.id,
+          name: UserTable.name,
+          email: UserTable.email,
+          image: UserTable.image,
+          role: UserTable.role,
+          createdAt: UserTable.createdAt,
+        })
+        .from(UserTable)
+        .where(eq(UserTable.role, "admin"))
+        .limit(50),
     ]);
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("PG query timeout")), 2000),
@@ -1162,6 +1212,18 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     if (results[27].status === "fulfilled") {
       ecosystem.browserUsage = results[27].value[0]?.count ?? 0;
     }
+
+    // 28: teamAdmins
+    if (results[28] && results[28].status === "fulfilled") {
+      teamAdmins = (results[28].value as any[]).map((u) => ({
+        id: u.id,
+        name: u.name || "Admin Member",
+        email: u.email,
+        image: u.image || null,
+        role: u.role || "admin",
+        createdAt: u.createdAt,
+      }));
+    }
   } catch (err) {
     console.error("[admin-dashboard] Error fetching user counts:", err);
   }
@@ -1190,6 +1252,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
         modelFleet = restData.modelFleet;
       }
       if (restData.recentUsers.length > 0) recentUsers = restData.recentUsers;
+      if (restData.teamAdmins && restData.teamAdmins.length > 0)
+        teamAdmins = restData.teamAdmins;
       if (Object.keys(restData.activityByDay).length > 0)
         activityByDay = restData.activityByDay;
       if (restData.monthlySignups.length > 0)
@@ -1493,6 +1557,19 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       onlineConsultations,
     },
     recentUsers,
+    teamAdmins:
+      teamAdmins.length > 0
+        ? teamAdmins
+        : [
+            {
+              id: "admin-ops",
+              name: "Lead Operations Admin",
+              email: "admin@waspai.in",
+              image: null,
+              role: "admin",
+              createdAt: new Date(),
+            },
+          ],
     activityByDay,
   };
 }

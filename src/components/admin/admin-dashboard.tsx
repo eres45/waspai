@@ -22,11 +22,16 @@ import {
   FileText,
   Filter,
   GitBranch,
+  Briefcase,
+  Calendar,
+  CheckSquare,
+  Clock,
   Globe,
   HardDrive,
   Image as ImageIcon,
   LayoutGrid,
   LogOut,
+  Mail,
   MessageSquare,
   Music,
   PanelLeft,
@@ -35,11 +40,14 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  Send,
   Settings,
   Share2,
   SlidersHorizontal,
   Sparkles,
+  Trash2,
   TrendingUp,
+  UserCheck,
   Users,
   Video,
   X,
@@ -48,8 +56,14 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
+import type {
+  AdminTeamTask,
+  TaskPriority,
+  TaskCategory,
+  TaskStatus,
+} from "@/lib/admin/tasks";
 
 export function AdminDashboard({
   stats,
@@ -76,6 +90,7 @@ export function AdminDashboard({
     "retention",
     "revenue",
     "users",
+    "team",
     "events",
     "models",
     "segments",
@@ -162,6 +177,239 @@ export function AdminDashboard({
       setSelectedUserIds([...selectedUserIds, id]);
     }
   };
+
+  // Real Team Admins
+  const teamMembers = useMemo(() => {
+    if (stats.teamAdmins && stats.teamAdmins.length > 0) {
+      return stats.teamAdmins;
+    }
+    const adminList = users.filter((u) => u.role === "admin");
+    if (adminList.length > 0) {
+      return adminList.map((u) => ({
+        id: u.id,
+        name: u.name || "Admin Member",
+        email: u.email,
+        image: u.image || null,
+        role: u.role || "admin",
+        createdAt: u.createdAt,
+      }));
+    }
+    return [
+      {
+        id: "admin-ops",
+        name: "Lead Operations Admin",
+        email: "admin@waspai.in",
+        image: null,
+        role: "admin",
+        createdAt: new Date(),
+      },
+    ];
+  }, [stats.teamAdmins, users]);
+
+  // Tasks & Work Allotment State
+  const [tasks, setTasks] = useState<AdminTeamTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [taskFilterStatus, setTaskFilterStatus] = useState<
+    "all" | "pending" | "in_progress" | "completed"
+  >("all");
+  const [taskFilterAssignee, setTaskFilterAssignee] = useState<string>("all");
+
+  // Mail Modal State
+  const [isMailModalOpen, setIsMailModalOpen] = useState(false);
+  const [mailTo, setMailTo] = useState("");
+  const [mailSubject, setMailSubject] = useState("");
+  const [mailMessage, setMailMessage] = useState("");
+  const [mailSending, setMailSending] = useState(false);
+
+  // Allot Work Modal State
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskAssigneeId, setTaskAssigneeId] = useState("");
+  const [taskPriority, setTaskPriority] = useState<TaskPriority>("medium");
+  const [taskCategory, setTaskCategory] = useState<TaskCategory>("general");
+  const [taskDueDate, setTaskDueDate] = useState("Today");
+  const [taskCreating, setTaskCreating] = useState(false);
+
+  // Fetch Tasks from API
+  const fetchTasks = async () => {
+    setTasksLoading(true);
+    try {
+      const res = await fetch("/api/admin/tasks");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.tasks)) {
+        setTasks(data.tasks);
+      }
+    } catch (err) {
+      console.error("Failed to load tasks:", err);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const openMailModal = (recipientEmail?: string) => {
+    setMailTo(recipientEmail || "");
+    setMailSubject("");
+    setMailMessage("");
+    setIsMailModalOpen(true);
+  };
+
+  const handleSendMail = async () => {
+    if (!mailTo.trim() || !mailSubject.trim() || !mailMessage.trim()) {
+      showToast("Please enter recipient, subject, and message.");
+      return;
+    }
+    setMailSending(true);
+    try {
+      const res = await fetch("/api/admin/mail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: mailTo.trim(),
+          subject: mailSubject.trim(),
+          message: mailMessage.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(
+          data.mock
+            ? `Email simulated to ${data.recipientsCount} recipient(s) (logged to console).`
+            : `Email dispatched to ${data.recipientsCount} recipient(s)! ID: ${data.id?.slice(0, 10) || ""}`,
+        );
+        setIsMailModalOpen(false);
+        setMailTo("");
+        setMailSubject("");
+        setMailMessage("");
+      } else {
+        showToast(`Failed: ${data.error || "Email dispatch failed."}`);
+      }
+    } catch {
+      showToast("Error communicating with email service.");
+    } finally {
+      setMailSending(false);
+    }
+  };
+
+  const openTaskModal = (assigneeId?: string) => {
+    setTaskTitle("");
+    setTaskDescription("");
+    setTaskAssigneeId(assigneeId || teamMembers[0]?.id || "");
+    setTaskPriority("medium");
+    setTaskCategory("general");
+    setTaskDueDate("Today");
+    setIsTaskModalOpen(true);
+  };
+
+  const handleCreateTask = async () => {
+    if (!taskTitle.trim()) {
+      showToast("Please enter a task title.");
+      return;
+    }
+    const assignee =
+      teamMembers.find((m) => m.id === taskAssigneeId) || teamMembers[0];
+    if (!assignee) {
+      showToast("Please select a team member.");
+      return;
+    }
+    setTaskCreating(true);
+    try {
+      const res = await fetch("/api/admin/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: taskTitle.trim(),
+          description: taskDescription.trim(),
+          assignedToUserId: assignee.id,
+          assignedToName: assignee.name,
+          assignedToEmail: assignee.email,
+          assignedToImage: assignee.image,
+          priority: taskPriority,
+          status: "pending",
+          category: taskCategory,
+          dueDate: taskDueDate,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTasks((prev) => [data.task, ...prev]);
+        showToast(
+          `Allotted: "${data.task.title}" to ${data.task.assignedToName}`,
+        );
+        setIsTaskModalOpen(false);
+      } else {
+        showToast(`Failed: ${data.error || "Could not allot task."}`);
+      }
+    } catch {
+      showToast("Error creating task.");
+    } finally {
+      setTaskCreating(false);
+    }
+  };
+
+  const handleUpdateTaskStatus = async (
+    taskId: string,
+    newStatus: TaskStatus,
+  ) => {
+    try {
+      const res = await fetch("/api/admin/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: taskId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)),
+        );
+        showToast(`Status updated: ${newStatus.replace("_", " ")}`);
+      }
+    } catch {
+      showToast("Error updating task status.");
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/admin/tasks?id=${taskId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        showToast("Task removed from board.");
+      }
+    } catch {
+      showToast("Error deleting task.");
+    }
+  };
+
+  const displayedTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (taskFilterStatus !== "all" && t.status !== taskFilterStatus)
+        return false;
+      if (
+        taskFilterAssignee !== "all" &&
+        t.assignedToUserId !== taskFilterAssignee &&
+        t.assignedToEmail !== taskFilterAssignee
+      )
+        return false;
+      return true;
+    });
+  }, [tasks, taskFilterStatus, taskFilterAssignee]);
+
+  const taskStats = useMemo(() => {
+    const total = tasks.length;
+    const pending = tasks.filter((t) => t.status === "pending").length;
+    const inProgress = tasks.filter((t) => t.status === "in_progress").length;
+    const completed = tasks.filter((t) => t.status === "completed").length;
+    const active = pending + inProgress;
+    return { total, pending, inProgress, completed, active };
+  }, [tasks]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -729,7 +977,8 @@ export function AdminDashboard({
                     Wasp AI
                   </span>
                   <span className="text-[11px] text-[#71717a] mt-1 font-medium">
-                    12 members
+                    {teamMembers.length} team admin
+                    {teamMembers.length > 1 ? "s" : ""}
                   </span>
                 </div>
               )}
@@ -789,6 +1038,12 @@ export function AdminDashboard({
                     label: "Users",
                     icon: Users,
                     badge: `${stats.totalUsers}`,
+                  },
+                  {
+                    id: "team",
+                    label: "Team & Tasks",
+                    icon: Briefcase,
+                    badge: `${tasks.filter((t) => t.status !== "completed").length} active`,
                   },
                   {
                     id: "events",
@@ -1036,23 +1291,25 @@ export function AdminDashboard({
             <h1 className="text-[26px] font-bold text-white tracking-tight">
               {activeNav === "users"
                 ? "User Directory"
-                : activeNav === "funnels"
-                  ? "Funnels & Conversion"
-                  : activeNav === "retention"
-                    ? "Cohort Retention"
-                    : activeNav === "revenue"
-                      ? "Revenue & Monetization"
-                      : activeNav === "events"
-                        ? "Event Stream Telemetry"
-                        : activeNav === "models"
-                          ? "AI Fleet Operations"
-                          : activeNav === "segments"
-                            ? "User Segments"
-                            : activeNav === "reports"
-                              ? "System Diagnostics"
-                              : activeNav === "insights"
-                                ? "Platform Insights"
-                                : "Overview"}
+                : activeNav === "team"
+                  ? "Team & Work Allotment"
+                  : activeNav === "funnels"
+                    ? "Funnels & Conversion"
+                    : activeNav === "retention"
+                      ? "Cohort Retention"
+                      : activeNav === "revenue"
+                        ? "Revenue & Monetization"
+                        : activeNav === "events"
+                          ? "Event Stream Telemetry"
+                          : activeNav === "models"
+                            ? "AI Fleet Operations"
+                            : activeNav === "segments"
+                              ? "User Segments"
+                              : activeNav === "reports"
+                                ? "System Diagnostics"
+                                : activeNav === "insights"
+                                  ? "Platform Insights"
+                                  : "Overview"}
             </h1>
             <div className="flex items-center gap-1.5 text-[12px] text-[#71717a] mt-0.5">
               <button
@@ -1076,21 +1333,57 @@ export function AdminDashboard({
 
           {/* Right Action Tools */}
           <div className="flex items-center gap-3">
-            {/* Overlapping User Avatars Cluster */}
-            <div className="flex items-center -space-x-2">
-              <div className="w-7 h-7 rounded-full border-2 border-[#0d0d0f] bg-violet-600 text-white text-[10px] font-bold flex items-center justify-center">
-                A
-              </div>
-              <div className="w-7 h-7 rounded-full border-2 border-[#0d0d0f] bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">
-                M
-              </div>
-              <div className="w-7 h-7 rounded-full border-2 border-[#0d0d0f] bg-sky-600 text-white text-[10px] font-bold flex items-center justify-center">
-                S
-              </div>
-              <div className="w-7 h-7 rounded-full border-2 border-[#0d0d0f] bg-[#222227] text-white/60 text-[10px] font-bold flex items-center justify-center font-mono">
-                +9
-              </div>
+            {/* Dynamic Team Member Avatars Cluster */}
+            <div
+              className="flex items-center -space-x-2 cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => setActiveNav("team")}
+              title={`View ${teamMembers.length} Team Admins & Allotments`}
+            >
+              {teamMembers.slice(0, 4).map((member, idx) => {
+                const colors = [
+                  "bg-violet-600",
+                  "bg-emerald-600",
+                  "bg-sky-600",
+                  "bg-amber-600",
+                ];
+                const initial = (member.name || member.email || "A")
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase();
+                return (
+                  <div
+                    key={member.id || idx}
+                    className={`w-7 h-7 rounded-full border-2 border-[#0d0d0f] ${colors[idx % colors.length]} text-white text-[10px] font-bold flex items-center justify-center overflow-hidden shadow-sm`}
+                    title={`${member.name} (${member.email})`}
+                  >
+                    {member.image ? (
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      initial
+                    )}
+                  </div>
+                );
+              })}
+              {teamMembers.length > 4 && (
+                <div className="w-7 h-7 rounded-full border-2 border-[#0d0d0f] bg-[#222227] text-white/70 text-[10px] font-bold flex items-center justify-center font-mono">
+                  +{teamMembers.length - 4}
+                </div>
+              )}
             </div>
+
+            {/* Direct Mail Compose Button */}
+            <button
+              type="button"
+              onClick={() => openMailModal()}
+              className="relative w-8 h-8 rounded-lg bg-[#18181b] border border-white/[0.08] flex items-center justify-center text-[#a1a1aa] hover:text-white hover:border-orange-500/40 transition-colors cursor-pointer"
+              title="Compose & Dispatch Email"
+            >
+              <Mail className="w-3.5 h-3.5" />
+            </button>
 
             {/* Notification bell */}
             <button
@@ -3410,6 +3703,498 @@ export function AdminDashboard({
         )}
 
         {/* ============================================================ */}
+        {/* VIEW: TEAM ALLOTMENT & WORK BOARD (When Team Nav is clicked) */}
+        {/* ============================================================ */}
+        {activeNav === "team" && (
+          <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+            {/* Header Banner */}
+            <div className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 sm:p-7 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white tracking-tight">
+                    Team Allotment & Work Dispatch
+                  </h2>
+                </div>
+                <p className="text-xs text-[#71717a] mt-1.5 max-w-xl">
+                  Real-time administrator roster, work allotment board,
+                  operational capacities, and direct email communications.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => openTaskModal()}
+                  className="px-4 py-2 rounded-lg bg-[#e05326] hover:bg-[#c9451d] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Allot Work</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openMailModal("team")}
+                  className="px-3.5 py-2 rounded-lg bg-[#222227] hover:bg-[#2c2c33] text-white text-xs font-semibold transition-all border border-white/[0.06] flex items-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5 text-orange-400" />
+                  <span>Broadcast to Team</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={fetchTasks}
+                  className="p-2 rounded-lg bg-[#18181b] border border-white/[0.06] text-[#71717a] hover:text-white transition-colors"
+                  title="Refresh tasks"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${tasksLoading ? "animate-spin text-orange-400" : ""}`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#71717a] font-medium">
+                    Team Admins
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center">
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold font-mono text-white mt-2">
+                  {teamMembers.length}
+                </div>
+                <span className="text-[11px] text-[#71717a] mt-1 block">
+                  {stats.adminUsers} total admins in DB
+                </span>
+              </div>
+
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#71717a] font-medium">
+                    Active Allotments
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-orange-500/15 text-orange-400 flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold font-mono text-orange-400 mt-2">
+                  {taskStats.active}
+                </div>
+                <span className="text-[11px] text-[#71717a] mt-1 block">
+                  {taskStats.inProgress} in progress • {taskStats.pending}{" "}
+                  pending
+                </span>
+              </div>
+
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#71717a] font-medium">
+                    Completed Tasks
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold font-mono text-emerald-400 mt-2">
+                  {taskStats.completed}
+                </div>
+                <span className="text-[11px] text-[#71717a] mt-1 block">
+                  {taskStats.total > 0
+                    ? Math.round((taskStats.completed / taskStats.total) * 100)
+                    : 100}
+                  % task resolution rate
+                </span>
+              </div>
+
+              <div className="rounded-xl bg-[#161619] border border-white/[0.06] p-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#71717a] font-medium">
+                    Available Bandwidth
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl font-bold font-mono text-sky-400 mt-2">
+                  {Math.max(15, 100 - taskStats.active * 10)}%
+                </div>
+                <span className="text-[11px] text-[#71717a] mt-1 block">
+                  Staff ready for incident triage
+                </span>
+              </div>
+            </div>
+
+            {/* Section 1: Team Admin Roster */}
+            <div className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-orange-400 shrink-0" />
+                  <h3 className="text-base font-bold text-white">
+                    Administrator Roster &amp; Assigned Capacities
+                  </h3>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/[0.06] text-[#a1a1aa]">
+                    {teamMembers.length} active
+                  </span>
+                </div>
+                <span className="text-xs text-[#71717a]">
+                  Click to allot work or email directly
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {teamMembers.map((member, idx) => {
+                  const assignedCount = tasks.filter(
+                    (t) =>
+                      t.assignedToUserId === member.id ||
+                      t.assignedToEmail === member.email,
+                  ).length;
+                  const activeCount = tasks.filter(
+                    (t) =>
+                      (t.assignedToUserId === member.id ||
+                        t.assignedToEmail === member.email) &&
+                      t.status !== "completed",
+                  ).length;
+                  const colors = [
+                    "bg-violet-600",
+                    "bg-emerald-600",
+                    "bg-sky-600",
+                    "bg-amber-600",
+                    "bg-rose-600",
+                  ];
+                  const initial = (member.name || member.email || "A")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
+
+                  return (
+                    <div
+                      key={member.id || idx}
+                      className="p-4 rounded-xl bg-[#1a1a1e] border border-white/[0.06] hover:border-white/15 transition-all flex flex-col justify-between gap-3 shadow-sm group"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div
+                              className={`w-10 h-10 rounded-full ${colors[idx % colors.length]} text-white text-xs font-bold flex items-center justify-center overflow-hidden shrink-0 shadow-sm`}
+                            >
+                              {member.image ? (
+                                <img
+                                  src={member.image}
+                                  alt={member.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                initial
+                              )}
+                            </div>
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#1a1a1e]" />
+                          </div>
+                          <div className="flex flex-col truncate">
+                            <span className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors truncate">
+                              {member.name || "Admin Member"}
+                            </span>
+                            <span className="text-[11px] text-[#71717a] truncate font-mono">
+                              {member.email}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30 shrink-0">
+                          {member.role || "admin"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-[#a1a1aa] pt-2 border-t border-white/[0.04]">
+                        <span className="text-[11px]">
+                          Allotted:{" "}
+                          <strong className="text-white font-mono">
+                            {assignedCount}
+                          </strong>{" "}
+                          ({activeCount} active)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openTaskModal(member.id)}
+                            className="px-2.5 py-1 rounded bg-[#27272a] hover:bg-orange-600 hover:text-white text-[11px] font-semibold text-white/90 transition-all flex items-center gap-1"
+                            title={`Allot work to ${member.name}`}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Allot</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openMailModal(member.email)}
+                            className="px-2 py-1 rounded bg-white/[0.04] hover:bg-[#2c2c33] text-[11px] text-[#71717a] hover:text-white transition-all flex items-center gap-1"
+                            title={`Send email to ${member.email}`}
+                          >
+                            <Mail className="w-3 h-3" />
+                            <span>Mail</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Section 2: Live Work Allotment Board */}
+            <div className="rounded-2xl bg-[#161619] border border-white/[0.06] p-6 shadow-sm flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-white/[0.06]">
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Live Work Allotment Board
+                  </h3>
+                  <p className="text-xs text-[#71717a] mt-0.5">
+                    Track real-time assignment statuses, update progress, and
+                    coordinate platform operations
+                  </p>
+                </div>
+
+                {/* Filter Controls */}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Status Filter Pills */}
+                  <div className="flex items-center bg-[#1c1c21] p-1 rounded-lg border border-white/[0.06] text-xs">
+                    {[
+                      { id: "all", label: `All (${tasks.length})` },
+                      {
+                        id: "pending",
+                        label: `Pending (${taskStats.pending})`,
+                      },
+                      {
+                        id: "in_progress",
+                        label: `In Progress (${taskStats.inProgress})`,
+                      },
+                      {
+                        id: "completed",
+                        label: `Done (${taskStats.completed})`,
+                      },
+                    ].map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setTaskFilterStatus(id as any)}
+                        className={`px-3 py-1 rounded-md transition-all font-semibold ${
+                          taskFilterStatus === id
+                            ? "bg-[#27272a] text-white shadow-sm"
+                            : "text-[#71717a] hover:text-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Assignee Filter Dropdown */}
+                  <select
+                    value={taskFilterAssignee}
+                    onChange={(e) => setTaskFilterAssignee(e.target.value)}
+                    className="h-8 rounded-lg bg-[#1c1c21] border border-white/[0.06] px-2.5 text-xs text-white outline-none focus:border-white/20 transition-all cursor-pointer"
+                  >
+                    <option value="all">All Assignees</option>
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name || m.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tasks List */}
+              {displayedTasks.length === 0 ? (
+                <div className="p-12 text-center rounded-xl bg-[#141417] border border-white/[0.04] flex flex-col items-center justify-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-[#71717a]">
+                    <CheckSquare className="w-5 h-5" />
+                  </div>
+                  <div className="text-sm font-semibold text-white">
+                    No tasks matching current filter
+                  </div>
+                  <p className="text-xs text-[#71717a] max-w-sm">
+                    All tasks in this category have been addressed, or none have
+                    been assigned yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openTaskModal()}
+                    className="px-4 py-2 rounded-lg bg-[#e05326] hover:bg-[#c9451d] text-white text-xs font-bold transition-all shadow mt-2"
+                  >
+                    + Allot New Task
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {displayedTasks.map((task) => {
+                    const categoryStyles: Record<TaskCategory, string> = {
+                      ai_fleet:
+                        "bg-purple-500/15 text-purple-300 border-purple-500/30",
+                      billing:
+                        "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+                      security:
+                        "bg-rose-500/15 text-rose-300 border-rose-500/30",
+                      support: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+                      infrastructure:
+                        "bg-amber-500/15 text-amber-300 border-amber-500/30",
+                      general:
+                        "bg-zinc-500/15 text-zinc-300 border-zinc-500/30",
+                    };
+
+                    const priorityStyles: Record<TaskPriority, string> = {
+                      urgent:
+                        "bg-rose-500/20 text-rose-400 border-rose-500/40 font-bold",
+                      high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+                      medium:
+                        "bg-amber-500/20 text-amber-400 border-amber-500/30",
+                      low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                    };
+
+                    return (
+                      <div
+                        key={task.id}
+                        className={`p-4 rounded-xl bg-[#19191d] border transition-all flex flex-col gap-3 shadow-sm ${
+                          task.status === "completed"
+                            ? "border-emerald-500/20 opacity-80"
+                            : task.priority === "urgent"
+                              ? "border-rose-500/30"
+                              : "border-white/[0.06] hover:border-white/15"
+                        }`}
+                      >
+                        {/* Top row: Badges */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                                categoryStyles[task.category] ||
+                                categoryStyles.general
+                              }`}
+                            >
+                              {task.category.replace("_", " ")}
+                            </span>
+                            <span
+                              className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border flex items-center gap-1 ${
+                                priorityStyles[task.priority] ||
+                                priorityStyles.medium
+                              }`}
+                            >
+                              {task.priority === "urgent" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                              )}
+                              <span>{task.priority}</span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-[11px] text-[#71717a]">
+                            <span className="flex items-center gap-1 font-mono">
+                              <Calendar className="w-3 h-3 text-[#71717a]" />
+                              Due: {task.dueDate || "Upcoming"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Title & Description */}
+                        <div>
+                          <h4
+                            className={`text-[14px] font-bold tracking-tight ${
+                              task.status === "completed"
+                                ? "text-white/60 line-through"
+                                : "text-white"
+                            }`}
+                          >
+                            {task.title}
+                          </h4>
+                          {task.description && (
+                            <p className="text-xs text-[#a1a1aa] mt-1 leading-relaxed">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Assignee & Controls Toolbar */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-white/[0.04]">
+                          {/* Member Assigned */}
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-6 h-6 rounded-full bg-orange-600/30 text-orange-400 border border-orange-500/30 text-[10px] font-bold flex items-center justify-center shrink-0">
+                              {task.assignedToName?.charAt(0).toUpperCase() ||
+                                "A"}
+                            </div>
+                            <span className="text-white font-medium">
+                              {task.assignedToName}
+                            </span>
+                            <span className="text-[#71717a] text-[11px] font-mono">
+                              ({task.assignedToEmail || "internal"})
+                            </span>
+                          </div>
+
+                          {/* Action Toolbar */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Status Toggle Buttons */}
+                            <div className="flex items-center bg-[#141416] p-0.5 rounded-lg border border-white/[0.06] text-[11px]">
+                              {(
+                                ["pending", "in_progress", "completed"] as const
+                              ).map((st) => (
+                                <button
+                                  key={st}
+                                  type="button"
+                                  onClick={() =>
+                                    handleUpdateTaskStatus(task.id, st)
+                                  }
+                                  className={`px-2 py-0.5 rounded transition-all font-semibold ${
+                                    task.status === st
+                                      ? st === "completed"
+                                        ? "bg-emerald-600 text-white shadow-sm"
+                                        : st === "in_progress"
+                                          ? "bg-amber-600 text-white shadow-sm"
+                                          : "bg-[#27272a] text-white"
+                                      : "text-[#71717a] hover:text-white"
+                                  }`}
+                                >
+                                  {st === "in_progress"
+                                    ? "In Progress"
+                                    : st.charAt(0).toUpperCase() + st.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Email Assignee Button */}
+                            {task.assignedToEmail && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openMailModal(task.assignedToEmail)
+                                }
+                                className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-[#2c2c33] text-[#71717a] hover:text-white transition-colors"
+                                title={`Email ${task.assignedToName}`}
+                              >
+                                <Mail className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {/* Delete Task */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-rose-500/20 text-[#71717a] hover:text-rose-400 transition-colors"
+                              title="Delete task"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================ */}
         {/* VIEW 2: USERS DIRECTORY SUB-VIEW (When Users Nav is clicked) */}
         {/* ============================================================ */}
         {activeNav === "users" && (
@@ -3450,6 +4235,43 @@ export function AdminDashboard({
                 </div>
               </div>
             </div>
+
+            {/* Bulk Action Toolbar */}
+            {selectedUserIds.length > 0 && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-xl bg-orange-950/40 border border-orange-500/30 text-white animate-in fade-in slide-in-from-top-2 duration-150 shadow-md">
+                <div className="flex items-center gap-2 text-xs font-semibold text-orange-200">
+                  <CheckCircle2 className="w-4 h-4 text-orange-400 shrink-0" />
+                  <span>
+                    {selectedUserIds.length} user account
+                    {selectedUserIds.length > 1 ? "s" : ""} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const selectedEmails = users
+                        .filter((u) => selectedUserIds.includes(u.id))
+                        .map((u) => u.email)
+                        .filter(Boolean)
+                        .join(", ");
+                      openMailModal(selectedEmails);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Send Bulk Email ({selectedUserIds.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedUserIds([])}
+                    className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-xs font-medium transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* User Directory Table */}
             <div className="overflow-x-auto">
@@ -3561,18 +4383,29 @@ export function AdminDashboard({
                               : "N/A"}
                           </td>
                           <td className="py-3.5 px-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTableSearch(u.email || "");
-                                showToast(
-                                  `Filtered for ${u.email || u.name || u.id}`,
-                                );
-                              }}
-                              className="px-2.5 py-1 rounded-md bg-[#222227] hover:bg-[#2c2c33] text-white text-[11px] font-semibold transition-all"
-                            >
-                              Inspect
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openMailModal(u.email || "")}
+                                className="px-2 py-1 rounded-md bg-white/[0.04] hover:bg-orange-500/20 text-[#a1a1aa] hover:text-orange-300 text-[11px] font-semibold transition-all flex items-center gap-1"
+                                title={`Send email to ${u.email}`}
+                              >
+                                <Mail className="w-3 h-3" />
+                                <span>Email</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTableSearch(u.email || "");
+                                  showToast(
+                                    `Filtered for ${u.email || u.name || u.id}`,
+                                  );
+                                }}
+                                className="px-2.5 py-1 rounded-md bg-[#222227] hover:bg-[#2c2c33] text-white text-[11px] font-semibold transition-all"
+                              >
+                                Inspect
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -3748,6 +4581,299 @@ export function AdminDashboard({
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download Report</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* 4. COMPOSE & DISPATCH EMAIL MODAL                            */}
+      {/* ============================================================ */}
+      {isMailModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-[#18181c] border border-white/10 shadow-2xl p-6 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Compose &amp; Dispatch Email
+                  </h3>
+                  <span className="text-xs text-[#71717a]">
+                    Direct mail service via Resend API
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMailModalOpen(false)}
+                className="p-1 rounded-md text-[#71717a] hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap text-xs">
+              <span className="text-[#71717a] font-medium text-[11px] mr-1">
+                Quick Targets:
+              </span>
+              <button
+                type="button"
+                onClick={() => setMailTo("team")}
+                className={`px-2.5 py-1 rounded-md transition-all font-semibold ${
+                  mailTo === "team"
+                    ? "bg-orange-600 text-white"
+                    : "bg-[#27272a] text-[#a1a1aa] hover:text-white"
+                }`}
+              >
+                All Team Admins ({teamMembers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setMailTo("pro")}
+                className={`px-2.5 py-1 rounded-md transition-all font-semibold ${
+                  mailTo === "pro"
+                    ? "bg-orange-600 text-white"
+                    : "bg-[#27272a] text-[#a1a1aa] hover:text-white"
+                }`}
+              >
+                Pro Subscribers ({stats.proUsers})
+              </button>
+              {mailTo && (
+                <button
+                  type="button"
+                  onClick={() => setMailTo("")}
+                  className="px-2 py-1 rounded-md bg-white/[0.04] text-[#71717a] hover:text-white text-[11px]"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Modal Form Inputs */}
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                  Recipient(s)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. member@waspai.in or team, pro, or comma-separated emails"
+                  value={mailTo}
+                  onChange={(e) => setMailTo(e.target.value)}
+                  className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-3 text-white placeholder:text-[#52525b] outline-none focus:border-orange-500/50 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Platform Maintenance Notice / Task Assignment"
+                  value={mailSubject}
+                  onChange={(e) => setMailSubject(e.target.value)}
+                  className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-3 text-white placeholder:text-[#52525b] outline-none focus:border-orange-500/50 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                  Message Body
+                </label>
+                <textarea
+                  rows={5}
+                  placeholder="Write your email announcement or instructions..."
+                  value={mailMessage}
+                  onChange={(e) => setMailMessage(e.target.value)}
+                  className="w-full rounded-lg bg-[#141417] border border-white/[0.08] p-3 text-white placeholder:text-[#52525b] outline-none focus:border-orange-500/50 transition-colors resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setIsMailModalOpen(false)}
+                className="px-3.5 py-2 rounded-lg bg-[#27272a] hover:bg-[#323238] text-white text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendMail}
+                disabled={mailSending}
+                className="px-4 py-2 rounded-lg bg-[#e05326] hover:bg-[#c9451d] disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Send
+                  className={`w-3.5 h-3.5 ${mailSending ? "animate-spin" : ""}`}
+                />
+                <span>{mailSending ? "Dispatching..." : "Send Email"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* 5. ALLOT WORK TO MEMBER MODAL                                */}
+      {/* ============================================================ */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-[#18181c] border border-white/10 shadow-2xl p-6 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Allot Work to Team Member
+                  </h3>
+                  <span className="text-xs text-[#71717a]">
+                    Assign operational duties, incident response, or maintenance
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTaskModalOpen(false)}
+                className="p-1 rounded-md text-[#71717a] hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form Inputs */}
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                  Task Title *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Monitor AI Fleet Latency & Provider Failovers"
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-3 text-white placeholder:text-[#52525b] outline-none focus:border-orange-500/50 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                    Assign To *
+                  </label>
+                  <select
+                    value={taskAssigneeId}
+                    onChange={(e) => setTaskAssigneeId(e.target.value)}
+                    className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-2.5 text-white outline-none focus:border-orange-500/50 transition-colors cursor-pointer"
+                  >
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name || m.email} ({m.role || "admin"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                    Category
+                  </label>
+                  <select
+                    value={taskCategory}
+                    onChange={(e) =>
+                      setTaskCategory(e.target.value as TaskCategory)
+                    }
+                    className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-2.5 text-white outline-none focus:border-orange-500/50 transition-colors cursor-pointer"
+                  >
+                    <option value="ai_fleet">AI Fleet Operations</option>
+                    <option value="billing">Billing &amp; Subscriptions</option>
+                    <option value="security">Security &amp; Moderation</option>
+                    <option value="support">Customer Support</option>
+                    <option value="infrastructure">
+                      Infrastructure &amp; Storage
+                    </option>
+                    <option value="general">General Operations</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                    Priority
+                  </label>
+                  <select
+                    value={taskPriority}
+                    onChange={(e) =>
+                      setTaskPriority(e.target.value as TaskPriority)
+                    }
+                    className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-2.5 text-white outline-none focus:border-orange-500/50 transition-colors cursor-pointer"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="urgent">Urgent / Critical</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                    Target / Due Date
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Today, Tomorrow, In 3 days"
+                    value={taskDueDate}
+                    onChange={(e) => setTaskDueDate(e.target.value)}
+                    className="w-full h-9 rounded-lg bg-[#141417] border border-white/[0.08] px-3 text-white placeholder:text-[#52525b] outline-none focus:border-orange-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#a1a1aa] mb-1.5">
+                  Description &amp; Context
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Provide instructions or links for the assigned member..."
+                  value={taskDescription}
+                  onChange={(e) => setTaskDescription(e.target.value)}
+                  className="w-full rounded-lg bg-[#141417] border border-white/[0.08] p-3 text-white placeholder:text-[#52525b] outline-none focus:border-orange-500/50 transition-colors resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setIsTaskModalOpen(false)}
+                className="px-3.5 py-2 rounded-lg bg-[#27272a] hover:bg-[#323238] text-white text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateTask}
+                disabled={taskCreating}
+                className="px-4 py-2 rounded-lg bg-[#e05326] hover:bg-[#c9451d] disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Plus
+                  className={`w-3.5 h-3.5 ${taskCreating ? "animate-spin" : ""}`}
+                />
+                <span>{taskCreating ? "Allotting..." : "Allot Work"}</span>
               </button>
             </div>
           </div>
