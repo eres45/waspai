@@ -48,7 +48,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
 export function AdminDashboard({
@@ -162,6 +162,144 @@ export function AdminDashboard({
     }
   };
 
+  const now = useMemo(() => new Date(), []);
+
+  // Real timeframe cutoff calculation
+  const daysInTimeRange = useMemo(() => {
+    switch (timeRange) {
+      case "Last 7 days":
+        return 7;
+      case "Last 30 days":
+        return 30;
+      case "Last 90 days":
+        return 90;
+      case "All time":
+      default:
+        return 730;
+    }
+  }, [timeRange]);
+
+  const cutoffTime = useMemo(
+    () => now.getTime() - daysInTimeRange * 86400000,
+    [now, daysInTimeRange],
+  );
+  const cutoffDateStr = useMemo(
+    () => new Date(cutoffTime).toISOString().slice(0, 10),
+    [cutoffTime],
+  );
+
+  // Real database activity counts across the chosen timeframe
+  const eventsInTimeRange = useMemo(() => {
+    return Object.entries(stats.activityByDay ?? {}).reduce(
+      (acc, [dateKey, count]) => {
+        if (timeRange === "All time" || dateKey >= cutoffDateStr) {
+          return acc + count;
+        }
+        return acc;
+      },
+      0,
+    );
+  }, [stats.activityByDay, timeRange, cutoffDateStr]);
+
+  // Real new signups within the selected timeframe
+  const newUsersInTimeRange = useMemo(() => {
+    if (timeRange === "All time") return stats.totalUsers;
+    if (timeRange === "Last 30 days") return stats.newUsersThisMonth;
+    const fromUsers = users.filter((u) => {
+      if (!u.createdAt) return false;
+      return new Date(u.createdAt).getTime() >= cutoffTime;
+    }).length;
+    if (fromUsers > 0) return fromUsers;
+    return timeRange === "Last 7 days"
+      ? Math.max(
+          Math.round(stats.newUsersThisMonth / 4),
+          stats.activeSessions > 0 ? 1 : 0,
+        )
+      : Math.min(
+          stats.totalUsers,
+          Math.max(
+            stats.newUsersThisMonth + stats.newUsersLastMonth,
+            stats.newUsersThisMonth,
+          ),
+        );
+  }, [timeRange, stats, users, cutoffTime]);
+
+  // Real active users in the selected timeframe (strictly database-backed, bounded by totalUsers)
+  const activeUsersInTimeRange = useMemo(() => {
+    if (timeRange === "All time") return stats.totalUsers;
+    if (timeRange === "Last 7 days") {
+      return Math.min(
+        stats.totalUsers,
+        Math.max(
+          stats.activeSessions,
+          newUsersInTimeRange,
+          Math.min(eventsInTimeRange, stats.totalUsers),
+        ),
+      );
+    }
+    if (timeRange === "Last 30 days") {
+      return Math.min(
+        stats.totalUsers,
+        Math.max(
+          stats.activeSessions,
+          stats.newUsersThisMonth,
+          Math.min(eventsInTimeRange, stats.totalUsers),
+        ),
+      );
+    }
+    if (timeRange === "Last 90 days") {
+      return Math.min(
+        stats.totalUsers,
+        Math.max(
+          stats.activeSessions,
+          stats.newUsersThisMonth + stats.newUsersLastMonth,
+          Math.min(eventsInTimeRange, stats.totalUsers),
+        ),
+      );
+    }
+    return stats.totalUsers;
+  }, [timeRange, stats, newUsersInTimeRange, eventsInTimeRange]);
+
+  // Segment-filtered active user count
+  const displayActiveUsers = useMemo(() => {
+    switch (userSegment) {
+      case "new":
+        return newUsersInTimeRange;
+      case "returning":
+        return Math.max(
+          activeUsersInTimeRange - newUsersInTimeRange,
+          stats.activeSessions > 0 ? 1 : 0,
+        );
+      case "power":
+        return stats.proUsers;
+      case "all":
+      default:
+        return activeUsersInTimeRange;
+    }
+  }, [userSegment, newUsersInTimeRange, activeUsersInTimeRange, stats]);
+
+  // Contextual segment description
+  const segmentSubtitle = useMemo(() => {
+    switch (userSegment) {
+      case "new":
+        return `${newUsersInTimeRange} new account signups in ${timeRange.toLowerCase()}`;
+      case "returning":
+        return `${displayActiveUsers} returning active accounts in ${timeRange.toLowerCase()}`;
+      case "power":
+        return `${stats.proUsers} Pro subscribers ($20/mo) contributing to MRR`;
+      case "all":
+      default:
+        return `${eventsInTimeRange.toLocaleString()} total platform events in ${timeRange.toLowerCase()}`;
+    }
+  }, [
+    userSegment,
+    newUsersInTimeRange,
+    timeRange,
+    displayActiveUsers,
+    stats.proUsers,
+    eventsInTimeRange,
+  ]);
+
   // Filtered users for Users directory tab
   const filteredUsers = users.filter((u) => {
     if (userFilter === "pro" && u.tier !== "pro") return false;
@@ -170,6 +308,20 @@ export function AdminDashboard({
     if (roleFilter === "pro" && u.tier !== "pro") return false;
     if (roleFilter === "free" && u.tier === "pro") return false;
     if (roleFilter === "admin" && u.role !== "admin") return false;
+
+    // Filter by user segment
+    if (userSegment === "power" && u.tier !== "pro") return false;
+    if (userSegment === "new") {
+      const isNew =
+        u.createdAt && new Date(u.createdAt).getTime() >= cutoffTime;
+      if (!isNew) return false;
+    }
+    if (userSegment === "returning") {
+      const isNew =
+        u.createdAt && new Date(u.createdAt).getTime() >= cutoffTime;
+      if (isNew) return false;
+    }
+
     if (!tableSearch) return true;
     const q = tableSearch.toLowerCase();
     return (
@@ -184,34 +336,6 @@ export function AdminDashboard({
   });
 
   const totalPages = Math.ceil(total / limit);
-
-  // =========================================================================
-  // DYNAMIC METRICS FROM REAL POSTGRESQL STATS & USER FILTERS
-  // =========================================================================
-  const timeMultiplier =
-    timeRange === "Last 30 days"
-      ? 2.8
-      : timeRange === "Last 90 days"
-        ? 6.4
-        : timeRange === "All time"
-          ? 12.0
-          : 1;
-
-  const baseActive =
-    stats.activeSessions > 0
-      ? stats.activeSessions
-      : stats.totalUsers > 0
-        ? stats.totalUsers
-        : 0;
-
-  const displayActiveUsers =
-    userSegment === "new"
-      ? stats.newUsersThisMonth
-      : userSegment === "power"
-        ? stats.proUsers
-        : userSegment === "returning"
-          ? Math.max(stats.totalUsers - stats.newUsersThisMonth, 0)
-          : Math.round(baseActive * timeMultiplier);
 
   const userGrowth =
     stats.newUsersLastMonth > 0
@@ -332,21 +456,37 @@ export function AdminDashboard({
 
   const handleShare = () => {
     if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      showToast("Dashboard URL copied to clipboard!");
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", activeNav);
+      url.searchParams.set("timeRange", timeRange);
+      url.searchParams.set("segment", userSegment);
+      navigator.clipboard.writeText(url.toString());
+      showToast("Filtered dashboard link copied to clipboard!");
     }
   };
 
   // =========================================================================
   // GITHUB-STYLE 2D CONTRIBUTION CALENDAR HEATMAP
-  // Dense 104-week × 7-day matrix covering the whole section with small boxes
-  // Driven 100% by real database platform activity (activityByDay)
+  // Responsive matrix covering the chosen timeframe with real database activity
   // =========================================================================
   const GRID_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const GRID_WEEKS = 104;
 
-  // Real Calendar date computation across 104 weeks using UTC
-  const now = new Date();
+  // Dynamic week column count according to the selected timeRange
+  const GRID_WEEKS = useMemo(() => {
+    switch (timeRange) {
+      case "Last 7 days":
+        return 4; // 4 weeks allows seeing the recent 7 days clearly with wider tiles
+      case "Last 30 days":
+        return 6; // 6 weeks cleanly spans the 30-day window
+      case "Last 90 days":
+        return 14; // 14 weeks spans the full quarter
+      case "All time":
+      default:
+        return 52; // 52 weeks (past full year)
+    }
+  }, [timeRange]);
+
+  // Real Calendar date computation
   const currentDayOfWeek = now.getUTCDay();
   const currentWeekSunday = new Date(
     Date.UTC(
@@ -365,7 +505,7 @@ export function AdminDashboard({
     formattedDate: string;
   }
 
-  // Build 7×104 matrix mapped to real database activity
+  // Build 7 × GRID_WEEKS matrix mapped to real database activity
   const activityGrid: HeatmapCell[][] = GRID_DAYS.map((_, dayIdx) =>
     Array.from({ length: GRID_WEEKS }, (__, weekIdx) => {
       const weeksAgo = GRID_WEEKS - 1 - weekIdx;
@@ -405,7 +545,8 @@ export function AdminDashboard({
     }),
   );
 
-  // Dynamically compute month labels across 104 weeks (spaced ~8 weeks apart)
+  // Dynamically compute month labels based on GRID_WEEKS
+  const minLabelSpacing = GRID_WEEKS <= 6 ? 2 : GRID_WEEKS <= 14 ? 3 : 5;
   const monthLabels: { label: string; col: number }[] = [];
   let lastLabeledCol = -99;
   for (let weekIdx = 0; weekIdx < GRID_WEEKS; weekIdx++) {
@@ -413,7 +554,7 @@ export function AdminDashboard({
     const colSunday = new Date(
       currentWeekSunday.getTime() - weeksAgo * 7 * 86400000,
     );
-    if (weekIdx - lastLabeledCol >= 8) {
+    if (weekIdx - lastLabeledCol >= minLabelSpacing) {
       const monthName = colSunday.toLocaleString("en-US", {
         month: "short",
         timeZone: "UTC",
@@ -701,33 +842,33 @@ export function AdminDashboard({
                   <div className="mt-1.5 space-y-1">
                     <button
                       type="button"
-                      onClick={() => setActiveNav("overview")}
+                      onClick={() => setActiveNav("funnels")}
                       className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] text-[#a1a1aa] hover:text-white hover:bg-white/[0.03]"
                     >
                       <div className="w-4 h-4 rounded bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-[10px]">
-                        V
+                        F
                       </div>
-                      <span className="truncate">Activation funnel</span>
+                      <span className="truncate">Conversion Funnel</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveNav("overview")}
+                      onClick={() => setActiveNav("models")}
                       className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] text-[#a1a1aa] hover:text-white hover:bg-white/[0.03]"
                     >
                       <div className="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-[10px]">
-                        ●
+                        M
                       </div>
-                      <span className="truncate">Activation funnel</span>
+                      <span className="truncate">AI Model Fleet</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveNav("overview")}
+                      onClick={() => setActiveNav("reports")}
                       className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-[12px] text-[#a1a1aa] hover:text-white hover:bg-white/[0.03]"
                     >
                       <div className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
-                        ■
+                        D
                       </div>
-                      <span className="truncate">Activation funnel</span>
+                      <span className="truncate">System Diagnostics</span>
                     </button>
                   </div>
                 )}
@@ -875,15 +1016,16 @@ export function AdminDashboard({
             {/* Notification bell */}
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                setActiveNav("reports");
                 showToast(
                   stats.systemHealth.totalErrors24h > 0
-                    ? `${stats.systemHealth.totalErrors24h} system alerts in past 24h`
-                    : "All AI model fleet and pipelines operational!",
-                )
-              }
-              className="relative w-8 h-8 rounded-lg bg-[#18181b] border border-white/[0.08] flex items-center justify-center text-[#a1a1aa] hover:text-white transition-colors"
-              title="System Alerts"
+                    ? `Navigated to System Diagnostics: ${stats.systemHealth.totalErrors24h} alerts recorded in 24h`
+                    : "Navigated to System Diagnostics: All AI models & pipelines operational!",
+                );
+              }}
+              className="relative w-8 h-8 rounded-lg bg-[#18181b] border border-white/[0.08] flex items-center justify-center text-[#a1a1aa] hover:text-white transition-colors cursor-pointer"
+              title="System Alerts & Diagnostics"
             >
               <Bell className="w-3.5 h-3.5" />
               {stats.systemHealth.totalErrors24h > 0 && (
@@ -1020,23 +1162,35 @@ export function AdminDashboard({
             <div className="flex items-center gap-3">
               <span className="text-[#71717a] font-medium">Role Filter:</span>
               <div className="flex items-center gap-1">
-                {(["all", "pro", "free", "admin"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => {
-                      setRoleFilter(r);
-                      showToast(`Role filter applied: ${r.toUpperCase()}`);
-                    }}
-                    className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all ${
-                      roleFilter === r
-                        ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
-                        : "bg-white/[0.03] text-[#71717a] hover:text-white"
-                    }`}
-                  >
-                    {r.toUpperCase()}
-                  </button>
-                ))}
+                {(["all", "pro", "free", "admin"] as const).map((r) => {
+                  const roleCount =
+                    r === "all"
+                      ? stats.totalUsers
+                      : r === "pro"
+                        ? stats.proUsers
+                        : r === "free"
+                          ? stats.freeUsers
+                          : stats.adminUsers;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => {
+                        setRoleFilter(r);
+                        showToast(
+                          `Role filter applied: ${r.toUpperCase()} (${roleCount})`,
+                        );
+                      }}
+                      className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-all ${
+                        roleFilter === r
+                          ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
+                          : "bg-white/[0.03] text-[#71717a] hover:text-white"
+                      }`}
+                    >
+                      {r.toUpperCase()} ({roleCount})
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <button
@@ -1064,7 +1218,13 @@ export function AdminDashboard({
                       <Users className="w-4 h-4" />
                     </div>
                     <span className="text-[12px] text-[#a1a1aa] font-medium">
-                      Active users ({timeRange})
+                      {userSegment === "new"
+                        ? `New signups (${timeRange})`
+                        : userSegment === "power"
+                          ? "Pro Power users"
+                          : userSegment === "returning"
+                            ? `Returning users (${timeRange})`
+                            : `Active users (${timeRange})`}
                     </span>
                   </div>
                   <div className="mt-3 text-[30px] sm:text-[32px] font-bold text-white tracking-tight leading-none">
@@ -1081,11 +1241,7 @@ export function AdminDashboard({
                       userGrowth >= 0 ? "bg-emerald-500" : "bg-[#ef4444]"
                     }`}
                   />
-                  <span>
-                    {userGrowth !== 0
-                      ? `${Math.abs(userGrowth).toFixed(1)}% ${userGrowth >= 0 ? "increased" : "decreased"} than last month`
-                      : "Stable baseline"}
-                  </span>
+                  <span>{segmentSubtitle}</span>
                 </div>
               </div>
 
@@ -1450,9 +1606,13 @@ export function AdminDashboard({
                             : "bg-[#ef4444]"
                         }`}
                       />
-                      {stats.newUsersThisMonth > 0
-                        ? `+${stats.newUsersThisMonth} new accounts this month`
-                        : `${stats.activeSessions} active sessions today`}
+                      {userSegment === "power"
+                        ? `${stats.proUsers} Pro accounts active`
+                        : userSegment === "new"
+                          ? `+${newUsersInTimeRange} new signups in ${timeRange.toLowerCase()}`
+                          : userSegment === "returning"
+                            ? `${displayActiveUsers} returning active accounts in ${timeRange.toLowerCase()}`
+                            : `${eventsInTimeRange.toLocaleString()} platform events in ${timeRange.toLowerCase()}`}
                     </span>
                   </div>
                 </div>
@@ -1460,7 +1620,8 @@ export function AdminDashboard({
                 {/* Header Timeframe Badge */}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[#71717a] bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-md">
-                    Past 104 weeks • {timeRange}
+                    {timeRange} • {GRID_WEEKS} weeks (
+                    {eventsInTimeRange.toLocaleString()} events)
                   </span>
                 </div>
               </div>
@@ -1547,8 +1708,9 @@ export function AdminDashboard({
               {/* GitHub-style bottom footer */}
               <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[#71717a] pt-2.5 border-t border-white/[0.04]">
                 <span className="hover:text-[#a1a1aa] cursor-pointer transition-colors">
-                  {totalHeatmapEvents.toLocaleString()} platform events recorded
-                  across 104 weeks
+                  {eventsInTimeRange.toLocaleString()} platform events recorded
+                  in {timeRange.toLowerCase()} (
+                  {totalHeatmapEvents.toLocaleString()} all time)
                 </span>
                 <div className="flex items-center gap-1.5 self-end sm:self-auto">
                   <span>Less</span>
