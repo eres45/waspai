@@ -131,11 +131,11 @@ export function AdminDashboard({
 
   // =========================================================================
   // GITHUB-STYLE 2D CONTRIBUTION CALENDAR HEATMAP
-  // rows = 7 days of week (Sun..Sat), cols = 52 weeks
+  // Dense 104-week × 7-day matrix covering the whole section with small boxes
   // Each cell value: 0 = no activity, 1–4 = intensity levels
   // =========================================================================
   const GRID_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const GRID_WEEKS = 52;
+  const GRID_WEEKS = 104;
 
   // Seeded pseudo-random for deterministic demo data
   const seededRand = (seed: number) => {
@@ -143,7 +143,7 @@ export function AdminDashboard({
     return x - Math.floor(x);
   };
 
-  // Build 7×52 matrix — weekdays have more activity, recent weeks slightly higher
+  // Build 7×104 matrix — weekdays have more activity, recent weeks slightly higher
   const activityGrid: number[][] = GRID_DAYS.map((_, dayIdx) =>
     Array.from({ length: GRID_WEEKS }, (__, weekIdx) => {
       const r = seededRand(dayIdx * 100 + weekIdx);
@@ -152,28 +152,29 @@ export function AdminDashboard({
       const prob = isWeekend ? 0.35 + recency * 0.15 : 0.55 + recency * 0.2;
       if (r > prob) return 0;
       const intensity = seededRand(dayIdx * 7 + weekIdx * 3 + 42);
-      if (intensity < 0.4) return 1;
-      if (intensity < 0.7) return 2;
-      if (intensity < 0.9) return 3;
+      if (intensity < 0.35) return 1;
+      if (intensity < 0.65) return 2;
+      if (intensity < 0.88) return 3;
       return 4;
     }),
   );
 
-  // Month labels for the X-axis (every ~4.3 weeks) - rolling 12 months (Oct..Sep)
+  // Month labels across 104 weeks (rolling 24 months, clean bi-monthly milestones)
   const monthLabels = [
-    "Oct",
-    "Nov",
-    "Dec",
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-  ].map((m, i) => ({ label: m, col: Math.round(i * (GRID_WEEKS / 12)) }));
+    { label: "Oct '24", col: 0 },
+    { label: "Dec '24", col: 8 },
+    { label: "Feb '25", col: 17 },
+    { label: "Apr '25", col: 26 },
+    { label: "Jun '25", col: 34 },
+    { label: "Aug '25", col: 43 },
+    { label: "Oct '25", col: 52 },
+    { label: "Dec '25", col: 60 },
+    { label: "Feb '26", col: 69 },
+    { label: "Apr '26", col: 78 },
+    { label: "Jun '26", col: 86 },
+    { label: "Aug '26", col: 95 },
+    { label: "Sep '26", col: 101 },
+  ];
 
   // Retention spline chart points (Sun .. Sun)
   const retentionCurve = [
@@ -746,159 +747,98 @@ export function AdminDashboard({
                   </div>
                 </div>
 
-                {/* Header Legend & Timeframe */}
-                <div className="flex items-center gap-4 text-[11px] text-[#71717a]">
-                  <div className="flex items-center gap-1.5">
-                    <span>Less</span>
-                    <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-[2px] bg-[#1c1c21]" />
-                      <span className="w-2.5 h-2.5 rounded-[2px] bg-[#6e230f]" />
-                      <span className="w-2.5 h-2.5 rounded-[2px] bg-[#a63717]" />
-                      <span className="w-2.5 h-2.5 rounded-[2px] bg-[#e05326]" />
-                      <span className="w-2.5 h-2.5 rounded-[2px] bg-[#f97316]" />
-                    </div>
-                    <span>More</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-[#a1a1aa] bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded">
-                    52 weeks
+                {/* Header Timeframe Badge */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-medium text-[#71717a] bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-md">
+                    Past 104 weeks
                   </span>
                 </div>
               </div>
 
-              {/* COMPACT CONTENT: GitHub 10px Tile Calendar (Left) + Activity Highlights (Right) */}
-              <div className="mt-4 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-5">
-                {/* Authentic GitHub 52-week calendar with small 10px square tiles */}
-                <div className="overflow-x-auto pb-1 max-w-full">
-                  <div className="flex items-stretch gap-2 w-max">
-                    {/* Day-of-week labels on the left — aligned with the 7 day rows */}
-                    <div className="w-5 shrink-0 flex flex-col justify-between select-none pt-4 pb-0.5 text-[9px] font-mono text-[#71717a]">
-                      <div className="h-[10px] flex items-center justify-end" />
-                      <div className="h-[10px] flex items-center justify-end">
-                        Mon
-                      </div>
-                      <div className="h-[10px] flex items-center justify-end" />
-                      <div className="h-[10px] flex items-center justify-end">
-                        Wed
-                      </div>
-                      <div className="h-[10px] flex items-center justify-end" />
-                      <div className="h-[10px] flex items-center justify-end">
-                        Fri
-                      </div>
-                      <div className="h-[10px] flex items-center justify-end" />
+              {/* DENSE 104-WEEK FULL-WIDTH GITHUB TILE MATRIX (Small Boxes Covering Whole Section) */}
+              <div className="mt-4 overflow-x-auto pb-1 min-w-0">
+                <div className="min-w-[840px] flex items-stretch gap-2.5">
+                  {/* Day-of-week labels on the left — aligned with the 7 day rows */}
+                  <div className="w-5 shrink-0 flex flex-col justify-between select-none pt-4 pb-0.5 text-[9px] font-mono text-[#71717a]">
+                    <div className="flex-1 flex items-center justify-end" />
+                    <div className="flex-1 flex items-center justify-end">
+                      Mon
+                    </div>
+                    <div className="flex-1 flex items-center justify-end" />
+                    <div className="flex-1 flex items-center justify-end">
+                      Wed
+                    </div>
+                    <div className="flex-1 flex items-center justify-end" />
+                    <div className="flex-1 flex items-center justify-end">
+                      Fri
+                    </div>
+                    <div className="flex-1 flex items-center justify-end" />
+                  </div>
+
+                  {/* Grid area: Month labels + 104 Week Columns spanning 100% full width */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    {/* Month labels row */}
+                    <div className="relative h-4 w-full select-none mb-1">
+                      {monthLabels.map(({ label, col }) => (
+                        <span
+                          key={label}
+                          className="absolute text-[9px] font-mono text-[#71717a] leading-none whitespace-nowrap"
+                          style={{ left: `${(col / GRID_WEEKS) * 100}%` }}
+                        >
+                          {label}
+                        </span>
+                      ))}
                     </div>
 
-                    {/* 52-week column grid with month labels directly above */}
-                    <div className="flex flex-col">
-                      {/* Month labels row */}
-                      <div className="relative h-4 w-full select-none">
-                        {monthLabels.map(({ label, col }) => (
-                          <span
-                            key={label}
-                            className="absolute text-[9px] font-mono text-[#71717a] leading-none"
-                            style={{ left: `${(col / GRID_WEEKS) * 100}%` }}
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* 52 Columns of 10px × 10px small square tiles */}
-                      <div className="flex gap-[2.5px]">
-                        {Array.from({ length: GRID_WEEKS }).map(
-                          (_, weekIdx) => (
-                            <div
-                              key={weekIdx}
-                              className="flex flex-col gap-[2.5px]"
-                            >
-                              {GRID_DAYS.map((_, dayIdx) => {
-                                const level =
-                                  activityGrid[dayIdx]?.[weekIdx] ?? 0;
-                                const cellColor =
-                                  level === 0
-                                    ? "bg-[#1c1c21] hover:bg-[#28282f]"
-                                    : level === 1
-                                      ? "bg-[#6e230f]/80 hover:bg-[#7e2912]"
-                                      : level === 2
-                                        ? "bg-[#a63717] hover:bg-[#ba3f1b]"
-                                        : level === 3
-                                          ? "bg-[#e05326] hover:bg-[#ec5c2e]"
-                                          : "bg-[#f97316] shadow-[0_0_5px_rgba(249,115,22,0.45)] hover:bg-[#fb923c]";
-                                return (
-                                  <div
-                                    key={dayIdx}
-                                    title={`${GRID_DAYS[dayIdx]}, Week ${weekIdx + 1}: ${level > 0 ? `${level * 240} active users` : "No activity"}`}
-                                    className={`w-[10px] h-[10px] rounded-[2px] transition-colors duration-100 cursor-pointer ${cellColor}`}
-                                  />
-                                );
-                              })}
-                            </div>
-                          ),
-                        )}
-                      </div>
+                    {/* 104 Week Columns spanning 100% full width with small square tiles */}
+                    <div className="w-full flex gap-[1.5px] sm:gap-[2px]">
+                      {Array.from({ length: GRID_WEEKS }).map((_, weekIdx) => (
+                        <div
+                          key={weekIdx}
+                          className="flex-1 flex flex-col gap-[1.5px] sm:gap-[2px]"
+                        >
+                          {GRID_DAYS.map((_, dayIdx) => {
+                            const level = activityGrid[dayIdx]?.[weekIdx] ?? 0;
+                            const cellColor =
+                              level === 0
+                                ? "bg-[#1c1c21] hover:bg-[#28282f]"
+                                : level === 1
+                                  ? "bg-[#6e230f]/80 hover:bg-[#7e2912]"
+                                  : level === 2
+                                    ? "bg-[#a63717] hover:bg-[#ba3f1b]"
+                                    : level === 3
+                                      ? "bg-[#e05326] hover:bg-[#ec5c2e]"
+                                      : "bg-[#f97316] shadow-[0_0_5px_rgba(249,115,22,0.45)] hover:bg-[#fb923c]";
+                            return (
+                              <div
+                                key={dayIdx}
+                                title={`${GRID_DAYS[dayIdx]}, Week ${weekIdx + 1}: ${level > 0 ? `${level * 240} active users` : "No activity"}`}
+                                className={`w-full aspect-square rounded-[2px] transition-colors duration-100 cursor-pointer ${cellColor}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Subtle vertical divider on xl displays */}
-                <div className="hidden xl:block w-px bg-white/[0.06] self-stretch min-h-[90px]" />
-
-                {/* Right Side: Activity Highlights covering remaining width */}
-                <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-2 gap-2.5">
-                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-2.5 flex flex-col justify-between">
-                    <span className="text-[10px] text-[#71717a] font-medium">
-                      Daily Peak
-                    </span>
-                    <div className="text-[15px] font-bold text-white mt-1">
-                      2,845{" "}
-                      <span className="text-[10px] font-normal text-[#a1a1aa]">
-                        users
-                      </span>
-                    </div>
-                    <span className="text-[9px] text-emerald-400 mt-0.5">
-                      Wednesdays avg
-                    </span>
+              {/* GitHub-style bottom footer */}
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[#71717a] pt-2.5 border-t border-white/[0.04]">
+                <span className="hover:text-[#a1a1aa] cursor-pointer transition-colors">
+                  Learn how we count active users
+                </span>
+                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  <span>Less</span>
+                  <div className="flex items-center gap-1">
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#1c1c21]" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#6e230f]" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#a63717]" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#e05326]" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-[#f97316]" />
                   </div>
-
-                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-2.5 flex flex-col justify-between">
-                    <span className="text-[10px] text-[#71717a] font-medium">
-                      Active Sessions
-                    </span>
-                    <div className="text-[15px] font-bold text-white mt-1">
-                      {stats.activeSessions || 42}{" "}
-                      <span className="text-[10px] font-normal text-emerald-400">
-                        live
-                      </span>
-                    </div>
-                    <span className="text-[9px] text-[#a1a1aa] mt-0.5">
-                      Realtime sessions
-                    </span>
-                  </div>
-
-                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-2.5 flex flex-col justify-between">
-                    <span className="text-[10px] text-[#71717a] font-medium">
-                      Messages Today
-                    </span>
-                    <div className="text-[15px] font-bold text-white mt-1">
-                      {stats.messagesToday
-                        ? stats.messagesToday.toLocaleString()
-                        : "1,840"}
-                    </div>
-                    <span className="text-[9px] text-sky-400 mt-0.5">
-                      +14% vs yesterday
-                    </span>
-                  </div>
-
-                  <div className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-2.5 flex flex-col justify-between">
-                    <span className="text-[10px] text-[#71717a] font-medium">
-                      Peak Window
-                    </span>
-                    <div className="text-[15px] font-bold text-white mt-1">
-                      {stats.peakHours || "2 PM - 5 PM"}
-                    </div>
-                    <span className="text-[9px] text-[#a1a1aa] mt-0.5">
-                      Global traffic
-                    </span>
-                  </div>
+                  <span>More</span>
                 </div>
               </div>
             </section>
