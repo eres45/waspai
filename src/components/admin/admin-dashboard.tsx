@@ -133,14 +133,82 @@ export function AdminDashboard({
   // 8 day columns: Sun, Mon, Tue, Wed, Thu, Fri, Sat, Sun
   // Each day has ghost blocks (last week) and orange blocks (this week)
   const heatmapDays = [
-    { day: "Sun", thisWeekBlocks: 9, lastWeekBlocks: 11, count: "17,240" },
-    { day: "Mon", thisWeekBlocks: 7, lastWeekBlocks: 10, count: "14,810" },
-    { day: "Tue", thisWeekBlocks: 14, lastWeekBlocks: 12, count: "23,900" },
-    { day: "Wed", thisWeekBlocks: 15, lastWeekBlocks: 13, count: "24,815" },
-    { day: "Thu", thisWeekBlocks: 6, lastWeekBlocks: 8, count: "11,200" },
-    { day: "Fri", thisWeekBlocks: 12, lastWeekBlocks: 10, count: "19,450" },
-    { day: "Sat", thisWeekBlocks: 7, lastWeekBlocks: 8, count: "13,100" },
-    { day: "Sun", thisWeekBlocks: 8, lastWeekBlocks: 9, count: "14,600" },
+    {
+      day: "Sun",
+      count: "17,240",
+      cols: [
+        { thisWeek: 5, lastWeek: 8 },
+        { thisWeek: 9, lastWeek: 11 },
+        { thisWeek: 7, lastWeek: 10 },
+      ],
+    },
+    {
+      day: "Mon",
+      count: "14,810",
+      cols: [
+        { thisWeek: 5, lastWeek: 8 },
+        { thisWeek: 7, lastWeek: 10 },
+        { thisWeek: 4, lastWeek: 7 },
+      ],
+    },
+    {
+      day: "Tue",
+      count: "23,900",
+      cols: [
+        { thisWeek: 8, lastWeek: 9 },
+        { thisWeek: 12, lastWeek: 11 },
+        { thisWeek: 14, lastWeek: 13 },
+        { thisWeek: 11, lastWeek: 10 },
+      ],
+    },
+    {
+      day: "Wed",
+      count: "24,815",
+      cols: [
+        { thisWeek: 10, lastWeek: 11 },
+        { thisWeek: 15, lastWeek: 13 },
+        { thisWeek: 16, lastWeek: 14 },
+        { thisWeek: 12, lastWeek: 11 },
+      ],
+    },
+    {
+      day: "Thu",
+      count: "11,200",
+      cols: [
+        { thisWeek: 5, lastWeek: 7 },
+        { thisWeek: 6, lastWeek: 8 },
+        { thisWeek: 4, lastWeek: 6 },
+      ],
+    },
+    {
+      day: "Fri",
+      count: "19,450",
+      cols: [
+        { thisWeek: 7, lastWeek: 8 },
+        { thisWeek: 11, lastWeek: 10 },
+        { thisWeek: 13, lastWeek: 12 },
+        { thisWeek: 9, lastWeek: 8 },
+      ],
+    },
+    {
+      day: "Sat",
+      count: "13,100",
+      cols: [
+        { thisWeek: 5, lastWeek: 7 },
+        { thisWeek: 7, lastWeek: 8 },
+        { thisWeek: 6, lastWeek: 7 },
+      ],
+    },
+    {
+      day: "Sun",
+      count: "14,600",
+      cols: [
+        { thisWeek: 6, lastWeek: 8 },
+        { thisWeek: 8, lastWeek: 9 },
+        { thisWeek: 8, lastWeek: 9 },
+        { thisWeek: 5, lastWeek: 7 },
+      ],
+    },
   ];
   const maxMatrixBlocks = 16; // 16 vertical slots corresponding to 0k to 25k
 
@@ -474,7 +542,7 @@ export function AdminDashboard({
       {/* ============================================================ */}
       {/* 2. MAIN CONTENT AREA (Pixel-Perfect Reference Match)         */}
       {/* ============================================================ */}
-      <main className="flex-1 flex flex-col p-6 sm:p-8 lg:p-9 max-w-[1600px] gap-6 overflow-y-auto">
+      <main className="flex-1 w-full min-w-0 flex flex-col p-6 sm:p-8 lg:p-9 gap-6 overflow-y-auto">
         {/* Main Page Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -741,40 +809,47 @@ export function AdminDashboard({
                 </div>
 
                 {/* Grid Columns */}
-                <div className="flex-1 flex items-end justify-between gap-2 sm:gap-4 overflow-x-auto pb-1">
-                  {heatmapDays.map((col, idx) => (
+                <div className="flex-1 flex items-end justify-between gap-3 sm:gap-6 overflow-x-auto pb-1">
+                  {heatmapDays.map((dayGroup, idx) => (
                     <div
-                      key={`${col.day}-${idx}`}
-                      className="flex-1 flex flex-col items-center gap-2 min-w-[36px]"
+                      key={`${dayGroup.day}-${idx}`}
+                      className="flex-1 flex flex-col items-center gap-2"
                     >
-                      {/* Voxel / Discrete Block Stack (16 slots high) */}
-                      <div className="w-full flex flex-col-reverse gap-[3px] items-center">
-                        {Array.from({ length: maxMatrixBlocks }).map(
-                          (_, blockIdx) => {
-                            const isThisWeek = blockIdx < col.thisWeekBlocks;
-                            const isLastWeekGhost =
-                              !isThisWeek && blockIdx < col.lastWeekBlocks;
+                      {/* Voxel / Discrete Block Stacks for this day (3 or 4 sub-columns) */}
+                      <div className="w-full flex items-end justify-center gap-[2px] sm:gap-[3px]">
+                        {dayGroup.cols.map((col, colIdx) => (
+                          <div
+                            key={colIdx}
+                            className="flex-1 flex flex-col-reverse gap-[3px] items-center"
+                          >
+                            {Array.from({ length: maxMatrixBlocks }).map(
+                              (_, blockIdx) => {
+                                const isThisWeek = blockIdx < col.thisWeek;
+                                const isLastWeekGhost =
+                                  !isThisWeek && blockIdx < col.lastWeek;
 
-                            return (
-                              <div
-                                key={blockIdx}
-                                title={`${col.day}: ${col.count} active users`}
-                                className={`w-full max-w-[42px] h-[13px] rounded-[3px] transition-all ${
-                                  isThisWeek
-                                    ? "bg-[#e05326] shadow-[0_0_8px_rgba(224,83,38,0.35)]"
-                                    : isLastWeekGhost
-                                      ? "bg-[#25252b]"
-                                      : "bg-transparent opacity-0"
-                                }`}
-                              />
-                            );
-                          },
-                        )}
+                                return (
+                                  <div
+                                    key={blockIdx}
+                                    title={`${dayGroup.day}: ${dayGroup.count} active users`}
+                                    className={`w-full h-[12px] sm:h-[13px] rounded-[2.5px] transition-all ${
+                                      isThisWeek
+                                        ? "bg-[#e05326] shadow-[0_0_8px_rgba(224,83,38,0.35)]"
+                                        : isLastWeekGhost
+                                          ? "bg-[#25252b]"
+                                          : "bg-[#18181d]/50"
+                                    }`}
+                                  />
+                                );
+                              },
+                            )}
+                          </div>
+                        ))}
                       </div>
 
                       {/* Day Label */}
                       <span className="text-[11px] font-medium text-[#71717a] mt-1 select-none">
-                        {col.day}
+                        {dayGroup.day}
                       </span>
                     </div>
                   ))}
