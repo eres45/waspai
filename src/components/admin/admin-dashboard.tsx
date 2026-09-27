@@ -130,74 +130,50 @@ export function AdminDashboard({
   const totalPages = Math.ceil(total / limit);
 
   // =========================================================================
-  // GITHUB-STYLE 33-COLUMN × 16-ROW VOXEL HEATMAP MATRIX
-  // Replicating media_1790513900120.png pixel-for-pixel
+  // GITHUB-STYLE 2D CONTRIBUTION CALENDAR HEATMAP
+  // rows = 7 days of week (Sun..Sat), cols = 52 weeks
+  // Each cell value: 0 = no activity, 1–4 = intensity levels
   // =========================================================================
-  const gridColumns = [
-    // Col 0: Leftmost baseline block
-    { orange: 1, grey: 0, count: "1,200" },
+  const GRID_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const GRID_WEEKS = 52;
 
-    // Sun (Cols 1 - 4)
-    { orange: 2, grey: 4, count: "4,820" },
-    { orange: 3, grey: 8, count: "8,910" },
-    { orange: 7, grey: 10, count: "14,350" },
-    { orange: 11, grey: 10, count: "17,240" },
+  // Seeded pseudo-random for deterministic demo data
+  const seededRand = (seed: number) => {
+    const x = Math.sin(seed + 1) * 10000;
+    return x - Math.floor(x);
+  };
 
-    // Mon (Cols 5 - 8)
-    { orange: 7, grey: 9, count: "13,800" },
-    { orange: 2, grey: 9, count: "9,120" },
-    { orange: 4, grey: 9, count: "11,400" },
-    { orange: 5, grey: 9, floating: [7, 8], count: "14,810" },
+  // Build 7×52 matrix — weekdays have more activity, recent weeks slightly higher
+  const activityGrid: number[][] = GRID_DAYS.map((_, dayIdx) =>
+    Array.from({ length: GRID_WEEKS }, (__, weekIdx) => {
+      const r = seededRand(dayIdx * 100 + weekIdx);
+      const isWeekend = dayIdx === 0 || dayIdx === 6;
+      const recency = weekIdx / GRID_WEEKS;
+      const prob = isWeekend ? 0.35 + recency * 0.15 : 0.55 + recency * 0.2;
+      if (r > prob) return 0;
+      const intensity = seededRand(dayIdx * 7 + weekIdx * 3 + 42);
+      if (intensity < 0.4) return 1;
+      if (intensity < 0.7) return 2;
+      if (intensity < 0.9) return 3;
+      return 4;
+    }),
+  );
 
-    // Tue (Cols 9 - 12)
-    { orange: 4, grey: 7, count: "10,200" },
-    { orange: 6, grey: 9, count: "14,600" },
-    { orange: 9, grey: 11, count: "19,800" },
-    { orange: 14, grey: 15, count: "23,900" },
-
-    // Wed (Cols 13 - 16)
-    { orange: 11, grey: 11, count: "21,400" },
-    { orange: 5, grey: 7, count: "13,900" },
-    { orange: 2, grey: 8, count: "9,500" },
-    { orange: 2, grey: 8, count: "9,200" },
-
-    // Thu (Cols 17 - 20)
-    { orange: 6, grey: 7, count: "11,200" },
-    { orange: 7, grey: 9, count: "13,400" },
-    { orange: 6, grey: 8, count: "12,100" },
-    { orange: 4, grey: 6, count: "8,900" },
-
-    // Fri (Cols 21 - 24)
-    { orange: 8, grey: 9, count: "15,800" },
-    { orange: 12, grey: 12, count: "19,450" },
-    { orange: 13, grey: 13, count: "20,100" },
-    { orange: 9, grey: 10, count: "16,200" },
-
-    // Sat (Cols 25 - 28)
-    { orange: 7, grey: 8, count: "13,100" },
-    { orange: 6, grey: 8, count: "12,400" },
-    { orange: 5, grey: 7, count: "10,800" },
-    { orange: 4, grey: 6, count: "8,900" },
-
-    // Sun 2 (Cols 29 - 32)
-    { orange: 7, grey: 9, count: "14,600" },
-    { orange: 8, grey: 10, count: "15,900" },
-    { orange: 8, grey: 10, count: "15,400" },
-    { orange: 5, grey: 7, count: "11,100" },
-  ];
-
-  const totalMatrixRows = 16; // 16 vertical slots from 0k to 25k
-
-  const daysLabelList = [
-    "Sun",
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat",
-    "Sun",
-  ];
+  // Month labels for the X-axis (every ~4.3 weeks)
+  const monthLabels = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ].map((m, i) => ({ label: m, col: Math.round(i * (GRID_WEEKS / 12)) }));
 
   // Retention spline chart points (Sun .. Sun)
   const retentionCurve = [
@@ -783,82 +759,62 @@ export function AdminDashboard({
                 </div>
               </div>
 
-              {/* Heatmap Grid Matrix with Y-Axis */}
-              <div className="mt-5 flex gap-3 sm:gap-4">
-                {/* Y-Axis Labels with subtle tick indicator matching 158px grid height */}
-                <div className="flex flex-col justify-between text-[10px] font-mono text-[#52525b] h-[158px] select-none shrink-0 w-7">
-                  <div className="flex items-center justify-between">
-                    <span>25k</span>
-                    <span className="text-[#3f3f46]">—</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>20k</span>
-                    <span className="text-[#3f3f46]">—</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>15k</span>
-                    <span className="text-[#3f3f46]">—</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>10k</span>
-                    <span className="text-[#3f3f46]">—</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>5k</span>
-                    <span className="text-[#3f3f46]">—</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>0k</span>
-                    <span className="text-[#3f3f46]">—</span>
-                  </div>
+              {/* TRUE 2D GITHUB-STYLE CONTRIBUTION CALENDAR */}
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1 min-w-0">
+                {/* Day-of-week labels on the left — only Mon / Wed / Fri visible */}
+                <div
+                  className="flex flex-col gap-[3px] shrink-0 select-none justify-start"
+                  style={{ paddingTop: "18px" }}
+                >
+                  {GRID_DAYS.map((day, i) => (
+                    <div
+                      key={day}
+                      className="h-[10px] flex items-center text-[9px] font-mono text-[#52525b] w-6 leading-none"
+                    >
+                      {i === 1 || i === 3 || i === 5 ? day : ""}
+                    </div>
+                  ))}
                 </div>
 
-                {/* 33-Column GitHub-Style Continuous Small Tile Matrix */}
-                <div className="flex-1 flex flex-col overflow-x-auto pb-1">
-                  {/* Grid Rows / Columns */}
-                  <div className="w-full flex items-end justify-between gap-[2px] sm:gap-[2.5px]">
-                    {gridColumns.map((col, colIdx) => (
-                      <div
-                        key={colIdx}
-                        className="flex-1 max-w-[28px] flex flex-col-reverse gap-[2px] items-center"
+                {/* Grid area: month labels + tile rows */}
+                <div className="flex-1 min-w-0 flex flex-col gap-[3px]">
+                  {/* Month labels row */}
+                  <div className="relative h-[14px] w-full shrink-0">
+                    {monthLabels.map(({ label, col }) => (
+                      <span
+                        key={label}
+                        className="absolute text-[9px] font-mono text-[#52525b] leading-none"
+                        style={{ left: `calc(${(col / GRID_WEEKS) * 100}%)` }}
                       >
-                        {Array.from({ length: totalMatrixRows }).map(
-                          (_, rowIdx) => {
-                            const isBaseline = rowIdx === 0;
-                            const isThisWeek =
-                              isBaseline ||
-                              rowIdx < col.orange ||
-                              Boolean(col.floating?.includes(rowIdx));
-                            const isLastWeekGhost =
-                              !isThisWeek && rowIdx < col.grey;
-
-                            return (
-                              <div
-                                key={rowIdx}
-                                title={`Col ${colIdx}: ${col.count} active users`}
-                                className={`w-full h-[8px] sm:h-[8.5px] rounded-[1.5px] transition-all ${
-                                  isThisWeek
-                                    ? "bg-[#e05326] shadow-[0_0_5px_rgba(224,83,38,0.25)]"
-                                    : isLastWeekGhost
-                                      ? "bg-[#2d2d34]"
-                                      : "bg-[#1a1a1f]/80 hover:bg-white/[0.06]"
-                                }`}
-                              />
-                            );
-                          },
-                        )}
-                      </div>
+                        {label}
+                      </span>
                     ))}
                   </div>
 
-                  {/* 8 Day X-Axis Labels (Aligned exactly under the 4-column day spans) */}
-                  <div className="w-full flex items-center justify-between text-[11px] font-medium text-[#71717a] mt-2 select-none">
-                    {daysLabelList.map((day, idx) => (
-                      <div key={idx} className="flex-1 text-center">
-                        <span>{day}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {/* 7 day rows, each row = 52 week columns */}
+                  {activityGrid.map((weekRow, dayIdx) => (
+                    <div key={dayIdx} className="flex gap-[3px]">
+                      {weekRow.map((level, weekIdx) => {
+                        const cellColor =
+                          level === 0
+                            ? "bg-[#1e1e23] hover:bg-[#2d2d34]"
+                            : level === 1
+                              ? "bg-[#7a2510]/80 hover:bg-[#7a2510]"
+                              : level === 2
+                                ? "bg-[#b53a1a]/90 hover:bg-[#b53a1a]"
+                                : level === 3
+                                  ? "bg-[#e05326] hover:bg-[#e86a40]"
+                                  : "bg-[#f47c4e] shadow-[0_0_4px_rgba(224,83,38,0.5)] hover:bg-[#f58d62]";
+                        return (
+                          <div
+                            key={weekIdx}
+                            title={`${GRID_DAYS[dayIdx]} week ${weekIdx + 1}: level ${level}`}
+                            className={`w-[10px] h-[10px] rounded-[2px] shrink-0 transition-colors duration-100 cursor-default ${cellColor}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               </div>
             </section>
