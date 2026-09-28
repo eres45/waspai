@@ -1,0 +1,324 @@
+/**
+ * DeepSeek Harness & Nous Hermes 3 Inspired Prompt Harness Core
+ *
+ * Provides a modular, high-signal, token-efficient system prompt assembly engine.
+ * Eliminates prompt bloat, removes duplicated rules, fixes UTF-8 character encoding,
+ * and dynamically adapts prompt directives based on model cognitive profile (Reasoning vs Standard vs Voice).
+ */
+
+import { format } from "date-fns";
+import type { User } from "better-auth";
+import type { Agent } from "app-types/agent";
+import type { UserPreferences } from "app-types/user";
+
+export interface ModelCognitiveProfile {
+  isReasoning: boolean;
+  isVoice: boolean;
+  isCompact: boolean;
+  isCodingSpecialist: boolean;
+}
+
+export interface PromptHarnessOptions {
+  user?: User;
+  userPreferences?: UserPreferences;
+  agent?: Agent;
+  modelId?: string;
+  isVoice?: boolean;
+  isPro?: boolean;
+  activeSkillsPrompt?: string;
+  skillLibraryOverview?: string;
+  userMemoriesPrompt?: string;
+  hasUploadedFiles?: boolean;
+  customSystemPrompt?: string;
+}
+
+/**
+ * Detects the cognitive profile of the target language model to tailor prompt instructions.
+ * (e.g. Reasoning models like DeepSeek-R1 should not have rigid thinking constraints imposed).
+ */
+export function detectModelCognitiveProfile(
+  modelId?: string,
+  isVoice: boolean = false,
+): ModelCognitiveProfile {
+  if (!modelId) {
+    return {
+      isReasoning: false,
+      isVoice,
+      isCompact: false,
+      isCodingSpecialist: false,
+    };
+  }
+
+  const id = modelId.toLowerCase();
+
+  const isReasoning =
+    id.includes("r1") ||
+    id.includes("reasoner") ||
+    id.includes("reasoning") ||
+    id.includes("o1") ||
+    id.includes("o3") ||
+    id.includes("o4") ||
+    id.includes("qwq") ||
+    id.includes("kimi-k1.5");
+
+  const isCompact =
+    id.includes("groq") ||
+    id.includes("mini") ||
+    id.includes("small") ||
+    id.includes("flash-lite");
+
+  const isCodingSpecialist =
+    id.includes("code") || id.includes("coder") || id.includes("codestral");
+
+  return {
+    isReasoning,
+    isVoice,
+    isCompact,
+    isCodingSpecialist,
+  };
+}
+
+/**
+ * Builds the Identity & Operational Baseline block
+ */
+export function buildIdentityBlock(
+  _profile: ModelCognitiveProfile,
+  agent?: Agent,
+  userPreferences?: UserPreferences,
+  modelId?: string,
+  isPro?: boolean,
+): string {
+  const isWaspModel =
+    modelId === "waspai-model" ||
+    (modelId && modelId.toLowerCase().includes("waspai"));
+
+  const assistantName =
+    agent?.name ||
+    userPreferences?.botName ||
+    (isWaspModel ? "Wasp VoidFlash" : isPro ? "Wasp AI" : "Wasp AI");
+
+  const currentTime = format(new Date(), "EEEE, MMMM d, yyyy 'at' h:mm:ss a");
+
+  let text = `You are ${assistantName}. `;
+
+  if (isWaspModel) {
+    text += `You are Wasp VoidFlash, the flagship AI assistant developed by WaspAI (waspai.in). Under no circumstances should you refer to yourself as Claude, Anthropic, or Claude 3.5 Sonnet. If users ask about your identity, creator, or model family, state clearly that you are Wasp VoidFlash, created by WaspAI. `;
+  }
+
+  if (agent?.instructions?.role) {
+    text += `You are an expert in ${agent.instructions.role}. `;
+  }
+
+  text += `Current Date & Time: ${currentTime}.`;
+
+  if (agent?.instructions?.systemPrompt) {
+    text += `\n\n<core_agent_instructions>\n${agent.instructions.systemPrompt}\n</core_agent_instructions>`;
+  }
+
+  return text;
+}
+
+/**
+ * Builds the User Information block
+ */
+export function buildUserInfoBlock(
+  user?: User,
+  userPreferences?: UserPreferences,
+): string {
+  const info: string[] = [];
+  if (user?.name) info.push(`Name: ${user.name}`);
+  if (user?.email) info.push(`Email: ${user.email}`);
+  if (userPreferences?.profession) {
+    info.push(`Profession: ${userPreferences.profession}`);
+  }
+
+  if (info.length === 0) return "";
+
+  return `<user_information>\n${info.join("\n")}\n</user_information>`;
+}
+
+/**
+ * Hermes 3 & DeepSeek Standard Tool Invocation Protocol
+ */
+export function buildToolProtocolBlock(profile: ModelCognitiveProfile): string {
+  if (profile.isVoice) {
+    return `<voice_tool_protocol>
+- Silent Operations: All tool calls and background retrievals must execute silently.
+- Never mention function execution, tool names, or internal data saving to the caller.
+- Respond naturally and conversationally as if you inherently know the information.
+</voice_tool_protocol>`;
+  }
+
+  return `<tool_protocol>
+1. Native Execution: Always invoke tools using the native tool call/function calling protocol. NEVER output raw XML tags (such as <invoke>, <tool_code>, <tool_call>, <function>, or <minimax:tool_call>) or raw JSON strings in your conversational response.
+2. Proactive Real-Time Search: For queries involving live market prices, crypto/stock quotes, currency rates, breaking news, sports scores, weather, or unfamiliar acronyms/models, PROACTIVELY invoke \`web-search\` immediately rather than asking the user for confirmation.
+3. Anti-Hallucination & Clean Delivery: Never invent, guess, or output placeholder download URLs (e.g. workers.dev, mock links). Deliver files exclusively via dedicated file generation tools or cleanly formatted markdown code blocks.
+4. Quota & Limits: If a tool returns a limit message (e.g. \`LIMIT_EXCEEDED\` or \`isLimitExceeded: true\`), politely inform the user of the reached plan limit and the daily reset time (4:00 AM IST) without claiming tools are broken.
+5. Silent Background Actions: Routine background actions (such as checking memory or calculating) must run quietly without announcing "I am calling tool X".
+</tool_protocol>`;
+}
+
+/**
+ * High-signal Web Search & Source Synthesis Directive
+ */
+export function buildWebSearchDirective(): string {
+  return `<web_search_guidelines>
+- Advanced Search: Leverage search operators when high precision is required (\`site:\`, \`filetype:\`, exact quotes \`"..."\`).
+- Research Depth: For exhaustive inquiries ("deep research", "full breakdown"), collect multi-source evidence.
+- Inline Citations: Synthesize findings across reputable sources and cite inline at the end of relevant points using standard Markdown links with ONLY the site name as link text — e.g. [CoinDesk](https://...), [Reuters](https://...), [Yahoo Finance](https://...). Do NOT output standalone "Source:" blocks at the end.
+- Stale Result Recovery: If first-round results are cached or ambiguous, refine the query with current month and year to retrieve fresh coverage.
+</web_search_guidelines>`;
+}
+
+/**
+ * Interactive Visualization Guidelines (Charts & Data Tables)
+ */
+export function buildVisualizationDirective(): string {
+  return `<visualization_guidelines>
+When presenting quantitative comparisons, trends, or structured statistics:
+- Bar Charts (\`createBarChart\`): For category rankings, monthly metrics, or side-by-side comparisons.
+- Line Charts (\`createLineChart\`): For time-series, historical prices, and trend progressions.
+- Pie Charts (\`createPieChart\`): For proportional distributions, share of total, or portfolio weights.
+- Data Tables (\`createTable\`): For feature comparisons, spec sheets, and dense multi-column data.
+- Execution Rule: Invoke the dedicated chart tool directly with pure numeric values (e.g. \`45000\`, not \`"$45,000"\`). Never output chart data as raw JSON code blocks when visualization tools are available.
+</visualization_guidelines>`;
+}
+
+/**
+ * Long-Term Persistent Memory Protocol
+ */
+export function buildMemoryDirective(): string {
+  return `<memory_guidelines>
+You have persistent long-term memory across sessions (\`save_memory\`, \`update_memory\`, \`delete_memory\`, \`get_memories\`, \`search_past_conversations\`).
+- The 2-Week Value Test: Before saving a fact, evaluate: "Will this fact provide ongoing value in 2 weeks?" If yes, save it; if temporary, discard it.
+- Proactive Retention: Persist user tech stacks, active project goals, role context, and stated preferences.
+- Recalling Previous Work: When asked what was worked on previously or to recall past chats, call \`get_memories\` and \`search_past_conversations\` to summarize past discussions. Never claim you have no memory of past work.
+- Discretion: Do not save transient chatter, greetings, or ephemeral questions.
+</memory_guidelines>`;
+}
+
+/**
+ * Browser Automation Directive (Steel Cloud Browser V2)
+ */
+export function buildBrowserDirective(): string {
+  return `<browser_automation_guidelines>
+- Session Continuity: When an \`activeSessionId\` exists in tool outputs, ALWAYS reuse it for subsequent actions (\`navigate\`, \`click\`, \`type\`, \`extract\`). Never call \`launch\` when an active session is already open.
+- Task Awareness: Treat follow-ups as continuations toward the user's primary browsing objective.
+- Auto-Recovery: If a session expires, automatically launch a new session and resume without unnecessary stalling.
+</browser_automation_guidelines>`;
+}
+
+/**
+ * Output Formatting & Style Standards
+ */
+export function buildFormattingDirective(
+  profile: ModelCognitiveProfile,
+  userPreferences?: UserPreferences,
+): string {
+  if (profile.isVoice) {
+    return `<voice_formatting_guidelines>
+- Speak in short, crisp sentences (1 to 2 short sentences per turn, maximum 25-30 words).
+- ABSOLUTELY NEVER use markdown headers, bullets, lists, emojis, asterisks, URLs, or code blocks.
+- Speak naturally and warmly like a live human conversation.
+</voice_formatting_guidelines>`;
+  }
+
+  const customStyle = userPreferences?.responseStyleExample
+    ? `\n- Match user's communication style:\n"""\n${userPreferences.responseStyleExample}\n"""`
+    : "";
+
+  const reasoningNote = profile.isReasoning
+    ? "- Unconstrained Reasoning: Synthesize clear, well-reasoned answers following your internal cognitive exploration."
+    : "- Structure & Hierarchy: Organize complex explanations with clear markdown headings (##, ###), bold lead-ins for key points, and concise bullet items.";
+
+  return `<response_formatting_guidelines>
+- Casual Greetings: For simple greetings ("hello", "hey", "hi"), reply with a friendly, natural greeting. Do not dump capability lists or recite tools.
+${reasoningNote}
+- Diagrams & Architecture: Use \`mermaid\` code blocks for workflows, architecture diagrams, and sequence flows.
+- Clean Syntax: Format all code blocks with appropriate syntax highlighting identifiers.
+- No Meta Noise: Do not narrate decision steps (e.g. "Analyzing request type...", "No tool needed..."). Deliver direct, high-value answers.${customStyle}
+</response_formatting_guidelines>`;
+}
+
+/**
+ * Main Harness Assembly Function
+ * Combines all modular blocks into an optimized, high-signal prompt.
+ */
+export function assembleHarnessedSystemPrompt(
+  options: PromptHarnessOptions,
+): string {
+  const profile = detectModelCognitiveProfile(
+    options.modelId,
+    options.isVoice ?? false,
+  );
+
+  const sections: (string | undefined | false)[] = [];
+
+  // 1. Live Voice Call Override (Top Priority if Active)
+  if (profile.isVoice) {
+    sections.push(`[LIVE REAL-TIME VOICE CALL ACTIVE]
+CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
+1. You are speaking directly with the user on a live real-time voice call.
+2. KEEP ALL RESPONSES SHORT, CRISP, AND CONVERSATIONAL (1 to 2 short sentences, maximum 25 to 30 words).
+3. ABSOLUTELY NEVER use markdown headers, bullet points, numbered lists, asterisks, emojis, code blocks, or URLs.
+4. Speak naturally and warmly like a real human on the phone.`);
+  }
+
+  // 2. Active Skills (Skill Overlays take high operational priority)
+  if (options.activeSkillsPrompt) {
+    sections.push(options.activeSkillsPrompt);
+  }
+
+  // 3. User Memories
+  if (options.userMemoriesPrompt) {
+    sections.push(options.userMemoriesPrompt);
+  }
+
+  // 4. Identity & Baseline
+  sections.push(
+    buildIdentityBlock(
+      profile,
+      options.agent,
+      options.userPreferences,
+      options.modelId,
+      options.isPro,
+    ),
+  );
+
+  // 5. User Information Context
+  const userInfo = buildUserInfoBlock(options.user, options.userPreferences);
+  if (userInfo) sections.push(userInfo);
+
+  // 6. Tool Invocation Protocol
+  sections.push(buildToolProtocolBlock(profile));
+
+  // 7. Dynamic Capabilities (Only included for non-voice sessions)
+  if (!profile.isVoice) {
+    sections.push(buildWebSearchDirective());
+    sections.push(buildVisualizationDirective());
+    sections.push(buildMemoryDirective());
+    sections.push(buildBrowserDirective());
+
+    // Document Reading Context
+    if (options.hasUploadedFiles) {
+      sections.push(`[DOCUMENT READING SERVICE ENABLED]
+Text content extracted from uploaded files is included in the conversation context.
+Base your answers strictly on the extracted text and do not claim an inability to read files.`);
+    }
+  }
+
+  // 8. Output Formatting Guidelines
+  sections.push(buildFormattingDirective(profile, options.userPreferences));
+
+  // 9. Custom Client System Prompt (Appended if provided)
+  if (options.customSystemPrompt) {
+    sections.push(options.customSystemPrompt);
+  }
+
+  // 10. Filter out empty/falsy sections and join with clean double newlines
+  return sections
+    .filter(Boolean)
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter((s) => s.length > 0)
+    .join("\n\n");
+}

@@ -1846,12 +1846,6 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           2. Use the "File Content" blocks to fulfill the user's request.
           3. Base your answers strictly on the extracted text provided.`,
 
-          // Tool Calling Format Reinforcement (fixes some models leaking XML or JSON)
-          `[TOOL USE STANDARD]
-           1. DO NOT output XML tags like <invoke>, <tool_code>, <minimax:tool_call>, <tool_call>, <function>, or <parameter> in your text response.
-           2. Use the native tool call/function call feature to invoke tools. NEVER print raw JSON strings or JSON objects representing tool calls in your conversational text output.
-           3. PROACTIVE WEB SEARCH: When asked about current prices, rates, recent events, or unfamiliar models/terms (e.g. "jev model"), invoke web-search or web_search immediately instead of asking the user to confirm.`,
-
           // NOTE: Visualization, Memory, Browser, and Tool Knowledge blocks
           // are already covered by buildUserSystemPrompt() in prompts.ts
           // (see <visualization_guidelines>, <memory_usage_guidelines>,
@@ -1886,14 +1880,6 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           ].includes(modelToUse?.provider || "") && PROXY_CLEANUP_PROMPT,
           useImageTool && imageModelPrompt,
           isVideoGenRequest && videoGenPrompt,
-          isRemoveBgRequest && removeBgPrompt,
-          isEnhanceImageRequest && enhanceImagePrompt,
-          isAnimeConversionRequest && animeConversionPrompt,
-          isRemoveWatermarkRequest && removeWatermarkPrompt,
-          isRemoveObjectRequest && removeObjectPrompt,
-          isSuperResolutionRequest && superResolutionPrompt,
-          isRestoreOldPhotoRequest && restoreOldPhotoPrompt,
-          isBlurBackgroundRequest && blurBackgroundPrompt,
           isQrRequest && qrPrompt,
           isQrLogoRequest && qrLogoPrompt,
           isChatExportRequest && chatExportPrompt,
