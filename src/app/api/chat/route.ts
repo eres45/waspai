@@ -79,10 +79,12 @@ import {
   getModelContextLimit,
   truncateTextToLimit,
 } from "lib/ai/context-limits";
+import { compactPriorTurnToolInvocations } from "lib/ai/harness/agent-harness";
 import {
-  compactPriorTurnToolInvocations,
-  createHarnessedToolkit,
-} from "lib/ai/harness/agent-harness";
+  createGatedHarnessedToolkit,
+  extractPriorToolCallsFromMessages,
+  type ToolTurnContext,
+} from "lib/ai/harness/tool-harness";
 import {
   csvGeneratorTool,
   textFileTool,
@@ -2179,9 +2181,41 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
               currentConfig.model || "",
             );
             const currentIsToolCallAllowed = currentSupportToolCall;
+            const priorToolCalls = extractPriorToolCallsFromMessages(
+              messages || [],
+            );
+            const userContentText =
+              typeof message.content === "string"
+                ? message.content
+                : Array.isArray(message.parts)
+                  ? message.parts
+                      .filter((p: any) => p.type === "text")
+                      .map((p: any) => p.text)
+                      .join("\n")
+                  : "";
+
+            const toolTurnContext: ToolTurnContext = {
+              userText: userContentText || enrichedMessageText || "",
+              hasImages: Boolean(
+                imageUrl ||
+                  (fileUrls &&
+                    fileUrls.some((u: string) =>
+                      /\.(png|jpe?g|webp|gif|svg)/i.test(u),
+                    )),
+              ),
+              hasFiles: Boolean(fileUrls && fileUrls.length > 0),
+              priorToolCalls,
+              isVoice: isVoiceChat,
+            };
+
             const currentVercelAITooles = currentIsToolCallAllowed
-              ? createHarnessedToolkit(vercelAITooles, { maxRepetitions: 2 })
+              ? createGatedHarnessedToolkit(vercelAITooles, toolTurnContext, {
+                  maxRepetitions: 2,
+                })
               : undefined;
+            metadata.toolCount = currentVercelAITooles
+              ? Object.keys(currentVercelAITooles).length
+              : 0;
 
             logger.info(
               `Executing chat stream Attempt ${attempt + 1} with model: ${currentConfig.provider}/${currentConfig.model}`,
