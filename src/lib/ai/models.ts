@@ -2686,9 +2686,24 @@ export const customModelProvider = {
 };
 
 export function sanitizeMessageToolCalls<
-  T extends { parts?: any; toolInvocations?: any },
+  T extends {
+    role?: string;
+    parts?: any;
+    toolInvocations?: any;
+    content?: any;
+  },
 >(messages: T[]): T[] {
-  return messages.map((msg) => {
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]?.role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  return messages.map((msg, idx) => {
+    const isPriorTurn = lastUserIdx > 0 && idx < lastUserIdx;
+
     if (!msg.parts || !Array.isArray(msg.parts)) {
       if (
         (msg as any).toolInvocations &&
@@ -2728,46 +2743,77 @@ export function sanitizeMessageToolCalls<
       return msg;
     }
 
-    return {
-      ...msg,
-      parts: msg.parts.map((part: any) => {
-        if (
-          part.type === "tool-call" ||
-          part.type === "dynamic-tool" ||
-          part.type?.startsWith("tool-")
-        ) {
-          let cleanArgs = part.args !== undefined ? part.args : part.input;
-          if (cleanArgs === null || cleanArgs === undefined) {
-            cleanArgs = {};
-          } else if (typeof cleanArgs === "string") {
-            try {
-              const parsed = JSON.parse(cleanArgs);
-              if (
-                parsed &&
-                typeof parsed === "object" &&
-                !Array.isArray(parsed)
-              ) {
-                cleanArgs = parsed;
-              } else {
-                cleanArgs = {};
-              }
-            } catch {
+    let cleanParts = msg.parts.map((part: any) => {
+      // 1. Sanitize text parts to strip any leaked markup (<batch_web_search>, <invoke>, etc.)
+      if (part.type === "text" && typeof part.text === "string") {
+        return {
+          ...part,
+          text: stripToolCallMarkup(part.text),
+        };
+      }
+
+      // 2. Sanitize tool call arguments to always be valid JSON objects
+      if (
+        part.type === "tool-call" ||
+        part.type === "dynamic-tool" ||
+        part.type?.startsWith("tool-")
+      ) {
+        let cleanArgs = part.args !== undefined ? part.args : part.input;
+        if (cleanArgs === null || cleanArgs === undefined) {
+          cleanArgs = {};
+        } else if (typeof cleanArgs === "string") {
+          try {
+            const parsed = JSON.parse(cleanArgs);
+            if (
+              parsed &&
+              typeof parsed === "object" &&
+              !Array.isArray(parsed)
+            ) {
+              cleanArgs = parsed;
+            } else {
               cleanArgs = {};
             }
-          } else if (
-            typeof cleanArgs !== "object" ||
-            Array.isArray(cleanArgs)
-          ) {
+          } catch {
             cleanArgs = {};
           }
-          return {
-            ...part,
-            args: cleanArgs,
-            input: cleanArgs,
-          };
+        } else if (typeof cleanArgs !== "object" || Array.isArray(cleanArgs)) {
+          cleanArgs = {};
         }
-        return part;
-      }),
+        return {
+          ...part,
+          args: cleanArgs,
+          input: cleanArgs,
+        };
+      }
+      return part;
+    });
+
+    // 3. For prior completed assistant turns, drop broken or orphaned tool-invocations without results
+    if (msg.role === "assistant" && isPriorTurn) {
+      cleanParts = cleanParts.filter((part: any) => {
+        if (part.type === "step-start") return false;
+        if (part.type === "tool-invocation") {
+          return part.toolInvocation && part.toolInvocation.state === "result";
+        }
+        return true;
+      });
+
+      // Ensure assistant message always has at least some valid non-empty text content
+      const hasContent = cleanParts.some(
+        (p: any) =>
+          (p.type === "text" && p.text?.trim()) ||
+          p.type === "reasoning" ||
+          p.type === "tool-call" ||
+          p.type === "tool-result",
+      );
+      if (!hasContent) {
+        cleanParts.push({ type: "text", text: "OK." });
+      }
+    }
+
+    return {
+      ...msg,
+      parts: cleanParts,
     };
   });
 }

@@ -2085,6 +2085,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
 
                   return cleanedMessagesForModel;
                 })(),
+                { ignoreIncompleteToolCalls: true },
               ),
               experimental_transform: smoothStream({ chunking: "word" }),
               maxTokens: 8192,

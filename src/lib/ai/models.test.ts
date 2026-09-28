@@ -371,6 +371,43 @@ describe("sanitizeMessageToolCalls", () => {
     expect(result[0].toolInvocations[0].args).toEqual({});
   });
 
+  it("strips leaked markup and drops orphaned tool invocations from prior turns in sanitizeMessageToolCalls", () => {
+    const { sanitizeMessageToolCalls } = modelsModule;
+    const messages = [
+      {
+        role: "user",
+        parts: [{ type: "text", text: "search query" }],
+      },
+      {
+        role: "assistant",
+        parts: [
+          {
+            type: "text",
+            text: "Searching now...\n<batch_web_search><web_search>DeepSeek V3</web_search></batch_web_search>",
+          },
+          {
+            type: "tool-invocation",
+            toolInvocation: {
+              state: "call",
+              toolName: "web-search",
+              toolCallId: "call_broken",
+            },
+          },
+        ],
+      },
+      {
+        role: "user",
+        parts: [{ type: "text", text: "now summarize" }],
+      },
+    ];
+
+    const result = sanitizeMessageToolCalls(messages);
+    // 1. Prior assistant text has leaked markup stripped
+    expect(result[1].parts[0].text).toBe("Searching now...");
+    // 2. Orphaned tool-invocation without result is dropped from prior turn
+    expect(result[1].parts.length).toBe(1);
+  });
+
   it("sets deepseek-v4.1-flash:free as default and configures Ultra tier models correctly", async () => {
     const {
       buildDynamicModelsInfo,
