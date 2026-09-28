@@ -377,7 +377,13 @@ function stripToolCallMarkup(text: string): string {
     .replace(/<function_calls>[\s\S]*?<\/function_calls>/gi, "")
     .replace(/<invoke\b[\s\S]*?<\/[\s|｜]*(?:DSML[\s|｜]*)?invoke>/gi, "")
     .replace(/<parameter\b[\s\S]*?<\/[\s|｜]*(?:DSML[\s|｜]*)?parameter>/gi, "")
-    .replace(/<\/?(?:invoke|parameter|tool_call|function_calls)\b[^>]*>/gi, "")
+    .replace(/<batch_web_search>[\s\S]*?<\/batch_web_search>/gi, "")
+    .replace(/<web_search>[\s\S]*?<\/web_search>/gi, "")
+    .replace(/<search>[\s\S]*?<\/search>/gi, "")
+    .replace(
+      /<\/?(?:invoke|parameter|tool_call|function_calls|batch_web_search|web_search|search)\b[^>]*>/gi,
+      "",
+    )
     .replace(
       /【([^】]+)】\s*\(\s*(https?:\/\/[^\s)]+)\s*\)/g,
       (_, label, url) => ` [${label.trim()}](${url.trim()})`,
@@ -517,6 +523,30 @@ function extractLeakedToolCall(
           cleanedText: stripToolCallMarkup(text),
         };
       }
+    }
+  }
+
+  // 1b. Check for XML <batch_web_search> or <web_search> or <search> tags (e.g. from Hermes, Command-R, or GPT-OSS models)
+  if (
+    /<batch_web_search\b/i.test(text) ||
+    /<web_search\b/i.test(text) ||
+    /<search\b/i.test(text)
+  ) {
+    const searchQueries: string[] = [];
+    const queryRegex =
+      /<(?:web_search|search)\b[^>]*>([\s\S]*?)<\/(?:web_search|search)>/gi;
+    let match: RegExpExecArray | null;
+    while ((match = queryRegex.exec(text)) !== null) {
+      const q = match[1].trim();
+      if (q) searchQueries.push(q);
+    }
+    if (searchQueries.length > 0) {
+      return {
+        toolName: "web-search",
+        args: { query: searchQueries[0] },
+        allQueries: searchQueries,
+        cleanedText: stripToolCallMarkup(text),
+      } as any;
     }
   }
 
@@ -1228,19 +1258,31 @@ function createSmartOpenAICompatibleFetch(
             fromContent.toolName === "web_search"
               ? "web-search"
               : fromContent.toolName;
-          toolCalls = [
-            {
-              id: makeToolCallId(0),
+          const allQueries = (fromContent as any).allQueries;
+          if (Array.isArray(allQueries) && allQueries.length > 1) {
+            toolCalls = allQueries.map((q: string, idx: number) => ({
+              id: makeToolCallId(idx),
               type: "function",
               function: {
-                name: normalizedName,
-                arguments:
-                  typeof fromContent.args === "string"
-                    ? fromContent.args
-                    : JSON.stringify(fromContent.args),
+                name: "web-search",
+                arguments: JSON.stringify({ query: q }),
               },
-            },
-          ];
+            }));
+          } else {
+            toolCalls = [
+              {
+                id: makeToolCallId(0),
+                type: "function",
+                function: {
+                  name: normalizedName,
+                  arguments:
+                    typeof fromContent.args === "string"
+                      ? fromContent.args
+                      : JSON.stringify(fromContent.args),
+                },
+              },
+            ];
+          }
           effectiveContent = fromContent.cleanedText;
         } else {
           const fromReasoning = extractLeakedToolCall(reasoning);
@@ -1249,19 +1291,31 @@ function createSmartOpenAICompatibleFetch(
               fromReasoning.toolName === "web_search"
                 ? "web-search"
                 : fromReasoning.toolName;
-            toolCalls = [
-              {
-                id: makeToolCallId(0),
+            const allQueries = (fromReasoning as any).allQueries;
+            if (Array.isArray(allQueries) && allQueries.length > 1) {
+              toolCalls = allQueries.map((q: string, idx: number) => ({
+                id: makeToolCallId(idx),
                 type: "function",
                 function: {
-                  name: normalizedName,
-                  arguments:
-                    typeof fromReasoning.args === "string"
-                      ? fromReasoning.args
-                      : JSON.stringify(fromReasoning.args),
+                  name: "web-search",
+                  arguments: JSON.stringify({ query: q }),
                 },
-              },
-            ];
+              }));
+            } else {
+              toolCalls = [
+                {
+                  id: makeToolCallId(0),
+                  type: "function",
+                  function: {
+                    name: normalizedName,
+                    arguments:
+                      typeof fromReasoning.args === "string"
+                        ? fromReasoning.args
+                        : JSON.stringify(fromReasoning.args),
+                  },
+                },
+              ];
+            }
             reasoning = fromReasoning.cleanedText;
           }
         }

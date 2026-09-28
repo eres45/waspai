@@ -179,6 +179,14 @@ export function normalizeMarkdownCitations(raw: string): string {
           return `#download-${fname}`;
         },
       )
+      // Strip any stray raw XML tool tags leaking into markdown text
+      .replace(/<batch_web_search>[\s\S]*?<\/batch_web_search>/gi, "")
+      .replace(/<web_search>[\s\S]*?<\/web_search>/gi, "")
+      .replace(/<search>[\s\S]*?<\/search>/gi, "")
+      .replace(
+        /<\/?(?:batch_web_search|web_search|search|tool_call|function_calls|invoke|parameter)\b[^>]*>/gi,
+        "",
+      )
   );
 }
 

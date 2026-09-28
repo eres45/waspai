@@ -1661,7 +1661,10 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           "generate-presentation": presentationGeneratorTool,
           "create-presentation": presentationGeneratorTool,
           "presentation-generator": presentationGeneratorTool,
-          generate_presentation: presentationGeneratorTool,
+          "web-search": webSearchTool,
+          web_search: webSearchTool,
+          search: webSearchTool,
+          batch_web_search: webSearchTool,
           "scrape-web-page": scrapeWebPageTool,
           "web-content": webContentTool,
           "web-scrape": webContentTool,
@@ -1766,9 +1769,6 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
             ? { "export-chat-messages": chatExportTool }
             : {}),
 
-          // ALWAYS include web-search tool so models can look up real-time information, current market rates, prices, news, and live facts
-          "web-search": webSearchTool,
-          web_search: webSearchTool,
           // ALWAYS include memory tools
           save_memory: saveMemoryTool,
           update_memory: updateMemoryTool,
