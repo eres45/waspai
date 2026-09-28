@@ -17,6 +17,7 @@ export enum DefaultToolName {
   CreateLineChart = "createLineChart",
   CreateTable = "createTable",
   WebSearch = "web-search",
+  ImageSearch = "image-search",
   WebContent = "web-content",
   ScrapeWebPage = "scrape-web-page",
   Http = "http",

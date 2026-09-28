@@ -951,6 +951,15 @@ export const GroupedWebSearchToolInvocation = dynamic(
   },
 );
 
+const ImageSearchCard = dynamic(
+  () =>
+    import("./tool-invocation/image-search").then((mod) => mod.ImageSearchCard),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 const CodeExecutor = dynamic(
   () =>
     import("./tool-invocation/code-executor").then((mod) => mod.CodeExecutor),
@@ -1277,6 +1286,16 @@ export const ToolMessagePart = memo(
     );
 
     const CustomToolComponent = useMemo(() => {
+      if (
+        toolName === DefaultToolName.ImageSearch ||
+        toolName === "image-search" ||
+        toolName === "image_search" ||
+        toolName === "search-images" ||
+        toolName === "search_images"
+      ) {
+        return <ImageSearchCard part={part} key={part.toolCallId} />;
+      }
+
       if (
         toolName === DefaultToolName.WebSearch ||
         toolName === DefaultToolName.WebContent ||

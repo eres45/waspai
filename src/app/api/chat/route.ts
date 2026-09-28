@@ -73,6 +73,7 @@ import {
   getTempEmailMessagesTool,
 } from "@/lib/ai/tools/web/temp-mail";
 import { webSearchTool } from "@/lib/ai/tools/web/web-search";
+import { imageSearchTool } from "@/lib/ai/tools/web/image-search";
 import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
 import { colorize } from "consola/utils";
 import {
@@ -1665,6 +1666,10 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           web_search: webSearchTool,
           search: webSearchTool,
           batch_web_search: webSearchTool,
+          "image-search": imageSearchTool,
+          image_search: imageSearchTool,
+          search_images: imageSearchTool,
+          "search-images": imageSearchTool,
           "scrape-web-page": scrapeWebPageTool,
           "web-content": webContentTool,
           "web-scrape": webContentTool,

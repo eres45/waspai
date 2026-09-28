@@ -173,6 +173,21 @@ export function buildWebSearchDirective(): string {
 }
 
 /**
+ * Image Search & Visual Media Guidelines
+ */
+export function buildImageSearchDirective(): string {
+  return `<image_search_and_media_guidelines>
+When the user asks to find photos, search for pictures, or build multi-image documents (e.g. photo albums, PDF catalogs, animal collections):
+- Visual Image Search (\`image-search\`): ALWAYS invoke \`image-search\` to discover authentic photos, stock pictures, and graphics with direct CDN thumbnails and source domains.
+- Complex Image Albums & Bulk PDF Generation:
+  1. For tasks like "Find 100 images of animals and make a PDF on each page each animal":
+  2. First execute \`image-search\` to collect or verify relevant images.
+  3. Then execute \`python-execution\` to run a Python script that downloads the images via \`httpx\` and compiles them into a multi-page PDF with \`reportlab\`.
+  4. The platform automatically harvests the generated PDF from disk and renders an interactive download card in the chat UI.
+</image_search_and_media_guidelines>`;
+}
+
+/**
  * Interactive Visualization Guidelines (Charts & Data Tables)
  */
 export function buildVisualizationDirective(): string {
@@ -351,6 +366,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
   // 7. Dynamic Capabilities (Only included for non-voice sessions)
   if (!profile.isVoice) {
     sections.push(buildWebSearchDirective());
+    sections.push(buildImageSearchDirective());
     sections.push(buildVisualizationDirective());
     sections.push(buildMemoryDirective());
     sections.push(buildBrowserDirective());

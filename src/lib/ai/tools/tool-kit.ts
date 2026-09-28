@@ -49,6 +49,7 @@ import { getSmsMessagesTool, listSmsNumbersTool } from "./web/sms-tool";
 import { sendEmailTool } from "./web/social-down";
 import { createTempEmailTool, getTempEmailMessagesTool } from "./web/temp-mail";
 import { videoPlayerTool } from "./web/video-player";
+import { imageSearchTool } from "./web/image-search";
 import { webContentTool, webSearchTool } from "./web/web-search";
 import { youtubeTranscriptTool } from "./web/youtube-transcript";
 import { todoTool } from "./todo-tool";
@@ -69,6 +70,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   },
   [AppDefaultToolkit.WebSearch]: {
     [DefaultToolName.WebSearch]: webSearchTool,
+    [DefaultToolName.ImageSearch]: imageSearchTool,
     [DefaultToolName.WebContent]: webContentTool,
     [DefaultToolName.ScrapeWebPage]: scrapeWebPageTool,
     [DefaultToolName.YouTubeTranscript]: youtubeTranscriptTool,
