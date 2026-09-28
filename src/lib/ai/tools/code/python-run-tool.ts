@@ -7,7 +7,7 @@ export const pythonExecutionSchema: JSONSchema7 = {
   properties: {
     code: {
       type: "string",
-      description: `Execute Python code in the user's browser via Pyodide.\n\nNetwork access: use pyodide.http.open_url for HTTP/HTTPS, not urllib/request/requests. CORS must allow the app origin.\nExample (CSV):\nfrom pyodide.http import open_url\nimport pandas as pd\nurl = 'https://example.com/data.csv'\ndf = pd.read_csv(open_url(url))\nprint(df.head())\n\nOutput capture:\npyodide.setStdout({\n  batched: (output: string) => {\n    const type = output.startsWith('data:image/png;base64') ? 'image' : 'data'\n    logs.push({ type: 'log', args: [{ type, value: output }] })\n  },\n})\npyodide.setStderr({\n  batched: (output: string) => {\n    logs.push({ type: 'error', args: [{ type: 'data', value: output }] })\n  },\n})`,
+      description: `Execute Python code in an isolated execution sandbox with full internet access and disk storage.\n\nKey capabilities:\n- Web & APIs: httpx, requests, beautifulsoup4 (scrape any URL, download web images with follow_redirects=True).\n- Document & Media Generation: reportlab (build multi-page PDFs, albums), pillow/PIL (crop, resize, format images), openpyxl/pandas (Excel spreadsheets & CSVs), matplotlib (charts/graphs).\n- Automatic File Harvesting: ANY file saved to disk (e.g. output.pdf, album.pdf, data.xlsx, chart.png) is automatically harvested and displayed as an interactive download card in the chat UI.\n\nTips:\n- When creating image albums or multi-page PDFs: use reportlab.pdfgen.canvas or SimpleDocTemplate, download images using httpx.get(url, follow_redirects=True), and insert them onto each page.\n- Print helpful progress logs using print().`,
     },
   },
   required: ["code"],
@@ -15,6 +15,6 @@ export const pythonExecutionSchema: JSONSchema7 = {
 
 export const pythonExecutionTool = createTool({
   description:
-    "Execute Python code in the user's browser via Pyodide. Use pyodide.http.open_url for HTTP(S) downloads; CORS must allow the app origin.",
+    "Execute Python code in a powerful cloud sandbox with full internet access. Supports bulk image downloads, web scraping, data science (pandas, numpy, matplotlib), image processing (pillow), and document creation (reportlab for multi-page PDFs, openpyxl for Excel). Any files saved to the filesystem are automatically presented to the user as direct download cards.",
   inputSchema: jsonSchemaToZod(pythonExecutionSchema),
 });

@@ -105,11 +105,130 @@ function detectRequiredHandlers(code: string): string[] {
   return handlers;
 }
 
-export async function safePythonRun({
+const SANDBOX_URL =
+  process.env.NEXT_PUBLIC_SANDBOX_RUNNER_URL ||
+  "https://waspai-sandbox.antideploy.app/execute";
+
+async function executeViaCloudSandbox({
   code,
-  timeout = 30000,
+  timeout = 180000,
   onLog,
 }: CodeRunnerOptions): Promise<CodeRunnerResult> {
+  const startTime = Date.now();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout + 5000);
+
+  try {
+    const res = await fetch(SANDBOX_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        timeout: Math.floor(timeout / 1000),
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      throw new Error(`Sandbox returned status ${res.status}`);
+    }
+
+    const data = await res.json();
+    const logs: LogEntry[] = [];
+
+    // Parse stdout
+    if (data.stdout) {
+      const lines = data.stdout.split("\n");
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const entry: LogEntry = {
+          type: "log",
+          args: [{ type: "data", value: line }],
+        };
+        logs.push(entry);
+        onLog?.(entry);
+      }
+    }
+
+    // Parse stderr
+    if (data.stderr) {
+      const lines = data.stderr.split("\n");
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const entry: LogEntry = {
+          type: "error",
+          args: [{ type: "data", value: line }],
+        };
+        logs.push(entry);
+        onLog?.(entry);
+      }
+    }
+
+    // Process files (PDF, images, etc.)
+    if (Array.isArray(data.files)) {
+      for (const file of data.files) {
+        const isImage = file.mime_type.startsWith("image/");
+        const dataUrl = `data:${file.mime_type};base64,${file.base64_data}`;
+
+        if (isImage) {
+          const imgEntry: LogEntry = {
+            type: "log",
+            args: [{ type: "image", value: dataUrl }],
+          };
+          logs.push(imgEntry);
+          onLog?.(imgEntry);
+        }
+
+        const fileEntry: LogEntry = {
+          type: "info",
+          args: [
+            {
+              type: "file",
+              value: {
+                name: file.name,
+                size: file.size,
+                mime_type: file.mime_type,
+                dataUrl,
+              },
+            },
+          ],
+        };
+        logs.push(fileEntry);
+        onLog?.(fileEntry);
+      }
+    }
+
+    return {
+      success: data.success,
+      logs,
+      executionTimeMs: Date.now() - startTime,
+      error: data.success ? undefined : data.stderr || "Execution failed",
+    };
+  } catch (err: any) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
+export async function safePythonRun({
+  code,
+  timeout = 180000,
+  onLog,
+}: CodeRunnerOptions): Promise<CodeRunnerResult> {
+  // First attempt cloud sandbox with full internet and library support
+  try {
+    return await executeViaCloudSandbox({ code, timeout, onLog });
+  } catch (cloudErr) {
+    console.warn(
+      "Cloud sandbox execution failed or unavailable, falling back to browser Pyodide:",
+      cloudErr,
+    );
+  }
+
   return safe(async () => {
     const startTime = Date.now();
     const logs: LogEntry[] = [];
