@@ -167,7 +167,9 @@ export const TOOL_DOMAINS = {
       "scrape-web-page",
       "web-content",
       "get-youtube-transcript",
+      "youtube-transcript",
       "http",
+      "http-fetch",
     ],
     keywords: [
       "browser",
