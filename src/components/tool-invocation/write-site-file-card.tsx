@@ -3,20 +3,8 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
 import type { JSX } from "react";
 import { ToolUIPart } from "ai";
-import {
-  FileCode2,
-  FileText,
-  Palette,
-  Zap,
-  ChevronDown,
-  ChevronRight,
-  CheckCircle2,
-  Loader2,
-  Copy,
-  Check,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "lib/utils";
+import { Copy, Check, Download, Eye } from "lucide-react";
+import { motion } from "framer-motion";
 import {
   bundledLanguages,
   codeToHast,
@@ -25,27 +13,37 @@ import {
 import { jsx, jsxs } from "react/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { useCopy } from "@/hooks/use-copy";
+import { ActionStrip } from "./action-strip";
+import { toast } from "sonner";
 
 interface WriteSiteFileCardProps {
   part: ToolUIPart;
 }
 
-function getFileIcon(path: string) {
+function getFileCategory(path: string) {
   const ext = path.split(".").pop()?.toLowerCase();
-  if (ext === "css") return Palette;
-  if (ext === "js" || ext === "ts" || ext === "mjs") return Zap;
-  if (ext === "html" || ext === "htm") return FileCode2;
-  return FileText;
-}
-
-function getFileBadgeColor(path: string) {
-  const ext = path.split(".").pop()?.toLowerCase();
-  if (ext === "css") return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-  if (ext === "js" || ext === "ts")
-    return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
-  if (ext === "html" || ext === "htm")
-    return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-  return "bg-muted/60 text-muted-foreground border-border/30";
+  if (
+    [
+      "html",
+      "htm",
+      "js",
+      "ts",
+      "jsx",
+      "tsx",
+      "css",
+      "py",
+      "kt",
+      "rs",
+      "go",
+      "json",
+    ].includes(ext || "")
+  ) {
+    return "Code";
+  }
+  if (["md", "txt", "pdf", "doc", "docx"].includes(ext || "")) {
+    return "Doc";
+  }
+  return "File";
 }
 
 function getLanguage(path: string) {
@@ -55,12 +53,32 @@ function getLanguage(path: string) {
   if (ext === "ts") return "typescript";
   if (ext === "html" || ext === "htm") return "html";
   if (ext === "json") return "json";
+  if (ext === "py") return "python";
+  if (ext === "kt") return "kotlin";
   return "text";
 }
 
 function formatBytes(bytes: number) {
+  if (!bytes || isNaN(bytes)) return "0 B";
   if (bytes < 1024) return `${bytes} B`;
-  return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024).toFixed(0)} KB`;
+}
+
+function downloadFile(filename: string, content: string) {
+  try {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${filename}`);
+  } catch (_e) {
+    toast.error("Failed to download file");
+  }
 }
 
 interface CodeHighlighterProps {
@@ -121,8 +139,7 @@ function CodeHighlighter({ code, lang }: CodeHighlighterProps) {
 }
 
 export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
-  const { state, output, input, toolName } = part as any;
-  const [expanded, setExpanded] = useState(false);
+  const { state, output, input, toolName, toolCallId } = part as any;
   const [showFull, setShowFull] = useState(false);
   const { copied, copy } = useCopy();
 
@@ -132,6 +149,8 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
   const siteInput = input as {
     path?: string;
     content?: string;
+    targetContent?: string;
+    replacementContent?: string;
     projectName?: string;
   };
 
@@ -139,23 +158,49 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
     | {
         success: boolean;
         path: string;
-        size: number;
+        size?: number;
         content: string;
         projectId?: string | null;
       }
     | undefined;
 
   const filePath = result?.path ?? siteInput?.path ?? "file";
-  const fileContent = result?.content ?? siteInput?.content ?? "";
+  const fileContent =
+    result?.content ??
+    siteInput?.content ??
+    siteInput?.replacementContent ??
+    "";
   const fileSize =
-    result?.size ?? new TextEncoder().encode(fileContent ?? "").byteLength;
+    result?.size ??
+    (fileContent ? new TextEncoder().encode(fileContent).byteLength : 0);
 
-  const Icon = getFileIcon(filePath);
-  const badgeColor = getFileBadgeColor(filePath);
-  const lang = getLanguage(filePath);
-
-  // Show only the filename (not full path) in the header
   const fileName = filePath.split("/").pop() ?? filePath;
+  const ext = (fileName.split(".").pop() || "").toUpperCase();
+  const category = getFileCategory(filePath);
+  const lang = getLanguage(filePath);
+  const isHtml = ext === "HTML" || ext === "HTM";
+
+  // Calculate lines added and deleted
+  const { addedLines, deletedLines } = useMemo(() => {
+    if (isEditing) {
+      const added = siteInput?.replacementContent
+        ? siteInput.replacementContent.split("\n").length
+        : 1;
+      const deleted = siteInput?.targetContent
+        ? siteInput.targetContent.split("\n").length
+        : 0;
+      return { addedLines: added, deletedLines: deleted };
+    }
+    const lines = fileContent ? fileContent.split("\n").length : 1;
+    return { addedLines: lines, deletedLines: 0 };
+  }, [isEditing, siteInput, fileContent]);
+
+  // Realistic latency simulation matching Cursor/Devin agent screenshots (e.g. 2ms, 1ms, 26ms)
+  const latencyStr = useMemo(() => {
+    if (isEditing) return "1ms";
+    if (fileSize > 20000) return "5ms";
+    return "2ms";
+  }, [isEditing, fileSize]);
 
   // Truncate content for preview (first 60 lines max) unless showFull is true
   const previewLines = useMemo(() => {
@@ -169,135 +214,131 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
     );
   }, [fileContent, showFull]);
 
+  const openHtmlPreview = () => {
+    if (!fileContent) return;
+    const blob = new Blob([fileContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: "easeOut" }}
-      className="w-full my-1"
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="w-full my-2 flex flex-col gap-2"
+      data-tool-step="true"
+      data-step-id={toolCallId || filePath}
     >
-      {/* Header row — always visible */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className={cn(
-          "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left",
-          "hover:bg-muted/40 transition-colors duration-150 group",
-          expanded && "bg-muted/30",
-        )}
-      >
-        {/* Status indicator */}
-        <span className="shrink-0">
-          {isLoading ? (
-            <Loader2 className="size-3.5 text-primary animate-spin" />
-          ) : (
-            <CheckCircle2 className="size-3.5 text-emerald-500" />
-          )}
-        </span>
-
-        {/* File type icon */}
-        <Icon className="size-3.5 text-muted-foreground shrink-0" />
-
-        {/* Label */}
-        <span className="text-xs text-foreground/80 font-medium truncate flex-1">
-          {isEditing
+      {/* 1. Compact Action Strip (matches + Created +401 2ms · budget 30s >) */}
+      <ActionStrip
+        variant={isEditing ? "multi-edited" : "created"}
+        label={
+          isEditing
             ? isLoading
               ? "Editing"
-              : "Edited"
+              : "Multi-edited"
             : isLoading
-              ? "Writing"
-              : "Created"}{" "}
-          <span className="font-mono text-foreground">{fileName}</span>
-        </span>
-
-        {/* Size badge */}
-        {!isLoading && (
-          <span
-            className={cn(
-              "text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0",
-              badgeColor,
-            )}
-          >
-            {filePath.split(".").pop()?.toUpperCase()}
-          </span>
-        )}
-
-        {/* Size */}
-        {!isLoading && (
-          <span className="text-[10px] text-muted-foreground shrink-0">
-            {formatBytes(fileSize)}
-          </span>
-        )}
-
-        {/* Expand chevron */}
-        <span className="shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors">
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-        </span>
-      </button>
-
-      {/* Expandable code preview */}
-      <AnimatePresence>
-        {expanded && fileContent && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="overflow-hidden"
-          >
-            <div className="mx-3 mb-2 rounded-lg border border-border/30 overflow-hidden bg-[#0d0d0d]">
-              {/* Code header bar */}
-              <div className="flex items-center justify-between px-3 py-1.5 bg-[#141414] border-b border-border/20">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
-                  </div>
-                  <span className="font-mono text-[10px] text-muted-foreground ml-1">
-                    {filePath}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {fileContent.split("\n").length > 60 && (
-                    <button
-                      onClick={() => setShowFull((v) => !v)}
-                      className="text-[10px] font-medium text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/20 hover:bg-muted/40 transition-colors"
-                    >
-                      {showFull ? "Show less" : "Show full"}
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => copy(fileContent)}
-                    className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/20 hover:bg-muted/40 transition-colors"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="size-2.5 text-emerald-500" />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-2.5" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+              ? "Creating"
+              : "Created"
+        }
+        addedLines={addedLines}
+        deletedLines={deletedLines > 0 ? deletedLines : undefined}
+        latency={latencyStr}
+        budget="budget 30s"
+        isExecuting={isLoading}
+        defaultExpanded={false}
+      >
+        {/* Expanded Drawer: Code Diff / Viewer */}
+        <div className="rounded-xl border border-border/40 overflow-hidden bg-[#0d0d0d] my-1 shadow-sm">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-[#141414] border-b border-border/20">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-500/70" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
               </div>
-              {/* Code content */}
-              <div className="max-h-[320px] overflow-y-auto">
-                <CodeHighlighter code={previewLines} lang={lang} />
-              </div>
+              <span className="font-mono text-[10px] text-muted-foreground ml-1 truncate max-w-[200px]">
+                {filePath}
+              </span>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            <div className="flex items-center gap-2">
+              {fileContent.split("\n").length > 60 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFull((v) => !v)}
+                  className="text-[10px] font-medium text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/20 hover:bg-muted/40 transition-colors"
+                >
+                  {showFull ? "Show less" : "Show full"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => copy(fileContent)}
+                className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/20 hover:bg-muted/40 transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-2.5 text-emerald-500" />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-2.5" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-[300px] overflow-y-auto">
+            <CodeHighlighter code={previewLines} lang={lang} />
+          </div>
+        </div>
+      </ActionStrip>
+
+      {/* 2. File Output Card (matches index.html / Code · HTML · 10 KB with download tray) */}
+      {!isLoading && (
+        <div className="w-full rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:bg-card/80 transition-all p-3.5 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-sm font-semibold text-foreground truncate font-mono">
+              {fileName}
+            </span>
+            <span className="text-xs text-muted-foreground mt-0.5">
+              {category} · {ext || "FILE"} · {formatBytes(fileSize)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Live Preview Button for HTML files */}
+            {isHtml && fileContent && (
+              <button
+                type="button"
+                onClick={openHtmlPreview}
+                title="Open live preview in new tab"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              >
+                <Eye className="size-4" />
+              </button>
+            )}
+
+            {/* Download File Tray Button */}
+            {fileContent && (
+              <button
+                type="button"
+                onClick={() => downloadFile(fileName, fileContent)}
+                title="Download file"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              >
+                <Download className="size-4.5 stroke-[1.75]" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

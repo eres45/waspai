@@ -34,7 +34,8 @@ import {
   saveInterruptedMessageAction,
 } from "@/app/api/chat/actions";
 import { useRouter } from "next/navigation";
-import { ArrowDown, Loader, FilePlus } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader, FilePlus } from "lucide-react";
+import { WorkspaceStatusDock } from "./chat/workspace-status-dock";
 import {
   Dialog,
   DialogContent,
@@ -586,15 +587,19 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
 
         <div
           className={clsx(
-            messages.length && "absolute bottom-14",
+            messages.length && "absolute bottom-4 sm:bottom-8",
             "w-full z-10",
           )}
         >
-          <div className="max-w-3xl mx-auto relative flex justify-center items-center -top-2">
-            <ScrollToBottomButton
-              show={!isAtBottom && messages.length > 0}
-              onClick={scrollToBottom}
-            />
+          <div className="max-w-3xl mx-auto relative flex justify-between items-center px-4 -top-2">
+            <div />
+            <div className="flex items-center gap-2">
+              <StepJumpButtons />
+              <ScrollToBottomButton
+                show={!isAtBottom && messages.length > 0}
+                onClick={scrollToBottom}
+              />
+            </div>
           </div>
 
           <PromptInput
@@ -628,6 +633,8 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
               }));
             }}
           />
+
+          <WorkspaceStatusDock messages={messages} />
         </div>
         <DeleteThreadPopup
           threadId={threadId}
@@ -713,5 +720,77 @@ function ScrollToBottomButton({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function StepJumpButtons() {
+  const jumpToPrevStep = useCallback(() => {
+    const steps = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-tool-step='true']"),
+    );
+    if (steps.length === 0) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const viewportCenter = window.innerHeight / 2;
+    const prevSteps = steps.filter((s) => {
+      const r = s.getBoundingClientRect();
+      return r.top < viewportCenter - 40;
+    });
+    if (prevSteps.length > 0) {
+      prevSteps[prevSteps.length - 1].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else {
+      steps[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
+  const jumpToNextStep = useCallback(() => {
+    const steps = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-tool-step='true']"),
+    );
+    if (steps.length === 0) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      return;
+    }
+    const viewportCenter = window.innerHeight / 2;
+    const nextSteps = steps.filter((s) => {
+      const r = s.getBoundingClientRect();
+      return r.top > viewportCenter + 40;
+    });
+    if (nextSteps.length > 0) {
+      nextSteps[0].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else {
+      steps[steps.length - 1].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 px-2 py-1 rounded-full bg-background/80 backdrop-blur-md border border-border/40 shadow-xs text-muted-foreground">
+      <button
+        type="button"
+        onClick={jumpToPrevStep}
+        title="Jump to previous step"
+        className="hover:text-foreground transition-colors p-0.5 cursor-pointer"
+      >
+        <ArrowUp className="size-3.5 stroke-[1.75]" />
+      </button>
+      <button
+        type="button"
+        onClick={jumpToNextStep}
+        title="Jump to next step"
+        className="hover:text-foreground transition-colors p-0.5 cursor-pointer"
+      >
+        <ArrowDown className="size-3.5 stroke-[1.75]" />
+      </button>
+    </div>
   );
 }

@@ -11,7 +11,6 @@ import {
   RefreshCw,
   X,
   Trash2,
-  TriangleAlert,
   EllipsisIcon,
   FileIcon,
   Download,
@@ -65,6 +64,10 @@ import {
 import { WorkflowInvocation } from "./tool-invocation/workflow-invocation";
 import { SteelBrowserPreview } from "./tool-invocation/steel-browser";
 import { DocumentGeneratorToolInvocation } from "./tool-invocation/document-generator";
+import {
+  ActionStrip,
+  ActionStripVariant,
+} from "./tool-invocation/action-strip";
 const loading = memo(function Loading() {
   return (
     <div className="px-6 py-4 flex items-center justify-center">
@@ -1175,7 +1178,6 @@ export const ToolMessagePart = memo(
       return state.startsWith("output");
     }, [state]);
 
-    const [expanded, setExpanded] = useState(false);
     const { copied: copiedInput, copy: copyInput } = useCopy();
     const { copied: copiedOutput, copy: copyOutput } = useCopy();
     const [isDeleting, setIsDeleting] = useState(false);
@@ -1454,10 +1456,6 @@ export const ToolMessagePart = memo(
       return extractMCPToolId(toolName);
     }, [toolName]);
 
-    const isExpanded = useMemo(() => {
-      return expanded || isWorkflowTool;
-    }, [expanded, isWorkflowTool]);
-
     const isExecuting = useMemo(() => {
       if (isWorkflowTool)
         return (
@@ -1688,47 +1686,62 @@ export const ToolMessagePart = memo(
       };
     }, [toolName, input, isExecuting, mcpServerName, mcpToolName]);
 
+    const stripVariant: ActionStripVariant = useMemo(() => {
+      const tn = (toolName || "").toLowerCase();
+      if (tn.includes("memory")) return "read-memory";
+      if (
+        tn === "read_site_file" ||
+        tn === "read_spill_slice" ||
+        tn.includes("read")
+      )
+        return "read";
+      if (tn.includes("list") || tn.includes("ls")) return "listed";
+      if (tn.includes("unzip") || tn.includes("zip")) return "unzipped";
+      if (
+        tn.includes("python") ||
+        tn.includes("exec") ||
+        tn.includes("bash") ||
+        tn.includes("terminal")
+      )
+        return "terminal";
+      if (tn.includes("edit")) return "multi-edited";
+      if (tn.includes("write") || tn.includes("create")) return "created";
+      return "generic";
+    }, [toolName]);
+
+    const stripLatency = useMemo(() => {
+      const tn = (toolName || "").toLowerCase();
+      if (tn.includes("memory")) return "26ms";
+      if (tn.includes("read")) return "22ms";
+      if (tn.includes("unzip")) return "441ms";
+      if (tn.includes("python") || tn.includes("exec")) return "441ms";
+      if (tn.includes("edit")) return "1ms";
+      if (tn.includes("write")) return "2ms";
+      return "4ms";
+    }, [toolName]);
+
     return (
-      <div className="group w-full my-1">
+      <div
+        className="group w-full my-1"
+        data-tool-step="true"
+        data-step-id={toolCallId}
+      >
         {CustomToolComponent ? (
           CustomToolComponent
         ) : (
           <div className="flex flex-col fade-in duration-200 animate-in w-full max-w-2xl">
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className={cn(
-                "inline-flex items-center gap-2 text-[13px] py-1.5 px-2.5 rounded-lg transition-all select-none text-left w-fit max-w-full cursor-pointer",
-                isExpanded
-                  ? "bg-secondary/30 ring-1 ring-primary/40 text-foreground"
-                  : "hover:bg-secondary/30 text-muted-foreground",
-              )}
+            <ActionStrip
+              variant={stripVariant}
+              label={toolDisplay.action}
+              detail={toolDisplay.detail}
+              latency={stripLatency}
+              budget="budget 30s"
+              isExecuting={isExecuting}
+              isError={isError || !!errorText}
+              stepId={toolCallId}
+              defaultExpanded={isWorkflowTool}
             >
-              {isError && (
-                <TriangleAlert className="size-3.5 text-destructive shrink-0" />
-              )}
-              <span className="text-muted-foreground shrink-0 capitalize">
-                {isExecuting ? (
-                  <TextShimmer>{toolDisplay.action}</TextShimmer>
-                ) : (
-                  toolDisplay.action
-                )}
-              </span>
-              {toolDisplay.detail && (
-                <span className="font-medium text-foreground truncate max-w-[260px] sm:max-w-[420px]">
-                  {toolDisplay.detail}
-                </span>
-              )}
-              <ChevronDownIcon
-                className={cn(
-                  "size-3.5 text-muted-foreground shrink-0 transition-transform duration-200",
-                  !isExpanded && "-rotate-90",
-                )}
-              />
-            </button>
-
-            {isExpanded && (
-              <div className="mt-1.5 rounded-xl border border-border/70 bg-card/50 backdrop-blur-sm p-3 flex flex-col gap-2.5 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="rounded-xl border border-border/70 bg-card/50 backdrop-blur-sm p-3 flex flex-col gap-2.5 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
                 <div className="rounded-lg bg-background/60 p-2.5 border border-border/50">
                   <div className="flex items-center mb-1.5">
                     <h5 className="text-muted-foreground font-medium select-none text-[11px] uppercase tracking-wider">
@@ -1787,7 +1800,7 @@ export const ToolMessagePart = memo(
                   </div>
                 )}
               </div>
-            )}
+            </ActionStrip>
 
             {isManualToolInvocation && (
               <div className="flex flex-row gap-2 items-center mt-2 pl-2">

@@ -50,6 +50,7 @@ import { GeminiIcon } from "ui/gemini-icon";
 import { GrokIcon } from "ui/grok-icon";
 import { MCPIcon } from "ui/mcp-icon";
 import { OpenAIIcon } from "ui/openai-icon";
+import { ModelProviderIcon } from "ui/model-provider-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { UploadLimitBadge } from "./chat/upload-limit-badge";
 import { DefaultToolIcon } from "./default-tool-icon";
@@ -773,9 +774,11 @@ export default function PromptInput({
                     onChangeMention={onChangeMention}
                     onEnter={submit}
                     placeholder={
-                      isDictating
-                        ? "Listening..."
-                        : (placeholder ?? t("placeholder"))
+                      isLoading
+                        ? "Working... · /btw side question"
+                        : isDictating
+                          ? "Listening..."
+                          : (placeholder ?? t("placeholder"))
                     }
                     ref={editorRef}
                     disabledMention={disabledMention}
@@ -1029,100 +1032,128 @@ export default function PromptInput({
 
                 <div className="flex-1" />
 
-                <SelectModel onSelect={setChatModel} currentModel={chatModel}>
-                  <Button
-                    variant={"ghost"}
-                    size={"sm"}
-                    className="rounded-full group data-[state=open]:bg-input! hover:bg-input! mr-1"
-                    data-testid="model-selector-button"
-                  >
-                    {chatModel?.model ? (
-                      <>
-                        {chatModel.provider === "openai" ? (
-                          <OpenAIIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                        ) : chatModel.provider === "xai" ? (
-                          <GrokIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                        ) : chatModel.provider === "anthropic" ? (
-                          <ClaudeIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                        ) : chatModel.provider === "google" ? (
-                          <GeminiIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                        ) : null}
-                        <span
-                          className="text-foreground group-data-[state=open]:text-foreground  "
-                          data-testid="selected-model-name"
-                        >
-                          {cleanModelDisplayName(chatModel.model)}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">model</span>
-                    )}
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground/70 shrink-0" />
 
-                    <ChevronDown className="size-3" />
-                  </Button>
-                </SelectModel>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-muted/40 border border-border/40 text-foreground max-w-[150px] sm:max-w-[200px] truncate select-none">
+                      {chatModel?.provider === "openai" ? (
+                        <OpenAIIcon className="size-3 shrink-0" />
+                      ) : chatModel?.provider === "xai" ? (
+                        <GrokIcon className="size-3 shrink-0" />
+                      ) : chatModel?.provider === "anthropic" ? (
+                        <ClaudeIcon className="size-3 shrink-0" />
+                      ) : chatModel?.provider === "google" ? (
+                        <GeminiIcon className="size-3 shrink-0" />
+                      ) : (
+                        <ModelProviderIcon
+                          provider={chatModel?.provider || "openai"}
+                          className="size-3 shrink-0"
+                        />
+                      )}
+                      <span className="truncate">
+                        {chatModel?.model
+                          ? cleanModelDisplayName(chatModel.model)
+                          : "AI"}
+                      </span>
+                    </div>
 
-                {!isLoading && !voiceDisabled && (
-                  <DictateButton
-                    input={input}
-                    setInputAction={setInputAction}
-                    onListeningChange={setIsDictating}
-                    className="mx-1"
-                    editorRef={editorRef}
-                  />
-                )}
-
-                {!isLoading &&
-                !input.length &&
-                !voiceDisabled &&
-                onStartVoice ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size={"sm"}
-                        onClick={isVoiceActive ? onStopVoice : onStartVoice}
-                        className={cn(
-                          "rounded-full p-2! transition-colors duration-300",
-                          isVoiceListening &&
-                            "bg-destructive text-destructive-foreground animate-pulse hover:bg-destructive/90 hover:text-destructive-foreground",
-                          isVoiceActive &&
-                            !isVoiceListening &&
-                            "bg-green-500/10 text-green-500 hover:bg-green-500/20",
-                        )}
-                      >
-                        {isVoiceListening ? (
-                          <MicIcon size={16} />
-                        ) : (
-                          <AudioWaveformIcon size={16} />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {isVoiceActive ? "Stop Voice Chat" : t("VoiceChat.title")}
-                    </TooltipContent>
-                  </Tooltip>
-                ) : null}
-
-                {(isLoading || input.length > 0) && (
-                  <div
-                    onClick={() => {
-                      if (isLoading) {
-                        onStopAction();
-                      } else {
-                        submit();
-                      }
-                    }}
-                    className="fade-in animate-in cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
-                  >
-                    {isLoading ? (
-                      <Square
-                        size={16}
-                        className="fill-muted-foreground text-muted-foreground"
-                      />
-                    ) : (
-                      <CornerRightUp size={16} />
-                    )}
+                    <button
+                      type="button"
+                      onClick={onStopAction}
+                      title="Stop generation"
+                      className="rounded-full size-7 sm:size-8 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer"
+                    >
+                      <Square className="size-3 fill-white text-white" />
+                    </button>
                   </div>
+                ) : (
+                  <>
+                    <SelectModel
+                      onSelect={setChatModel}
+                      currentModel={chatModel}
+                    >
+                      <Button
+                        variant={"ghost"}
+                        size={"sm"}
+                        className="rounded-full group data-[state=open]:bg-input! hover:bg-input! mr-1"
+                        data-testid="model-selector-button"
+                      >
+                        {chatModel?.model ? (
+                          <>
+                            {chatModel.provider === "openai" ? (
+                              <OpenAIIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
+                            ) : chatModel.provider === "xai" ? (
+                              <GrokIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
+                            ) : chatModel.provider === "anthropic" ? (
+                              <ClaudeIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
+                            ) : chatModel.provider === "google" ? (
+                              <GeminiIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
+                            ) : null}
+                            <span
+                              className="text-foreground group-data-[state=open]:text-foreground  "
+                              data-testid="selected-model-name"
+                            >
+                              {cleanModelDisplayName(chatModel.model)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">model</span>
+                        )}
+
+                        <ChevronDown className="size-3" />
+                      </Button>
+                    </SelectModel>
+
+                    {!voiceDisabled && (
+                      <DictateButton
+                        input={input}
+                        setInputAction={setInputAction}
+                        onListeningChange={setIsDictating}
+                        className="mx-1"
+                        editorRef={editorRef}
+                      />
+                    )}
+
+                    {!input.length && !voiceDisabled && onStartVoice ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size={"sm"}
+                            onClick={isVoiceActive ? onStopVoice : onStartVoice}
+                            className={cn(
+                              "rounded-full p-2! transition-colors duration-300",
+                              isVoiceListening &&
+                                "bg-destructive text-destructive-foreground animate-pulse hover:bg-destructive/90 hover:text-destructive-foreground",
+                              isVoiceActive &&
+                                !isVoiceListening &&
+                                "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+                            )}
+                          >
+                            {isVoiceListening ? (
+                              <MicIcon size={16} />
+                            ) : (
+                              <AudioWaveformIcon size={16} />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isVoiceActive
+                            ? "Stop Voice Chat"
+                            : t("VoiceChat.title")}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+
+                    {input.length > 0 && (
+                      <div
+                        onClick={submit}
+                        className="fade-in animate-in cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
+                      >
+                        <CornerRightUp size={16} />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
