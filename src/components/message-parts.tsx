@@ -1965,6 +1965,59 @@ const FilePartPreview = ({
     return null;
   }, [isImage, isVideo, isAudio, isPdf, url, filename]);
 
+  const isZip =
+    fileExtension === "ZIP" ||
+    filename?.toLowerCase().endsWith(".zip") ||
+    filename?.toLowerCase().endsWith(".tar.gz");
+
+  if (!isImage && !isVideo && !isAudio && !isPdf) {
+    return (
+      <div
+        className={cn(
+          "max-w-md w-fit my-1.5 animate-in fade-in duration-200",
+          isUserMessage ? "ml-auto" : "mr-auto",
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-2.5 px-3 py-2 rounded-2xl border backdrop-blur-sm select-none transition-all shadow-xs",
+            isZip
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+              : isUserMessage
+                ? "bg-card/80 border-border/60 text-foreground"
+                : "bg-muted/60 border-border/70 text-foreground",
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center justify-center size-7 rounded-xl text-[10px] font-mono font-bold tracking-tight shrink-0",
+              isZip
+                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40"
+                : "bg-muted text-muted-foreground border border-border/50",
+            )}
+          >
+            {fileExtension.slice(0, 3)}
+          </div>
+
+          <span className="text-xs font-mono font-medium text-foreground truncate max-w-[200px] sm:max-w-[320px]">
+            {filename}
+          </span>
+
+          {url && (
+            <a
+              href={url}
+              download={filename}
+              title={`Download ${filename}`}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors ml-0.5 shrink-0"
+            >
+              <Download className="size-3.5 stroke-[2]" />
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

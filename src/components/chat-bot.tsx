@@ -36,6 +36,7 @@ import {
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Loader, FilePlus } from "lucide-react";
 import { WorkspaceStatusDock } from "./chat/workspace-status-dock";
+import { StepProgressBanner } from "./chat/step-progress-banner";
 import {
   Dialog,
   DialogContent,
@@ -601,6 +602,11 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
               />
             </div>
           </div>
+
+          <StepProgressBanner
+            messages={messages}
+            isLoading={isLoading || isPendingToolCall}
+          />
 
           <PromptInput
             input={input}

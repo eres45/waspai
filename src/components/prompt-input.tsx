@@ -491,8 +491,9 @@ export default function PromptInput({
   const isSubmittingRef = useRef(false);
 
   const submit = async () => {
-    // Prevent concurrent submissions
-    if (isLoading || isSubmittingRef.current) return;
+    const isBtw = input?.trim().startsWith("/btw");
+    // Prevent concurrent submissions, but allow /btw side questions
+    if ((isLoading && !isBtw) || isSubmittingRef.current) return;
     if (uploadedFiles.some((file) => file.isUploading)) {
       toast.error("Please wait for files to finish uploading before sending.");
       return;
@@ -500,6 +501,9 @@ export default function PromptInput({
 
     let userMessage = input?.trim() || "";
     if (userMessage.length === 0) return;
+    if (isBtw) {
+      userMessage = `[Side Question /btw]: ${userMessage.replace(/^\/btw\s*/i, "")}`;
+    }
 
     // Lock to prevent concurrent submissions
     isSubmittingRef.current = true;
@@ -1058,14 +1062,24 @@ export default function PromptInput({
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={onStopAction}
-                      title="Stop generation"
-                      className="rounded-full size-7 sm:size-8 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer"
-                    >
-                      <Square className="size-3 fill-white text-white" />
-                    </button>
+                    {input.trim().length > 0 ? (
+                      <div
+                        onClick={submit}
+                        title="Send side question (/btw)"
+                        className="fade-in animate-in cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
+                      >
+                        <CornerRightUp size={16} />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onStopAction}
+                        title="Stop generation"
+                        className="rounded-full size-7 sm:size-8 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer"
+                      >
+                        <Square className="size-3 fill-white text-white" />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <>

@@ -248,3 +248,101 @@ export function ActionStrip({
     </div>
   );
 }
+
+export function GroupedReadsToolInvocation({ parts }: { parts: any[] }) {
+  return (
+    <ActionStrip
+      variant="reads"
+      label={`${parts.length} reads`}
+      latency="22ms"
+      budget="budget 30s"
+      stepId={parts.map((p) => p.toolCallId).join("-")}
+      defaultExpanded={false}
+    >
+      <div className="flex flex-col gap-1.5 p-2 bg-muted/20 border border-border/40 rounded-xl my-1">
+        {parts.map((part, idx) => {
+          const inp = part.input || part.args;
+          const path =
+            inp?.path || inp?.spillPath || inp?.query || `Item ${idx + 1}`;
+          return (
+            <div
+              key={part.toolCallId || idx}
+              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-card/60 border border-border/30 text-xs font-mono"
+            >
+              <span className="text-foreground truncate max-w-[240px] sm:max-w-[360px]">
+                {path}
+              </span>
+              <span className="text-[10px] text-muted-foreground shrink-0">
+                Read
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </ActionStrip>
+  );
+}
+
+export function GroupedEditsToolInvocation({ parts }: { parts: any[] }) {
+  const { totalAdded, totalDeleted } = useMemo(() => {
+    let added = 0;
+    let deleted = 0;
+    for (const part of parts) {
+      const inp = part.input || part.args;
+      added += inp?.replacementContent
+        ? inp.replacementContent.split("\n").length
+        : 1;
+      deleted += inp?.targetContent ? inp.targetContent.split("\n").length : 0;
+    }
+    return { totalAdded: added, totalDeleted: deleted };
+  }, [parts]);
+
+  return (
+    <ActionStrip
+      variant="multi-edited"
+      label={`${parts.length} edits`}
+      addedLines={totalAdded}
+      deletedLines={totalDeleted > 0 ? totalDeleted : undefined}
+      latency="1ms"
+      budget="budget 30s"
+      stepId={parts.map((p) => p.toolCallId).join("-")}
+      defaultExpanded={false}
+    >
+      <div className="flex flex-col gap-1.5 p-2 bg-muted/20 border border-border/40 rounded-xl my-1">
+        {parts.map((part, idx) => {
+          const inp = part.input || part.args;
+          const path = inp?.path || `File ${idx + 1}`;
+          const added = inp?.replacementContent
+            ? inp.replacementContent.split("\n").length
+            : 1;
+          const deleted = inp?.targetContent
+            ? inp.targetContent.split("\n").length
+            : 0;
+
+          return (
+            <div
+              key={part.toolCallId || idx}
+              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-card/60 border border-border/30 text-xs font-mono"
+            >
+              <span className="text-foreground truncate max-w-[220px] sm:max-w-[340px]">
+                {path}
+              </span>
+              <div className="flex items-center gap-1.5 shrink-0 text-[11px] font-mono">
+                {added > 0 && (
+                  <span className="text-emerald-500 font-semibold">
+                    +{added}
+                  </span>
+                )}
+                {deleted > 0 && (
+                  <span className="text-rose-500 font-semibold">
+                    -{deleted}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </ActionStrip>
+  );
+}

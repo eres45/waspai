@@ -15,6 +15,10 @@ import {
   SourceUrlMessagePart,
   GroupedWebSearchToolInvocation,
 } from "./message-parts";
+import {
+  GroupedReadsToolInvocation,
+  GroupedEditsToolInvocation,
+} from "./tool-invocation/action-strip";
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ChatMetadata } from "app-types/chat";
@@ -38,43 +42,91 @@ interface Props {
   readonly?: boolean;
 }
 
-function groupWebSearchParts(parts: any[]) {
+function groupConsecutiveParts(parts: any[]) {
   const grouped: any[] = [];
-  let currentGroup: any[] = [];
+  let currentSearchGroup: any[] = [];
+  let currentReadGroup: any[] = [];
+  let currentEditGroup: any[] = [];
+
+  const flushGroups = () => {
+    if (currentSearchGroup.length > 0) {
+      grouped.push({
+        type: "grouped-web-search",
+        parts: currentSearchGroup,
+        id: currentSearchGroup.map((p) => p.toolCallId).join("-"),
+      });
+      currentSearchGroup = [];
+    }
+    if (currentReadGroup.length > 0) {
+      if (currentReadGroup.length > 1) {
+        grouped.push({
+          type: "grouped-reads",
+          parts: currentReadGroup,
+          id: currentReadGroup.map((p) => p.toolCallId).join("-"),
+        });
+      } else {
+        grouped.push(currentReadGroup[0]);
+      }
+      currentReadGroup = [];
+    }
+    if (currentEditGroup.length > 0) {
+      if (currentEditGroup.length > 1) {
+        grouped.push({
+          type: "grouped-edits",
+          parts: currentEditGroup,
+          id: currentEditGroup.map((p) => p.toolCallId).join("-"),
+        });
+      } else {
+        grouped.push(currentEditGroup[0]);
+      }
+      currentEditGroup = [];
+    }
+  };
 
   for (const part of parts) {
+    if (!isToolUIPart(part)) {
+      flushGroups();
+      grouped.push(part);
+      continue;
+    }
+
+    const name = getToolName(part);
+
     const isSearch =
-      isToolUIPart(part) &&
-      (getToolName(part) === "web-search" ||
-        getToolName(part) === "web-content" ||
-        getToolName(part) === "webSearch" ||
-        getToolName(part) === "webContent" ||
-        getToolName(part) === "web_search" ||
-        getToolName(part) === "web_content");
+      name === "web-search" ||
+      name === "web-content" ||
+      name === "webSearch" ||
+      name === "webContent" ||
+      name === "web_search" ||
+      name === "web_content";
+
+    const isRead =
+      name === "read_site_file" ||
+      name === "read_spill_slice" ||
+      name === "get_memories" ||
+      name === "read_file";
+
+    const isEdit = name === "edit_site_file";
 
     if (isSearch) {
-      currentGroup.push(part);
+      if (currentReadGroup.length > 0 || currentEditGroup.length > 0)
+        flushGroups();
+      currentSearchGroup.push(part);
+    } else if (isRead) {
+      if (currentSearchGroup.length > 0 || currentEditGroup.length > 0)
+        flushGroups();
+      currentReadGroup.push(part);
+    } else if (isEdit) {
+      if (currentSearchGroup.length > 0 || currentReadGroup.length > 0)
+        flushGroups();
+      currentEditGroup.push(part);
     } else {
-      if (currentGroup.length > 0) {
-        grouped.push({
-          type: "grouped-web-search",
-          parts: currentGroup,
-          id: currentGroup.map((p) => p.toolCallId).join("-"),
-        });
-        currentGroup = [];
-      }
+      flushGroups();
       grouped.push(part);
     }
   }
 
-  if (currentGroup.length > 0) {
-    grouped.push({
-      type: "grouped-web-search",
-      parts: currentGroup,
-      id: currentGroup.map((p) => p.toolCallId).join("-"),
-    });
-  }
-
+  flushGroups();
   return grouped;
 }
 
@@ -205,7 +257,7 @@ const PurePreviewMessage = ({
       displayParts = processedParts;
     }
 
-    return groupWebSearchParts(displayParts);
+    return groupConsecutiveParts(displayParts);
   }, [message.parts, modelId, message.role]);
 
   if (message.role == "system") {
@@ -276,6 +328,18 @@ const PurePreviewMessage = ({
             if (part.type === "grouped-web-search") {
               return (
                 <GroupedWebSearchToolInvocation key={key} parts={part.parts} />
+              );
+            }
+
+            if (part.type === "grouped-reads") {
+              return (
+                <GroupedReadsToolInvocation key={key} parts={part.parts} />
+              );
+            }
+
+            if (part.type === "grouped-edits") {
+              return (
+                <GroupedEditsToolInvocation key={key} parts={part.parts} />
               );
             }
 

@@ -3,8 +3,16 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
 import type { JSX } from "react";
 import { ToolUIPart } from "ai";
-import { Copy, Check, Download, Eye } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Download,
+  Eye,
+  RotateCw,
+  ExternalLink,
+} from "lucide-react";
 import { motion } from "framer-motion";
+import { Dialog, DialogContent } from "ui/dialog";
 import {
   bundledLanguages,
   codeToHast,
@@ -141,6 +149,8 @@ function CodeHighlighter({ code, lang }: CodeHighlighterProps) {
 export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
   const { state, output, input, toolName, toolCallId } = part as any;
   const [showFull, setShowFull] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
   const { copied, copy } = useCopy();
 
   const isLoading = !state?.startsWith("output");
@@ -317,9 +327,9 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
             {isHtml && fileContent && (
               <button
                 type="button"
-                onClick={openHtmlPreview}
-                title="Open live preview in new tab"
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                onClick={() => setIsPreviewOpen(true)}
+                title="Open live interactive preview"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
               >
                 <Eye className="size-4" />
               </button>
@@ -331,13 +341,68 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
                 type="button"
                 onClick={() => downloadFile(fileName, fileContent)}
                 title="Download file"
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
               >
                 <Download className="size-4.5 stroke-[1.75]" />
               </button>
             )}
           </div>
         </div>
+      )}
+
+      {/* 3. Live Interactive Sandbox Preview Dialog */}
+      {isHtml && fileContent && (
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="max-w-4xl w-[95vw] h-[85vh] p-0 overflow-hidden flex flex-col bg-background border-border/80">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40 bg-card/60">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-semibold text-foreground">
+                  {fileName}
+                </span>
+                <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                  · Live Interactive Preview
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPreviewKey((k) => k + 1)}
+                  title="Reload preview"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                >
+                  <RotateCw className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={openHtmlPreview}
+                  title="Open in new window"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                >
+                  <ExternalLink className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadFile(fileName, fileContent)}
+                  title="Download file"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                >
+                  <Download className="size-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full h-full bg-white relative">
+              <iframe
+                key={previewKey}
+                srcDoc={fileContent}
+                sandbox="allow-scripts allow-forms allow-same-origin allow-modals"
+                className="w-full h-full border-0"
+                title={fileName}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </motion.div>
   );
