@@ -210,14 +210,43 @@ export function buildBrowserDirective(): string {
 }
 
 /**
+ * Document Generation Guidelines (PDF, Word, CSV, Plain Text)
+ */
+export function buildDocumentDirective(): string {
+  return `<document_generation_guidelines>
+When generating standalone documents, reports, or data files:
+- PDF Documents (\`generate-pdf\`): For formal reports, whitepapers, contracts, manuals, and publication-ready documents.
+- Word Documents (\`generate-word-document\`): For editable essays, documentation, business letters, and formatted articles.
+- Spreadsheets / Tabular Data (\`generate-csv\`): For structured data tables, metrics, financial logs, and exports.
+- Plain Text Files (\`generate-text-file\`): For raw scripts, logs, configurations, and notes.
+- Anti-Hallucination: Never invent or output placeholder download URLs (such as workers.dev or /file/placeholder). Deliver files exclusively via dedicated generation tools or formatted code blocks.
+</document_generation_guidelines>`;
+}
+
+/**
+ * QR Code Generation Guidelines
+ */
+export function buildQrDirective(): string {
+  return `<qr_code_guidelines>
+When creating QR codes:
+- Standard QR (\`generate-qr-code\`): For standard URLs, text, Wi-Fi credentials, contact cards, or links.
+- Branded QR with Logo (\`generate-qr-code-with-logo\`): When the user requests a branded QR or provides a custom logo URL.
+</qr_code_guidelines>`;
+}
+
+/**
  * Modern Presentation Creation Guidelines (beautiful-html-templates & free-ppt-template)
  */
 export function buildPresentationDirective(): string {
+  const currentDate = format(new Date(), "MMMM yyyy");
   return `<presentation_creation_guidelines>
 When generating presentations, pitch decks, or slides:
-- Execution: Always invoke the \`generate-presentation\` tool to create the slides. Never output raw slide markdown when the tool is available.
-- Aesthetic Theming: Select authentic designer themes matching the topic (e.g. "bento-modern" or "cobalt-grid" for tech/SaaS; "acid-brutalist" or "8-bit-orbit" for AI/startups; "black-gold" or "minimal-corporate" for executive/finance; "soft-editorial" or "editorial-forest" for design/sustainability; "cyber-neon" for gaming; "block-frame" for creative).
-- Dynamic Slide Mixing: Vary slide layout sequences across decks to match the narrative arc (hook early with "big-stat" or "quote", contrast with "two-column", structure with "three-column" or "timeline", highlight with "content-with-icon" or "checklist", close with "call-to-action"). Maintain unified theme palette and typography while ensuring every generated deck has a unique, bespoke layout structure.
+- Execution: Always invoke the \`generate-presentation\` tool to create widescreen (16:9) slides.
+- Multi-Step Research First: If the presentation topic involves real-time facts, current year (${currentDate}), or live developments (AI models, tech, companies, market metrics), invoke \`web-search\` FIRST in Step 1 to retrieve verified information, then invoke \`generate-presentation\` in Step 2 using the live search findings.
+- Clean Slide Data: NEVER use raw markdown symbols (#, ##, **, __, \`code\`, or leading dashes) inside any slide text field (title, subtitle, tagline, points, stat, quote). Always output clean, plain text strings.
+- Cover Slide Structure: The first slide must always have type "cover", with a compelling "title", one-line "subtitle", and "tagline" (e.g. "Prepared for [Team] · ${currentDate}").
+- Aesthetic Theming: Select authentic designer themes matching the topic ("bento-modern" or "cobalt-grid" for tech/SaaS; "acid-brutalist" or "8-bit-orbit" for AI/startups; "black-gold" or "minimal-corporate" for executive/finance; "soft-editorial" or "editorial-forest" for design/sustainability; "cyber-neon" for gaming; "block-frame" for creative).
+- Dynamic Slide Mixing: Vary slide layout sequences across decks to match the narrative arc ("cover", "big-stat", "two-column", "three-column", "timeline", "content-with-icon", "checklist", "quote", "call-to-action"). Maintain unified theme palette and typography while ensuring every generated deck has a unique, bespoke layout structure.
 </presentation_creation_guidelines>`;
 }
 
@@ -312,6 +341,8 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildMemoryDirective());
     sections.push(buildBrowserDirective());
     sections.push(buildPresentationDirective());
+    sections.push(buildDocumentDirective());
+    sections.push(buildQrDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

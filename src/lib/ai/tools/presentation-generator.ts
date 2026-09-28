@@ -486,7 +486,7 @@ export const presentationInputSchema = z.preprocess(
 
 export const presentationGeneratorTool = createTool({
   description:
-    "Generate a professional PowerPoint presentation deck (6-10 slides) with curated aesthetic themes from beautiful-html-templates and free-ppt-template. Accepts 'slides' or 'sections'.",
+    "Generate a professional PowerPoint presentation deck (6-10 slides) with curated aesthetic themes and dynamic layout types. Accepts 'slides' or 'sections'. For real-time topics, current year rankings, or factual news, invoke the web-search tool first to gather verified data before calling this tool.",
   inputSchema: presentationInputSchema,
   execute: async (args) => {
     // Simply return the normalized data to the client for browser-side PPTX generation & preview

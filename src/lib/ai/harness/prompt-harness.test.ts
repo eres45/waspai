@@ -227,7 +227,7 @@ describe("Prompt Harness Core (DeepSeek + Hermes 3 Standard)", () => {
         `[HARNESS METRICS] Voice: ${voicePrompt.length} chars, ${voicePrompt.split(/\s+/).length} words, ~${Math.round(voicePrompt.length / 3.7)} tokens`,
       );
 
-      expect(standardPrompt.length).toBeLessThan(6500);
+      expect(standardPrompt.length).toBeLessThan(8500);
       expect(voicePrompt.length).toBeLessThan(1200);
     });
   });
