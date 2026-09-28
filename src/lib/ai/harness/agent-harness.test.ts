@@ -234,4 +234,31 @@ describe("Context Compaction (Hermes/DeepSeek-inspired)", () => {
     expect(activeResult).not.toContain("[Tool output compacted:");
     expect(activeResult).toEqual("Active fresh result ".repeat(50));
   });
+
+  it("compactToolOutput preserves both Head and Tail content (DeepSeek Harness)", () => {
+    const text = "START_TOKEN" + ".".repeat(1000) + "END_CONCLUSION_TOKEN";
+    const compacted = compactToolOutput(text, 100);
+
+    expect(compacted).toContain("START_TOKEN");
+    expect(compacted).toContain("END_CONCLUSION_TOKEN");
+    expect(compacted).toContain("[Tool output compacted:");
+  });
+
+  it("attaches repeat advisory notice on second consecutive identical call", async () => {
+    const mockTool = {
+      description: "Sample tool",
+      parameters: {},
+      execute: vi.fn().mockResolvedValue({ status: "ok" }),
+    };
+    const tools = createHarnessedToolkit(
+      { "test-tool": mockTool },
+      { maxRepetitions: 2 },
+    );
+
+    const call1 = await tools["test-tool"].execute({ key: "val" }, {});
+    expect((call1 as any)._repeatAdvisory).toBeUndefined();
+
+    const call2 = await tools["test-tool"].execute({ key: "val" }, {});
+    expect((call2 as any)._repeatAdvisory).toContain("ADVISORY_REPEAT_WARNING");
+  });
 });

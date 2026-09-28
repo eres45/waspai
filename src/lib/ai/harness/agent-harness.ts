@@ -10,6 +10,7 @@ export interface CircuitBreakerCheckResult {
   reason?: string;
   fingerprint?: string;
   executionCount?: number;
+  isAdvisory?: boolean;
 }
 
 export interface ReflectiveErrorEnvelope {
@@ -72,10 +73,22 @@ export class ActionCircuitBreaker {
       };
     }
 
+    // DeepSeek Harness Tier 1 Advisory Guard:
+    // If consecutive repetition hits maxAllowedRepetitions (e.g. 2nd call), allow execution
+    // but flag an advisory notice so the model is cautioned before the hard circuit breaker trips.
+    const isAdvisory =
+      currentCount === this.maxAllowedRepetitions &&
+      this.maxAllowedRepetitions >= 2;
+    const advisoryReason = isAdvisory
+      ? `ADVISORY_REPEAT_WARNING: You are repeating the exact same tool call '${toolName}' with identical arguments. Carefully analyze the previous result before calling again. If the task is not complete, alter your strategy or parameters rather than repeating the call.`
+      : undefined;
+
     return {
       allowed: true,
+      reason: advisoryReason,
       fingerprint,
       executionCount: currentCount,
+      isAdvisory,
     };
   }
 
@@ -184,12 +197,33 @@ export function createHarnessedToolkit(
         }
 
         // 2. Reflective Error Envelope Guard
-        return executeWithReflectiveEnvelope(
+        const result = await executeWithReflectiveEnvelope(
           toolName,
           args,
           context,
           originalExecute,
         );
+
+        // DeepSeek Advisory Enrichment: attach repeat notice if advisory threshold was met
+        if (
+          check.isAdvisory &&
+          result &&
+          typeof result === "object" &&
+          !(result as any).isReflectiveError
+        ) {
+          try {
+            Object.defineProperty(result, "_repeatAdvisory", {
+              value: check.reason,
+              enumerable: false,
+              configurable: true,
+              writable: true,
+            });
+          } catch {
+            // Ignore if object is frozen
+          }
+        }
+
+        return result;
       },
     };
   }
@@ -199,13 +233,20 @@ export function createHarnessedToolkit(
 
 /**
  * Hermes/DeepSeek Context Compactor
- * Condenses a single tool output if it exceeds maxLength.
+ * Condenses a single tool output if it exceeds maxLength using Head/Tail compaction.
  */
 export function compactToolOutput(output: any, maxLength = 500): any {
   if (output === null || output === undefined) return output;
   if (typeof output === "string") {
     if (output.length <= maxLength) return output;
-    return `${output.slice(0, maxLength)}...\n[Tool output compacted: ${output.length - maxLength} chars omitted to conserve context budget]`;
+    const omitted = output.length - maxLength;
+    // DeepSeek Harness Head/Tail Compactor:
+    // Preserves head (70%) and tail (30%) so both introductory context and final conclusions/summaries remain intact.
+    const headLen = Math.max(1, Math.floor(maxLength * 0.7));
+    const tailLen = Math.max(0, maxLength - headLen);
+    const head = output.slice(0, headLen);
+    const tail = tailLen > 0 ? output.slice(-tailLen) : "";
+    return `${head}...\n[Tool output compacted: ${omitted} chars omitted to conserve context budget]\n${tail}`;
   }
   if (typeof output === "object") {
     try {
