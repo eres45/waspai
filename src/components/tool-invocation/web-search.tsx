@@ -55,12 +55,19 @@ function ClaudeSearchBlock({
     };
   }, [part.state, part.output]);
 
+  const toolName = (part as any)?.toolName || (part as any)?.name || "";
+  const isContentScrape =
+    toolName === "web-content" ||
+    toolName === "scrape-web-page" ||
+    toolName === "webContent";
+
   const queryText =
     input?.query ||
     input?.q ||
     input?.search_query ||
     result?.query ||
-    (Array.isArray(input?.urls) ? input.urls.join(", ") : "") ||
+    input?.url ||
+    (Array.isArray(input?.urls) ? input.urls.join(", ") : input?.urls) ||
     "";
 
   const resultsList = (result?.results ?? []).filter(
@@ -71,7 +78,9 @@ function ClaudeSearchBlock({
     return (
       <div className="my-1.5 flex flex-col">
         <div className="inline-flex items-center gap-2 text-[13px] text-muted-foreground py-1 px-1 select-none">
-          <TextShimmer className="font-normal">Searching the web</TextShimmer>
+          <TextShimmer className="font-normal">
+            {isContentScrape ? "Reading page content" : "Searching the web"}
+          </TextShimmer>
           {queryText && (
             <span className="text-foreground/80 font-medium truncate max-w-[320px] sm:max-w-[460px]">
               {queryText}
@@ -98,7 +107,9 @@ function ClaudeSearchBlock({
             : "hover:bg-secondary/30 text-muted-foreground",
         )}
       >
-        <span className="text-muted-foreground shrink-0">Searched the web</span>
+        <span className="text-muted-foreground shrink-0">
+          {isContentScrape ? "Read page content" : "Searched the web"}
+        </span>
         {queryText && (
           <span className="font-medium text-foreground truncate max-w-[280px] sm:max-w-[440px]">
             {queryText}
@@ -137,7 +148,9 @@ function ClaudeSearchBlock({
             </div>
           ) : resultsList.length === 0 ? (
             <div className="px-3 py-2 text-xs text-muted-foreground">
-              No web sources returned for this query.
+              {isContentScrape
+                ? "No readable content extracted from page."
+                : "No web sources returned for this query."}
             </div>
           ) : (
             resultsList.map((item, idx) => {

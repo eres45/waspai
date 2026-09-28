@@ -10,6 +10,8 @@ import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 export const freeSearchSchema = z.object({
   query: z
     .string()
+    .optional()
+    .default("")
     .describe(
       'Search query. Supports advanced operators like site:github.com, filetype:pdf, intitle:guide, or exact "phrases". Combine them for powerful searches.',
     ),
@@ -22,11 +24,25 @@ export const freeSearchSchema = z.object({
 });
 
 // Fallback schema for content scraping
-export const freeContentsSchema = z.object({
-  urls: z
-    .array(z.string())
-    .describe("List of URLs to extract text content from"),
-});
+export const freeContentsSchema = z
+  .object({
+    url: z.string().optional().describe("URL to extract text content from"),
+    urls: z
+      .union([z.array(z.string()), z.string()])
+      .optional()
+      .describe("List of URLs to extract text content from"),
+  })
+  .transform((val) => {
+    const list: string[] = [];
+    if (Array.isArray(val.urls)) {
+      list.push(...val.urls);
+    } else if (typeof val.urls === "string" && val.urls.trim()) {
+      list.push(val.urls.trim());
+    } else if (typeof val.url === "string" && val.url.trim()) {
+      list.push(val.url.trim());
+    }
+    return { urls: list };
+  });
 
 // --- Generic Search Interfaces ---
 
@@ -90,9 +106,14 @@ async function fetchDuckDuckGoHtml(
     const html = await res.text();
     const $ = load(html);
     const items: WebSearchResult[] = [];
-    $(".result").each((i, el) => {
+    const elements = $(".result, .result__body, .results_links, .links_main");
+    elements.each((i, el) => {
       if (items.length >= maxResults) return;
-      const title = $(el).find(".result__title").text().trim();
+      const title = $(el)
+        .find(".result__title, .result__a")
+        .first()
+        .text()
+        .trim();
       let rawHref =
         $(el).find(".result__a").attr("href") ||
         $(el).find(".result__url").attr("href") ||
@@ -114,6 +135,60 @@ async function fetchDuckDuckGoHtml(
           favicon: getFaviconUrl(rawHref),
           score: 1,
         });
+      }
+    });
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+async function fetchDuckDuckGoLite(
+  query: string,
+  maxResults: number = 15,
+): Promise<WebSearchResult[]> {
+  try {
+    const res = await fetch("https://lite.duckduckgo.com/lite/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      body: `q=${encodeURIComponent(query)}`,
+      signal: AbortSignal.timeout(5500),
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const $ = load(html);
+    const items: WebSearchResult[] = [];
+    $("td").each((_, el) => {
+      if (items.length >= maxResults) return;
+      const link = $(el).find(".result-link");
+      const snippet = $(el).find(".result-snippet");
+      if (link.length > 0) {
+        const title = link.text().trim();
+        let href = link.attr("href") || "";
+        if (href.includes("uddg=")) {
+          try {
+            href = decodeURIComponent(href.split("uddg=")[1].split("&")[0]);
+          } catch {}
+        } else if (href.startsWith("//")) {
+          href = `https:${href}`;
+        }
+        if (title && href.startsWith("http")) {
+          items.push({
+            id: `ddg-lite-${items.length}`,
+            title,
+            url: href,
+            text: snippet.text().trim() || title,
+            favicon: getFaviconUrl(href),
+            score: 1,
+          });
+        }
       }
     });
     return items;
@@ -414,7 +489,7 @@ async function fetchFreeSearch(
     liveForexResults,
     liveWeatherResults,
     gnewsResults,
-    ddgResults,
+    rawDdgResults,
   ] = await Promise.all([
     fetchLiveCryptoMarketResults(query),
     fetchLiveForexResults(query),
@@ -422,6 +497,11 @@ async function fetchFreeSearch(
     fetchGoogleNewsResults(query, 8),
     fetchDuckDuckGoHtml(query, numResults),
   ]);
+
+  let ddgResults = rawDdgResults;
+  if (ddgResults.length === 0) {
+    ddgResults = await fetchDuckDuckGoLite(query, numResults);
+  }
 
   const seenUrls = new Set<string>();
   const combined: WebSearchResult[] = [];
@@ -542,8 +622,14 @@ export const webSearchTool = createTool({
         numRes = (params as any).numResults || 20;
       }
 
+      queryStr = queryStr.trim();
       if (!queryStr) {
-        throw new Error("Search query is missing or undefined.");
+        return {
+          requestId: "empty-query",
+          results: [],
+          query: "",
+          guide: "No search query was provided.",
+        };
       }
 
       const session = await getSession().catch(() => null);

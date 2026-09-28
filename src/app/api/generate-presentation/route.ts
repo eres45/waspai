@@ -350,8 +350,9 @@ export async function POST(req: NextRequest) {
             line: { color: accentHex, width: 3 },
           });
 
-          (s.timeline || []).forEach((item: any, tIdx: number) => {
-            const count = Math.max(s.timeline.length - 1, 1);
+          const timelineList = Array.isArray(s.timeline) ? s.timeline : [];
+          timelineList.forEach((item: any, tIdx: number) => {
+            const count = Math.max(timelineList.length - 1, 1);
             const xPos = 1.0 + tIdx * (8.0 / count);
             const isTop = tIdx % 2 === 0;
 

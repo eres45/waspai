@@ -114,6 +114,7 @@ import {
   updateMemoryTool,
 } from "lib/ai/tools/memory-tools";
 import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
+import { presentationGeneratorTool } from "lib/ai/tools/presentation-generator";
 import { getUnifiedSession } from "lib/auth/unified-session";
 import { serverFileStorage } from "lib/file-storage";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
@@ -1507,6 +1508,7 @@ AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
 
 2. DYNAMIC SLIDE MIXING (NEVER USE THE SAME LAYOUT PATTERN TWICE):
    Every topic demands a unique story rhythm. Do not output repetitive slide layouts!
+   Generate 6 to 10 slides (optimal pacing, high visual density, prevents token truncation). Keep slide text punchy and concise.
    Freely mix and match layout types across the deck while keeping the theme palette cohesive:
    - Hook with a "big-stat" or bold quote right after the "cover".
    - Use "two-column" for contrast/comparison (Problem vs. Solution, Before vs. After).
@@ -1518,7 +1520,7 @@ AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
    - Conclude decisively with "call-to-action".
    Vary slide structures creatively so each generated deck feels fresh, bespoke, and distinctly styled.
 CRITICAL: NEVER hallucinate fake download URLs. Calling the tool automatically provides a live visual carousel and an instant, authentic .pptx file download in the user interface.`
-            : `SYSTEM DIRECTIVE: The user requested a presentation. Output 10 structured, presentation-ready slides in clean Markdown, with slide numbers, layout suggestions (Cover, Two-Column, Big-Stat, Timeline, etc.), and clear visual hierarchies.`
+            : `SYSTEM DIRECTIVE: The user requested a presentation. Output 6 to 10 structured, presentation-ready slides in clean Markdown, with slide numbers, layout suggestions (Cover, Two-Column, Big-Stat, Timeline, etc.), and clear visual hierarchies.`
           : "";
 
         // Detect QR code generation request from keywords
@@ -2019,6 +2021,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           "generate-word-document": wordDocumentTool,
           "generate-csv": csvGeneratorTool,
           "generate-text-file": textFileTool,
+          "generate-presentation": presentationGeneratorTool,
           "convert-file": {
             ...fileConverterTool,
             execute: async (args: any, context: any) => {

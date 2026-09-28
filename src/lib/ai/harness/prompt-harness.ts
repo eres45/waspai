@@ -163,10 +163,11 @@ export function buildToolProtocolBlock(profile: ModelCognitiveProfile): string {
  */
 export function buildWebSearchDirective(): string {
   return `<web_search_guidelines>
+- TEMPORAL ANCHOR (Current Year: 2026): You are operating in the year 2026. When searching for "current", "latest", "recent", or new models/events, NEVER append 2024 or 2023. Always use the current year (2026) or month/year, or omit the year to retrieve current real-time coverage.
 - Advanced Search: Leverage search operators when high precision is required (\`site:\`, \`filetype:\`, exact quotes \`"..."\`).
 - Research Depth: For exhaustive inquiries ("deep research", "full breakdown"), collect multi-source evidence.
 - Inline Citations: Synthesize findings across reputable sources and cite inline at the end of relevant points using standard Markdown links with ONLY the site name as link text — e.g. [CoinDesk](https://...), [Reuters](https://...), [Yahoo Finance](https://...). Do NOT output standalone "Source:" blocks at the end.
-- Stale Result Recovery: If first-round results are cached or ambiguous, refine the query with current month and year to retrieve fresh coverage.
+- Stale Result Recovery: If first-round results are cached or ambiguous, refine the query with current month and year (2026) to retrieve fresh coverage.
 </web_search_guidelines>`;
 }
 

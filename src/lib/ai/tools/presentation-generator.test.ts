@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   presentationGeneratorTool,
+  presentationInputSchema,
   PRESENTATION_THEMES,
 } from "./presentation-generator";
 import {
@@ -195,5 +196,82 @@ describe("Presentation Generator Tool", () => {
     expect(THEMES_MAP).toHaveProperty("cyber-neon");
 
     expect(PRESENTATION_THEMES.length).toBeGreaterThan(20);
+  });
+
+  it("resiliently accepts 5 slides without throwing length validation errors", async () => {
+    const rawInput = {
+      title: "AI Models 2026",
+      description: "Quick 5-slide overview",
+      topic: "AI",
+      theme: "bento-modern",
+      slides: sample10Slides.slice(0, 5),
+    };
+
+    const parsed = (presentationInputSchema as any).parse(rawInput);
+    expect(parsed.slides.length).toBe(5);
+
+    const result = await (presentationGeneratorTool.execute as any)(parsed);
+    expect(result.success).toBe(true);
+    expect(result.slides.length).toBe(5);
+  });
+
+  it("resiliently accepts 'sections' instead of 'slides' and normalizes layout aliases", async () => {
+    const rawInput = {
+      title: "Model Architecture",
+      description: "Document converted to slides",
+      topic: "Transformers",
+      theme: "cobalt-grid",
+      sections: [
+        {
+          layout: "cover",
+          title: "Transformers in 2026",
+          subtitle: "State of Deep Learning",
+        },
+        {
+          layout: "two-column",
+          title: "Dense vs MoE",
+          content: "Dense models are predictable\nMoE models scale better",
+        },
+        {
+          layout: "big-stat",
+          title: "Parameter Efficiency",
+          stat: "120B",
+          description: "Active parameter count",
+        },
+      ],
+    };
+
+    const parsed = (presentationInputSchema as any).parse(rawInput);
+    expect(parsed.slides.length).toBe(3);
+    expect(parsed.slides[0].type).toBe("cover");
+    expect(parsed.slides[1].type).toBe("two-column");
+    expect(parsed.slides[1].left.heading).toBeDefined();
+    expect(parsed.slides[2].type).toBe("big-stat");
+    expect(parsed.slides[2].stat).toBe("120B");
+
+    const result = await (presentationGeneratorTool.execute as any)(parsed);
+    expect(result.success).toBe(true);
+    expect(result.slides.length).toBe(3);
+  });
+
+  it("handles unknown theme and missing fields gracefully with defaults", async () => {
+    const rawInput = {
+      title: "Minimal Test",
+      description: "Testing fallbacks",
+      topic: "Testing",
+      theme: "non-existent-theme-xyz",
+      slides: [
+        {
+          title: "Incomplete Slide",
+          content: "Just a paragraph without points array or type",
+        },
+      ],
+    };
+
+    const parsed = (presentationInputSchema as any).parse(rawInput);
+    expect(parsed.theme).toBe("bento-modern");
+    expect(parsed.slides.length).toBe(1);
+    expect(parsed.slides[0].type).toBe("bullet-list");
+    expect(parsed.slides[0].points.length).toBeGreaterThan(0);
   });
 });
