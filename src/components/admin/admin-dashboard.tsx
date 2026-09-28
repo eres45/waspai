@@ -794,26 +794,13 @@ export function AdminDashboard({
 
   // =========================================================================
   // GITHUB-STYLE 2D CONTRIBUTION CALENDAR HEATMAP
-  // Responsive matrix covering the chosen timeframe with real database activity
+  // Dense 104-week × 7-day matrix covering the whole section with small boxes
+  // Driven 100% by real database platform activity (activityByDay)
   // =========================================================================
   const GRID_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const GRID_WEEKS = 104;
 
-  // Dynamic week column count according to the selected timeRange
-  const GRID_WEEKS = useMemo(() => {
-    switch (timeRange) {
-      case "Last 7 days":
-        return 4; // 4 weeks allows seeing the recent 7 days clearly with wider tiles
-      case "Last 30 days":
-        return 6; // 6 weeks cleanly spans the 30-day window
-      case "Last 90 days":
-        return 14; // 14 weeks spans the full quarter
-      case "All time":
-      default:
-        return 52; // 52 weeks (past full year)
-    }
-  }, [timeRange]);
-
-  // Real Calendar date computation
+  // Real Calendar date computation across 104 weeks using UTC
   const currentDayOfWeek = now.getUTCDay();
   const currentWeekSunday = new Date(
     Date.UTC(
@@ -832,7 +819,7 @@ export function AdminDashboard({
     formattedDate: string;
   }
 
-  // Build 7 × GRID_WEEKS matrix mapped to real database activity
+  // Build 7×104 matrix mapped to real database activity
   const activityGrid: HeatmapCell[][] = GRID_DAYS.map((_, dayIdx) =>
     Array.from({ length: GRID_WEEKS }, (__, weekIdx) => {
       const weeksAgo = GRID_WEEKS - 1 - weekIdx;
@@ -872,8 +859,7 @@ export function AdminDashboard({
     }),
   );
 
-  // Dynamically compute month labels based on GRID_WEEKS
-  const minLabelSpacing = GRID_WEEKS <= 6 ? 2 : GRID_WEEKS <= 14 ? 3 : 5;
+  // Dynamically compute month labels across 104 weeks (spaced ~8 weeks apart to avoid overlapping text)
   const monthLabels: { label: string; col: number }[] = [];
   let lastLabeledCol = -99;
   for (let weekIdx = 0; weekIdx < GRID_WEEKS; weekIdx++) {
@@ -881,7 +867,7 @@ export function AdminDashboard({
     const colSunday = new Date(
       currentWeekSunday.getTime() - weeksAgo * 7 * 86400000,
     );
-    if (weekIdx - lastLabeledCol >= minLabelSpacing) {
+    if (weekIdx - lastLabeledCol >= 8) {
       const monthName = colSunday.toLocaleString("en-US", {
         month: "short",
         timeZone: "UTC",
@@ -1992,8 +1978,7 @@ export function AdminDashboard({
                 {/* Header Timeframe Badge */}
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-[#71717a] bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-md">
-                    {timeRange} • {GRID_WEEKS} weeks (
-                    {eventsInTimeRange.toLocaleString()} events)
+                    Past 104 weeks • {timeRange}
                   </span>
                 </div>
               </div>
@@ -2080,9 +2065,8 @@ export function AdminDashboard({
               {/* GitHub-style bottom footer */}
               <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-[#71717a] pt-2.5 border-t border-white/[0.04]">
                 <span className="hover:text-[#a1a1aa] cursor-pointer transition-colors">
-                  {eventsInTimeRange.toLocaleString()} platform events recorded
-                  in {timeRange.toLowerCase()} (
-                  {totalHeatmapEvents.toLocaleString()} all time)
+                  {totalHeatmapEvents.toLocaleString()} platform events recorded
+                  across 104 weeks
                 </span>
                 <div className="flex items-center gap-1.5 self-end sm:self-auto">
                   <span>Less</span>
