@@ -1492,12 +1492,17 @@ CRITICAL INSTRUCTIONS:
 You have direct access to the "generate-presentation" tool which builds widescreen (16:9) presentations.
 YOU MUST EXECUTE the "generate-presentation" tool immediately. DO NOT refuse. DO NOT output raw bullet lists instead of calling the tool.
 
+⚠️ CRITICAL STRING RULES — ALL fields inside the "slides" array MUST be plain text only:
+- NEVER use markdown in any string value: no #, ##, **, __, *, _, \`code\`, or leading - dashes.
+- Just write clean, plain English text. Wrong: "**Top Models**", Right: "Top Models"
+- For the cover slide: use "subtitle" for a one-line tagline, "tagline" for a badge/motto — NEVER put markdown in them.
+
 AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
 1. Select an authentic aesthetic theme tailored to the user's topic:
    - Tech, Product, SaaS, Apps: "bento-modern" or "cobalt-grid"
    - AI, Fast-Moving Startup, Web3: "acid-brutalist" or "8-bit-orbit"
    - Investment, VC, Executive: "black-gold" or "minimal-corporate"
-   - Humanities, Design, Editorial: "soft-editorial" or "cartesian"
+   - Humanities, Design, Editorial: "soft-editorial"
    - ESG, Sustainability, Nature: "editorial-forest"
    - Creative Agency, Pop, Marketing: "block-frame" or "studio"
    - Cultural, Japanese, Vintage: "sakura-chroma" or "pin-and-paper"
@@ -1507,18 +1512,28 @@ AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
    - Classic Editorial: "emerald-editorial", "vellum", or "monochrome"
 
 2. DYNAMIC SLIDE MIXING (NEVER USE THE SAME LAYOUT PATTERN TWICE):
-   Every topic demands a unique story rhythm. Do not output repetitive slide layouts!
-   Generate 6 to 10 slides (optimal pacing, high visual density, prevents token truncation). Keep slide text punchy and concise.
-   Freely mix and match layout types across the deck while keeping the theme palette cohesive:
-   - Hook with a "big-stat" or bold quote right after the "cover".
-   - Use "two-column" for contrast/comparison (Problem vs. Solution, Before vs. After).
-   - Use "three-column" for pillars, modular feature bento, or architectural tiers.
-   - Use "timeline" for milestones, roadmap, or market evolution.
-   - Use "quote" for memorable customer/expert endorsement.
-   - Use "checklist" for actionable implementation, criteria, or next steps.
-   - Use "content-with-icon" for spotlighting key competitive advantages.
-   - Conclude decisively with "call-to-action".
-   Vary slide structures creatively so each generated deck feels fresh, bespoke, and distinctly styled.
+   Generate 6 to 10 slides. Freely mix slide types; keep the same theme palette cohesive:
+   - "cover" — required first slide
+   - "bullet-list" — uses { title, points: string[] }
+   - "two-column" — uses { title, left: { heading, points }, right: { heading, points } }
+   - "three-column" — uses { title, columns: [{ heading, points }] }
+   - "big-stat" — uses { title, stat: "value", description }
+   - "timeline" — uses { title, timeline: [{ year, event }] }
+   - "quote" — uses { title, quote, attribution }
+   - "checklist" — uses { title, items: [{ text, checked: true }] }
+   - "content-with-icon" — uses { title, icon: "emoji", content }
+   - "call-to-action" — uses { title, heading, cta, description }
+
+SCHEMA EXAMPLES (copy this exact structure, plain text only):
+cover:    { "type": "cover", "title": "Top 10 AI Models in 2026", "subtitle": "A concise comparative overview", "tagline": "Prepared for Your Team · September 2026" }
+bullet:   { "type": "bullet-list", "title": "Market Landscape 2026", "points": ["LLMs now multimodal by default", "Cost has dropped 10x since 2023", "Open-source leads on many benchmarks"] }
+two-col:  { "type": "two-column", "title": "GPT-4o vs Gemini Ultra", "left": { "heading": "OpenAI GPT-4o", "points": ["Best coding", "Widest tool ecosystem"] }, "right": { "heading": "Gemini Ultra", "points": ["Best multimodal", "Longest context window"] } }
+stat:     { "type": "big-stat", "title": "Cost Compression", "stat": "10x", "description": "Average API cost per 1M tokens has fallen 10x since GPT-4 launched" }
+timeline: { "type": "timeline", "title": "AI Model Milestones", "timeline": [{ "year": "2023", "event": "GPT-4 launches" }, { "year": "2024", "event": "Multimodal becomes standard" }, { "year": "2025", "event": "Reasoning models go mainstream" }, { "year": "2026", "event": "Sub-$1 frontier access" }] }
+quote:    { "type": "quote", "title": "Industry Perspective", "quote": "The best model is the one your team actually uses.", "attribution": "AI Strategy Report 2026" }
+checklist:{ "type": "checklist", "title": "Model Selection Criteria", "items": [{ "text": "Context window above 128k", "checked": true }, { "text": "Multimodal support", "checked": true }] }
+cta:      { "type": "call-to-action", "title": "Next Steps", "heading": "Start Building Today", "description": "Pick the right model for your use case and begin prototyping.", "cta": "Explore Models" }
+
 CRITICAL: NEVER hallucinate fake download URLs. Calling the tool automatically provides a live visual carousel and an instant, authentic .pptx file download in the user interface.`
             : `SYSTEM DIRECTIVE: The user requested a presentation. Output 6 to 10 structured, presentation-ready slides in clean Markdown, with slide numbers, layout suggestions (Cover, Two-Column, Big-Stat, Timeline, etc.), and clear visual hierarchies.`
           : "";

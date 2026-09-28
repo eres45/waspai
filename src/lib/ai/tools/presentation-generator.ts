@@ -58,6 +58,31 @@ export interface NormalizedSlide {
   cta?: string;
 }
 
+/**
+ * Strip common markdown formatting characters from a plain text string so
+ * raw LLM output (e.g. "# Heading", "**Bold**", "- bullet") never bleeds
+ * into the actual slide text rendered by pptxgenjs.
+ */
+export function stripMd(s: string): string {
+  if (!s) return "";
+  return (
+    s
+      // Remove leading heading hashes: ## Title → Title
+      .replace(/^#+\s*/gm, "")
+      // Remove bold/italic markers: **text**, __text__, *text*, _text_
+      .replace(/(\*\*|__)(.*?)\1/g, "$2")
+      .replace(/(\*|_)(.*?)\1/g, "$2")
+      // Remove inline code: `code`
+      .replace(/`([^`]*)`/g, "$1")
+      // Remove leading bullet/dash/numbered list chars at line start
+      .replace(/^[-*+]\s+/gm, "")
+      .replace(/^\d+\.\s+/gm, "")
+      // Collapse multiple blank lines to one and trim
+      .replace(/\n{2,}/g, " ")
+      .trim()
+  );
+}
+
 export function normalizePresentationPayload(raw: any) {
   if (!raw || typeof raw !== "object") {
     return {
@@ -108,31 +133,35 @@ export function normalizePresentationPayload(raw: any) {
         return {
           type: "bullet-list",
           title: `Slide ${idx + 1}`,
-          points: [String(s || "Key point")],
+          points: [stripMd(String(s || "Key point"))],
         };
       }
 
       const rawType = String(s.type || s.layout || "")
         .toLowerCase()
         .trim();
-      const title = String(s.title || s.heading || `Slide ${idx + 1}`).trim();
+      const title = stripMd(
+        String(s.title || s.heading || `Slide ${idx + 1}`).trim(),
+      );
 
-      // Extract points safely from points array, string, or content
+      // Extract points safely from points array, string, or content — strip markdown from each
       let points: string[] = [];
       if (Array.isArray(s.points)) {
-        points = s.points.map(String).filter((p) => p.trim().length > 0);
+        points = s.points
+          .map((p: any) => stripMd(String(p)))
+          .filter((p) => p.trim().length > 0);
       } else if (typeof s.points === "string") {
         points = s.points
           .split(/\n|•|- /)
-          .map((p: string) => p.trim())
+          .map((p: string) => stripMd(p.trim()))
           .filter(Boolean);
       } else if (typeof s.content === "string") {
         points = s.content
           .split(/\n|•|- /)
-          .map((p: string) => p.trim())
+          .map((p: string) => stripMd(p.trim()))
           .filter(Boolean);
         if (points.length === 0 && s.content.trim()) {
-          points = [s.content.trim()];
+          points = [stripMd(s.content.trim())];
         }
       }
 
@@ -160,11 +189,13 @@ export function normalizePresentationPayload(raw: any) {
       if (type === "cover") {
         return {
           type: "cover",
-          title: title || String(raw.title || "Presentation Title"),
-          subtitle: String(
-            s.subtitle || s.description || raw.description || "",
+          title: title || stripMd(String(raw.title || "Presentation Title")),
+          subtitle: stripMd(
+            String(s.subtitle || s.description || raw.description || ""),
           ),
-          tagline: String(s.tagline || s.subtitle || "Created with Wasp AI"),
+          tagline: stripMd(
+            String(s.tagline || s.subtitle || "Created with Wasp AI"),
+          ),
         };
       }
 
@@ -182,12 +213,12 @@ export function normalizePresentationPayload(raw: any) {
           };
         } else {
           left = {
-            heading: String(left.heading || "Key Points"),
+            heading: stripMd(String(left.heading || "Key Points")),
             points: Array.isArray(left.points)
-              ? left.points.map(String)
+              ? left.points.map((p: any) => stripMd(String(p)))
               : Array.isArray(left)
-                ? left.map(String)
-                : [String(left.points || left || "Point")],
+                ? left.map((p: any) => stripMd(String(p)))
+                : [stripMd(String(left.points || left || "Point"))],
           };
         }
 
@@ -202,12 +233,12 @@ export function normalizePresentationPayload(raw: any) {
           };
         } else {
           right = {
-            heading: String(right.heading || "Key Points"),
+            heading: stripMd(String(right.heading || "Key Points")),
             points: Array.isArray(right.points)
-              ? right.points.map(String)
+              ? right.points.map((p: any) => stripMd(String(p)))
               : Array.isArray(right)
-                ? right.map(String)
-                : [String(right.points || right || "Point")],
+                ? right.map((p: any) => stripMd(String(p)))
+                : [stripMd(String(right.points || right || "Point"))],
           };
         }
 
@@ -250,10 +281,10 @@ export function normalizePresentationPayload(raw: any) {
           type: "three-column",
           title,
           columns: cols.slice(0, 3).map((col: any, cIdx: number) => ({
-            heading: String(col?.heading || `Pillar ${cIdx + 1}`),
+            heading: stripMd(String(col?.heading || `Pillar ${cIdx + 1}`)),
             points: Array.isArray(col?.points)
-              ? col.points.map(String)
-              : [String(col?.points || col || "Detail")],
+              ? col.points.map((p: any) => stripMd(String(p)))
+              : [stripMd(String(col?.points || col || "Detail"))],
           })),
         };
       }
@@ -262,12 +293,14 @@ export function normalizePresentationPayload(raw: any) {
         return {
           type: "big-stat",
           title,
-          stat: String(s.stat || s.value || "Top Tier"),
-          description: String(
-            s.description ||
-              s.content ||
-              points.join(". ") ||
-              "Key industry metric",
+          stat: stripMd(String(s.stat || s.value || "Top Tier")),
+          description: stripMd(
+            String(
+              s.description ||
+                s.content ||
+                points.join(". ") ||
+                "Key industry metric",
+            ),
           ),
         };
       }
@@ -277,8 +310,12 @@ export function normalizePresentationPayload(raw: any) {
           type: "content-with-icon",
           title,
           icon: String(s.icon || "Sparkles"),
-          content: String(
-            s.content || points.join(". ") || "Essential capability highlight.",
+          content: stripMd(
+            String(
+              s.content ||
+                points.join(". ") ||
+                "Essential capability highlight.",
+            ),
           ),
         };
       }
@@ -302,9 +339,9 @@ export function normalizePresentationPayload(raw: any) {
           type: "timeline",
           title,
           timeline: timeline.map((item: any, tIdx: number) => ({
-            year: String(item?.year || `Phase ${tIdx + 1}`),
-            event: String(
-              item?.event || item?.description || item || "Milestone",
+            year: stripMd(String(item?.year || `Phase ${tIdx + 1}`)),
+            event: stripMd(
+              String(item?.event || item?.description || item || "Milestone"),
             ),
           })),
         };
@@ -314,9 +351,9 @@ export function normalizePresentationPayload(raw: any) {
         return {
           type: "quote",
           title,
-          quote: String(s.quote || s.content || title),
-          attribution: String(
-            s.attribution || s.author || "Industry Benchmark",
+          quote: stripMd(String(s.quote || s.content || title)),
+          attribution: stripMd(
+            String(s.attribution || s.author || "Industry Benchmark"),
           ),
         };
       }
@@ -337,7 +374,7 @@ export function normalizePresentationPayload(raw: any) {
           type: "checklist",
           title,
           items: items.map((item: any) => ({
-            text: String(item?.text || item || "Action item"),
+            text: stripMd(String(item?.text || item || "Action item")),
             checked: typeof item?.checked === "boolean" ? item.checked : true,
           })),
         };
@@ -347,13 +384,15 @@ export function normalizePresentationPayload(raw: any) {
         return {
           type: "call-to-action",
           title,
-          heading: String(s.heading || title),
-          cta: String(s.cta || "Get Started"),
-          description: String(
-            s.description ||
-              s.content ||
-              points.join(". ") ||
-              "Take the next step.",
+          heading: stripMd(String(s.heading || title)),
+          cta: stripMd(String(s.cta || "Get Started")),
+          description: stripMd(
+            String(
+              s.description ||
+                s.content ||
+                points.join(". ") ||
+                "Take the next step.",
+            ),
           ),
         };
       }
@@ -371,15 +410,17 @@ export function normalizePresentationPayload(raw: any) {
   if (normalizedSlides.length === 0) {
     normalizedSlides.push({
       type: "cover",
-      title: String(raw.title || "Executive Presentation"),
-      subtitle: String(raw.description || "Comprehensive Overview"),
+      title: stripMd(String(raw.title || "Executive Presentation")),
+      subtitle: stripMd(String(raw.description || "Comprehensive Overview")),
       tagline: "Created with Wasp AI",
     });
   }
 
   return {
-    title: String(raw.title || "Executive Presentation"),
-    description: String(raw.description || raw.topic || "Presentation Deck"),
+    title: stripMd(String(raw.title || "Executive Presentation")),
+    description: stripMd(
+      String(raw.description || raw.topic || "Presentation Deck"),
+    ),
     topic: String(raw.topic || raw.title || "General"),
     theme,
     slides: normalizedSlides,
