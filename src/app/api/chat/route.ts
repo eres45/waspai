@@ -117,6 +117,11 @@ import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
 import { presentationGeneratorTool } from "lib/ai/tools/presentation-generator";
 import { webContentTool } from "lib/ai/tools/web/web-search";
 import { scrapeWebPageTool } from "lib/ai/tools/web/scrape-web-page";
+import { todoTool } from "lib/ai/tools/todo-tool";
+import { exitPlanModeTool } from "lib/ai/tools/plan-tools";
+import { askUserQuestionTool } from "lib/ai/tools/ask-user";
+import { subagentTool } from "lib/ai/tools/subagent-tool";
+import { readSpillSliceTool } from "lib/ai/tools/spill-tools";
 import { getUnifiedSession } from "lib/auth/unified-session";
 import { serverFileStorage } from "lib/file-storage";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
@@ -1661,6 +1666,11 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           "web-content": webContentTool,
           "web-scrape": webContentTool,
           web_scrape: webContentTool,
+          todo_write: todoTool,
+          exit_plan_mode: exitPlanModeTool,
+          ask_user_question: askUserQuestionTool,
+          delegate_subagent: subagentTool,
+          read_spill_slice: readSpillSliceTool,
           "convert-file": {
             ...fileConverterTool,
             execute: async (args: any, context: any) => {

@@ -48,6 +48,14 @@ const PresentationGeneratorToolInvocation = dynamic(
   { ssr: false },
 );
 
+const QuestionFormCard = dynamic(
+  () =>
+    import("./tool-invocation/question-form").then(
+      (mod) => mod.QuestionFormCard,
+    ),
+  { ssr: false },
+);
+
 // Dynamically import MermaidDiagram component
 const MermaidDiagram = dynamic(
   () => import("./mermaid-diagram").then((mod) => mod.MermaidDiagram),
@@ -279,6 +287,39 @@ export async function Highlight(
                     ...presentationData,
                   },
                 } as any
+              }
+            />
+          </PurePre>
+        );
+      }
+
+      // Auto-detect questions array if questions array is present (e.g. ask_user_question fallback)
+      const rawQuestionPayload = val?.arguments || val?.parameters || val;
+      const questionsArray = Array.isArray(rawQuestionPayload?.questions)
+        ? rawQuestionPayload.questions
+        : Array.isArray(val?.questions)
+          ? val.questions
+          : Array.isArray(val) &&
+              val.length > 0 &&
+              (val[0]?.text || val[0]?.question)
+            ? val
+            : null;
+
+      const isQuestionForm =
+        questionsArray &&
+        questionsArray.length > 0 &&
+        (questionsArray[0]?.text ||
+          questionsArray[0]?.question ||
+          questionsArray[0]?.options ||
+          questionsArray[0]?.id);
+
+      if (isQuestionForm) {
+        return (
+          <PurePre code={code} lang={lang}>
+            <QuestionFormCard
+              questions={questionsArray}
+              instructions={
+                rawQuestionPayload?.instructions || val?.instructions
               }
             />
           </PurePre>

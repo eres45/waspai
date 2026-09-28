@@ -85,6 +85,17 @@ const PresentationGeneratorToolInvocation = dynamic(
     loading,
   },
 );
+
+const QuestionFormCard = dynamic(
+  () =>
+    import("./tool-invocation/question-form").then(
+      (mod) => mod.QuestionFormCard,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
 import dynamic from "next/dynamic";
 import { notify } from "lib/notify";
 import { ModelProviderIcon } from "ui/model-provider-icon";
@@ -1329,6 +1340,21 @@ export const ToolMessagePart = memo(
 
       if (toolName === "html_preview") {
         return <HtmlPreview part={part} />;
+      }
+
+      if (
+        toolName === "ask_user_question" ||
+        toolName === "ask-user-question"
+      ) {
+        const inp = (part as any).args || (part as any).input;
+        const out = (part as any).output;
+        const questions = inp?.questions || out?.questions || [];
+        return (
+          <QuestionFormCard
+            questions={questions}
+            instructions={inp?.instructions || out?.instructions}
+          />
+        );
       }
 
       if (toolName === DefaultToolName.JavascriptExecution) {

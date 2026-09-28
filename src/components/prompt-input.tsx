@@ -661,6 +661,22 @@ export default function PromptInput({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [mentions.length, threadId, appStoreMutate, imageToolModel]);
 
+  useEffect(() => {
+    const handleSetChatInput = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text: string }>;
+      if (customEvent.detail?.text) {
+        setInputAction(customEvent.detail.text);
+        if (editorRef.current) {
+          editorRef.current.commands.setContent(customEvent.detail.text);
+          editorRef.current.commands.focus("end");
+        }
+      }
+    };
+    window.addEventListener("set-chat-input", handleSetChatInput);
+    return () =>
+      window.removeEventListener("set-chat-input", handleSetChatInput);
+  }, [setInputAction]);
+
   // Drag overlay handled globally in ChatBot
 
   return (

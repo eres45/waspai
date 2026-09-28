@@ -9,64 +9,82 @@
 import { tool as createTool } from "ai";
 import { z } from "zod";
 
-export const questionOptionSchema = z.object({
-  label: z
-    .string()
-    .describe("Short option label (e.g. 'PostgreSQL (Recommended)')."),
-  description: z
-    .string()
-    .optional()
-    .describe("One sentence explaining the technical tradeoff or impact."),
-});
+export const questionOptionSchema = z.union([
+  z.string().transform((val) => ({ label: val })),
+  z
+    .object({
+      label: z.string().optional().default(""),
+      text: z.string().optional(),
+      description: z.string().optional(),
+      value: z.string().optional(),
+    })
+    .transform((obj) => ({
+      label: obj.label || obj.text || obj.value || "",
+      description: obj.description,
+      value: obj.value || obj.label,
+    })),
+]);
 
-export const userQuestionItemSchema = z.object({
-  id: z
-    .string()
-    .describe("Stable question ID (e.g. 'db_choice', 'confirm_deploy')."),
-  question: z.string().describe("The specific question to ask the user."),
-  header: z
-    .string()
-    .optional()
-    .describe(
-      "Short category header like 'Confirm Architecture' or 'Select Engine'.",
-    ),
-  options: z
-    .array(questionOptionSchema)
-    .optional()
-    .describe(
-      "Optional choices. If you recommend one, put it first and append '(Recommended)' to its label.",
-    ),
-  multiSelect: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("Whether the user can select multiple options."),
-});
+export const userQuestionItemSchema = z
+  .object({
+    id: z.string().optional(),
+    question: z.string().optional(),
+    text: z.string().optional(),
+    title: z.string().optional(),
+    header: z.string().optional(),
+    type: z.string().optional(),
+    options: z.array(questionOptionSchema).optional().default([]),
+    multiSelect: z.boolean().optional(),
+    example: z.string().optional(),
+    note: z.string().optional(),
+  })
+  .transform((q, _ctx) => {
+    const questionText = q.question || q.text || q.title || "Question";
+    const isMulti = Boolean(
+      q.multiSelect ||
+        q.type === "multiple" ||
+        q.note?.toLowerCase().includes("multiple"),
+    );
+    return {
+      id: q.id || `q_${Math.random().toString(36).slice(2, 8)}`,
+      question: questionText,
+      text: questionText,
+      header: q.header,
+      type:
+        q.type ||
+        (isMulti ? "multiple" : q.options.length > 0 ? "choice" : "open"),
+      options: q.options || [],
+      multiSelect: isMulti,
+      example: q.example,
+      note: q.note,
+    };
+  });
 
 export const askUserQuestionSchema = z.object({
   questions: z
     .array(userQuestionItemSchema)
     .min(1, "Must provide at least one question.")
     .describe("One or more questions to ask the user."),
+  instructions: z
+    .string()
+    .optional()
+    .describe(
+      "Optional instructions or context for the user answering the questions.",
+    ),
 });
 
 export const askUserQuestionTool = createTool({
   description:
-    "Ask the user a concise question when you need clarification, a decision between alternative architectures, or confirmation before proceeding. Provide structured options with tradeoffs whenever possible.",
+    "Ask the user clarifying questions, architecture decisions, or requirement choices. Provides an interactive questionnaire UI.",
   inputSchema: askUserQuestionSchema,
-  execute: async ({ questions }) => {
+  execute: async ({ questions, instructions }) => {
     return {
       status: "pending_user_input",
       isUserQuestion: true,
-      questions: questions.map((q) => ({
-        id: q.id,
-        header: q.header,
-        question: q.question,
-        options: q.options || [],
-        multiSelect: Boolean(q.multiSelect),
-      })),
+      questions,
+      instructions,
       guide:
-        "The question has been presented to the user. Await their response or explain the alternatives clearly in your answer.",
+        "The question questionnaire has been rendered directly to the user. Await their response or explain the key considerations.",
     };
   },
 });
