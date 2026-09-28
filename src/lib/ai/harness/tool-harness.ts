@@ -42,6 +42,11 @@ export const ALWAYS_ACTIVE_TOOLS = new Set([
   "get_memories",
   "search_past_conversations",
   "sequential-thinking",
+  "todo_write",
+  "exit_plan_mode",
+  "ask_user_question",
+  "delegate_subagent",
+  "read_spill_slice",
 ]);
 
 // ─── 2. SPECIALIZED TOOLKIT DOMAINS ───────────────────────────────────────────

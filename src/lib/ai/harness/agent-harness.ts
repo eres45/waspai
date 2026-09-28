@@ -1,5 +1,7 @@
 import globalLogger from "logger";
 import { colorize } from "consola/utils";
+import { executeWithTimeout } from "./tool-timeout-policy";
+import { applySpillPolicy } from "./spill-policy";
 
 const logger = globalLogger.withDefaults({
   message: colorize("cyan", "AgentHarness: "),
@@ -149,15 +151,20 @@ export async function executeWithReflectiveEnvelope<T = any>(
   }
 }
 
+export interface HarnessedToolkitOptions {
+  maxRepetitions?: number;
+  circuitBreaker?: ActionCircuitBreaker;
+  toolTimeoutOverrides?: Record<string, number>;
+  maxInlineBytes?: number;
+  spillRoot?: string;
+}
+
 /**
- * Attaches Hermes Circuit Breaker and DeepSeek Error Envelope guards to a Vercel AI SDK toolkit.
+ * Attaches Hermes Circuit Breaker, Timeout Policy, Spill Policy, and DeepSeek Error Envelope guards to a Vercel AI SDK toolkit.
  */
 export function createHarnessedToolkit(
   tools: Record<string, any>,
-  options?: {
-    maxRepetitions?: number;
-    circuitBreaker?: ActionCircuitBreaker;
-  },
+  options?: HarnessedToolkitOptions,
 ): Record<string, any> {
   if (!tools || typeof tools !== "object") return tools;
 
@@ -196,13 +203,24 @@ export function createHarnessedToolkit(
           return envelope;
         }
 
-        // 2. Reflective Error Envelope Guard
-        const result = await executeWithReflectiveEnvelope(
+        // 2. Reflective Error Envelope Guard with Per-Tool Execution Timeout
+        const rawResult = await executeWithReflectiveEnvelope(
           toolName,
           args,
           context,
-          originalExecute,
+          async (a, ctx) =>
+            executeWithTimeout(toolName, () => originalExecute(a, ctx), {
+              timeoutOverrides: options?.toolTimeoutOverrides,
+              signal: ctx?.abortSignal,
+            }),
         );
+
+        // 3. DeepSeek Spill Policy: spill oversized results to disk storage
+        const result = await applySpillPolicy(toolName, rawResult, {
+          maxInlineBytes: options?.maxInlineBytes,
+          spillRoot: options?.spillRoot,
+          sessionId: context?.threadId || context?.sessionId,
+        });
 
         // DeepSeek Advisory Enrichment: attach repeat notice if advisory threshold was met
         if (

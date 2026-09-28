@@ -51,6 +51,11 @@ import { createTempEmailTool, getTempEmailMessagesTool } from "./web/temp-mail";
 import { videoPlayerTool } from "./web/video-player";
 import { webContentTool, webSearchTool } from "./web/web-search";
 import { youtubeTranscriptTool } from "./web/youtube-transcript";
+import { todoTool } from "./todo-tool";
+import { exitPlanModeTool } from "./plan-tools";
+import { askUserQuestionTool } from "./ask-user";
+import { subagentTool } from "./subagent-tool";
+import { readSpillSliceTool } from "./spill-tools";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -94,6 +99,11 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.SearchSkills]: searchSkillsTool,
     [DefaultToolName.LoadSkill]: loadSkillTool,
     [DefaultToolName.DeploySite]: deploySiteTool,
+    [DefaultToolName.TodoWrite]: todoTool,
+    [DefaultToolName.ExitPlanMode]: exitPlanModeTool,
+    [DefaultToolName.AskUserQuestion]: askUserQuestionTool,
+    [DefaultToolName.DelegateSubagent]: subagentTool,
+    [DefaultToolName.ReadSpillSlice]: readSpillSliceTool,
   },
   [AppDefaultToolkit.Media]: {
     [DefaultToolName.VideoPlayer]: videoPlayerTool,

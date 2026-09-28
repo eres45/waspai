@@ -261,4 +261,27 @@ describe("Context Compaction (Hermes/DeepSeek-inspired)", () => {
     const call2 = await tools["test-tool"].execute({ key: "val" }, {});
     expect((call2 as any)._repeatAdvisory).toContain("ADVISORY_REPEAT_WARNING");
   });
+
+  it("handles tool timeouts cleanly via reflective error envelope", async () => {
+    const slowTool = {
+      description: "A slow hanging tool",
+      parameters: {},
+      execute: vi.fn().mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        return { success: true };
+      }),
+    };
+
+    const tools = createHarnessedToolkit(
+      { "slow-tool": slowTool },
+      { toolTimeoutOverrides: { "slow-tool": 20 } },
+    );
+
+    const result = (await tools["slow-tool"].execute({}, {})) as any;
+    expect(result.status).toBe("error");
+    expect(result.isReflectiveError).toBe(true);
+    expect(result.error).toContain("TOOL_TIMEOUT");
+    expect(result.error).toContain("slow-tool");
+    expect(result.resolutionHint).toBeDefined();
+  });
 });

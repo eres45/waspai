@@ -251,6 +251,19 @@ When generating presentations, pitch decks, or slides:
 }
 
 /**
+ * DeepSeek Harness Agent Autonomy & Multi-Step Coordination Directive
+ */
+export function buildAgentAutonomyDirective(): string {
+  return `<agent_autonomy_guidelines>
+- Structured Task Tracking (\`todo_write\`): For multi-step tasks (research, development, document creation), maintain a structured checklist with \`todo_write\`. Send the complete updated list each turn, keeping at most one item "in_progress" and marking tasks "completed" immediately as they finish.
+- Plan Mode & Review (\`exit_plan_mode\`): When formulating a multi-phase technical migration or architectural refactor, structure your plan in markdown starting with a # heading and submit it via \`exit_plan_mode\` before proceeding with execution.
+- Focused Subagent Delegation (\`delegate_subagent\`): To offload deep multi-query research or code verification without bloating your main conversation context, delegate to a child subagent.
+- Human Clarification (\`ask_user_question\`): When user intent has ambiguous technical trade-offs or missing key parameters, call \`ask_user_question\` with structured options.
+- Spill Output Retrieval (\`read_spill_slice\`): If a previous tool output was spilled to disk due to large size, inspect specific line ranges with \`read_spill_slice\` using the returned locator.
+</agent_autonomy_guidelines>`;
+}
+
+/**
  * Output Formatting & Style Standards
  */
 export function buildFormattingDirective(
@@ -343,6 +356,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildPresentationDirective());
     sections.push(buildDocumentDirective());
     sections.push(buildQrDirective());
+    sections.push(buildAgentAutonomyDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

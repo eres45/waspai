@@ -72,3 +72,4 @@ inject_*.js
 patch-app*.js
 apply_patches.js
 "WaspAI app"
+/.spill/

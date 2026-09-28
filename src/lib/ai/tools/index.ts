@@ -69,6 +69,12 @@ export enum DefaultToolName {
   WriteSiteFile = "write_site_file",
   ReadSiteFile = "read_site_file",
   EditSiteFile = "edit_site_file",
+  // DeepSeek Harness Agent Autonomy Tools
+  TodoWrite = "todo_write",
+  ExitPlanMode = "exit_plan_mode",
+  AskUserQuestion = "ask_user_question",
+  DelegateSubagent = "delegate_subagent",
+  ReadSpillSlice = "read_spill_slice",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";
