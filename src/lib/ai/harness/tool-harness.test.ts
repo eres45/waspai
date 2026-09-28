@@ -79,6 +79,11 @@ describe("Hermes 3 & DeepSeek Tool Harness Engine", () => {
         "Generates a multi-page PDF document with styling and header. Useful for professional reports and certificates.",
       execute: vi.fn(),
     },
+    "generate-presentation": {
+      description:
+        "Generates professional presentation decks and slides with customizable visual themes.",
+      execute: vi.fn(),
+    },
     "convert-file": {
       description: "Converts uploaded files between formats.",
       execute: vi.fn(),
@@ -194,6 +199,16 @@ describe("Hermes 3 & DeepSeek Tool Harness Engine", () => {
 
       expect(active).toHaveProperty("generate-pdf");
       expect(active).toHaveProperty("convert-file");
+    });
+
+    it("mounts Document & Presentation tools when pitch deck or slides are requested", () => {
+      const active = selectActiveToolsForTurn(mockAllTools, {
+        userText: "Can you create a pitch deck for my AI startup?",
+      });
+
+      expect(active).toHaveProperty("generate-presentation");
+      expect(active).toHaveProperty("generate-pdf");
+      expect(active).not.toHaveProperty("list-sms-numbers");
     });
 
     it("mounts QR code tools on qr request", () => {

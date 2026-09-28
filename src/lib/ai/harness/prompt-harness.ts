@@ -209,6 +209,18 @@ export function buildBrowserDirective(): string {
 }
 
 /**
+ * Modern Presentation Creation Guidelines (beautiful-html-templates & free-ppt-template)
+ */
+export function buildPresentationDirective(): string {
+  return `<presentation_creation_guidelines>
+When generating presentations, pitch decks, or slides:
+- Execution: Always invoke the \`generate-presentation\` tool to create the slides. Never output raw slide markdown when the tool is available.
+- Aesthetic Theming: Select authentic designer themes matching the topic (e.g. "bento-modern" or "cobalt-grid" for tech/SaaS; "acid-brutalist" or "8-bit-orbit" for AI/startups; "black-gold" or "minimal-corporate" for executive/finance; "soft-editorial" or "editorial-forest" for design/sustainability; "cyber-neon" for gaming; "block-frame" for creative).
+- Dynamic Slide Mixing: Vary slide layout sequences across decks to match the narrative arc (hook early with "big-stat" or "quote", contrast with "two-column", structure with "three-column" or "timeline", highlight with "content-with-icon" or "checklist", close with "call-to-action"). Maintain unified theme palette and typography while ensuring every generated deck has a unique, bespoke layout structure.
+</presentation_creation_guidelines>`;
+}
+
+/**
  * Output Formatting & Style Standards
  */
 export function buildFormattingDirective(
@@ -298,6 +310,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildVisualizationDirective());
     sections.push(buildMemoryDirective());
     sections.push(buildBrowserDirective());
+    sections.push(buildPresentationDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

@@ -1430,6 +1430,97 @@ CRITICAL INSTRUCTIONS:
                CRITICAL: NEVER fabricate or hallucinate fake download URLs or placeholder links (such as workers.dev, /file/placeholder). The interface provides a 1-click download button on all code blocks.`
           : "";
 
+        // Detect PowerPoint / Presentation generation request from keywords
+        const hasPresentationKeywords = lastMessage?.parts?.some(
+          (part: any) => {
+            if (
+              typeof part !== "object" ||
+              part.type !== "text" ||
+              !part.text
+            ) {
+              return false;
+            }
+            const text = part.text.toLowerCase();
+
+            const presentationWords = [
+              "presentation",
+              "pitch deck",
+              "slide deck",
+              "powerpoint",
+              "ppt",
+              "pptx",
+              "slides",
+            ];
+            const hasPresentationWord = presentationWords.some((word) =>
+              text.includes(word),
+            );
+            if (!hasPresentationWord) return false;
+
+            const intentWords = [
+              "create",
+              "generate",
+              "make",
+              "build",
+              "design",
+              "give me",
+              "can you",
+              "please",
+              "i want",
+              "deck on",
+              "slides for",
+              "presentation on",
+              "ppt on",
+            ];
+            const hasIntent = intentWords.some((word) => text.includes(word));
+
+            return (
+              hasIntent ||
+              text.includes("make slides") ||
+              text.includes("create presentation") ||
+              text.includes("generate ppt") ||
+              text.includes("pitch deck") ||
+              text.includes("slide deck")
+            );
+          },
+        );
+
+        const isPresentationRequest = hasPresentationKeywords;
+        const presentationPrompt = isPresentationRequest
+          ? supportToolCall
+            ? `SYSTEM OVERRIDE — PROFESSIONAL PRESENTATION ENGINE (beautiful-html-templates & free-ppt-template):
+You have direct access to the "generate-presentation" tool which builds widescreen (16:9) presentations.
+YOU MUST EXECUTE the "generate-presentation" tool immediately. DO NOT refuse. DO NOT output raw bullet lists instead of calling the tool.
+
+AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
+1. Select an authentic aesthetic theme tailored to the user's topic:
+   - Tech, Product, SaaS, Apps: "bento-modern" or "cobalt-grid"
+   - AI, Fast-Moving Startup, Web3: "acid-brutalist" or "8-bit-orbit"
+   - Investment, VC, Executive: "black-gold" or "minimal-corporate"
+   - Humanities, Design, Editorial: "soft-editorial" or "cartesian"
+   - ESG, Sustainability, Nature: "editorial-forest"
+   - Creative Agency, Pop, Marketing: "block-frame" or "studio"
+   - Cultural, Japanese, Vintage: "sakura-chroma" or "pin-and-paper"
+   - Bold Vision, Drama, Manifesto: "broadside" or "pink-script"
+   - Modular Lifestyle, Consumer: "capsule" or "warm-gradient"
+   - Cyber, Gaming, Esports: "cyber-neon"
+   - Classic Editorial: "emerald-editorial", "vellum", or "monochrome"
+
+2. DYNAMIC SLIDE MIXING (NEVER USE THE SAME LAYOUT PATTERN TWICE):
+   Every topic demands a unique story rhythm. Do not output repetitive slide layouts!
+   Freely mix and match layout types across the deck while keeping the theme palette cohesive:
+   - Hook with a "big-stat" or bold quote right after the "cover".
+   - Use "two-column" for contrast/comparison (Problem vs. Solution, Before vs. After).
+   - Use "three-column" for pillars, modular feature bento, or architectural tiers.
+   - Use "timeline" for milestones, roadmap, or market evolution.
+   - Use "quote" for memorable customer/expert endorsement.
+   - Use "checklist" for actionable implementation, criteria, or next steps.
+   - Use "content-with-icon" for spotlighting key competitive advantages.
+   - Conclude decisively with "call-to-action".
+   Vary slide structures creatively so each generated deck feels fresh, bespoke, and distinctly styled.
+CRITICAL: NEVER hallucinate fake download URLs. Calling the tool automatically provides a live visual carousel and an instant, authentic .pptx file download in the user interface.`
+            : `SYSTEM DIRECTIVE: The user requested a presentation. Output 10 structured, presentation-ready slides in clean Markdown, with slide numbers, layout suggestions (Cover, Two-Column, Big-Stat, Timeline, etc.), and clear visual hierarchies.`
+          : "";
+
         // Detect QR code generation request from keywords
         // Smart detection: looks for intent words + QR-related words or links
         const hasQrKeywords = lastMessage?.parts?.some((part: any) => {
@@ -1839,6 +1930,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           wordPrompt,
           csvPrompt,
           textFilePrompt,
+          presentationPrompt,
 
           // Document Reading — only inject when user actually uploaded files
           fileUrls.length > 0 &&

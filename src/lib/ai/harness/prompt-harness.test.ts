@@ -8,6 +8,7 @@ import {
   buildVisualizationDirective,
   buildMemoryDirective,
   buildBrowserDirective,
+  buildPresentationDirective,
   buildFormattingDirective,
   assembleHarnessedSystemPrompt,
 } from "./prompt-harness";
@@ -133,6 +134,13 @@ describe("Prompt Harness Core (DeepSeek + Hermes 3 Standard)", () => {
       const directive = buildBrowserDirective();
       expect(directive).toContain("<browser_automation_guidelines>");
       expect(directive).toContain("activeSessionId");
+    });
+
+    it("builds presentation directive with dynamic mixing rules", () => {
+      const directive = buildPresentationDirective();
+      expect(directive).toContain("<presentation_creation_guidelines>");
+      expect(directive).toContain("generate-presentation");
+      expect(directive).toContain("bento-modern");
     });
   });
 
