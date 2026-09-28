@@ -1584,12 +1584,59 @@ export const ToolMessagePart = memo(
         };
       }
 
+      if (toolName === "todo_write") {
+        const inProgress = inp?.todos?.find(
+          (t: any) => t.status === "in_progress",
+        );
+        const count = Array.isArray(inp?.todos) ? inp.todos.length : 0;
+        return {
+          action: isExecuting ? "Updating tasks" : "Updated tasks",
+          detail: inProgress?.text
+            ? inProgress.text.slice(0, 48)
+            : `${count} tasks in checklist`,
+        };
+      }
+      if (toolName === "delegate_subagent") {
+        return {
+          action: isExecuting
+            ? "Delegating to subagent"
+            : "Delegated to subagent",
+          detail: inp?.description ? inp.description.slice(0, 48) : "",
+        };
+      }
+      if (toolName === "exit_plan_mode") {
+        return {
+          action: isExecuting ? "Reviewing plan" : "Submitted plan for review",
+          detail: inp?.plan ? inp.plan.slice(0, 48) : "",
+        };
+      }
+      if (toolName === "ask_user_question") {
+        const q = inp?.questions?.[0]?.question;
+        return {
+          action: isExecuting ? "Asking question" : "Asked question",
+          detail: q ? q.slice(0, 48) : "",
+        };
+      }
+      if (toolName === "read_spill_slice") {
+        return {
+          action: isExecuting ? "Reading spill file" : "Read spill slice",
+          detail: inp?.spillPath ? inp.spillPath.split(/[\\/]/).pop() : "",
+        };
+      }
+
       const server = mcpServerName || toolName.replace(/[-_]/g, " ");
       const tool = mcpToolName ? mcpToolName.replace(/[-_]/g, " ") : "";
+      const rawVal =
+        inp && typeof inp === "object" ? Object.values(inp)[0] : "";
       const firstVal =
-        inp && typeof inp === "object"
-          ? String(Object.values(inp)[0] || "").slice(0, 48)
-          : "";
+        typeof rawVal === "string"
+          ? rawVal.slice(0, 48)
+          : Array.isArray(rawVal) && rawVal[0] && typeof rawVal[0] === "object"
+            ? (rawVal[0].text || rawVal[0].title || rawVal[0].name || "").slice(
+                0,
+                48,
+              )
+            : "";
       return {
         action: tool ? `${server}: ${tool}` : server,
         detail: firstVal || "",
