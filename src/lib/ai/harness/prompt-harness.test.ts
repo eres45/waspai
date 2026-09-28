@@ -191,5 +191,36 @@ describe("Prompt Harness Core (DeepSeek + Hermes 3 Standard)", () => {
       expect(prompt).not.toContain("<visualization_guidelines>");
       expect(prompt).not.toContain("<browser_automation_guidelines>");
     });
+
+    it("measures prompt token footprint and compression", () => {
+      const standardPrompt = assembleHarnessedSystemPrompt({
+        modelId: "deepseek-v4-flash",
+        user: { name: "Sam", email: "sam@example.com" } as any,
+        userPreferences: { profession: "Engineer" } as any,
+      });
+
+      const reasoningPrompt = assembleHarnessedSystemPrompt({
+        modelId: "deepseek-r1",
+        user: { name: "Sam", email: "sam@example.com" } as any,
+      });
+
+      const voicePrompt = assembleHarnessedSystemPrompt({
+        modelId: "gpt-4o",
+        isVoice: true,
+      });
+
+      console.log(
+        `[HARNESS METRICS] Standard: ${standardPrompt.length} chars, ${standardPrompt.split(/\s+/).length} words, ~${Math.round(standardPrompt.length / 3.7)} tokens`,
+      );
+      console.log(
+        `[HARNESS METRICS] Reasoning: ${reasoningPrompt.length} chars, ${reasoningPrompt.split(/\s+/).length} words, ~${Math.round(reasoningPrompt.length / 3.7)} tokens`,
+      );
+      console.log(
+        `[HARNESS METRICS] Voice: ${voicePrompt.length} chars, ${voicePrompt.split(/\s+/).length} words, ~${Math.round(voicePrompt.length / 3.7)} tokens`,
+      );
+
+      expect(standardPrompt.length).toBeLessThan(6000);
+      expect(voicePrompt.length).toBeLessThan(1200);
+    });
   });
 });
