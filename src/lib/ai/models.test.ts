@@ -65,6 +65,8 @@ describe("customModelProvider file support metadata", () => {
     const providers = modelsInfo.map((p) => p.provider);
     expect(providers).toEqual([
       "OpenAI",
+      "Anthropic",
+      "Google",
       "DeepSeek",
       "Qwen",
       "Xiaomi",
@@ -75,6 +77,11 @@ describe("customModelProvider file support metadata", () => {
 
     const allModels = modelsInfo.flatMap((p) => p.models);
     const modelNames = allModels.map((m) => m.name);
+    expect(modelNames).toContain("gpt-5.6-luna");
+    expect(modelNames).toContain("gpt-5.4-mini");
+    expect(modelNames).toContain("claude-haiku-4.5");
+    expect(modelNames).toContain("mistral-small-4");
+    expect(modelNames).toContain("gemma-4-31b");
     expect(modelNames).toContain("gpt-oss-120b");
     expect(modelNames).toContain("deepseek-v4.1-flash:free");
     expect(modelNames).toContain("deepseek-v4-flash:free");
@@ -90,10 +97,23 @@ describe("customModelProvider file support metadata", () => {
     expect(modelNames).toContain("deepseek-ai/DeepSeek-V4-Flash-0731");
     expect(modelNames).toContain("glm-5.3-flash");
 
-    // All are free tier
+    // Tier checks (Ultra for DuckAI models, Free for worker catalog)
+    const ultraSet = new Set([
+      "gpt-5.6-luna",
+      "gpt-5.4-mini",
+      "gpt-oss-120b",
+      "claude-haiku-4.5",
+      "mistral-small-4",
+      "gemma-4-31b",
+    ]);
     for (const m of allModels) {
-      expect(m.tier).toBe("Free");
-      expect(getModelTier(m.name)).toBe("Free");
+      if (ultraSet.has(m.name)) {
+        expect(m.tier).toBe("Ultra");
+        expect(getModelTier(m.name)).toBe("Ultra");
+      } else {
+        expect(m.tier).toBe("Free");
+        expect(getModelTier(m.name)).toBe("Free");
+      }
     }
 
     // Tool call support: all registered models support tool calls via smart provider
@@ -329,30 +349,44 @@ describe("sanitizeMessageToolCalls", () => {
     expect(result[0].toolInvocations[0].args).toEqual({});
   });
 
-  it("sets gpt-oss-120b as the default chat model and configures it correctly", async () => {
+  it("sets deepseek-v4.1-flash:free as default and configures Ultra tier models correctly", async () => {
     const {
       buildDynamicModelsInfo,
       customModelProvider,
       isToolCallUnsupportedModel,
       getModelTier,
       DEFAULT_CHAT_MODEL,
+      ULTRA_TIER_MODELS,
     } = modelsModule;
 
     expect(DEFAULT_CHAT_MODEL).toEqual({
-      provider: "OpenAI",
-      model: "gpt-oss-120b",
+      provider: "DeepSeek",
+      model: "deepseek-v4.1-flash:free",
     });
 
     const modelsInfo = await buildDynamicModelsInfo();
-    expect(modelsInfo.length).toBe(7);
+    expect(modelsInfo.length).toBe(9);
     expect(modelsInfo[0].provider).toBe("OpenAI");
-    expect(modelsInfo[0].models[0].name).toBe("gpt-oss-120b");
+    expect(modelsInfo[0].models[0].name).toBe("gpt-5.6-luna");
 
-    // Free tier checks
-    expect(getModelTier("gpt-oss-120b")).toBe("Free");
+    // Ultra tier checks for all 6 DuckAI models
+    const duckAIUltraModels = [
+      "claude-haiku-4.5",
+      "mistral-small-4",
+      "gpt-5.4-mini",
+      "gpt-5.6-luna",
+      "gpt-oss-120b",
+      "gemma-4-31b",
+    ];
+
+    for (const m of duckAIUltraModels) {
+      expect(getModelTier(m)).toBe("Ultra");
+      expect(ULTRA_TIER_MODELS.has(m)).toBe(true);
+    }
 
     // Tool calling supported checks
     expect(isToolCallUnsupportedModel("gpt-oss-120b")).toBe(false);
+    expect(isToolCallUnsupportedModel("claude-haiku-4.5")).toBe(false);
 
     // Model instantiation
     const model = customModelProvider.getModel({
@@ -360,6 +394,12 @@ describe("sanitizeMessageToolCalls", () => {
       model: "gpt-oss-120b",
     });
     expect(model).toBeDefined();
+
+    const haikuModel = customModelProvider.getModel({
+      provider: "Anthropic",
+      model: "claude-haiku-4.5",
+    });
+    expect(haikuModel).toBeDefined();
   });
 
   describe("stitchContinuation (Auto-Continuation on Token Limits)", () => {

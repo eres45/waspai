@@ -90,6 +90,11 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
 
   // GPT-5 Nano is served standalone by gptossworker AND LordRouter
   "gpt-5-nano": "GPT-5 Nano",
+  "gpt-5.6-luna": "GPT-5.6 Luna",
+  "gpt-5.4-mini": "GPT-5.4 Mini",
+  "claude-haiku-4.5": "Claude Haiku 4.5",
+  "mistral-small-4": "Mistral Small 4",
+  "gemma-4-31b": "Gemma 4 31B",
   // NOTE: o3, o3-mini intentionally NOT in static map — only available via lordrouter-o3,
   // lordrouter-o3-mini. Keeping them out avoids false "P2" suffix on lordrouter variants.
   // NOTE: openai/gpt-oss-*:free NOT in static map for the same reason.

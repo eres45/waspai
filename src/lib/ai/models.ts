@@ -5,6 +5,7 @@ import {
   ANTHROPIC_FILE_MIME_TYPES,
   OPENAI_FILE_MIME_TYPES,
 } from "./file-support";
+import { duckAIProvider, isDuckAIModel } from "./duckai";
 
 export const MULTIMODAL_WORKER_URL =
   "https://wasp-multimodal-worker.hhhlproxy.workers.dev";
@@ -1799,14 +1800,20 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
 }
 
 export const DEFAULT_CHAT_MODEL: ChatModel = {
-  provider: "OpenAI",
-  model: "gpt-oss-120b",
+  provider: "DeepSeek",
+  model: "deepseek-v4.1-flash:free",
 };
 
-const FREE_TIER_MODELS = new Set([
+export const ULTRA_TIER_MODELS = new Set([
+  "claude-haiku-4.5",
+  "mistral-small-4",
+  "gpt-5.4-mini",
+  "gpt-5.6-luna",
   "gpt-oss-120b",
-  "gpt-oss-120b-p2",
-  "openai/gpt-oss-120b",
+  "gemma-4-31b",
+]);
+
+const FREE_TIER_MODELS = new Set([
   "deepseek-v4.1-flash:free",
   "deepseek-v4-flash:free",
   "qwen3.8-flash:free",
@@ -1840,6 +1847,18 @@ function getBaseModelId(modelId: string): string {
 
 export function getModelTier(modelId: string): string {
   const lowercaseModelId = modelId.toLowerCase();
+  const baseId = getBaseModelId(modelId);
+
+  // Ultra Tier models (DuckAI frontier models)
+  const isUltra = Array.from(ULTRA_TIER_MODELS).some((ultraId) => {
+    return (
+      lowercaseModelId === ultraId ||
+      baseId === ultraId ||
+      lowercaseModelId.endsWith(`-${ultraId}`) ||
+      lowercaseModelId.endsWith(`/${ultraId}`)
+    );
+  });
+  if (isUltra) return "Ultra";
 
   // LordRouter models are Pro tier unless explicitly registered in the free list
   if (
@@ -1848,8 +1867,6 @@ export function getModelTier(modelId: string): string {
   ) {
     return "Pro";
   }
-
-  const baseId = getBaseModelId(modelId);
 
   const isExcluded = Array.from(LOWERCASE_EXCLUDED_MODELS).some((exId) => {
     return (
@@ -1884,11 +1901,51 @@ export async function buildDynamicModelsInfo() {
       hasAPIKey: true,
       models: [
         {
+          name: "gpt-5.6-luna",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Ultra",
+        },
+        {
+          name: "gpt-5.4-mini",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Ultra",
+        },
+        {
           name: "gpt-oss-120b",
           isToolCallUnsupported: false,
           isImageInputUnsupported: true,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
-          tier: "Free",
+          tier: "Ultra",
+        },
+      ],
+    },
+    {
+      provider: "Anthropic",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "claude-haiku-4.5",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(ANTHROPIC_FILE_MIME_TYPES),
+          tier: "Ultra",
+        },
+      ],
+    },
+    {
+      provider: "Google",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "gemma-4-31b",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Ultra",
         },
       ],
     },
@@ -1949,6 +2006,13 @@ export async function buildDynamicModelsInfo() {
       provider: "Mistral",
       hasAPIKey: true,
       models: [
+        {
+          name: "mistral-small-4",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Ultra",
+        },
         {
           name: "mistral-code-latest",
           isToolCallUnsupported: false,
@@ -2027,6 +2091,11 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   if (id === "waspai-model") return "WaspAI";
   if (id === "auto" || id.includes("agnes")) return "Agnes";
   if (id.includes("sensenova")) return "SenseNova";
+  if (id === "claude-haiku-4.5") return "Anthropic";
+  if (id === "mistral-small-4") return "Mistral";
+  if (id === "gemma-4-31b") return "Google";
+  if (id === "gpt-5.6-luna" || id === "gpt-5.4-mini" || id === "gpt-oss-120b")
+    return "OpenAI";
   const raw = (ownedBy || "").toLowerCase();
 
   // Groq worker models
@@ -2292,6 +2361,11 @@ export const customModelProvider = {
   getModel: (model?: ChatModel): LanguageModel => {
     if (!model) throw new Error("No model specified");
     const modelId = model.model;
+
+    // DuckAI Ultra tier models (claude-haiku-4.5, mistral-small-4, gpt-5.4-mini, gpt-5.6-luna, gpt-oss-120b, gemma-4-31b)
+    if (isDuckAIModel(modelId)) {
+      return duckAIProvider(modelId) as unknown as LanguageModel;
+    }
 
     // Mistral provider (mistral-code-latest, ministral-14b-latest, codestral-latest)
     if (
