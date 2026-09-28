@@ -2037,16 +2037,9 @@ export async function buildDynamicModelsInfo() {
       ],
     },
     {
-      provider: "BudsAI",
+      provider: "StepFun",
       hasAPIKey: true,
       models: [
-        {
-          name: "ox-alpha",
-          isToolCallUnsupported: false,
-          isImageInputUnsupported: false,
-          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
-          tier: "Free",
-        },
         {
           name: "step-3.7-flash",
           isToolCallUnsupported: false,
@@ -2057,9 +2050,16 @@ export async function buildDynamicModelsInfo() {
       ],
     },
     {
-      provider: "SeekAI",
+      provider: "Z-AI",
       hasAPIKey: true,
       models: [
+        {
+          name: "ox-alpha",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
         {
           name: "glm-5.3-flash",
           isToolCallUnsupported: false,
@@ -2107,8 +2107,6 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   if (id.startsWith("frenix-qwen")) return "Qwen";
   if (id.startsWith("frenix-grok")) return "xAI";
   if (id.startsWith("frenix-")) return "Frenix";
-
-  if (SEEKAI_MODELS.has(modelId)) return "SeekAI";
 
   if (
     id.includes("claude") ||
@@ -2178,15 +2176,21 @@ export function getModelProvider(modelId: string, ownedBy?: string): string {
   )
     return "Perplexity";
   if (
+    id.includes("step-") ||
+    raw.includes("stepfun") ||
+    modelId === "step-3.7-flash"
+  )
+    return "StepFun";
+  if (
     id.includes("glm") ||
     id.includes("zhipu") ||
+    id === "ox-alpha" ||
+    modelId === "glm-5.3-flash" ||
     raw.includes("z-ai") ||
     raw.includes("zhipu") ||
     raw.includes("glm")
   )
     return "Z-AI";
-  if (BUDSAI_MODELS.has(modelId)) return "BudsAI";
-  if (id.includes("step-") || raw.includes("stepfun")) return "StepFun";
   if (id.includes("mimo") || raw.includes("xiaomi") || raw.includes("mimo"))
     return "Xiaomi";
   if (id.includes("command-") || raw.includes("cohere")) return "Cohere";
@@ -2495,6 +2499,27 @@ export const customModelProvider = {
         ? modelId
         : `${modelId}:free`;
       return tokenHarborProvider(resolvedId) as unknown as LanguageModel;
+    }
+
+    if (
+      model.provider === "StepFun" ||
+      model.provider?.toLowerCase() === "stepfun" ||
+      modelId === "step-3.7-flash"
+    ) {
+      return budsaiProvider("step-3.7-flash") as unknown as LanguageModel;
+    }
+
+    if (
+      model.provider === "Z-AI" ||
+      model.provider?.toLowerCase() === "z-ai" ||
+      model.provider?.toLowerCase() === "zhipu" ||
+      modelId === "glm-5.3-flash" ||
+      modelId === "ox-alpha"
+    ) {
+      if (modelId === "ox-alpha") {
+        return budsaiProvider("ox-alpha") as unknown as LanguageModel;
+      }
+      return seekaiProvider("glm-5.3-flash") as unknown as LanguageModel;
     }
 
     if (model.provider === "SeekAI") {

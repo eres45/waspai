@@ -76,8 +76,8 @@ describe("customModelProvider file support metadata", () => {
       "Qwen",
       "Xiaomi",
       "Mistral",
-      "BudsAI",
-      "SeekAI",
+      "StepFun",
+      "Z-AI",
     ]);
 
     const allModels = modelsInfo.flatMap((p) => p.models);
@@ -137,7 +137,27 @@ describe("customModelProvider file support metadata", () => {
       }),
     ).toBeDefined();
 
-    // BudsAI model instantiation
+    // StepFun and Z-AI public creator lab instantiation
+    expect(
+      customModelProvider.getModel({
+        provider: "StepFun",
+        model: "step-3.7-flash",
+      }),
+    ).toBeDefined();
+    expect(
+      customModelProvider.getModel({
+        provider: "Z-AI",
+        model: "glm-5.3-flash",
+      }),
+    ).toBeDefined();
+    expect(
+      customModelProvider.getModel({
+        provider: "Z-AI",
+        model: "ox-alpha",
+      }),
+    ).toBeDefined();
+
+    // BudsAI & SeekAI backend fallback instantiation
     expect(
       customModelProvider.getModel({
         provider: "BudsAI",

@@ -29,7 +29,14 @@ export function ModelProviderIcon({
     <OpenRouterIcon className={className} />
   ) : p === "microsoft" || p === "phi" ? (
     <MicrosoftIcon className={className} />
-  ) : p === "qwen" || p === "meta" || p === "llama" || p === "deepseek" ? (
+  ) : p === "qwen" ||
+    p === "meta" ||
+    p === "llama" ||
+    p === "deepseek" ||
+    p === "stepfun" ||
+    p === "z-ai" ||
+    p === "zhipu" ||
+    p === "xiaomi" ? (
     <BotIcon className={className} />
   ) : (
     <BlendIcon className={className} />
