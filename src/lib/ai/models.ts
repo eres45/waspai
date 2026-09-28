@@ -1793,8 +1793,6 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     { id: "codestral-latest", owned_by: "mistral" },
     { id: "ox-alpha", owned_by: "budsai" },
     { id: "step-3.7-flash", owned_by: "budsai" },
-    { id: "deepseek-v4-flash", owned_by: "budsai" },
-    { id: "deepseek-ai/DeepSeek-V4-Flash-0731", owned_by: "seekai" },
     { id: "glm-5.3-flash", owned_by: "seekai" },
   ];
 }
@@ -2054,26 +2052,12 @@ export async function buildDynamicModelsInfo() {
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
           tier: "Free",
         },
-        {
-          name: "deepseek-v4-flash",
-          isToolCallUnsupported: false,
-          isImageInputUnsupported: false,
-          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
-          tier: "Free",
-        },
       ],
     },
     {
       provider: "SeekAI",
       hasAPIKey: true,
       models: [
-        {
-          name: "deepseek-ai/DeepSeek-V4-Flash-0731",
-          isToolCallUnsupported: false,
-          isImageInputUnsupported: false,
-          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
-          tier: "Free",
-        },
         {
           name: "glm-5.3-flash",
           isToolCallUnsupported: false,
@@ -2335,6 +2319,117 @@ export const getFilePartSupportedMimeTypes = (_model: LanguageModel) => {
   ];
 };
 
+// ─── Multi-Provider Fallback Targets for Same Model ────────────────────────────
+
+export interface ModelProviderTarget {
+  provider: string;
+  model: string;
+  instance?: any;
+}
+
+/**
+ * Returns alternative provider/model targets for the SAME model.
+ * If Provider 1 fails, the system cascades to Provider 2, Provider 3, etc.
+ * before falling back to a different model.
+ */
+export function getModelProviderFallbacks(
+  modelId: string,
+  currentProvider?: string,
+): ModelProviderTarget[] {
+  if (!modelId) return [];
+  const lowerId = modelId.toLowerCase();
+  const baseId = getBaseModelId(modelId);
+  const fallbacks: ModelProviderTarget[] = [];
+
+  // DeepSeek V4 Flash: TokenHarbor/DeepSeek -> BudsAI -> SeekAI -> Multimodal
+  if (
+    lowerId === "deepseek-v4-flash" ||
+    lowerId === "deepseek-v4-flash:free" ||
+    lowerId === "deepseek-ai/deepseek-v4-flash-0731" ||
+    baseId === "deepseek-v4-flash" ||
+    baseId === "deepseek-v4-flash:free" ||
+    baseId === "deepseek-v4-flash-0731"
+  ) {
+    fallbacks.push(
+      { provider: "DeepSeek", model: "deepseek-v4-flash:free" },
+      { provider: "BudsAI", model: "deepseek-v4-flash" },
+      { provider: "SeekAI", model: "deepseek-ai/DeepSeek-V4-Flash-0731" },
+      { provider: "Multimodal", model: "deepseek-v4-flash" },
+    );
+  } else if (
+    lowerId === "gpt-oss-120b" ||
+    lowerId === "gpt-oss-120b-p2" ||
+    lowerId.includes("gpt-oss-120b")
+  ) {
+    fallbacks.push(
+      { provider: "OpenAI", model: "gpt-oss-120b" },
+      { provider: "GroqWorker", model: "openai/gpt-oss-120b" },
+      { provider: "Multimodal", model: "openai/gpt-oss-120b" },
+    );
+  } else if (lowerId === "deepseek-v4.1-flash:free") {
+    fallbacks.push(
+      { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
+      { provider: "Multimodal", model: "deepseek-v4.1-flash:free" },
+    );
+  } else if (lowerId === "step-3.7-flash") {
+    fallbacks.push(
+      { provider: "BudsAI", model: "step-3.7-flash" },
+      { provider: "Multimodal", model: "step-3.7-flash" },
+    );
+  } else if (lowerId === "ox-alpha") {
+    fallbacks.push(
+      { provider: "BudsAI", model: "ox-alpha" },
+      { provider: "Multimodal", model: "ox-alpha" },
+    );
+  } else if (lowerId === "glm-5.3-flash") {
+    fallbacks.push(
+      { provider: "SeekAI", model: "glm-5.3-flash" },
+      { provider: "Multimodal", model: "glm-5.3-flash" },
+    );
+  } else if (
+    lowerId === "ministral-14b-latest" ||
+    lowerId === "ministral-14b" ||
+    lowerId === "mistral-code-latest" ||
+    lowerId === "codestral-latest"
+  ) {
+    fallbacks.push(
+      { provider: "Mistral", model: modelId },
+      { provider: "Multimodal", model: modelId },
+    );
+  } else if (lowerId === "claude-haiku-4.5") {
+    fallbacks.push(
+      { provider: "Anthropic", model: "claude-haiku-4.5" },
+      { provider: "Multimodal", model: "claude-haiku-4.5" },
+    );
+  } else if (lowerId === "mistral-small-4") {
+    fallbacks.push(
+      { provider: "Mistral", model: "mistral-small-4" },
+      { provider: "Multimodal", model: "mistral-small-4" },
+    );
+  } else if (lowerId === "gemma-4-31b") {
+    fallbacks.push(
+      { provider: "Google", model: "gemma-4-31b" },
+      { provider: "Multimodal", model: "gemma-4-31b" },
+    );
+  }
+
+  return fallbacks.filter((f) => {
+    if (
+      currentProvider &&
+      f.provider.toLowerCase() === currentProvider.toLowerCase()
+    ) {
+      return false;
+    }
+    if (
+      !currentProvider &&
+      (f.model.toLowerCase() === lowerId || getBaseModelId(f.model) === baseId)
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
 // ─── Model provider ───────────────────────────────────────────────────────────
 
 export const customModelProvider = {
@@ -2363,8 +2458,55 @@ export const customModelProvider = {
     const modelId = model.model;
 
     // DuckAI Ultra tier models (claude-haiku-4.5, mistral-small-4, gpt-5.4-mini, gpt-5.6-luna, gpt-oss-120b, gemma-4-31b)
-    if (isDuckAIModel(modelId)) {
+    if (
+      isDuckAIModel(modelId) &&
+      (model.provider === "OpenAI" ||
+        model.provider === "Anthropic" ||
+        model.provider === "Google" ||
+        model.provider === "Mistral" ||
+        !model.provider)
+    ) {
       return duckAIProvider(modelId) as unknown as LanguageModel;
+    }
+
+    // Explicit provider routing:
+    if (
+      model.provider === "DeepSeek" ||
+      model.provider?.toLowerCase() === "deepseek"
+    ) {
+      const resolvedId = modelId.endsWith(":free")
+        ? modelId
+        : `${modelId}:free`;
+      return tokenHarborProvider(resolvedId) as unknown as LanguageModel;
+    }
+
+    if (model.provider === "SeekAI") {
+      const resolvedId =
+        modelId === "deepseek-v4-flash" || modelId === "deepseek-v4-flash:free"
+          ? "deepseek-ai/DeepSeek-V4-Flash-0731"
+          : modelId;
+      return seekaiProvider(resolvedId) as unknown as LanguageModel;
+    }
+
+    if (model.provider === "BudsAI") {
+      const resolvedId =
+        modelId === "deepseek-v4-flash:free" ? "deepseek-v4-flash" : modelId;
+      return budsaiProvider(resolvedId) as unknown as LanguageModel;
+    }
+
+    if (model.provider === "GroqWorker") {
+      return groqWorkerProvider(modelId) as unknown as LanguageModel;
+    }
+
+    if (model.provider === "TokenHarbor") {
+      const resolvedId = modelId.endsWith(":free")
+        ? modelId
+        : `${modelId}:free`;
+      return tokenHarborProvider(resolvedId) as unknown as LanguageModel;
+    }
+
+    if (model.provider === "Multimodal") {
+      return multimodalProvider(modelId) as unknown as LanguageModel;
     }
 
     // Mistral provider (mistral-code-latest, ministral-14b-latest, codestral-latest)
@@ -2382,22 +2524,18 @@ export const customModelProvider = {
       return mistralProvider(resolvedId) as unknown as LanguageModel;
     }
 
-    // SeekAI provider (deepseek-ai/DeepSeek-V4-Flash-0731, glm-5.3-flash)
-    if (model.provider === "SeekAI" || SEEKAI_MODELS.has(modelId)) {
+    // SeekAI provider fallback check
+    if (SEEKAI_MODELS.has(modelId)) {
       return seekaiProvider(modelId) as unknown as LanguageModel;
     }
 
-    // BudsAI provider (ox-alpha, step-3.7-flash, deepseek-v4-flash)
-    if (model.provider === "BudsAI" || BUDSAI_MODELS.has(modelId)) {
+    // BudsAI provider fallback check
+    if (BUDSAI_MODELS.has(modelId)) {
       return budsaiProvider(modelId) as unknown as LanguageModel;
     }
 
-    // TokenHarbor provider (DeepSeek V4.1 Flash, Qwen 3.8 Flash, MiMo, etc.)
-    if (
-      model.provider === "TokenHarbor" ||
-      modelId.endsWith(":free") ||
-      TOKENHARBOR_FREE_MODELS.has(modelId)
-    ) {
+    // TokenHarbor provider fallback check
+    if (modelId.endsWith(":free") || TOKENHARBOR_FREE_MODELS.has(modelId)) {
       return tokenHarborProvider(modelId) as unknown as LanguageModel;
     }
 

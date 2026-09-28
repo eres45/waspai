@@ -15,6 +15,7 @@ import {
   buildDynamicModelsInfo,
   customModelProvider,
   getModelTier,
+  getModelProviderFallbacks,
   isImageInputUnsupportedModel,
   isToolCallUnsupportedModel,
   sanitizeMessageToolCalls,
@@ -2109,6 +2110,11 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           // But log this critical error for debugging
         }
 
+        const requestedModelFallbacks = getModelProviderFallbacks(
+          modelToUse?.model || "",
+          modelToUse?.provider,
+        );
+
         const candidateFallbacks = isVoiceChat
           ? [
               {
@@ -2116,6 +2122,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                 model: "ministral-14b-latest",
                 instance: initialModelLoadFailed ? undefined : model,
               },
+              ...requestedModelFallbacks,
               { provider: "Mistral", model: "codestral-latest" },
               { provider: "Mistral", model: "mistral-code-latest" },
               { provider: "OpenAI", model: "gpt-oss-120b" },
@@ -2128,15 +2135,14 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     model: modelToUse?.model,
                     instance: model,
                   },
-              { provider: "OpenAI", model: "gpt-oss-120b" },
-              { provider: "Mistral", model: "codestral-latest" },
+              // 1) Fallback to Provider 2, Provider 3, etc. for the SAME model:
+              ...requestedModelFallbacks,
+              // 2) If all providers for this model fail, fall back to global best models:
               { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
+              { provider: "Mistral", model: "codestral-latest" },
               { provider: "BudsAI", model: "step-3.7-flash" },
-              {
-                provider: "SeekAI",
-                model: "deepseek-ai/DeepSeek-V4-Flash-0731",
-              },
               { provider: "Qwen", model: "qwen3.8-flash:free" },
+              { provider: "OpenAI", model: "gpt-oss-120b" },
             ].filter(
               (
                 item,

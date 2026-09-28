@@ -6,6 +6,11 @@ import {
 import { cleanModelDisplayName } from "./model-display-names";
 
 vi.mock("server-only", () => ({}));
+vi.mock("playwright", () => ({
+  chromium: {
+    launch: vi.fn(),
+  },
+}));
 
 // Mock the fetch endpoint for worker models
 global.fetch = vi.fn().mockImplementation((url: string) => {
@@ -28,7 +33,7 @@ let modelsModule: typeof import("./models");
 
 beforeAll(async () => {
   modelsModule = await import("./models");
-});
+}, 30000);
 
 describe("customModelProvider file support metadata", () => {
   it("includes default file support for OpenAI GPT-4o (P1)", () => {
@@ -93,8 +98,6 @@ describe("customModelProvider file support metadata", () => {
     expect(modelNames).toContain("codestral-latest");
     expect(modelNames).toContain("ox-alpha");
     expect(modelNames).toContain("step-3.7-flash");
-    expect(modelNames).toContain("deepseek-v4-flash");
-    expect(modelNames).toContain("deepseek-ai/DeepSeek-V4-Flash-0731");
     expect(modelNames).toContain("glm-5.3-flash");
 
     // Tier checks (Ultra for DuckAI models, Free for worker catalog)
@@ -437,6 +440,64 @@ describe("sanitizeMessageToolCalls", () => {
       expect(result).toBe(
         "def calculate_total(items):\n    total_sum = 0\n    for item in items:\n        total_sum += item",
       );
+    });
+  });
+
+  describe("Multi-Provider Fallback & Deduplication", () => {
+    it("returns alternative providers for DeepSeek V4 Flash in priority order", () => {
+      const { getModelProviderFallbacks } = modelsModule;
+      const fallbacks = getModelProviderFallbacks(
+        "deepseek-v4-flash",
+        "DeepSeek",
+      );
+
+      // DeepSeek is filtered out since it's current provider
+      expect(fallbacks).toEqual([
+        { provider: "BudsAI", model: "deepseek-v4-flash" },
+        { provider: "SeekAI", model: "deepseek-ai/DeepSeek-V4-Flash-0731" },
+        { provider: "Multimodal", model: "deepseek-v4-flash" },
+      ]);
+    });
+
+    it("returns alternative providers for DeepSeek V4 Flash:free when called without provider", () => {
+      const { getModelProviderFallbacks } = modelsModule;
+      const fallbacks = getModelProviderFallbacks("deepseek-v4-flash:free");
+
+      expect(fallbacks.some((f) => f.provider === "BudsAI")).toBe(true);
+      expect(fallbacks.some((f) => f.provider === "SeekAI")).toBe(true);
+      expect(fallbacks.some((f) => f.provider === "Multimodal")).toBe(true);
+    });
+
+    it("returns alternative providers for gpt-oss-120b", () => {
+      const { getModelProviderFallbacks } = modelsModule;
+      const fallbacks = getModelProviderFallbacks("gpt-oss-120b", "OpenAI");
+
+      expect(fallbacks).toEqual([
+        { provider: "GroqWorker", model: "openai/gpt-oss-120b" },
+        { provider: "Multimodal", model: "openai/gpt-oss-120b" },
+      ]);
+    });
+
+    it("instantiates models with explicit provider routing", () => {
+      const { customModelProvider } = modelsModule;
+
+      const budsaiModel = customModelProvider.getModel({
+        provider: "BudsAI",
+        model: "deepseek-v4-flash",
+      });
+      expect(budsaiModel).toBeDefined();
+
+      const seekaiModel = customModelProvider.getModel({
+        provider: "SeekAI",
+        model: "deepseek-ai/DeepSeek-V4-Flash-0731",
+      });
+      expect(seekaiModel).toBeDefined();
+
+      const deepseekModel = customModelProvider.getModel({
+        provider: "DeepSeek",
+        model: "deepseek-v4-flash:free",
+      });
+      expect(deepseekModel).toBeDefined();
     });
   });
 });

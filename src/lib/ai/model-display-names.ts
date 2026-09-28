@@ -64,9 +64,9 @@ export const MODEL_DISPLAY_NAMES: Record<string, string> = {
   // BudsAI models
   "ox-alpha": "Ox Alpha",
   "step-3.7-flash": "Step 3.7 Flash",
-  "deepseek-v4-flash": "DeepSeek V4 Flash (BudsAI)",
+  "deepseek-v4-flash": "DeepSeek V4 Flash",
   // SeekAI models
-  "deepseek-ai/DeepSeek-V4-Flash-0731": "DeepSeek V4 Flash 0731",
+  "deepseek-ai/DeepSeek-V4-Flash-0731": "DeepSeek V4 Flash",
   "glm-5.3-flash": "GLM 5.3 Flash",
   // Groq / A4F Aggregated Models
   "canopylabs-orpheus-v1-english": "Orpheus v1 English",
