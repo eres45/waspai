@@ -89,25 +89,52 @@ const SlideSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+export const PRESENTATION_THEMES = [
+  // Modern aesthetic themes from beautiful-html-templates & free-ppt-template
+  "bento-modern",
+  "acid-brutalist",
+  "soft-editorial",
+  "editorial-forest",
+  "cobalt-grid",
+  "black-gold",
+  "block-frame",
+  "sakura-chroma",
+  "8-bit-orbit",
+  "broadside",
+  "emerald-editorial",
+  "studio",
+  "capsule",
+  "vellum",
+  "monochrome",
+  "neo-grid-bold",
+  "pink-script",
+  "pin-and-paper",
+  "warm-gradient",
+  "minimal-corporate",
+  "cyber-neon",
+  // Legacy aliases for backwards-compatibility
+  "tech",
+  "business",
+  "creative",
+  "education",
+  "nature",
+  "medical",
+  "energy",
+  "elegant",
+] as const;
+
 export const presentationGeneratorTool = createTool({
   description:
-    "Generate a professional 10-slide PowerPoint presentation browser-side.",
+    "Generate a professional 10-slide PowerPoint presentation with curated aesthetic themes from beautiful-html-templates and free-ppt-template.",
   inputSchema: z.object({
     title: z.string().describe("Overall presentation title"),
     description: z.string().describe("Brief tagline/summary"),
     topic: z.string().describe("Topic of the presentation"),
     theme: z
-      .enum([
-        "tech",
-        "business",
-        "creative",
-        "education",
-        "nature",
-        "medical",
-        "energy",
-        "elegant",
-      ])
-      .describe("Visual style based on topic"),
+      .enum(PRESENTATION_THEMES)
+      .describe(
+        "Aesthetic theme from beautiful-html-templates & free-ppt-template: bento-modern, acid-brutalist, black-gold, soft-editorial, editorial-forest, cobalt-grid, block-frame, sakura-chroma, 8-bit-orbit, broadside, emerald-editorial, studio, capsule, vellum, monochrome, neo-grid-bold, pink-script, pin-and-paper, warm-gradient, minimal-corporate, cyber-neon",
+      ),
     slides: z
       .array(SlideSchema)
       .length(10)

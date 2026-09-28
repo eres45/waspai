@@ -8,9 +8,12 @@ import {
   Loader2,
   PresentationIcon,
   PaletteIcon,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "lib/utils";
+import { ToolUIPart } from "ai";
+import { resolvePresentationTheme } from "lib/ai/tools/presentation-themes";
 
 interface SlideContent {
   type: string;
@@ -22,110 +25,9 @@ interface PresentationData {
   title: string;
   description: string;
   topic: string;
-  theme: keyof typeof THEMES;
+  theme: string;
   slides: SlideContent[];
 }
-
-const THEMES = {
-  tech: {
-    bg: "#0F0F1A",
-    accent: "#00D4FF",
-    secondary: "#FF00FF",
-    text: "#FFFFFF",
-    muted: "#888899",
-    font: "Calibri",
-    titleFont: "Arial",
-    blobStyle: "geometric",
-    blobCount: 2,
-    blobOpacity: 0.15,
-  },
-  business: {
-    bg: "#1A1A2E",
-    accent: "#FF6B35",
-    secondary: "#FFB300",
-    text: "#FFFFFF",
-    muted: "#AAAAAA",
-    font: "Calibri",
-    titleFont: "Arial",
-    blobStyle: "minimal",
-    blobCount: 1,
-    blobOpacity: 0.08,
-  },
-  creative: {
-    bg: "#1A0A2E",
-    accent: "#FF00FF",
-    secondary: "#00FFFF",
-    text: "#FFFFFF",
-    muted: "#CCCCCC",
-    font: "Verdana",
-    titleFont: "Impact",
-    blobStyle: "colorful",
-    blobCount: 4,
-    blobOpacity: 0.25,
-  },
-  education: {
-    bg: "#1A1209",
-    accent: "#FFB300",
-    secondary: "#FF6B35",
-    text: "#FFFFFF",
-    muted: "#BBBBBB",
-    font: "Georgia",
-    titleFont: "Georgia",
-    blobStyle: "organic",
-    blobCount: 2,
-    blobOpacity: 0.12,
-  },
-  nature: {
-    bg: "#0D1F0D",
-    accent: "#4CAF50",
-    secondary: "#8BC34A",
-    text: "#FFFFFF",
-    muted: "#99AA99",
-    font: "Verdana",
-    titleFont: "Georgia",
-    blobStyle: "organic-waves",
-    blobCount: 3,
-    blobOpacity: 0.18,
-  },
-  medical: {
-    bg: "#0A1628",
-    accent: "#00BCD4",
-    secondary: "#4DD0E1",
-    text: "#FFFFFF",
-    muted: "#999999",
-    font: "Calibri",
-    titleFont: "Arial",
-    blobStyle: "geometric",
-    blobCount: 1,
-    blobOpacity: 0.1,
-  },
-  energy: {
-    bg: "#1A0A00",
-    accent: "#FF3D00",
-    secondary: "#FF9100",
-    text: "#FFFFFF",
-    muted: "#CC9999",
-    font: "Impact",
-    titleFont: "Impact",
-    blobStyle: "sharp",
-    blobCount: 3,
-    blobOpacity: 0.2,
-  },
-  elegant: {
-    bg: "#0D0D0D",
-    accent: "#C0A060",
-    secondary: "#D4AF37",
-    text: "#FFFFFF",
-    muted: "#888888",
-    font: "Georgia",
-    titleFont: "Georgia",
-    blobStyle: "minimal",
-    blobCount: 1,
-    blobOpacity: 0.06,
-  },
-};
-
-import { ToolUIPart } from "ai";
 
 export function PresentationGeneratorToolInvocation({
   part,
@@ -143,7 +45,7 @@ export function PresentationGeneratorToolInvocation({
   const result =
     part.state === "output-available" ? (part.output as any) : null;
   const data = result as (PresentationData & { success: boolean }) | null;
-  const theme = data ? THEMES[data.theme] || THEMES.tech : THEMES.tech;
+  const theme = resolvePresentationTheme(data?.theme);
 
   const handleExport = async () => {
     if (!data) return;
@@ -219,28 +121,12 @@ export function PresentationGeneratorToolInvocation({
           <PaletteIcon className="size-4 text-muted-foreground" />
           <span
             className={cn(
-              "text-xs px-2.5 py-1 rounded-full font-medium uppercase tracking-wider border shadow-sm",
-              {
-                "bg-blue-500/10 text-blue-500 border-blue-500/20":
-                  data.theme === "tech",
-                "bg-orange-500/10 text-orange-500 border-orange-500/20":
-                  data.theme === "business",
-                "bg-purple-500/10 text-purple-500 border-purple-500/20":
-                  data.theme === "creative",
-                "bg-amber-500/10 text-amber-500 border-amber-500/20":
-                  data.theme === "education",
-                "bg-green-500/10 text-green-500 border-green-500/20":
-                  data.theme === "nature",
-                "bg-cyan-500/10 text-cyan-500 border-cyan-500/20":
-                  data.theme === "medical",
-                "bg-red-500/10 text-red-500 border-red-500/20":
-                  data.theme === "energy",
-                "bg-neutral-500/10 text-neutral-500 border-neutral-500/20":
-                  data.theme === "elegant",
-              },
+              "text-xs px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider border shadow-sm transition-colors",
+              theme.badgeClass,
             )}
+            title={`${theme.name} — ${theme.tagline}`}
           >
-            {data.theme}
+            {theme.name}
           </span>
         </div>
       </div>
@@ -248,8 +134,9 @@ export function PresentationGeneratorToolInvocation({
       {/* Slide Preview */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Slide Preview — {data.slides.length} slides
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Sparkles className="size-3 text-amber-500" />
+            Slide Preview — {data.slides.length} slides ({theme.name})
           </p>
         </div>
         <div
@@ -275,7 +162,7 @@ export function PresentationGeneratorToolInvocation({
 
                 {/* Slide number */}
                 <div
-                  className="absolute top-2 right-2 text-[9px] font-bold opacity-60"
+                  className="absolute top-2 right-2 text-[9px] font-bold opacity-70"
                   style={{ color: theme.accent }}
                 >
                   {idx + 1}
@@ -283,7 +170,7 @@ export function PresentationGeneratorToolInvocation({
 
                 {/* Slide type badge */}
                 <div
-                  className="absolute bottom-1 left-2 text-[7px] uppercase tracking-widest opacity-50"
+                  className="absolute bottom-1 left-2 text-[7px] uppercase tracking-widest opacity-60 font-medium"
                   style={{ color: theme.muted }}
                 >
                   {slide.type.replace(/-/g, " ")}
@@ -294,7 +181,7 @@ export function PresentationGeneratorToolInvocation({
                   <p
                     className="text-[10px] font-bold leading-tight line-clamp-2"
                     style={{
-                      color: slide.type === "cover" ? "#fff" : theme.accent,
+                      color: slide.type === "cover" ? theme.text : theme.accent,
                     }}
                   >
                     {slide.title ||
@@ -304,15 +191,15 @@ export function PresentationGeneratorToolInvocation({
                   </p>
                   {(slide as any).subtitle && (
                     <p
-                      className="text-[8px] mt-0.5 leading-tight opacity-70 truncate"
-                      style={{ color: theme.text }}
+                      className="text-[8px] mt-0.5 leading-tight opacity-75 truncate"
+                      style={{ color: theme.muted }}
                     >
                       {(slide as any).subtitle}
                     </p>
                   )}
                   {(slide as any).stat && (
                     <p
-                      className="text-[22px] font-black leading-none mt-1"
+                      className="text-[20px] font-black leading-none mt-1"
                       style={{ color: theme.accent }}
                     >
                       {(slide as any).stat}
@@ -325,7 +212,7 @@ export function PresentationGeneratorToolInvocation({
                         .map((p, pIdx) => (
                           <p
                             key={pIdx}
-                            className="text-[7px] opacity-60 truncate"
+                            className="text-[7px] opacity-75 truncate"
                             style={{ color: theme.text }}
                           >
                             • {p}

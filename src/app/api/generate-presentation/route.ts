@@ -1,98 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import pptxgen from "pptxgenjs";
+import {
+  resolvePresentationTheme,
+  stripHex,
+} from "lib/ai/tools/presentation-themes";
 
 export const runtime = "nodejs";
-
-const THEMES: Record<string, any> = {
-  tech: {
-    bg: "0F0F1A",
-    accent: "00D4FF",
-    secondary: "FF00FF",
-    text: "FFFFFF",
-    muted: "888899",
-    font: "Calibri",
-    titleFont: "Arial",
-    blobCount: 2,
-    blobOpacity: 0.15,
-  },
-  business: {
-    bg: "1A1A2E",
-    accent: "FF6B35",
-    secondary: "FFB300",
-    text: "FFFFFF",
-    muted: "AAAAAA",
-    font: "Calibri",
-    titleFont: "Arial",
-    blobCount: 1,
-    blobOpacity: 0.08,
-  },
-  creative: {
-    bg: "1A0A2E",
-    accent: "FF00FF",
-    secondary: "00FFFF",
-    text: "FFFFFF",
-    muted: "CCCCCC",
-    font: "Verdana",
-    titleFont: "Arial Black",
-    blobCount: 4,
-    blobOpacity: 0.25,
-  },
-  education: {
-    bg: "1A1209",
-    accent: "FFB300",
-    secondary: "FF6B35",
-    text: "FFFFFF",
-    muted: "BBBBBB",
-    font: "Georgia",
-    titleFont: "Georgia",
-    blobCount: 2,
-    blobOpacity: 0.12,
-  },
-  nature: {
-    bg: "0D1F0D",
-    accent: "4CAF50",
-    secondary: "8BC34A",
-    text: "FFFFFF",
-    muted: "99AA99",
-    font: "Verdana",
-    titleFont: "Georgia",
-    blobCount: 3,
-    blobOpacity: 0.18,
-  },
-  medical: {
-    bg: "0A1628",
-    accent: "00BCD4",
-    secondary: "4DD0E1",
-    text: "FFFFFF",
-    muted: "999999",
-    font: "Calibri",
-    titleFont: "Arial",
-    blobCount: 1,
-    blobOpacity: 0.1,
-  },
-  energy: {
-    bg: "1A0A00",
-    accent: "FF3D00",
-    secondary: "FF9100",
-    text: "FFFFFF",
-    muted: "CC9999",
-    font: "Arial",
-    titleFont: "Arial Black",
-    blobCount: 3,
-    blobOpacity: 0.2,
-  },
-  elegant: {
-    bg: "0D0D0D",
-    accent: "C0A060",
-    secondary: "D4AF37",
-    text: "FFFFFF",
-    muted: "888888",
-    font: "Georgia",
-    titleFont: "Georgia",
-    blobCount: 1,
-    blobOpacity: 0.06,
-  },
-};
 
 export async function POST(req: NextRequest) {
   try {
@@ -106,14 +19,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const theme = THEMES[themeName] || THEMES.tech;
+    const theme = resolvePresentationTheme(themeName);
+    const bgHex = stripHex(theme.bg);
+    const accentHex = stripHex(theme.accent);
+    const secondaryHex = stripHex(theme.secondary);
+    const textHex = stripHex(theme.text);
+    const mutedHex = stripHex(theme.muted);
+    const surfaceHex = stripHex(theme.surface);
 
     const prs = new pptxgen();
     prs.layout = "LAYOUT_WIDE";
 
     prs.defineSlideMaster({
       title: "MASTER",
-      background: { color: theme.bg },
+      background: { color: bgHex },
     });
 
     slides.forEach((s: any, idx: number) => {
@@ -126,88 +45,118 @@ export async function POST(req: NextRequest) {
         w: 0.7,
         h: 0.3,
         fontSize: 11,
-        color: theme.muted,
+        color: mutedHex,
         fontFace: theme.font,
         align: "right",
       });
 
       switch (s.type) {
         case "cover":
+          // Modern branded banner / card styling
           slide.addShape(prs.ShapeType.rect, {
             x: 0,
             y: 0,
             w: "100%",
-            h: "70%",
-            fill: { color: theme.accent },
+            h: 0.15,
+            fill: { color: accentHex },
           });
+
+          // Title
           slide.addText(s.title || "Untitled", {
-            x: 0.5,
-            y: 1.5,
-            w: "90%",
-            h: 2.0,
+            x: 0.8,
+            y: 1.8,
+            w: 8.4,
+            h: 2.2,
             fontSize: 44,
             bold: true,
-            color: "FFFFFF",
+            color: textHex,
             fontFace: theme.titleFont,
             align: "center",
           });
-          if (s.subtitle)
+
+          // Subtitle
+          if (s.subtitle) {
             slide.addText(s.subtitle, {
-              x: 0.5,
-              y: 3.5,
-              w: "90%",
-              h: 1.0,
-              fontSize: 24,
-              color: "FFFFFF",
+              x: 1.0,
+              y: 4.1,
+              w: 8.0,
+              h: 1.2,
+              fontSize: 22,
+              color: mutedHex,
               fontFace: theme.font,
               align: "center",
             });
-          if (s.tagline)
+          }
+
+          // Tagline badge
+          if (s.tagline) {
+            slide.addShape(prs.ShapeType.roundRect, {
+              x: 2.5,
+              y: 5.6,
+              w: 5.0,
+              h: 0.6,
+              fill: { color: surfaceHex },
+              line: { color: accentHex, width: 1 },
+              rectRadius: 0.15,
+            });
             slide.addText(s.tagline, {
-              x: 1.0,
-              y: 6.0,
-              w: "80%",
+              x: 2.5,
+              y: 5.65,
+              w: 5.0,
               h: 0.5,
               fontSize: 14,
-              color: theme.muted,
+              bold: true,
+              color: accentHex,
               fontFace: theme.font,
               align: "center",
             });
+          }
           break;
 
         case "bullet-list":
+          // Section header with vertical accent bar
+          slide.addShape(prs.ShapeType.rect, {
+            x: 0.8,
+            y: 0.6,
+            w: 0.1,
+            h: 0.8,
+            fill: { color: accentHex },
+          });
           slide.addText(s.title || "", {
-            x: 0.5,
+            x: 1.1,
             y: 0.5,
-            w: "90%",
+            w: 8.0,
             h: 1.0,
             fontSize: 28,
             bold: true,
-            color: theme.accent,
+            color: textHex,
             fontFace: theme.titleFont,
           });
-          slide.addShape(prs.ShapeType.rect, {
-            x: 0.3,
-            y: 0.5,
-            w: 0.05,
-            h: 1.0,
-            fill: { color: theme.accent },
-          });
+
+          // Bullet items
           (s.points || []).forEach((p: string, pIdx: number) => {
-            slide.addShape(prs.ShapeType.ellipse, {
+            slide.addShape(prs.ShapeType.roundRect, {
               x: 0.8,
-              y: 1.8 + pIdx * 1.0,
+              y: 1.8 + pIdx * 1.1,
+              w: 8.4,
+              h: 0.9,
+              fill: { color: surfaceHex },
+              rectRadius: 0.08,
+            });
+            slide.addShape(prs.ShapeType.ellipse, {
+              x: 1.1,
+              y: 2.15 + pIdx * 1.1,
               w: 0.15,
               h: 0.15,
-              fill: { color: theme.accent },
+              fill: { color: accentHex },
             });
             slide.addText(p, {
-              x: 1.1,
-              y: 1.6 + pIdx * 1.0,
-              w: "80%",
+              x: 1.4,
+              y: 1.95 + pIdx * 1.1,
+              w: 7.6,
               h: 0.6,
-              fontSize: 18,
-              color: theme.text,
+              fontSize: 16,
+              color: textHex,
               fontFace: theme.font,
             });
           });
@@ -215,94 +164,120 @@ export async function POST(req: NextRequest) {
 
         case "two-column":
           slide.addText(s.title || "", {
-            x: 0.5,
-            y: 0.3,
-            w: "90%",
+            x: 0.8,
+            y: 0.5,
+            w: 8.4,
             h: 0.8,
             fontSize: 28,
-            color: theme.accent,
+            bold: true,
+            color: textHex,
             fontFace: theme.titleFont,
           });
-          slide.addShape(prs.ShapeType.line, {
-            x: 5.0,
-            y: 1.5,
-            w: 0,
-            h: 5.0,
-            line: { color: theme.accent, width: 2 },
+
+          // Left card
+          slide.addShape(prs.ShapeType.roundRect, {
+            x: 0.8,
+            y: 1.6,
+            w: 4.0,
+            h: 4.8,
+            fill: { color: surfaceHex },
+            line: { color: accentHex, width: 1 },
+            rectRadius: 0.1,
           });
           slide.addText(s.left?.heading || "", {
-            x: 0.7,
-            y: 1.7,
-            w: 3.8,
+            x: 1.1,
+            y: 1.9,
+            w: 3.4,
             h: 0.5,
             fontSize: 20,
             bold: true,
-            color: theme.accent,
+            color: accentHex,
             fontFace: theme.titleFont,
           });
           (s.left?.points || []).forEach((p: string, pIdx: number) => {
             slide.addText(`• ${p}`, {
-              x: 0.7,
-              y: 2.3 + pIdx * 0.8,
-              w: 3.8,
-              h: 0.6,
-              fontSize: 16,
-              color: theme.text,
+              x: 1.1,
+              y: 2.6 + pIdx * 0.9,
+              w: 3.4,
+              h: 0.7,
+              fontSize: 15,
+              color: textHex,
               fontFace: theme.font,
             });
           });
+
+          // Right card
+          slide.addShape(prs.ShapeType.roundRect, {
+            x: 5.2,
+            y: 1.6,
+            w: 4.0,
+            h: 4.8,
+            fill: { color: surfaceHex },
+            line: { color: secondaryHex, width: 1 },
+            rectRadius: 0.1,
+          });
           slide.addText(s.right?.heading || "", {
             x: 5.5,
-            y: 1.7,
-            w: 3.8,
+            y: 1.9,
+            w: 3.4,
             h: 0.5,
             fontSize: 20,
             bold: true,
-            color: theme.accent,
+            color: secondaryHex,
             fontFace: theme.titleFont,
           });
           (s.right?.points || []).forEach((p: string, pIdx: number) => {
             slide.addText(`• ${p}`, {
               x: 5.5,
-              y: 2.3 + pIdx * 0.8,
-              w: 3.8,
-              h: 0.6,
-              fontSize: 16,
-              color: theme.text,
+              y: 2.6 + pIdx * 0.9,
+              w: 3.4,
+              h: 0.7,
+              fontSize: 15,
+              color: textHex,
               fontFace: theme.font,
             });
           });
           break;
 
         case "big-stat":
+          // Stat hero card
+          slide.addShape(prs.ShapeType.roundRect, {
+            x: 1.5,
+            y: 1.2,
+            w: 7.0,
+            h: 4.8,
+            fill: { color: surfaceHex },
+            line: { color: accentHex, width: 1 },
+            rectRadius: 0.15,
+          });
           slide.addText(s.title || "", {
-            x: 0,
-            y: 1.5,
-            w: "100%",
+            x: 2.0,
+            y: 1.6,
+            w: 6.0,
             h: 0.7,
-            fontSize: 20,
-            color: "FFFFFF",
+            fontSize: 22,
+            color: mutedHex,
             fontFace: theme.font,
             align: "center",
           });
           slide.addText(s.stat || "", {
-            x: 0,
-            y: 2.5,
-            w: "100%",
+            x: 2.0,
+            y: 2.4,
+            w: 6.0,
             h: 2.0,
             fontSize: 80,
             bold: true,
-            color: theme.accent,
+            color: accentHex,
             fontFace: theme.titleFont,
             align: "center",
           });
           slide.addText(s.description || "", {
             x: 2.0,
-            y: 5.0,
+            y: 4.6,
             w: 6.0,
-            h: 0.8,
-            fontSize: 16,
-            color: "FFFFFF",
+            h: 1.0,
+            fontSize: 17,
+            color: textHex,
             fontFace: theme.font,
             align: "center",
           });
@@ -310,34 +285,44 @@ export async function POST(req: NextRequest) {
 
         case "three-column":
           slide.addText(s.title || "", {
-            x: 0.5,
-            y: 0.3,
-            w: "90%",
+            x: 0.8,
+            y: 0.5,
+            w: 8.4,
             h: 0.8,
             fontSize: 28,
-            color: theme.accent,
+            bold: true,
+            color: textHex,
             fontFace: theme.titleFont,
           });
           (s.columns || []).forEach((col: any, cIdx: number) => {
-            const xPos = 0.5 + cIdx * 3.2;
+            const xPos = 0.8 + cIdx * 2.9;
+            slide.addShape(prs.ShapeType.roundRect, {
+              x: xPos,
+              y: 1.6,
+              w: 2.65,
+              h: 4.8,
+              fill: { color: surfaceHex },
+              line: { color: accentHex, width: 1 },
+              rectRadius: 0.1,
+            });
             slide.addText(col.heading || "", {
               x: xPos + 0.2,
-              y: 1.8,
-              w: 2.6,
-              h: 0.5,
+              y: 1.9,
+              w: 2.25,
+              h: 0.6,
               fontSize: 18,
               bold: true,
-              color: theme.accent,
+              color: accentHex,
               fontFace: theme.titleFont,
             });
             (col.points || []).forEach((p: string, pIdx: number) => {
               slide.addText(`• ${p}`, {
                 x: xPos + 0.2,
-                y: 2.4 + pIdx * 0.8,
-                w: 2.6,
+                y: 2.6 + pIdx * 0.9,
+                w: 2.25,
                 h: 0.7,
                 fontSize: 14,
-                color: theme.text,
+                color: textHex,
                 fontFace: theme.font,
               });
             });
@@ -346,207 +331,263 @@ export async function POST(req: NextRequest) {
 
         case "timeline":
           slide.addText(s.title || "", {
-            x: 0.5,
+            x: 0.8,
             y: 0.5,
-            w: "90%",
+            w: 8.4,
             h: 0.8,
             fontSize: 28,
-            color: theme.accent,
+            bold: true,
+            color: textHex,
             fontFace: theme.titleFont,
           });
+
+          // Horizontal connector line
           slide.addShape(prs.ShapeType.line, {
             x: 1.0,
             y: 4.0,
             w: 8.0,
             h: 0,
-            line: { color: theme.accent, width: 3 },
+            line: { color: accentHex, width: 3 },
           });
+
           (s.timeline || []).forEach((item: any, tIdx: number) => {
             const count = Math.max(s.timeline.length - 1, 1);
             const xPos = 1.0 + tIdx * (8.0 / count);
             const isTop = tIdx % 2 === 0;
+
             slide.addShape(prs.ShapeType.ellipse, {
-              x: xPos - 0.1,
-              y: 3.9,
-              w: 0.2,
-              h: 0.2,
-              fill: { color: theme.accent },
+              x: xPos - 0.12,
+              y: 3.88,
+              w: 0.24,
+              h: 0.24,
+              fill: { color: secondaryHex },
             });
+
+            slide.addShape(prs.ShapeType.roundRect, {
+              x: xPos - 0.9,
+              y: isTop ? 1.8 : 4.4,
+              w: 1.8,
+              h: 1.8,
+              fill: { color: surfaceHex },
+              rectRadius: 0.08,
+            });
+
             slide.addText(String(item.year || ""), {
-              x: xPos - 0.5,
-              y: isTop ? 3.0 : 4.4,
-              w: 1.0,
+              x: xPos - 0.8,
+              y: isTop ? 2.0 : 4.6,
+              w: 1.6,
               h: 0.4,
-              fontSize: 18,
+              fontSize: 16,
               bold: true,
-              color: theme.accent,
+              color: accentHex,
               align: "center",
             });
             slide.addText(String(item.event || ""), {
               x: xPos - 0.8,
-              y: isTop ? 2.3 : 4.9,
+              y: isTop ? 2.5 : 5.1,
               w: 1.6,
-              h: 0.7,
-              fontSize: 14,
-              color: theme.text,
+              h: 0.9,
+              fontSize: 13,
+              color: textHex,
               align: "center",
             });
           });
           break;
 
         case "quote":
-          slide.addShape(prs.ShapeType.rect, {
-            x: 0,
-            y: 0,
-            w: "100%",
-            h: "100%",
-            fill: { color: theme.accent, transparency: 70 },
+          slide.addShape(prs.ShapeType.roundRect, {
+            x: 1.0,
+            y: 1.2,
+            w: 8.0,
+            h: 4.8,
+            fill: { color: surfaceHex },
+            line: { color: accentHex, width: 1 },
+            rectRadius: 0.15,
+          });
+          slide.addText(`“`, {
+            x: 1.5,
+            y: 1.4,
+            w: 1.0,
+            h: 0.8,
+            fontSize: 60,
+            bold: true,
+            color: accentHex,
+            fontFace: theme.titleFont,
           });
           slide.addText(`"${s.quote || ""}"`, {
-            x: 1.0,
-            y: 2.5,
-            w: 8.0,
-            h: 2.0,
-            fontSize: 36,
+            x: 1.5,
+            y: 2.2,
+            w: 7.0,
+            h: 2.2,
+            fontSize: 30,
             italic: true,
             bold: true,
-            color: "FFFFFF",
-            fontFace: theme.font,
+            color: textHex,
+            fontFace: theme.titleFont,
             align: "center",
           });
-          slide.addText(s.attribution || "", {
-            x: 1.0,
-            y: 4.5,
-            w: 8.0,
-            h: 0.5,
-            fontSize: 18,
-            color: theme.muted,
-            fontFace: theme.font,
-            align: "right",
-          });
+          if (s.attribution) {
+            slide.addText(`— ${s.attribution}`, {
+              x: 1.5,
+              y: 4.6,
+              w: 7.0,
+              h: 0.6,
+              fontSize: 18,
+              color: mutedHex,
+              fontFace: theme.font,
+              align: "right",
+            });
+          }
           break;
 
         case "checklist":
           slide.addText(s.title || "", {
-            x: 0.5,
+            x: 0.8,
             y: 0.5,
-            w: "90%",
+            w: 8.4,
             h: 0.8,
             fontSize: 28,
-            color: theme.accent,
+            bold: true,
+            color: textHex,
             fontFace: theme.titleFont,
           });
           (s.items || []).forEach((item: any, iIdx: number) => {
+            slide.addShape(prs.ShapeType.roundRect, {
+              x: 0.8,
+              y: 1.6 + iIdx * 0.85,
+              w: 8.4,
+              h: 0.7,
+              fill: { color: surfaceHex },
+              rectRadius: 0.08,
+            });
             slide.addText(item.checked ? "✓" : "○", {
-              x: 1.0,
-              y: 1.8 + iIdx * 0.7,
+              x: 1.1,
+              y: 1.65 + iIdx * 0.85,
               w: 0.5,
               h: 0.5,
               fontSize: 20,
-              color: item.checked ? "4CAF50" : theme.muted,
+              color: item.checked ? secondaryHex : mutedHex,
               bold: true,
             });
             slide.addText(item.text || "", {
-              x: 1.6,
-              y: 1.8 + iIdx * 0.7,
-              w: 7.0,
-              h: 0.5,
+              x: 1.7,
+              y: 1.65 + iIdx * 0.85,
+              w: 7.2,
+              h: 0.6,
               fontSize: 16,
-              color: "FFFFFF",
+              color: textHex,
               fontFace: theme.font,
             });
           });
           break;
 
         case "content-with-icon":
-          slide.addShape(prs.ShapeType.ellipse, {
+          slide.addShape(prs.ShapeType.roundRect, {
             x: 0.8,
-            y: 2.5,
-            w: 2.0,
-            h: 2.0,
-            fill: { color: theme.accent, transparency: 90 },
+            y: 1.2,
+            w: 8.4,
+            h: 4.8,
+            fill: { color: surfaceHex },
+            line: { color: accentHex, width: 1 },
+            rectRadius: 0.15,
+          });
+          slide.addShape(prs.ShapeType.ellipse, {
+            x: 1.3,
+            y: 2.2,
+            w: 1.8,
+            h: 1.8,
+            fill: { color: accentHex },
           });
           slide.addText(s.icon || "★", {
-            x: 1.0,
-            y: 2.7,
-            w: 1.6,
-            h: 1.6,
-            fontSize: 44,
+            x: 1.3,
+            y: 2.35,
+            w: 1.8,
+            h: 1.5,
+            fontSize: 40,
+            color: bgHex,
             align: "center",
           });
           slide.addText(s.title || "", {
             x: 3.5,
-            y: 2.5,
-            w: 6.0,
-            h: 0.7,
+            y: 1.8,
+            w: 5.2,
+            h: 0.8,
             fontSize: 28,
             bold: true,
-            color: theme.accent,
+            color: accentHex,
             fontFace: theme.titleFont,
           });
           slide.addText(s.content || "", {
             x: 3.5,
-            y: 3.3,
-            w: 6.0,
-            h: 2.5,
+            y: 2.8,
+            w: 5.2,
+            h: 2.8,
             fontSize: 16,
-            color: theme.text,
+            color: textHex,
             fontFace: theme.font,
           });
           break;
 
         case "call-to-action":
+          slide.addShape(prs.ShapeType.roundRect, {
+            x: 1.2,
+            y: 1.2,
+            w: 7.6,
+            h: 4.8,
+            fill: { color: surfaceHex },
+            line: { color: accentHex, width: 1 },
+            rectRadius: 0.15,
+          });
           slide.addText(s.heading || s.title || "", {
-            x: 0,
-            y: 2.0,
-            w: "100%",
+            x: 1.5,
+            y: 1.8,
+            w: 7.0,
             h: 1.0,
             fontSize: 36,
             bold: true,
-            color: theme.accent,
+            color: accentHex,
             fontFace: theme.titleFont,
             align: "center",
           });
           slide.addText(s.description || "", {
-            x: 1.0,
-            y: 3.2,
-            w: 8.0,
-            h: 0.8,
-            fontSize: 16,
-            color: "FFFFFF",
+            x: 1.5,
+            y: 3.0,
+            w: 7.0,
+            h: 1.0,
+            fontSize: 18,
+            color: textHex,
             fontFace: theme.font,
             align: "center",
           });
-          slide.addShape(prs.ShapeType.rect, {
-            x: 4.0,
-            y: 4.5,
-            w: 2.0,
-            h: 0.6,
-            fill: { color: theme.accent },
-            rectRadius: 0.1,
+          slide.addShape(prs.ShapeType.roundRect, {
+            x: 3.8,
+            y: 4.4,
+            w: 2.4,
+            h: 0.7,
+            fill: { color: accentHex },
+            rectRadius: 0.15,
           });
           slide.addText(s.cta || "Get Started", {
-            x: 4.0,
+            x: 3.8,
             y: 4.5,
-            w: 2.0,
-            h: 0.6,
-            fontSize: 20,
+            w: 2.4,
+            h: 0.5,
+            fontSize: 18,
             bold: true,
-            color: "FFFFFF",
+            color: bgHex,
             fontFace: theme.font,
             align: "center",
           });
           break;
 
         default:
-          // Fallback: just show the title
           slide.addText(s.title || s.heading || String(s.type), {
-            x: 0.5,
+            x: 0.8,
             y: 2.5,
-            w: "90%",
+            w: 8.4,
             h: 1.5,
             fontSize: 28,
-            color: theme.accent,
+            color: accentHex,
             fontFace: theme.titleFont,
             align: "center",
           });
