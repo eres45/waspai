@@ -40,6 +40,14 @@ const InteractiveTable = dynamic(
   { ssr: false },
 );
 
+const PresentationGeneratorToolInvocation = dynamic(
+  () =>
+    import("./tool-invocation/presentation-generator").then(
+      (mod) => mod.PresentationGeneratorToolInvocation,
+    ),
+  { ssr: false },
+);
+
 // Dynamically import MermaidDiagram component
 const MermaidDiagram = dynamic(
   () => import("./mermaid-diagram").then((mod) => mod.MermaidDiagram),
@@ -246,6 +254,35 @@ export async function Highlight(
               </PurePre>
             );
         }
+      }
+
+      // Auto-detect presentation deck if tool === 'generate-presentation' or slides array is present with title
+      const isPresentation =
+        val.tool === "generate-presentation" ||
+        val.tool === "create-presentation" ||
+        val.name === "generate-presentation" ||
+        (Array.isArray(val.slides) && (val.title || val.topic));
+
+      if (isPresentation) {
+        const presentationData = val.arguments || val.parameters || val;
+        return (
+          <PurePre code={code} lang={lang}>
+            <PresentationGeneratorToolInvocation
+              part={
+                {
+                  toolName: "generate-presentation",
+                  toolCallId: `preview-${Date.now()}`,
+                  state: "output-available",
+                  output: {
+                    success: true,
+                    status: "ready_for_browser_generation",
+                    ...presentationData,
+                  },
+                } as any
+              }
+            />
+          </PurePre>
+        );
       }
     }
 

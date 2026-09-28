@@ -28,6 +28,9 @@ export interface ToolTurnContext {
 // Tools that must be available on every single conversation turn
 export const ALWAYS_ACTIVE_TOOLS = new Set([
   "web-search",
+  "scrape-web-page",
+  "web-content",
+  "generate-presentation",
   "image-manager",
   "createBarChart",
   "createLineChart",
@@ -268,6 +271,21 @@ export function selectActiveToolsForTurn(
   context: ToolTurnContext,
 ): Record<string, any> {
   if (!allTools || typeof allTools !== "object") return {};
+
+  // Auto-inject model fallback aliases to prevent "unavailable tool" errors
+  if (allTools["scrape-web-page"] || allTools["web-content"]) {
+    const scraper = allTools["web-content"] || allTools["scrape-web-page"];
+    if (!allTools["web-scrape"]) allTools["web-scrape"] = scraper;
+    if (!allTools["web_scrape"]) allTools["web_scrape"] = scraper;
+  }
+  if (allTools["generate-presentation"]) {
+    if (!allTools["create-presentation"]) {
+      allTools["create-presentation"] = allTools["generate-presentation"];
+    }
+    if (!allTools["presentation-generator"]) {
+      allTools["presentation-generator"] = allTools["generate-presentation"];
+    }
+  }
 
   const userQuery = (context.userText || "").toLowerCase();
   const priorCalls = new Set(

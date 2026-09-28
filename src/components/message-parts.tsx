@@ -1299,15 +1299,20 @@ export const ToolMessagePart = memo(
       }
 
       if (
+        toolName === "generate-presentation" ||
+        toolName === "create-presentation" ||
+        toolName === "presentation-generator" ||
+        toolName === "generate_presentation"
+      ) {
+        return <PresentationGeneratorToolInvocation part={part} />;
+      }
+
+      if (
         toolName === "generate-word-document" ||
         toolName === "generate-csv" ||
         toolName === "generate-text-file" ||
-        toolName === "generate-pdf" ||
-        toolName === "generate-presentation"
+        toolName === "generate-pdf"
       ) {
-        if (toolName === "generate-presentation") {
-          return <PresentationGeneratorToolInvocation part={part} />;
-        }
         return <DocumentGeneratorToolInvocation part={part} />;
       }
 

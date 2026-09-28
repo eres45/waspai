@@ -27,25 +27,28 @@ export const freeSearchSchema = z.object({
 });
 
 // Fallback schema for content scraping
-export const freeContentsSchema = z
-  .object({
-    url: z.string().optional().describe("URL to extract text content from"),
-    urls: z
-      .union([z.array(z.string()), z.string()])
-      .optional()
-      .describe("List of URLs to extract text content from"),
-  })
-  .transform((val) => {
-    const list: string[] = [];
-    if (Array.isArray(val.urls)) {
-      list.push(...val.urls);
-    } else if (typeof val.urls === "string" && val.urls.trim()) {
-      list.push(val.urls.trim());
-    } else if (typeof val.url === "string" && val.url.trim()) {
-      list.push(val.url.trim());
-    }
-    return { urls: list };
-  });
+export const freeContentsSchema = z.preprocess(
+  (val) => (val && typeof val === "object" ? val : {}),
+  z
+    .object({
+      url: z.string().optional().describe("URL to extract text content from"),
+      urls: z
+        .union([z.array(z.string()), z.string()])
+        .optional()
+        .describe("List of URLs to extract text content from"),
+    })
+    .transform((val) => {
+      const list: string[] = [];
+      if (Array.isArray(val.urls)) {
+        list.push(...val.urls);
+      } else if (typeof val.urls === "string" && val.urls.trim()) {
+        list.push(val.urls.trim());
+      } else if (typeof val.url === "string" && val.url.trim()) {
+        list.push(val.url.trim());
+      }
+      return { urls: list };
+    }),
+);
 
 // --- Generic Search Interfaces ---
 
@@ -865,8 +868,15 @@ export const webContentTool = createTool({
   description:
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
   inputSchema: freeContentsSchema,
-  execute: async (params) => {
+  execute: async (params: { urls: string[] }) => {
     return safe(async () => {
+      if (!params || !params.urls || params.urls.length === 0) {
+        return {
+          results: [],
+          guide:
+            "No target URL was provided to extract. To read page contents, provide a valid URL from the web-search results.",
+        };
+      }
       const results = await Promise.all(
         params.urls.map((url) => scrapeWebpage(url)),
       );

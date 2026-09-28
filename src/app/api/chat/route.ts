@@ -115,6 +115,8 @@ import {
 } from "lib/ai/tools/memory-tools";
 import { pdfGeneratorTool } from "lib/ai/tools/pdf-generator";
 import { presentationGeneratorTool } from "lib/ai/tools/presentation-generator";
+import { webContentTool } from "lib/ai/tools/web/web-search";
+import { scrapeWebPageTool } from "lib/ai/tools/web/scrape-web-page";
 import { getUnifiedSession } from "lib/auth/unified-session";
 import { serverFileStorage } from "lib/file-storage";
 import { processFileURLsForModel } from "lib/ocr/ocr-service";
@@ -190,6 +192,8 @@ export async function POST(request: Request) {
         AppDefaultToolkit.Visualization,
         AppDefaultToolkit.Media,
         AppDefaultToolkit.Utilities,
+        AppDefaultToolkit.Documents,
+        AppDefaultToolkit.Browser,
       ]),
     );
 
@@ -1650,6 +1654,13 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           "generate-csv": csvGeneratorTool,
           "generate-text-file": textFileTool,
           "generate-presentation": presentationGeneratorTool,
+          "create-presentation": presentationGeneratorTool,
+          "presentation-generator": presentationGeneratorTool,
+          generate_presentation: presentationGeneratorTool,
+          "scrape-web-page": scrapeWebPageTool,
+          "web-content": webContentTool,
+          "web-scrape": webContentTool,
+          web_scrape: webContentTool,
           "convert-file": {
             ...fileConverterTool,
             execute: async (args: any, context: any) => {

@@ -151,6 +151,7 @@ export function buildToolProtocolBlock(profile: ModelCognitiveProfile): string {
 
   return `<tool_protocol>
 1. Native Execution: Always invoke tools using the native tool call/function calling protocol. NEVER output raw XML tags (such as <invoke>, <tool_code>, <tool_call>, <function>, or <minimax:tool_call>) or raw JSON strings in your conversational response.
+CRITICAL RULE: NEVER simulate a tool call by printing markdown JSON code blocks (e.g. \`\`\`json { "tool": "generate-presentation", ... } \`\`\`). The UI cannot render presentation cards or downloadable PPTX files from text blocks. You MUST execute tools natively via the function calling API.
 2. Proactive Real-Time Search: For queries involving live market prices, crypto/stock quotes, currency rates, breaking news, sports scores, weather, or unfamiliar acronyms/models, PROACTIVELY invoke \`web-search\` immediately rather than asking the user for confirmation.
 3. Anti-Hallucination & Clean Delivery: Never invent, guess, or output placeholder download URLs (e.g. workers.dev, mock links). Deliver files exclusively via dedicated file generation tools or cleanly formatted markdown code blocks.
 4. Quota & Limits: If a tool returns a limit message (e.g. \`LIMIT_EXCEEDED\` or \`isLimitExceeded: true\`), politely inform the user of the reached plan limit and the daily reset time (4:00 AM IST) without claiming tools are broken.
@@ -241,7 +242,7 @@ export function buildPresentationDirective(): string {
   const currentDate = format(new Date(), "MMMM yyyy");
   return `<presentation_creation_guidelines>
 When generating presentations, pitch decks, or slides:
-- Execution: Always invoke the \`generate-presentation\` tool to create widescreen (16:9) slides.
+- Execution: Always invoke the \`generate-presentation\` tool via native function calling to create widescreen (16:9) slides. NEVER print the presentation deck as a JSON code block in text.
 - Multi-Step Research First: If the presentation topic involves real-time facts, current year (${currentDate}), or live developments (AI models, tech, companies, market metrics), invoke \`web-search\` FIRST in Step 1 to retrieve verified information, then invoke \`generate-presentation\` in Step 2 using the live search findings.
 - Clean Slide Data: NEVER use raw markdown symbols (#, ##, **, __, \`code\`, or leading dashes) inside any slide text field (title, subtitle, tagline, points, stat, quote). Always output clean, plain text strings.
 - Cover Slide Structure: The first slide must always have type "cover", with a compelling "title", one-line "subtitle", and "tagline" (e.g. "Prepared for [Team] · ${currentDate}").
