@@ -166,28 +166,24 @@ export function normalizePresentationPayload(raw: any) {
       }
 
       // ── Cover-rescue heuristic ─────────────────────────────────────────────
-      // If the first slide has a generic boilerplate title (e.g. "Title Slide",
-      // "Cover", "Title") and the actual presentation title is buried in its
-      // points array, reconstruct it as a proper cover slide.
+      // If the first slide has a generic boilerplate title like "Title Slide",
+      // "Cover", or "Title" (a tell that the AI put the real title inside the
+      // points array instead), reconstruct it as a proper cover slide.
+      // Also handles the case where rawType is explicitly "cover" but fields
+      // such as subtitle/tagline are missing yet the real title is in points.
       const isFirstSlide = idx === 0;
       const isGenericCoverTitle =
         /^(title\s*slide|cover(\s*slide)?|title)$/i.test(title.trim());
-      if (
-        isFirstSlide &&
-        (rawType === "" ||
-          rawType === "bullet-list" ||
-          rawType === "cover" ||
-          isGenericCoverTitle) &&
-        (isGenericCoverTitle || rawType === "cover" || rawType === "")
-      ) {
-        // If title is generic but we have a real title in raw.title or points[0], promote it
-        const realTitle = !isGenericCoverTitle
-          ? title
-          : points.length > 0
-            ? points[0]
-            : stripMd(String(raw.title || "Presentation"));
 
-        const remainingPoints = isGenericCoverTitle ? points.slice(1) : [];
+      if (isFirstSlide && (isGenericCoverTitle || rawType === "cover")) {
+        // If title is a placeholder, promote points[0] to the real title
+        const realTitle = isGenericCoverTitle
+          ? points.length > 0
+            ? points[0]
+            : stripMd(String(raw.title || "Presentation"))
+          : title;
+
+        const remainingPoints = isGenericCoverTitle ? points.slice(1) : points;
         const subtitleCandidate =
           remainingPoints
             .filter((p) => !/^(date|prepared\s*for|date:)/i.test(p))
