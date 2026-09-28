@@ -4,7 +4,6 @@ import { UploadedFile, appStore } from "@/app/store";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 import { ChatMention, ChatModel } from "app-types/chat";
 import {
-  AudioWaveformIcon,
   ChevronDown,
   CornerRightUp,
   Edit2,
@@ -12,8 +11,8 @@ import {
   FileTextIcon,
   ImagesIcon,
   Loader2,
-  MicIcon,
   PaperclipIcon,
+  Phone,
   PlusIcon,
   Square,
   XIcon,
@@ -782,7 +781,7 @@ export default function PromptInput({
                         ? "Working... · /btw side question"
                         : isDictating
                           ? "Listening..."
-                          : (placeholder ?? t("placeholder"))
+                          : (placeholder ?? "Message, / skills, @ files...")
                     }
                     ref={editorRef}
                     disabledMention={disabledMention}
@@ -1083,60 +1082,65 @@ export default function PromptInput({
                   </div>
                 ) : (
                   <>
-                    <SelectModel
-                      onSelect={setChatModel}
-                      currentModel={chatModel}
-                    >
-                      <Button
-                        variant={"ghost"}
-                        size={"sm"}
-                        className="rounded-full group data-[state=open]:bg-input! hover:bg-input! mr-1"
-                        data-testid="model-selector-button"
+                    <div className="flex items-center gap-1.5 mr-1">
+                      <div className="size-3.5 rounded-full border-2 border-primary/50 border-t-primary shrink-0 opacity-80" />
+                      <SelectModel
+                        onSelect={setChatModel}
+                        currentModel={chatModel}
                       >
-                        {chatModel?.model ? (
-                          <>
-                            {chatModel.provider === "openai" ? (
-                              <OpenAIIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                            ) : chatModel.provider === "xai" ? (
-                              <GrokIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                            ) : chatModel.provider === "anthropic" ? (
-                              <ClaudeIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                            ) : chatModel.provider === "google" ? (
-                              <GeminiIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
-                            ) : null}
-                            <span
-                              className="text-foreground group-data-[state=open]:text-foreground  "
-                              data-testid="selected-model-name"
-                            >
-                              {cleanModelDisplayName(chatModel.model)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">model</span>
-                        )}
-
-                        <ChevronDown className="size-3" />
-                      </Button>
-                    </SelectModel>
+                        <Button
+                          variant={"ghost"}
+                          size={"sm"}
+                          className="rounded-full group data-[state=open]:bg-input! hover:bg-input! px-2.5 h-7 text-xs font-mono border border-border/40 bg-muted/20"
+                          data-testid="model-selector-button"
+                        >
+                          {chatModel?.provider === "openai" ? (
+                            <OpenAIIcon className="size-3 shrink-0" />
+                          ) : chatModel?.provider === "xai" ? (
+                            <GrokIcon className="size-3 shrink-0" />
+                          ) : chatModel?.provider === "anthropic" ? (
+                            <ClaudeIcon className="size-3 shrink-0" />
+                          ) : chatModel?.provider === "google" ? (
+                            <GeminiIcon className="size-3 shrink-0" />
+                          ) : (
+                            <ModelProviderIcon
+                              provider={chatModel?.provider || "openai"}
+                              className="size-3 shrink-0"
+                            />
+                          )}
+                          <span
+                            className="text-foreground truncate max-w-[120px] sm:max-w-[180px]"
+                            data-testid="selected-model-name"
+                          >
+                            {chatModel?.model
+                              ? cleanModelDisplayName(chatModel.model)
+                              : "model"}
+                          </span>
+                          <ChevronDown className="size-3 opacity-60 ml-0.5" />
+                        </Button>
+                      </SelectModel>
+                    </div>
 
                     {!voiceDisabled && (
                       <DictateButton
                         input={input}
                         setInputAction={setInputAction}
                         onListeningChange={setIsDictating}
-                        className="mx-1"
+                        className="mx-0.5"
                         editorRef={editorRef}
                       />
                     )}
 
-                    {!input.length && !voiceDisabled && onStartVoice ? (
+                    {!voiceDisabled && onStartVoice && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            size={"sm"}
+                            variant="ghost"
+                            size="sm"
+                            type="button"
                             onClick={isVoiceActive ? onStopVoice : onStartVoice}
                             className={cn(
-                              "rounded-full p-2! transition-colors duration-300",
+                              "rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-input transition-all duration-200 cursor-pointer",
                               isVoiceListening &&
                                 "bg-destructive text-destructive-foreground animate-pulse hover:bg-destructive/90 hover:text-destructive-foreground",
                               isVoiceActive &&
@@ -1144,11 +1148,7 @@ export default function PromptInput({
                                 "bg-green-500/10 text-green-500 hover:bg-green-500/20",
                             )}
                           >
-                            {isVoiceListening ? (
-                              <MicIcon size={16} />
-                            ) : (
-                              <AudioWaveformIcon size={16} />
-                            )}
+                            <Phone size={16} />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -1157,13 +1157,17 @@ export default function PromptInput({
                             : t("VoiceChat.title")}
                         </TooltipContent>
                       </Tooltip>
-                    ) : null}
+                    )}
 
-                    {input.length > 0 && (
+                    {input.length > 0 ? (
                       <div
                         onClick={submit}
-                        className="fade-in animate-in cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
+                        className="fade-in animate-in cursor-pointer text-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
                       >
+                        <CornerRightUp size={16} />
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground/30 rounded-full p-2 select-none">
                         <CornerRightUp size={16} />
                       </div>
                     )}

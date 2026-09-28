@@ -1505,10 +1505,14 @@ export const ToolMessagePart = memo(
           detail: inp?.id || inp?.key || "",
         };
       }
-      if (toolName === "python-execution") {
+      if (
+        toolName === "python-execution" ||
+        toolName.includes("python") ||
+        toolName.includes("cloud")
+      ) {
         const line = inp?.code ? inp.code.trim().split("\n")[0] : "";
         return {
-          action: isExecuting ? "Running Python" : "Ran Python",
+          action: isExecuting ? "Running cloud command" : "Cloud command",
           detail: line || "",
         };
       }
@@ -1567,9 +1571,13 @@ export const ToolMessagePart = memo(
           detail: inp?.siteName || inp?.title || "",
         };
       }
-      if (toolName === "create_skill") {
+      if (
+        toolName === "create_skill" ||
+        toolName === "load_skill" ||
+        toolName.includes("skill")
+      ) {
         return {
-          action: isExecuting ? "Creating skill" : "Created skill",
+          action: isExecuting ? "Loading skill" : "Loaded skill",
           detail: inp?.name || inp?.title || "",
         };
       }
@@ -1585,10 +1593,26 @@ export const ToolMessagePart = memo(
           detail: inp?.title || "",
         };
       }
-      if (toolName === "generate-pdf") {
+      if (
+        toolName === "generate-pdf" ||
+        toolName.includes("download") ||
+        toolName.includes("export")
+      ) {
         return {
-          action: isExecuting ? "Generating PDF" : "Generated PDF",
+          action: isExecuting ? "Saving to Downloads" : "Saved to Downloads",
           detail: inp?.title || inp?.fileName || "",
+        };
+      }
+      if (
+        toolName.includes("list_files") ||
+        toolName.includes("list-files") ||
+        toolName.includes("list_directory") ||
+        toolName === "list" ||
+        toolName === "ls"
+      ) {
+        return {
+          action: isExecuting ? "Listing files" : "Listed files",
+          detail: inp?.path || "",
         };
       }
       if (toolName === "generate-word-document") {
@@ -1688,6 +1712,23 @@ export const ToolMessagePart = memo(
 
     const stripVariant: ActionStripVariant = useMemo(() => {
       const tn = (toolName || "").toLowerCase();
+      if (tn.includes("skill")) return "loaded-skill";
+      if (
+        tn.includes("download") ||
+        tn.includes("pdf") ||
+        tn.includes("export") ||
+        tn.includes("save_file")
+      )
+        return "saved-downloads";
+      if (
+        tn.includes("python") ||
+        tn.includes("cloud") ||
+        tn.includes("sandbox") ||
+        tn.includes("exec") ||
+        tn.includes("bash") ||
+        tn.includes("terminal")
+      )
+        return "cloud-command";
       if (tn.includes("memory")) return "read-memory";
       if (
         tn === "read_site_file" ||
@@ -1697,24 +1738,54 @@ export const ToolMessagePart = memo(
         return "read";
       if (tn.includes("list") || tn.includes("ls")) return "listed";
       if (tn.includes("unzip") || tn.includes("zip")) return "unzipped";
-      if (
-        tn.includes("python") ||
-        tn.includes("exec") ||
-        tn.includes("bash") ||
-        tn.includes("terminal")
-      )
-        return "terminal";
       if (tn.includes("edit")) return "multi-edited";
       if (tn.includes("write") || tn.includes("create")) return "created";
       return "generic";
     }, [toolName]);
 
+    const stripBudget = useMemo(() => {
+      const tn = (toolName || "").toLowerCase();
+      if (
+        tn.includes("python") ||
+        tn.includes("cloud") ||
+        tn.includes("sandbox") ||
+        tn.includes("exec")
+      )
+        return "budget 3m";
+      if (
+        tn.includes("download") ||
+        tn.includes("pdf") ||
+        tn.includes("export")
+      )
+        return "budget 1m 30s";
+      return "budget 30s";
+    }, [toolName]);
+
     const stripLatency = useMemo(() => {
       const tn = (toolName || "").toLowerCase();
+      if (tn.includes("skill")) return "21ms";
+      if (
+        tn.includes("cloud") ||
+        tn.includes("sandbox") ||
+        tn.includes("python") ||
+        tn.includes("exec")
+      )
+        return "16s";
+      if (
+        tn.includes("download") ||
+        tn.includes("pdf") ||
+        tn.includes("export")
+      )
+        return "06ms";
+      if (tn.includes("list") || tn.includes("ls")) return undefined;
+      if (
+        tn === "read_site_file" ||
+        tn === "read_spill_slice" ||
+        tn.includes("read")
+      )
+        return "0ms";
       if (tn.includes("memory")) return "26ms";
-      if (tn.includes("read")) return "22ms";
       if (tn.includes("unzip")) return "441ms";
-      if (tn.includes("python") || tn.includes("exec")) return "441ms";
       if (tn.includes("edit")) return "1ms";
       if (tn.includes("write")) return "2ms";
       return "4ms";
@@ -1735,7 +1806,7 @@ export const ToolMessagePart = memo(
               label={toolDisplay.action}
               detail={toolDisplay.detail}
               latency={stripLatency}
-              budget="budget 30s"
+              budget={stripBudget}
               isExecuting={isExecuting}
               isError={isError || !!errorText}
               stepId={toolCallId}

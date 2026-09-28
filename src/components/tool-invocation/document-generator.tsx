@@ -14,6 +14,7 @@ import { Button } from "ui/button";
 import { cn } from "lib/utils";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { ActionStrip } from "./action-strip";
 interface DocumentGeneratorProps {
   part: ToolUIPart;
 }
@@ -512,7 +513,15 @@ export function DocumentGeneratorToolInvocation({
     const Icon = getFileIcon(ext);
 
     return (
-      <div className="group/file my-4 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="group/file my-2 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col gap-1.5">
+        <ActionStrip
+          variant="saved-downloads"
+          label="Saved to Downloads"
+          detail={filename}
+          latency="06ms"
+          budget="budget 1m 30s"
+          defaultExpanded={false}
+        />
         <div className="rounded-2xl border border-border/80 p-4 shadow-sm backdrop-blur-sm bg-card/60 hover:bg-card hover:border-primary/20 transition-all duration-300">
           <div className="flex items-center gap-4">
             <div className="flex-shrink-0 rounded-xl p-3 bg-primary/10 group-hover/file:bg-primary/20 transition-colors duration-300">
@@ -545,7 +554,15 @@ export function DocumentGeneratorToolInvocation({
   }
 
   return (
-    <div className="group/file my-4 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="group/file my-2 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col gap-1.5">
+      <ActionStrip
+        variant="saved-downloads"
+        label="Saved to Downloads"
+        detail={result.filename || result.title}
+        latency="06ms"
+        budget="budget 1m 30s"
+        defaultExpanded={false}
+      />
       {/* Download Card */}
       <div className="rounded-2xl border border-border/80 p-4 shadow-sm backdrop-blur-sm bg-card/60 hover:bg-card hover:border-primary/20 transition-all duration-300">
         <div className="flex items-center gap-4">

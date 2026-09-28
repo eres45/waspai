@@ -11,6 +11,7 @@ import {
   Loader2,
   FileCode2,
   AlertCircle,
+  ArrowDownRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,9 @@ export type ActionStripVariant =
   | "reads"
   | "read-memory"
   | "read"
+  | "loaded-skill"
+  | "cloud-command"
+  | "saved-downloads"
   | "generic";
 
 export interface ActionStripProps {
@@ -50,7 +54,7 @@ export function ActionStrip({
   addedLines,
   deletedLines,
   latency,
-  budget = "budget 30s",
+  budget,
   isExecuting = false,
   isError = false,
   children,
@@ -63,12 +67,51 @@ export function ActionStrip({
   // Compute label and icon configuration based on variant
   const config = useMemo(() => {
     switch (variant) {
+      case "loaded-skill":
+        return {
+          icon: (
+            <div className="flex items-center text-[11px] font-mono font-bold text-foreground tracking-tighter">
+              &gt;_
+            </div>
+          ),
+          title: label || "Loaded skill",
+          titleClass: "font-semibold text-foreground",
+          badgeColor: "text-muted-foreground",
+          defaultLatency: "21ms",
+          defaultBudget: "budget 30s",
+        };
+      case "cloud-command":
+        return {
+          icon: (
+            <div className="flex items-center text-[11px] font-mono font-bold text-foreground tracking-tighter">
+              &gt;_
+            </div>
+          ),
+          title: label || "Cloud command",
+          titleClass: "font-semibold text-foreground",
+          badgeColor: "text-muted-foreground",
+          defaultLatency: "16s",
+          defaultBudget: "budget 3m",
+        };
+      case "saved-downloads":
+        return {
+          icon: (
+            <ArrowDownRight className="size-3.5 stroke-[2.5] text-foreground" />
+          ),
+          title: label || "Saved to Downloads",
+          titleClass: "font-semibold text-foreground",
+          badgeColor: "text-muted-foreground",
+          defaultLatency: "06ms",
+          defaultBudget: "budget 1m 30s",
+        };
       case "created":
         return {
           icon: <Plus className="size-3.5 stroke-[2.5] text-foreground" />,
           title: label || "Created",
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-emerald-500 font-mono",
+          defaultLatency: "2ms",
+          defaultBudget: "budget 30s",
         };
       case "multi-edited":
         return {
@@ -76,6 +119,8 @@ export function ActionStrip({
           title: label || "Multi-edited",
           titleClass: "font-semibold text-rose-500",
           badgeColor: "text-rose-500 font-mono",
+          defaultLatency: "1ms",
+          defaultBudget: "budget 30s",
         };
       case "edited":
         return {
@@ -83,6 +128,8 @@ export function ActionStrip({
           title: label || "Edited",
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-emerald-500 font-mono",
+          defaultLatency: "1ms",
+          defaultBudget: "budget 30s",
         };
       case "unzipped":
       case "terminal":
@@ -95,6 +142,8 @@ export function ActionStrip({
           title: label || (variant === "unzipped" ? "Unzipped" : "Terminal"),
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-muted-foreground",
+          defaultLatency: "441ms",
+          defaultBudget: "budget 30s",
         };
       case "listed":
         return {
@@ -102,6 +151,8 @@ export function ActionStrip({
           title: label || "Listed files",
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-muted-foreground",
+          defaultLatency: undefined,
+          defaultBudget: "budget 30s",
         };
       case "reads":
         return {
@@ -109,6 +160,8 @@ export function ActionStrip({
           title: label || "3 reads",
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-muted-foreground",
+          defaultLatency: "22ms",
+          defaultBudget: "budget 30s",
         };
       case "read-memory":
         return {
@@ -116,6 +169,8 @@ export function ActionStrip({
           title: label || "Read memory",
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-muted-foreground",
+          defaultLatency: "26ms",
+          defaultBudget: "budget 30s",
         };
       case "read":
         return {
@@ -123,6 +178,8 @@ export function ActionStrip({
           title: label || "Read",
           titleClass: "font-semibold text-foreground",
           badgeColor: "text-muted-foreground",
+          defaultLatency: "0ms",
+          defaultBudget: "budget 30s",
         };
       case "generic":
       default:
@@ -133,23 +190,30 @@ export function ActionStrip({
           title: label || "Executed",
           titleClass: "font-medium text-foreground",
           badgeColor: "text-muted-foreground",
+          defaultLatency: "4ms",
+          defaultBudget: "budget 30s",
         };
     }
   }, [variant, label]);
 
-  // Formatted latency string (e.g., 2ms, 26ms, 441ms)
+  const effectiveLatency =
+    latency !== undefined ? latency : config.defaultLatency;
+  const effectiveBudget = budget !== undefined ? budget : config.defaultBudget;
+
+  // Formatted latency string (e.g., 2ms, 26ms, 441ms, 16s)
   const formattedLatency = useMemo(() => {
-    if (latency === undefined || latency === null) return null;
-    if (typeof latency === "number") return `${latency}ms`;
+    if (effectiveLatency === undefined || effectiveLatency === null)
+      return null;
+    if (typeof effectiveLatency === "number") return `${effectiveLatency}ms`;
     if (
-      typeof latency === "string" &&
-      !latency.endsWith("ms") &&
-      !latency.endsWith("s")
+      typeof effectiveLatency === "string" &&
+      !effectiveLatency.endsWith("ms") &&
+      !effectiveLatency.endsWith("s")
     ) {
-      return `${latency}ms`;
+      return `${effectiveLatency}ms`;
     }
-    return latency;
-  }, [latency]);
+    return effectiveLatency;
+  }, [effectiveLatency]);
 
   return (
     <div
@@ -211,13 +275,13 @@ export function ActionStrip({
         <div className="flex items-center gap-1.5 shrink-0 text-muted-foreground/75 text-[11px] font-mono">
           {formattedLatency && <span>{formattedLatency}</span>}
 
-          {formattedLatency && budget && (
+          {formattedLatency && effectiveBudget && (
             <span className="text-muted-foreground/40">·</span>
           )}
 
-          {budget && (
+          {effectiveBudget && (
             <span className="text-muted-foreground/70 hidden xs:inline sm:inline">
-              {budget}
+              {effectiveBudget}
             </span>
           )}
 

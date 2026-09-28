@@ -5,6 +5,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import {
   AudioWaveformIcon,
   ChevronDown,
+  ChevronLeft,
+  Folder,
   MessageCircleDashed,
   PanelLeft,
   Sparkles,
@@ -96,8 +98,10 @@ export function AppHeader() {
               }}
               data-testid="sidebar-toggle"
               data-state={open ? "open" : "closed"}
+              className="rounded-full size-8 p-0"
             >
-              <PanelLeft />
+              <ChevronLeft className="size-5 md:hidden" />
+              <PanelLeft className="size-4.5 hidden md:block" />
             </Button>
           </TooltipTrigger>
           <TooltipContent align="start" side="bottom">
@@ -200,6 +204,25 @@ export function AppHeader() {
               </div>
             </TooltipContent>
           </Tooltip>
+
+          {isChatPage && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size={"icon"}
+                  variant={"ghost"}
+                  onClick={() => appStoreMutate({ openWorkspaceDrawer: true })}
+                  title="Project Files & Artifacts"
+                  className="size-8 rounded-lg bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                >
+                  <Folder className="size-4 stroke-[1.75]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent align="end" side="bottom">
+                Project Files & Artifacts
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           <UserProfileDropdown />
         </div>
@@ -304,8 +327,8 @@ function ThreadDropdownComponent() {
   if (!currentThread) return null;
 
   return (
-    <div className="items-center gap-1 hidden md:flex">
-      <div className="w-1 h-4">
+    <div className="items-center gap-1 flex">
+      <div className="w-1 h-4 hidden sm:block">
         <Separator orientation="vertical" />
       </div>
 
@@ -321,11 +344,11 @@ function ThreadDropdownComponent() {
                 className="data-[state=open]:bg-input! hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent"
               >
                 {generatingTitleThreadIds.includes(currentThread.id) ? (
-                  <TextShimmer className="truncate max-w-60 min-w-0 mr-1">
+                  <TextShimmer className="truncate max-w-36 xs:max-w-48 sm:max-w-60 min-w-0 mr-1 text-sm font-semibold">
                     {currentThread.title || t("Layout.newChat")}
                   </TextShimmer>
                 ) : (
-                  <p className="truncate max-w-60 min-w-0 mr-1">
+                  <p className="truncate max-w-36 xs:max-w-48 sm:max-w-60 min-w-0 mr-1 text-sm font-semibold">
                     {currentThread.title || t("Layout.newChat")}
                   </p>
                 )}

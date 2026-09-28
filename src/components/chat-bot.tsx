@@ -34,8 +34,9 @@ import {
   saveInterruptedMessageAction,
 } from "@/app/api/chat/actions";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Loader, FilePlus } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader, FilePlus, LayoutGrid } from "lucide-react";
 import { WorkspaceStatusDock } from "./chat/workspace-status-dock";
+import { WorkspaceFilesDrawer } from "./chat/workspace-drawer";
 import { StepProgressBanner } from "./chat/step-progress-banner";
 import {
   Dialog,
@@ -593,7 +594,16 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           )}
         >
           <div className="max-w-3xl mx-auto relative flex justify-between items-center px-4 -top-2">
-            <div />
+            <div>
+              <button
+                type="button"
+                onClick={() => appStoreMutate({ openWorkspaceDrawer: true })}
+                title="Project Files & Workspace Artifacts"
+                className="size-7 sm:size-8 rounded-lg bg-card/80 border border-border/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                <LayoutGrid className="size-4 stroke-[1.75]" />
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <StepJumpButtons />
               <ScrollToBottomButton
@@ -641,6 +651,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           />
 
           <WorkspaceStatusDock messages={messages} />
+          <WorkspaceFilesDrawer messages={messages} />
         </div>
         <DeleteThreadPopup
           threadId={threadId}
