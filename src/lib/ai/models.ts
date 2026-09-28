@@ -1807,11 +1807,13 @@ export const ULTRA_TIER_MODELS = new Set([
   "mistral-small-4",
   "gpt-5.4-mini",
   "gpt-5.6-luna",
-  "gpt-oss-120b",
   "gemma-4-31b",
 ]);
 
 const FREE_TIER_MODELS = new Set([
+  "gpt-oss-120b",
+  "gpt-oss-120b-p2",
+  "openai/gpt-oss-120b",
   "deepseek-v4.1-flash:free",
   "deepseek-v4-flash:free",
   "qwen3.8-flash:free",
@@ -1917,7 +1919,7 @@ export async function buildDynamicModelsInfo() {
           isToolCallUnsupported: false,
           isImageInputUnsupported: true,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
-          tier: "Ultra",
+          tier: "Free",
         },
       ],
     },
@@ -2396,20 +2398,35 @@ export function getModelProviderFallbacks(
       { provider: "Mistral", model: modelId },
       { provider: "Multimodal", model: modelId },
     );
+  } else if (lowerId === "gpt-5.6-luna") {
+    fallbacks.push(
+      { provider: "OpenAI", model: "gpt-5.6-luna" },
+      { provider: "Multimodal", model: "gpt-5.6-luna" },
+      { provider: "GroqWorker", model: "openai/gpt-oss-120b" },
+    );
+  } else if (lowerId === "gpt-5.4-mini") {
+    fallbacks.push(
+      { provider: "OpenAI", model: "gpt-5.4-mini" },
+      { provider: "Multimodal", model: "gpt-5.4-mini" },
+      { provider: "GroqWorker", model: "openai/gpt-oss-120b" },
+    );
   } else if (lowerId === "claude-haiku-4.5") {
     fallbacks.push(
       { provider: "Anthropic", model: "claude-haiku-4.5" },
       { provider: "Multimodal", model: "claude-haiku-4.5" },
+      { provider: "DeepSeek", model: "deepseek-v4.1-flash:free" },
     );
   } else if (lowerId === "mistral-small-4") {
     fallbacks.push(
       { provider: "Mistral", model: "mistral-small-4" },
       { provider: "Multimodal", model: "mistral-small-4" },
+      { provider: "Mistral", model: "codestral-latest" },
     );
   } else if (lowerId === "gemma-4-31b") {
     fallbacks.push(
       { provider: "Google", model: "gemma-4-31b" },
       { provider: "Multimodal", model: "gemma-4-31b" },
+      { provider: "BudsAI", model: "step-3.7-flash" },
     );
   }
 
@@ -2562,6 +2579,11 @@ export const customModelProvider = {
       lowerId.includes("gpt-oss-120b") ||
       lowerId.includes("gpt-oss 120b")
     ) {
+      if (model.provider === "Multimodal") {
+        return multimodalProvider(
+          "openai/gpt-oss-120b",
+        ) as unknown as LanguageModel;
+      }
       return groqWorkerProvider(
         "openai/gpt-oss-120b",
       ) as unknown as LanguageModel;

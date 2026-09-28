@@ -50,14 +50,6 @@ export const DUCKAI_MODELS: DuckAIModelDef[] = [
     tier: "Ultra",
   },
   {
-    id: "gpt-oss-120b",
-    name: "gpt-oss-120b",
-    label: "gpt-oss 120B",
-    testid: "model-picker-row-tinfoil/gpt-oss-120b",
-    provider: "OpenAI",
-    tier: "Ultra",
-  },
-  {
     id: "gemma-4-31b",
     name: "gemma-4-31b",
     label: "Gemma 4 31B",
@@ -283,7 +275,7 @@ export async function askDuckAI(
   prompt: string,
 ): Promise<string> {
   const modelDef = getDuckAIModelDef(modelId) || DUCKAI_MODELS[0];
-  const maxAttempts = 3;
+  const maxAttempts = 2;
   let lastError: any = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -301,7 +293,7 @@ export async function askDuckAI(
       await page.goto("https://duck.ai/", { waitUntil: "domcontentloaded" });
       await page
         .locator('button[aria-label="Ask"]')
-        .waitFor({ state: "visible", timeout: 15000 });
+        .waitFor({ state: "visible", timeout: 8000 });
       await selectModelInPage(page, modelDef);
 
       const reply = await sendPromptAndWait(page, prompt);

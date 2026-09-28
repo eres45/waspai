@@ -104,7 +104,6 @@ describe("customModelProvider file support metadata", () => {
     const ultraSet = new Set([
       "gpt-5.6-luna",
       "gpt-5.4-mini",
-      "gpt-oss-120b",
       "claude-haiku-4.5",
       "mistral-small-4",
       "gemma-4-31b",
@@ -372,13 +371,12 @@ describe("sanitizeMessageToolCalls", () => {
     expect(modelsInfo[0].provider).toBe("OpenAI");
     expect(modelsInfo[0].models[0].name).toBe("gpt-5.6-luna");
 
-    // Ultra tier checks for all 6 DuckAI models
+    // Ultra tier checks for all 5 DuckAI frontier models
     const duckAIUltraModels = [
       "claude-haiku-4.5",
       "mistral-small-4",
       "gpt-5.4-mini",
       "gpt-5.6-luna",
-      "gpt-oss-120b",
       "gemma-4-31b",
     ];
 
@@ -386,6 +384,9 @@ describe("sanitizeMessageToolCalls", () => {
       expect(getModelTier(m)).toBe("Ultra");
       expect(ULTRA_TIER_MODELS.has(m)).toBe(true);
     }
+
+    // Free tier checks
+    expect(getModelTier("gpt-oss-120b")).toBe("Free");
 
     // Tool calling supported checks
     expect(isToolCallUnsupportedModel("gpt-oss-120b")).toBe(false);
@@ -476,6 +477,26 @@ describe("sanitizeMessageToolCalls", () => {
         { provider: "GroqWorker", model: "openai/gpt-oss-120b" },
         { provider: "Multimodal", model: "openai/gpt-oss-120b" },
       ]);
+    });
+
+    it("returns multi-provider fallbacks for DuckAI models when provider fails", () => {
+      const { getModelProviderFallbacks } = modelsModule;
+      const luna = getModelProviderFallbacks("gpt-5.6-luna", "OpenAI");
+      expect(luna.some((f) => f.provider === "Multimodal")).toBe(true);
+      expect(luna.some((f) => f.provider === "GroqWorker")).toBe(true);
+
+      const mini = getModelProviderFallbacks("gpt-5.4-mini", "OpenAI");
+      expect(mini.some((f) => f.provider === "Multimodal")).toBe(true);
+      expect(mini.some((f) => f.provider === "GroqWorker")).toBe(true);
+
+      const haiku = getModelProviderFallbacks("claude-haiku-4.5", "Anthropic");
+      expect(haiku.some((f) => f.provider === "Multimodal")).toBe(true);
+
+      const mistral = getModelProviderFallbacks("mistral-small-4", "Mistral");
+      expect(mistral.some((f) => f.provider === "Multimodal")).toBe(true);
+
+      const gemma = getModelProviderFallbacks("gemma-4-31b", "Google");
+      expect(gemma.some((f) => f.provider === "Multimodal")).toBe(true);
     });
 
     it("instantiates models with explicit provider routing", () => {
