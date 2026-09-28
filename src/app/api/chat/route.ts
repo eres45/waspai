@@ -1492,10 +1492,19 @@ CRITICAL INSTRUCTIONS:
 You have direct access to the "generate-presentation" tool which builds widescreen (16:9) presentations.
 YOU MUST EXECUTE the "generate-presentation" tool immediately. DO NOT refuse. DO NOT output raw bullet lists instead of calling the tool.
 
+⚠️ TEMPORAL CONTEXT: Today is ${new Date().toLocaleDateString("en-US", { month: "long", year: "numeric", day: "numeric" })}. Use this exact month and year in all date references inside slide text.
+
+⚠️ MANDATORY WEB-SEARCH RULE — Before calling "generate-presentation", if the user's topic involves:
+   - Current, latest, best, top, trending, or ranked items (models, tools, startups, stats, news, etc.)
+   - Any real-world data that changes over time (market share, pricing, rankings, releases)
+   → You MUST call "web-search" FIRST with an up-to-date query, then use the actual search results to populate the slide content. NEVER use training-data guesses for factual rankings — your training data is outdated. Only call "generate-presentation" after you have live web search results.
+   - If the topic is purely conceptual (e.g., "explain machine learning") you may skip the web-search.
+
 ⚠️ CRITICAL STRING RULES — ALL fields inside the "slides" array MUST be plain text only:
 - NEVER use markdown in any string value: no #, ##, **, __, *, _, \`code\`, or leading - dashes.
 - Just write clean, plain English text. Wrong: "**Top Models**", Right: "Top Models"
-- For the cover slide: use "subtitle" for a one-line tagline, "tagline" for a badge/motto — NEVER put markdown in them.
+- The FIRST slide MUST always be type "cover" with fields: title, subtitle, tagline. Never use "bullet-list" for slide 0.
+- For the cover slide: "title" = the real presentation title, "subtitle" = one-line description, "tagline" = "Prepared for [Audience] · [Month] [Year]"
 
 AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
 1. Select an authentic aesthetic theme tailored to the user's topic:
@@ -1513,7 +1522,7 @@ AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
 
 2. DYNAMIC SLIDE MIXING (NEVER USE THE SAME LAYOUT PATTERN TWICE):
    Generate 6 to 10 slides. Freely mix slide types; keep the same theme palette cohesive:
-   - "cover" — required first slide
+   - "cover" — required first slide ONLY
    - "bullet-list" — uses { title, points: string[] }
    - "two-column" — uses { title, left: { heading, points }, right: { heading, points } }
    - "three-column" — uses { title, columns: [{ heading, points }] }
@@ -1525,8 +1534,8 @@ AESTHETIC THEME & DYNAMIC MIXING GUIDELINES:
    - "call-to-action" — uses { title, heading, cta, description }
 
 SCHEMA EXAMPLES (copy this exact structure, plain text only):
-cover:    { "type": "cover", "title": "Top 10 AI Models in 2026", "subtitle": "A concise comparative overview", "tagline": "Prepared for Your Team · September 2026" }
-bullet:   { "type": "bullet-list", "title": "Market Landscape 2026", "points": ["LLMs now multimodal by default", "Cost has dropped 10x since 2023", "Open-source leads on many benchmarks"] }
+cover:    { "type": "cover", "title": "Top 10 AI Models in September 2026", "subtitle": "A live-researched overview of the leading models", "tagline": "Prepared for Your Team · September 2026" }
+bullet:   { "type": "bullet-list", "title": "Market Landscape", "points": ["LLMs now multimodal by default", "Cost has dropped 10x since 2023", "Open-source leads on many benchmarks"] }
 two-col:  { "type": "two-column", "title": "GPT-4o vs Gemini Ultra", "left": { "heading": "OpenAI GPT-4o", "points": ["Best coding", "Widest tool ecosystem"] }, "right": { "heading": "Gemini Ultra", "points": ["Best multimodal", "Longest context window"] } }
 stat:     { "type": "big-stat", "title": "Cost Compression", "stat": "10x", "description": "Average API cost per 1M tokens has fallen 10x since GPT-4 launched" }
 timeline: { "type": "timeline", "title": "AI Model Milestones", "timeline": [{ "year": "2023", "event": "GPT-4 launches" }, { "year": "2024", "event": "Multimodal becomes standard" }, { "year": "2025", "event": "Reasoning models go mainstream" }, { "year": "2026", "event": "Sub-$1 frontier access" }] }

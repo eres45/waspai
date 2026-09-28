@@ -165,6 +165,48 @@ export function normalizePresentationPayload(raw: any) {
         }
       }
 
+      // ── Cover-rescue heuristic ─────────────────────────────────────────────
+      // If the first slide has a generic boilerplate title (e.g. "Title Slide",
+      // "Cover", "Title") and the actual presentation title is buried in its
+      // points array, reconstruct it as a proper cover slide.
+      const isFirstSlide = idx === 0;
+      const isGenericCoverTitle =
+        /^(title\s*slide|cover(\s*slide)?|title)$/i.test(title.trim());
+      if (
+        isFirstSlide &&
+        (rawType === "" ||
+          rawType === "bullet-list" ||
+          rawType === "cover" ||
+          isGenericCoverTitle) &&
+        (isGenericCoverTitle || rawType === "cover" || rawType === "")
+      ) {
+        // If title is generic but we have a real title in raw.title or points[0], promote it
+        const realTitle = !isGenericCoverTitle
+          ? title
+          : points.length > 0
+            ? points[0]
+            : stripMd(String(raw.title || "Presentation"));
+
+        const remainingPoints = isGenericCoverTitle ? points.slice(1) : [];
+        const subtitleCandidate =
+          remainingPoints
+            .filter((p) => !/^(date|prepared\s*for|date:)/i.test(p))
+            .join(" · ") || stripMd(String(raw.description || ""));
+
+        const dateCandidate =
+          remainingPoints
+            .find((p) => /^(date|date:)/i.test(p))
+            ?.replace(/^date:\s*/i, "") ||
+          stripMd(String(s.subtitle || s.tagline || raw.description || ""));
+
+        return {
+          type: "cover",
+          title: realTitle || stripMd(String(raw.title || "Presentation")),
+          subtitle: subtitleCandidate,
+          tagline: dateCandidate || "Created with Wasp AI",
+        };
+      }
+
       // Infer slide type if omitted or unknown
       let type = rawType;
       if (!type) {
