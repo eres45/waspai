@@ -18,34 +18,40 @@ const logger = globalLogger.withDefaults({
   message: colorize("cyan", "Subagent: "),
 });
 
-export const delegateSubagentSchema = z.object({
-  description: z
-    .string()
-    .min(3)
-    .max(100)
-    .describe(
-      "A short 3-5 word title of the delegated subtask (e.g. 'Analyze competitor API pricing').",
-    ),
-  prompt: z
-    .string()
-    .min(10)
-    .describe(
-      "The complete, self-contained instruction for the subagent. The subagent works in its own isolated context, so include all necessary constraints, context, and expected output formats.",
-    ),
-  allowWebSearch: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe(
-      "Whether to allow the child subagent to perform real-time web searches.",
-    ),
-  model: z
-    .string()
-    .optional()
-    .describe(
-      "Optional model override for the child subagent (e.g. 'groqw-llama-3.3-70b', 'gpt-oss-120b').",
-    ),
-});
+export const delegateSubagentSchema = z.preprocess(
+  (val) => (val && typeof val === "object" ? val : {}),
+  z.object({
+    description: z
+      .string()
+      .min(1)
+      .default("Autonomous Subagent Task")
+      .describe(
+        "A short 3-5 word title of the delegated subtask (e.g. 'Analyze competitor API pricing').",
+      ),
+    prompt: z
+      .string()
+      .min(1)
+      .default(
+        "Perform the requested research and return a structured synthesis.",
+      )
+      .describe(
+        "The complete, self-contained instruction for the subagent. The subagent works in its own isolated context, so include all necessary constraints, context, and expected output formats.",
+      ),
+    allowWebSearch: z
+      .boolean()
+      .optional()
+      .default(true)
+      .describe(
+        "Whether to allow the child subagent to perform real-time web searches.",
+      ),
+    model: z
+      .string()
+      .optional()
+      .describe(
+        "Optional model override for the child subagent (e.g. 'gpt-oss-120b').",
+      ),
+  }),
+);
 
 export const subagentTool = createTool({
   description:
@@ -61,20 +67,47 @@ export const subagentTool = createTool({
     }
 
     try {
-      const selectedModel = model
+      const isKnownWorkingModel =
+        model &&
+        model !== "gpt-4o-mini" &&
+        !model.toLowerCase().includes("gpt-4") &&
+        !model.toLowerCase().includes("claude");
+
+      const selectedModel = isKnownWorkingModel
         ? { provider: "OpenAI", model }
         : { provider: "OpenAI", model: "gpt-oss-120b" };
 
       const modelInstance = customModelProvider.getModel(selectedModel);
 
-      const result = await generateText({
-        model: modelInstance as any,
-        system:
-          "You are a specialized autonomous subagent executing a focused delegation on behalf of the primary agent. Work directly on the task, conduct any necessary research or computation using your available tools, and produce a well-structured, comprehensive, and concise final synthesis. Do not include conversational filler.",
-        prompt,
-        tools: childTools as any,
-        stopWhen: stepCountIs(5),
-      });
+      let result: any;
+      try {
+        result = await generateText({
+          model: modelInstance as any,
+          system:
+            "You are a specialized autonomous subagent executing a focused delegation on behalf of the primary agent. Work directly on the task, conduct any necessary research or computation using your available tools, and produce a well-structured, comprehensive, and concise final synthesis. Do not include conversational filler.",
+          prompt,
+          tools: childTools as any,
+          stopWhen: stepCountIs(5),
+        });
+      } catch (callErr) {
+        // Fallback to default gpt-oss-120b if custom model invocation fails
+        logger.warn(
+          `Subagent model call failed. Falling back to default gpt-oss-120b:`,
+          callErr,
+        );
+        const fallbackModel = customModelProvider.getModel({
+          provider: "OpenAI",
+          model: "gpt-oss-120b",
+        });
+        result = await generateText({
+          model: fallbackModel as any,
+          system:
+            "You are a specialized autonomous subagent executing a focused delegation on behalf of the primary agent. Work directly on the task, conduct any necessary research or computation using your available tools, and produce a well-structured, comprehensive, and concise final synthesis. Do not include conversational filler.",
+          prompt,
+          tools: childTools as any,
+          stopWhen: stepCountIs(5),
+        });
+      }
 
       logger.info(`Subagent [${subagentId}] completed successfully`);
 
