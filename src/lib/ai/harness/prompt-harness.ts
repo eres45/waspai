@@ -280,6 +280,18 @@ export function buildAgentAutonomyDirective(): string {
 }
 
 /**
+ * Developer Codebase & Project File Reading/Editing Directive
+ */
+export function buildCodebaseDirective(): string {
+  return `<codebase_and_file_guidelines>
+When working on codebases, projects, or applications:
+- Proactive File Inspection (\`read_site_file\`): Before modifying, redesigning, or refactoring existing code files, ALWAYS call \`read_site_file\` to read the full file first (e.g. \`read_site_file({ path: "..." })\`). This ensures you capture the exact current layout, classes, and logic before writing code.
+- Surgical Edits (\`edit_site_file\`): Use \`edit_site_file\` with precise \`targetContent\` and \`replacementContent\` to apply clean diffs without rewriting entire files unnecessarily.
+- New File Creation (\`write_site_file\`): Use \`write_site_file\` when creating new files, modules, or draft pages.
+</codebase_and_file_guidelines>`;
+}
+
+/**
  * Output Formatting & Style Standards
  */
 export function buildFormattingDirective(
@@ -374,6 +386,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildDocumentDirective());
     sections.push(buildQrDirective());
     sections.push(buildAgentAutonomyDirective());
+    sections.push(buildCodebaseDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

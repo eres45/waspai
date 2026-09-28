@@ -972,6 +972,15 @@ const CodeExecutor = dynamic(
   },
 );
 
+const ReadFileCard = dynamic(
+  () =>
+    import("./tool-invocation/read-file-card").then((mod) => mod.ReadFileCard),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 const ImageGeneratorToolInvocation = dynamic(
   () =>
     import("./tool-invocation/image-generator").then(
@@ -1421,6 +1430,15 @@ export const ToolMessagePart = memo(
         toolName === DefaultToolName.EditSiteFile
       ) {
         return <WriteSiteFileCard part={part} />;
+      }
+
+      if (
+        toolName === DefaultToolName.ReadSiteFile ||
+        toolName === "read_site_file" ||
+        toolName === "read_file" ||
+        toolName === "read_spill_slice"
+      ) {
+        return <ReadFileCard part={part} />;
       }
 
       if (state === "output-available") {
