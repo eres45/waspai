@@ -8,50 +8,47 @@
  */
 
 import { tool as createTool, generateText, stepCountIs } from "ai";
-import { z } from "zod";
-import { customModelProvider } from "lib/ai/models";
-import { webSearchTool } from "./web/web-search";
-import globalLogger from "logger";
 import { colorize } from "consola/utils";
+import { customModelProvider } from "lib/ai/models";
+import globalLogger from "logger";
+import { z } from "zod";
+import { webSearchTool } from "./web/web-search";
 
 const logger = globalLogger.withDefaults({
   message: colorize("cyan", "Subagent: "),
 });
 
-export const delegateSubagentSchema = z.preprocess(
-  (val) => (val && typeof val === "object" ? val : {}),
-  z.object({
-    description: z
-      .string()
-      .min(1)
-      .default("Autonomous Subagent Task")
-      .describe(
-        "A short 3-5 word title of the delegated subtask (e.g. 'Analyze competitor API pricing').",
-      ),
-    prompt: z
-      .string()
-      .min(1)
-      .default(
-        "Perform the requested research and return a structured synthesis.",
-      )
-      .describe(
-        "The complete, self-contained instruction for the subagent. The subagent works in its own isolated context, so include all necessary constraints, context, and expected output formats.",
-      ),
-    allowWebSearch: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe(
-        "Whether to allow the child subagent to perform real-time web searches.",
-      ),
-    model: z
-      .string()
-      .optional()
-      .describe(
-        "Optional model override for the child subagent (e.g. 'gpt-oss-120b').",
-      ),
-  }),
-);
+export const delegateSubagentSchema = z.object({
+  description: z
+    .string()
+    .min(1)
+    .default("Autonomous Subagent Task")
+    .describe(
+      "A short 3-5 word title of the delegated subtask (e.g. 'Analyze competitor API pricing').",
+    ),
+  prompt: z
+    .string()
+    .min(1)
+    .default(
+      "Perform the requested research and return a structured synthesis.",
+    )
+    .describe(
+      "The complete, self-contained instruction for the subagent. The subagent works in its own isolated context, so include all necessary constraints, context, and expected output formats.",
+    ),
+  allowWebSearch: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      "Whether to allow the child subagent to perform real-time web searches.",
+    ),
+  model: z
+    .string()
+    .optional()
+    .describe(
+      "Optional model override for the child subagent (e.g. 'gpt-oss-120b').",
+    ),
+});
 
 export const subagentTool = createTool({
   description:

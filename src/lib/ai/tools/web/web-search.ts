@@ -1,12 +1,12 @@
-import { tool as createTool } from "ai";
-import { z } from "zod";
-import { safe } from "ts-safe";
-import { load } from "cheerio";
-import { getSession } from "auth/server";
-import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { tool as createTool } from "ai";
+import { getSession } from "auth/server";
+import { load } from "cheerio";
+import { checkDailyUsageLimit, recordDailyUsage } from "lib/usage-limiter";
+import { safe } from "ts-safe";
+import { z } from "zod";
 
 // --- FreeWebSearch API Integration ---
 
@@ -27,28 +27,13 @@ export const freeSearchSchema = z.object({
 });
 
 // Fallback schema for content scraping
-export const freeContentsSchema = z.preprocess(
-  (val) => (val && typeof val === "object" ? val : {}),
-  z
-    .object({
-      url: z.string().optional().describe("URL to extract text content from"),
-      urls: z
-        .union([z.array(z.string()), z.string()])
-        .optional()
-        .describe("List of URLs to extract text content from"),
-    })
-    .transform((val) => {
-      const list: string[] = [];
-      if (Array.isArray(val.urls)) {
-        list.push(...val.urls);
-      } else if (typeof val.urls === "string" && val.urls.trim()) {
-        list.push(val.urls.trim());
-      } else if (typeof val.url === "string" && val.url.trim()) {
-        list.push(val.url.trim());
-      }
-      return { urls: list };
-    }),
-);
+export const freeContentsSchema = z.object({
+  url: z.string().optional().describe("URL to extract text content from"),
+  urls: z
+    .union([z.array(z.string()), z.string()])
+    .optional()
+    .describe("List of URLs to extract text content from"),
+});
 
 // --- Generic Search Interfaces ---
 
@@ -769,9 +754,11 @@ export const webContentToolForWorkflow = createTool({
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
   inputSchema: freeContentsSchema,
   execute: async (params) => {
-    const results = await Promise.all(
-      params.urls.map((url) => scrapeWebpage(url)),
-    );
+    const rawUrls = (params as any)?.urls ?? (params as any)?.url ?? [];
+    const list: string[] = (
+      Array.isArray(rawUrls) ? rawUrls : [rawUrls]
+    ).filter((u): u is string => typeof u === "string" && Boolean(u.trim()));
+    const results = await Promise.all(list.map((url) => scrapeWebpage(url)));
     return { results };
   },
 });
@@ -868,18 +855,20 @@ export const webContentTool = createTool({
   description:
     "Extract raw text content from specific URLs. Only use this if you need to read the deep contents of a specific page returned by a search.",
   inputSchema: freeContentsSchema,
-  execute: async (params: { urls: string[] }) => {
+  execute: async (params) => {
     return safe(async () => {
-      if (!params || !params.urls || params.urls.length === 0) {
+      const rawUrls = (params as any)?.urls ?? (params as any)?.url ?? [];
+      const list: string[] = (
+        Array.isArray(rawUrls) ? rawUrls : [rawUrls]
+      ).filter((u): u is string => typeof u === "string" && Boolean(u.trim()));
+      if (list.length === 0) {
         return {
           results: [],
           guide:
             "No target URL was provided to extract. To read page contents, provide a valid URL from the web-search results.",
         };
       }
-      const results = await Promise.all(
-        params.urls.map((url) => scrapeWebpage(url)),
-      );
+      const results = await Promise.all(list.map((url) => scrapeWebpage(url)));
       return { results };
     })
       .ifFail((e) => {

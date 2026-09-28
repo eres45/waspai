@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { tool as createTool } from "ai";
+import { z } from "zod";
 
 export const PRESENTATION_THEMES = [
   // Modern aesthetic themes from beautiful-html-templates & free-ppt-template
@@ -465,34 +465,36 @@ export function normalizePresentationPayload(raw: any) {
   };
 }
 
-export const presentationInputSchema = z.preprocess(
-  (input) => normalizePresentationPayload(input),
-  z.object({
-    title: z.string().describe("Overall presentation title"),
-    description: z.string().describe("Brief tagline/summary"),
-    topic: z.string().describe("Topic of the presentation"),
-    theme: z
-      .string()
-      .describe(
-        "Aesthetic theme: bento-modern, acid-brutalist, black-gold, soft-editorial, editorial-forest, cobalt-grid, block-frame, sakura-chroma, 8-bit-orbit, broadside, emerald-editorial, studio, capsule, vellum, monochrome, neo-grid-bold, pink-script, pin-and-paper, warm-gradient, minimal-corporate, cyber-neon",
-      ),
-    slides: z
-      .array(z.any())
-      .min(1)
-      .max(20)
-      .describe("Array of slides (6 to 10 slides recommended)"),
-  }),
-);
+export const presentationInputSchema = z.object({
+  title: z.string().optional().describe("Overall presentation title"),
+  description: z.string().optional().describe("Brief tagline/summary"),
+  topic: z.string().optional().describe("Topic of the presentation"),
+  theme: z
+    .string()
+    .optional()
+    .describe(
+      "Aesthetic theme: bento-modern, acid-brutalist, black-gold, soft-editorial, editorial-forest, cobalt-grid, block-frame, sakura-chroma, 8-bit-orbit, broadside, emerald-editorial, studio, capsule, vellum, monochrome, neo-grid-bold, pink-script, pin-and-paper, warm-gradient, minimal-corporate, cyber-neon",
+    ),
+  slides: z
+    .array(z.any())
+    .optional()
+    .describe("Array of slides (6 to 10 slides recommended)"),
+  sections: z
+    .array(z.any())
+    .optional()
+    .describe("Alternative format: array of sections/slides"),
+});
 
 export const presentationGeneratorTool = createTool({
   description:
     "Generate a professional PowerPoint presentation deck (6-10 slides) with curated aesthetic themes and dynamic layout types. Accepts 'slides' or 'sections'. For real-time topics, current year rankings, or factual news, invoke the web-search tool first to gather verified data before calling this tool.",
   inputSchema: presentationInputSchema,
   execute: async (args) => {
+    const normalized = normalizePresentationPayload(args);
     // Simply return the normalized data to the client for browser-side PPTX generation & preview
     return {
       success: true,
-      ...args,
+      ...normalized,
       generatedAt: new Date().toISOString(),
       status: "ready_for_browser_generation",
     };
