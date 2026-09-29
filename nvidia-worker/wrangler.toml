@@ -2,7 +2,7 @@ name = "nvidia-nim-worker"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
-# Worker configuration
+account_id = "6abcb174b2887c402601b470189b7feb"
 workers_dev = true
 
 # Environment variables

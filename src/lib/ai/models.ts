@@ -14,6 +14,8 @@ export const CREATIVE_WORKER_URL = MULTIMODAL_WORKER_URL;
 export const CLAUDE_WORKER_URL = MULTIMODAL_WORKER_URL;
 
 export const GROQ_WORKER_URL = "https://groq-worker.revai.workers.dev";
+export const NVIDIA_WORKER_URL =
+  "https://nvidia-nim-worker.hhhlproxy.workers.dev";
 
 function condenseSystemPromptForGroq(
   prompt: string,
@@ -1609,6 +1611,17 @@ const groqWorkerProvider = createOpenAICompatible({
   ),
 });
 
+// Dedicated NVIDIA NIM Worker Provider (with 4-key rotation, failover, and smart parsing)
+const nvidiaWorkerProvider = createOpenAICompatible({
+  name: "NVIDIAWorker",
+  apiKey: "dummy",
+  baseURL: `${NVIDIA_WORKER_URL}/v1`,
+  fetch: createSmartOpenAICompatibleFetch(
+    () => ["dummy"],
+    "nvidia/nemotron-3-ultra-550b-a55b",
+  ),
+});
+
 // Dedicated Multimodal Worker with Smart Fetch
 const multimodalProvider = createOpenAICompatible({
   name: "Multimodal AI Worker",
@@ -1844,6 +1857,8 @@ export async function fetchModelsFromWorker(): Promise<WorkerModel[]> {
     { id: "ox-alpha", owned_by: "budsai" },
     { id: "step-3.7-flash", owned_by: "budsai" },
     { id: "glm-5.3-flash", owned_by: "seekai" },
+    { id: "nvidia/nemotron-3-ultra-550b-a55b", owned_by: "nvidia" },
+    { id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", owned_by: "nvidia" },
   ];
 }
 
@@ -1880,6 +1895,13 @@ const FREE_TIER_MODELS = new Set([
   // SeekAI models
   "deepseek-ai/DeepSeek-V4-Flash-0731",
   "glm-5.3-flash",
+  // NVIDIA NIM models (Free tier with 4-key rotation)
+  "nvidia/nemotron-3-ultra-550b-a55b",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  "nvidiaw-nemotron-3-ultra-550b",
+  "nvidiaw-nemotron-3-nano-omni",
+  "nemotron-3-ultra-550b",
+  "nemotron-3-nano-omni",
 ]);
 
 const LOWERCASE_FREE_TIER_MODELS = new Set(
@@ -2112,6 +2134,26 @@ export async function buildDynamicModelsInfo() {
         },
         {
           name: "glm-5.3-flash",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: false,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+      ],
+    },
+    {
+      provider: "NVIDIA",
+      hasAPIKey: true,
+      models: [
+        {
+          name: "nvidia/nemotron-3-ultra-550b-a55b",
+          isToolCallUnsupported: false,
+          isImageInputUnsupported: true,
+          supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
+          tier: "Free",
+        },
+        {
+          name: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
           isToolCallUnsupported: false,
           isImageInputUnsupported: false,
           supportedFileMimeTypes: Array.from(OPENAI_FILE_MIME_TYPES),
@@ -2674,6 +2716,30 @@ export const customModelProvider = {
       lowerId.startsWith("gpt-oss-")
     ) {
       return multimodalProvider(modelId) as unknown as LanguageModel;
+    }
+
+    // NVIDIA NIM models routed via dedicated NVIDIA NIM Worker with 4-key rotation
+    if (
+      model.provider === "NVIDIA" ||
+      model.provider?.toLowerCase() === "nvidia" ||
+      lowerId.startsWith("nvidia/") ||
+      lowerId.startsWith("nvidiaw-") ||
+      lowerId.includes("nemotron-3-nano-omni") ||
+      lowerId.includes("nemotron-3-ultra-550b")
+    ) {
+      let resolvedId = modelId;
+      if (
+        modelId === "nvidiaw-nemotron-3-nano-omni" ||
+        modelId === "nemotron-3-nano-omni"
+      ) {
+        resolvedId = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+      } else if (
+        modelId === "nvidiaw-nemotron-3-ultra-550b" ||
+        modelId === "nemotron-3-ultra-550b"
+      ) {
+        resolvedId = "nvidia/nemotron-3-ultra-550b-a55b";
+      }
+      return nvidiaWorkerProvider(resolvedId) as unknown as LanguageModel;
     }
 
     // Default safe fallback: route through multimodal worker preserving modelId

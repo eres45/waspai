@@ -92,7 +92,7 @@ const MODEL_MAP = {
     model: "meta-llama/llama-4-scout-17b-16e-instruct",
   },
 
-  // NVIDIA Worker (2 working)
+  // NVIDIA Worker (4 verified working)
   "nvidiaw-llama-3.1-8b": {
     provider: "nvidiaworker",
     model: "meta/llama-3.1-8b-instruct",
@@ -100,6 +100,30 @@ const MODEL_MAP = {
   "nvidiaw-llama-3.3-70b": {
     provider: "nvidiaworker",
     model: "meta/llama-3.3-70b-instruct",
+  },
+  "nvidiaw-nemotron-3-nano-omni": {
+    provider: "nvidiaworker",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  },
+  "nvidiaw-nemotron-3-ultra-550b": {
+    provider: "nvidiaworker",
+    model: "nvidia/nemotron-3-ultra-550b-a55b",
+  },
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": {
+    provider: "nvidiaworker",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  },
+  "nvidia/nemotron-3-ultra-550b-a55b": {
+    provider: "nvidiaworker",
+    model: "nvidia/nemotron-3-ultra-550b-a55b",
+  },
+  "nemotron-3-nano-omni": {
+    provider: "nvidiaworker",
+    model: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+  },
+  "nemotron-3-ultra-550b": {
+    provider: "nvidiaworker",
+    model: "nvidia/nemotron-3-ultra-550b-a55b",
   },
   "gpt-oss-120b-p2": {
     provider: "groqworker",
@@ -347,7 +371,7 @@ const PROVIDERS = {
     openai: true,
   },
   nvidiaworker: {
-    base: "https://nvidia-worker.revai.workers.dev/v1",
+    base: "https://nvidia-nim-worker.hhhlproxy.workers.dev/v1",
     key: null,
     openai: true,
   },
@@ -842,7 +866,7 @@ async function fetchFromProvider(
     body: typeof reqBody === "string" ? reqBody : JSON.stringify(reqBody),
   };
 
-  if (clientIp) {
+  if (clientIp && providerKey !== "nvidiaworker") {
     fetchOpts.headers["X-Forwarded-For"] = clientIp;
     fetchOpts.headers["X-Real-IP"] = clientIp;
     fetchOpts.headers["CF-Connecting-IP"] = clientIp;

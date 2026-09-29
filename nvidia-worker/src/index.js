@@ -284,7 +284,12 @@ const NVIDIA_MODELS = [
     name: "Nemotron 3 Nano Omni Reasoning",
     provider: "nvidia",
     context: 8192,
-    keyIndex: 2, // Pinned to Key 3
+  },
+  {
+    id: "nvidia/nemotron-3-ultra-550b-a55b",
+    name: "Nemotron 3 Ultra 550B",
+    provider: "nvidia",
+    context: 131072,
   },
   {
     id: "qwen/qwen3.5-122b-a10b",
@@ -310,8 +315,7 @@ const NVIDIA_MODELS = [
 ];
 
 // API key rotation state
-let currentKeyIndex = 0;
-let keyFailureCount = new Array(NVIDIA_API_KEYS.length).fill(0);
+const keyFailureCount = new Array(NVIDIA_API_KEYS.length).fill(0);
 
 export default {
   async fetch(request, _env, _ctx) {
@@ -404,25 +408,23 @@ export default {
 };
 
 /**
- * Get next API key with rotation logic
+ * Get next API key index with rotation logic
  */
-function getNextApiKey() {
-  // Find the key with lowest failure count
-  let minFailures = Math.min(...keyFailureCount);
-  let availableKeys = [];
-
-  keyFailureCount.forEach((failures, idx) => {
-    if (failures === minFailures) {
-      availableKeys.push(idx);
-    }
-  });
-
-  // Pick randomly from available keys
-  const selectedIndex =
-    availableKeys[Math.floor(Math.random() * availableKeys.length)];
-  currentKeyIndex = selectedIndex;
-
-  return NVIDIA_API_KEYS[selectedIndex];
+function getNextKeyIndex(attemptedKeyIndices, modelConfig, attempt) {
+  if (
+    attempt === 0 &&
+    modelConfig &&
+    typeof modelConfig.keyIndex === "number"
+  ) {
+    return modelConfig.keyIndex;
+  }
+  const unattempted = [];
+  for (let i = 0; i < NVIDIA_API_KEYS.length; i++) {
+    if (!attemptedKeyIndices.has(i)) unattempted.push(i);
+  }
+  if (unattempted.length === 0) return -1;
+  unattempted.sort((a, b) => keyFailureCount[a] - keyFailureCount[b]);
+  return unattempted[0];
 }
 
 /**
@@ -448,7 +450,7 @@ function recordKeySuccess(keyIndex) {
 /**
  * Fetch with a timeout using AbortController
  */
-async function fetchWithTimeout(url, options, timeoutMs = 3500) {
+async function fetchWithTimeout(url, options, timeoutMs = 15000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -489,159 +491,110 @@ async function handleChatCompletions(request) {
 
     // Determine model to use
     const requestedModel = requestData.model || "meta/llama-3.1-70b-instruct";
+    const isStream = requestData.stream === true;
 
     // Find model config to see if it is pinned to a specific working key
     const modelConfig = NVIDIA_MODELS.find((m) => m.id === requestedModel);
-    let apiKey;
-    let keyIndex;
+    const attemptedKeyIndices = new Set();
+    const maxAttempts = NVIDIA_API_KEYS.length;
+    let lastErrorResponse = null;
 
-    if (modelConfig && typeof modelConfig.keyIndex === "number") {
-      keyIndex = modelConfig.keyIndex;
-      apiKey = NVIDIA_API_KEYS[keyIndex];
-    } else {
-      apiKey = getNextApiKey();
-      keyIndex = currentKeyIndex;
-    }
-
-    // Make request to NVIDIA API
-    let nvidiaResponse;
-    try {
-      nvidiaResponse = await fetchWithTimeout(
-        `${NVIDIA_API_BASE}/chat/completions`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...sanitizePayload(requestData),
-            model: requestedModel,
-          }),
-        },
-        3500,
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const keyIndex = getNextKeyIndex(
+        attemptedKeyIndices,
+        modelConfig,
+        attempt,
       );
-    } catch (err) {
-      console.log(`First request failed or timed out: ${err.message || err}`);
-      // Simulate failed response for failover retry
-      nvidiaResponse = {
-        ok: false,
-        status: 504,
-        json: async () => ({
-          error: {
-            message: `Gateway Timeout: Request took too long on key index ${keyIndex}`,
-          },
-        }),
-      };
-    }
+      if (keyIndex === -1) break;
 
-    const isStream = requestData.stream === true;
+      attemptedKeyIndices.add(keyIndex);
+      const apiKey = NVIDIA_API_KEYS[keyIndex];
 
-    // Handle errors
-    if (!nvidiaResponse.ok) {
-      recordKeyFailure(keyIndex);
-
-      // Try with another key if available
-      if (NVIDIA_API_KEYS.length > 1 && keyFailureCount[keyIndex] < 3) {
-        const retryKey = getNextApiKey();
-        let retryResponse;
-        try {
-          retryResponse = await fetchWithTimeout(
-            `${NVIDIA_API_BASE}/chat/completions`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${retryKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                ...sanitizePayload(requestData),
-                model: requestedModel,
-              }),
-            },
-            5000, // slightly longer timeout for fallback to ensure completion
-          );
-        } catch (err) {
-          console.log(
-            `Retry request failed or timed out: ${err.message || err}`,
-          );
-          retryResponse = {
-            ok: false,
-            status: 504,
-            json: async () => ({
-              error: {
-                message: "Gateway Timeout: Retry request took too long.",
-              },
-            }),
-          };
-        }
-
-        if (retryResponse.ok) {
-          recordKeySuccess(currentKeyIndex);
-          if (isStream) {
-            return new Response(retryResponse.body, {
-              status: 200,
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-              },
-            });
-          } else {
-            const retryData = await retryResponse.json();
-            return new Response(JSON.stringify(retryData), {
-              status: 200,
-              headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-              },
-            });
-          }
-        } else {
-          const retryData = await retryResponse.json();
-          return new Response(JSON.stringify(retryData), {
-            status: retryResponse.status,
+      let nvidiaResponse;
+      try {
+        nvidiaResponse = await fetchWithTimeout(
+          `${NVIDIA_API_BASE}/chat/completions`,
+          {
+            method: "POST",
             headers: {
+              Authorization: `Bearer ${apiKey}`,
               "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              ...sanitizePayload(requestData),
+              model: requestedModel,
+            }),
+          },
+          15000,
+        );
+      } catch (err) {
+        console.log(
+          `Request failed or timed out on key ${keyIndex + 1}: ${err.message || err}`,
+        );
+        recordKeyFailure(keyIndex);
+        lastErrorResponse = {
+          status: 504,
+          data: {
+            error: {
+              message: `Gateway Timeout: Request took too long on key index ${keyIndex}`,
+            },
+          },
+        };
+        continue;
+      }
+
+      if (nvidiaResponse.ok) {
+        recordKeySuccess(keyIndex);
+        if (isStream) {
+          return new Response(nvidiaResponse.body, {
+            status: 200,
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
               "Access-Control-Allow-Origin": "*",
             },
           });
         }
+        const responseData = await nvidiaResponse.json();
+        return new Response(JSON.stringify(responseData), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
       }
 
-      const responseData = await nvidiaResponse.json();
-      return new Response(JSON.stringify(responseData), {
-        status: nvidiaResponse.status,
+      // If not ok (e.g. 429, 403, 500, ResourceExhausted), record failure and try next key
+      recordKeyFailure(keyIndex);
+      try {
+        const errData = await nvidiaResponse.json();
+        lastErrorResponse = { status: nvidiaResponse.status, data: errData };
+      } catch {
+        lastErrorResponse = {
+          status: nvidiaResponse.status,
+          data: {
+            error: { message: `Upstream error ${nvidiaResponse.status}` },
+          },
+        };
+      }
+    }
+
+    return new Response(
+      JSON.stringify(
+        lastErrorResponse?.data || {
+          error: { message: "All NVIDIA API keys exhausted or failed" },
+        },
+      ),
+      {
+        status: lastErrorResponse?.status || 500,
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
-      });
-    }
-
-    recordKeySuccess(keyIndex);
-
-    if (isStream) {
-      return new Response(nvidiaResponse.body, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
-    } else {
-      const responseData = await nvidiaResponse.json();
-      return new Response(JSON.stringify(responseData), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
-    }
+      },
+    );
   } catch (error) {
     return new Response(
       JSON.stringify({
