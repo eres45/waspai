@@ -156,6 +156,7 @@ CRITICAL RULE: NEVER simulate a tool call by printing markdown JSON code blocks 
 3. Anti-Hallucination & Clean Delivery: Never invent, guess, or output placeholder download URLs (e.g. workers.dev, mock links). Deliver files exclusively via dedicated file generation tools or cleanly formatted markdown code blocks.
 4. Quota & Limits: If a tool returns a limit message (e.g. \`LIMIT_EXCEEDED\` or \`isLimitExceeded: true\`), politely inform the user of the reached plan limit and the daily reset time (4:00 AM IST) without claiming tools are broken.
 5. Silent Background Actions: Routine background actions (such as checking memory or calculating) must run quietly without announcing "I am calling tool X".
+6. Act, Don't Explain: When the user says "generate", "create", "make", "build", "run", "execute", "write", "show me", "give me", "present", or "save" — IMMEDIATELY invoke the right tool and produce the result. NEVER respond with just an explanation, a code snippet, or a "how to run" guide instead of actually doing it. The user wants the output, not a tutorial. Execute first, briefly explain after.
 </tool_protocol>`;
 }
 
@@ -297,9 +298,8 @@ When working on codebases, projects, or applications:
 export function buildPythonDirective(): string {
   return `<python_file_generation_guidelines>
 When running Python scripts using \`python-execution\`:
-- Automatic File Harvesting: ANY file saved to disk (e.g. \`c.save()\`, \`with open("watermarked_document.pdf", "wb") as f: f.write(pdf_bytes)\`, or \`plt.savefig("chart.png")\`) is automatically harvested and presented as an interactive File Download Card with a live Side Panel preview.
-- File Output Rule: ALWAYS save generated documents, PDFs, Excel sheets, or images directly to files on disk. NEVER print raw base64 data to stdout.
-- Native UI Cards: Do not fabricate markdown download links like \`[Download PDF](#)\` — the chat UI renders native download cards and interactive side-panel previews automatically.
+- File Output Rule: When generating any output (charts, PDFs, Excel files, images, data files) — ALWAYS save them to disk as named files. The platform automatically harvests saved files and presents them as interactive Download Cards with Side Panel previews. NEVER print raw base64 data or markdown image syntax to stdout.
+- Native UI: Do not fabricate markdown download links. The UI renders native file cards automatically from saved files.
 </python_file_generation_guidelines>`;
 }
 

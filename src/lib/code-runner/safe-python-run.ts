@@ -183,6 +183,61 @@ async function executeViaCloudSandbox({
           };
           logs.push(imgEntry);
           onLog?.(imgEntry);
+          // Also emit as file card so user can download/preview
+          const extMatch = trimmed.match(/^data:(image\/\w+);base64,/);
+          const mime = extMatch?.[1] ?? "image/png";
+          const ext = mime.split("/")[1] ?? "png";
+          const fileEntry: LogEntry = {
+            type: "info",
+            args: [
+              {
+                type: "file",
+                value: {
+                  name: `output.${ext}`,
+                  size: Math.round((trimmed.length * 3) / 4),
+                  mime_type: mime,
+                  dataUrl: trimmed,
+                },
+              },
+            ],
+          };
+          logs.push(fileEntry);
+          onLog?.(fileEntry);
+          continue;
+        }
+
+        // Detect markdown image syntax: ![name](data:image/...;base64,...)
+        const mdImageMatch = trimmed.match(
+          /^!\[([^\]]*)\]\((data:image\/[^)]+)\)$/,
+        );
+        if (mdImageMatch) {
+          const altText = mdImageMatch[1] || "output";
+          const dataUrl = mdImageMatch[2];
+          const imgEntry: LogEntry = {
+            type: "log",
+            args: [{ type: "image", value: dataUrl }],
+          };
+          logs.push(imgEntry);
+          onLog?.(imgEntry);
+          const extMatch = dataUrl.match(/^data:(image\/\w+);base64,/);
+          const mime = extMatch?.[1] ?? "image/png";
+          const ext = mime.split("/")[1] ?? "png";
+          const fileEntry: LogEntry = {
+            type: "info",
+            args: [
+              {
+                type: "file",
+                value: {
+                  name: `${altText || "output"}.${ext}`,
+                  size: Math.round((dataUrl.length * 3) / 4),
+                  mime_type: mime,
+                  dataUrl,
+                },
+              },
+            ],
+          };
+          logs.push(fileEntry);
+          onLog?.(fileEntry);
           continue;
         }
 
