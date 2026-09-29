@@ -314,14 +314,28 @@ export const steelBrowserTool: Tool = {
       const page = context.pages()[0] || (await context.newPage());
 
       const result: any = { sessionId: session.id };
-      // Action Engine
-      switch (action) {
-        case "navigate":
-          if (!url) throw new Error("URL is required for 'navigate'.");
+      // If a URL is provided and page is blank or action is navigate, navigate first
+      if (url) {
+        const currentUrl = page.url();
+        if (
+          !currentUrl ||
+          currentUrl === "about:blank" ||
+          action === "navigate"
+        ) {
           await page.goto(url, {
             waitUntil: "domcontentloaded",
             timeout: 30000,
           });
+          if (action === "navigate") {
+            actionMessage = `Navigated to ${url}.`;
+          }
+        }
+      }
+
+      // Action Engine
+      switch (action) {
+        case "navigate":
+          if (!url) throw new Error("URL is required for 'navigate'.");
           actionMessage = `Navigated to ${url}.`;
           break;
 
@@ -386,6 +400,7 @@ export const steelBrowserTool: Tool = {
           break;
 
         case "screenshot":
+          await sleep(500);
           const buffer = await page.screenshot({ type: "jpeg", quality: 80 });
           const b64 = buffer.toString("base64");
           result.screenshot_base64 = b64;
