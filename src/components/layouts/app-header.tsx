@@ -37,10 +37,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/app/api/auth/actions";
+import { cn } from "lib/utils";
 
 export function AppHeader() {
   const t = useTranslations();
-  const [appStoreMutate] = appStore(useShallow((state) => [state.mutate]));
+  const [appStoreMutate, previewFile] = appStore(
+    useShallow((state) => [state.mutate, state.previewFile]),
+  );
   const { toggleSidebar, open } = useSidebar();
   const currentPaths = usePathname();
   const searchParams = useSearchParams();
@@ -80,7 +83,12 @@ export function AppHeader() {
     <header
       className={
         isChatPage
-          ? "absolute top-0 left-0 right-0 z-50 flex items-center px-3 py-2 bg-transparent pointer-events-none"
+          ? cn(
+              "absolute top-0 left-0 z-50 items-center px-3 py-2 bg-transparent pointer-events-none transition-all duration-300 ease-in-out",
+              previewFile
+                ? "hidden lg:flex lg:w-[52%] xl:w-[50%]"
+                : "flex w-full right-0",
+            )
           : "sticky top-0 z-50 flex items-center px-3 py-2 bg-background/95 backdrop-blur-md border-b border-border/40"
       }
     >
@@ -229,18 +237,20 @@ export function AppHeader() {
       )}
 
       {/* Center-Top Upgrade Plan Button */}
-      <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 pointer-events-auto hidden sm:flex items-center gap-1.5 z-50">
-        <Button
-          asChild
-          variant="ghost"
-          className="h-8 px-4 rounded-full border border-border/80 hover:border-foreground/30 bg-secondary/30 hover:bg-secondary/60 text-foreground/80 hover:text-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm shadow-black/5 flex items-center gap-1.5 text-xs font-semibold group cursor-pointer"
-        >
-          <Link href="/subscription">
-            <Sparkles className="size-3.5 text-foreground/60 group-hover:text-foreground group-hover:rotate-12 transition-all duration-300" />
-            <span>Upgrade your Plan</span>
-          </Link>
-        </Button>
-      </div>
+      {!previewFile && (
+        <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 pointer-events-auto hidden sm:flex items-center gap-1.5 z-50">
+          <Button
+            asChild
+            variant="ghost"
+            className="h-8 px-4 rounded-full border border-border/80 hover:border-foreground/30 bg-secondary/30 hover:bg-secondary/60 text-foreground/80 hover:text-foreground transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm shadow-black/5 flex items-center gap-1.5 text-xs font-semibold group cursor-pointer"
+          >
+            <Link href="/subscription">
+              <Sparkles className="size-3.5 text-foreground/60 group-hover:text-foreground group-hover:rotate-12 transition-all duration-300" />
+              <span>Upgrade your Plan</span>
+            </Link>
+          </Button>
+        </div>
+      )}
     </header>
   );
 }

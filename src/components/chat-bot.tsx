@@ -668,7 +668,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             <FilePreviewSidePanel
               file={previewFile}
               onClose={() => appStoreMutate({ previewFile: null })}
-              className="fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-30"
+              className="fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-40"
             />
           )}
         </AnimatePresence>
