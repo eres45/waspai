@@ -628,6 +628,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
             <PromptInput
               input={input}
               threadId={threadId}
+              messages={messages}
               sendMessageAction={sendMessage}
               setInputAction={setInput}
               isLoading={isLoading || isPendingToolCall}

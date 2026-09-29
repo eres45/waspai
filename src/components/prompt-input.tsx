@@ -63,6 +63,8 @@ import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
 import { DictateButton } from "./dictate-button";
 
+import { getModelContextLimit } from "lib/ai/context-limits";
+
 interface PromptInputProps {
   placeholder?: string;
   setInputAction: (value: string) => void;
@@ -75,6 +77,7 @@ interface PromptInputProps {
   setModel?: (model: ChatModel) => void;
   voiceDisabled?: boolean;
   threadId?: string;
+  messages?: UIMessage[];
   disabledMention?: boolean;
   onFocus?: () => void;
   isVoiceActive?: boolean;
@@ -103,6 +106,7 @@ export default function PromptInput({
   toolDisabled,
   voiceDisabled,
   threadId,
+  messages,
   disabledMention,
   isVoiceActive,
   isVoiceListening,
@@ -165,6 +169,56 @@ export default function PromptInput({
     if (!threadId) return undefined;
     return threadImageToolModel[threadId];
   }, [threadImageToolModel, threadId]);
+
+  const contextUsage = useMemo(() => {
+    const modelId = chatModel?.model || "default";
+    const limitChars = getModelContextLimit(modelId);
+    const limitTokens = Math.round(limitChars / 4);
+
+    if (!messages || messages.length === 0) {
+      return {
+        usedTokens: 0,
+        limitTokens,
+        pct: 0,
+        isNearLimit: false,
+      };
+    }
+
+    let totalChars = 0;
+    for (const m of messages) {
+      const anyM = m as any;
+      if (typeof anyM.content === "string") {
+        totalChars += anyM.content.length;
+      }
+      if (Array.isArray(m.parts)) {
+        for (const p of m.parts) {
+          if (p.type === "text" && typeof p.text === "string") {
+            totalChars += p.text.length;
+          } else if (p.type === "tool-call") {
+            totalChars += JSON.stringify((p as any).args || {}).length + 150;
+          } else if (p.type === "tool-result") {
+            totalChars += JSON.stringify((p as any).result || {}).length + 150;
+          } else if (p.type === "file") {
+            totalChars += 300;
+          }
+        }
+      }
+    }
+
+    const usedTokens = Math.max(0, Math.round(totalChars / 4));
+    const pct = Math.min(
+      100,
+      Math.max(0, Math.round((usedTokens / limitTokens) * 100)),
+    );
+    const isNearLimit = pct >= 85;
+
+    return {
+      usedTokens,
+      limitTokens,
+      pct,
+      isNearLimit,
+    };
+  }, [messages, chatModel?.model]);
 
   const editorRef = useRef<Editor | null>(null);
 
@@ -1083,7 +1137,59 @@ export default function PromptInput({
                 ) : (
                   <>
                     <div className="flex items-center gap-1.5 mr-1">
-                      <div className="size-3.5 rounded-full border-2 border-primary/50 border-t-primary shrink-0 opacity-80" />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="relative size-3.5 flex items-center justify-center shrink-0 cursor-help"
+                            aria-label={`Context: ~${contextUsage.usedTokens.toLocaleString()} / ~${contextUsage.limitTokens.toLocaleString()} tokens (${contextUsage.pct}% used)`}
+                          >
+                            <svg
+                              className="size-3.5 -rotate-90"
+                              viewBox="0 0 16 16"
+                            >
+                              {/* Background subtle track */}
+                              <circle
+                                cx="8"
+                                cy="8"
+                                r="5.5"
+                                fill="none"
+                                strokeWidth="1.8"
+                                className="stroke-muted-foreground/25"
+                              />
+                              {/* Dynamic progress ring */}
+                              <circle
+                                cx="8"
+                                cy="8"
+                                r="5.5"
+                                fill="none"
+                                strokeWidth="1.8"
+                                strokeDasharray={2 * Math.PI * 5.5}
+                                strokeDashoffset={
+                                  2 *
+                                  Math.PI *
+                                  5.5 *
+                                  (1 - Math.max(contextUsage.pct, 2) / 100)
+                                }
+                                strokeLinecap="round"
+                                className={cn(
+                                  "transition-all duration-300 ease-out",
+                                  contextUsage.isNearLimit
+                                    ? "stroke-red-500/85"
+                                    : "stroke-muted-foreground/75",
+                                )}
+                              />
+                            </svg>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="text-xs font-mono"
+                        >
+                          Context: ~{contextUsage.usedTokens.toLocaleString()} /
+                          ~{contextUsage.limitTokens.toLocaleString()} tokens (
+                          {contextUsage.pct}% used)
+                        </TooltipContent>
+                      </Tooltip>
                       <SelectModel
                         onSelect={setChatModel}
                         currentModel={chatModel}
