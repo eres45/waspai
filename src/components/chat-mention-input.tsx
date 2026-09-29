@@ -27,8 +27,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { DefaultToolIcon } from "./default-tool-icon";
 import equal from "lib/equal";
 import { EMOJI_DATA } from "lib/const";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useInstalledSkills } from "@/hooks/queries/use-installed-skills";
+import { useSkills } from "@/hooks/queries/use-skills";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type MentionItemType = {
   id: string;
@@ -173,47 +174,89 @@ export function ChatMentionInputSuggestion({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const itemRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const { installedSkills } = useInstalledSkills();
+  const { skills: publicSkills } = useSkills({ limit: 40 });
   const isMobile = useIsMobile();
 
   const skillMentions = useMemo(() => {
     if (disabledType?.includes("skill" as any)) return [];
-    if (!installedSkills.length) return [];
 
-    return installedSkills
-      .filter(
-        (item) =>
-          !searchValue ||
-          item.skill.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-          item.skill.name.toLowerCase().includes(searchValue.toLowerCase()),
-      )
-      .map((item) => {
-        const id = JSON.stringify({
-          type: "skill",
+    const seenSlugs = new Set<string>();
+    const combined: {
+      id: string;
+      name: string;
+      title: string;
+      description?: string;
+      icon?: string;
+    }[] = [];
+
+    // 1. Installed skills (highest priority)
+    for (const item of installedSkills || []) {
+      if (item?.skill?.name && !seenSlugs.has(item.skill.name)) {
+        seenSlugs.add(item.skill.name);
+        combined.push({
+          id: item.skill.id,
           name: item.skill.name,
-          skillId: item.skill.id,
+          title: item.skill.title,
           description: item.skill.description,
           icon: item.skill.icon,
         });
-        return {
-          id: item.skill.id,
+      }
+    }
+
+    // 2. Public vault skills
+    for (const s of publicSkills || []) {
+      if (s?.name && !seenSlugs.has(s.name)) {
+        seenSlugs.add(s.name);
+        combined.push({
+          id: s.id,
+          name: s.name,
+          title: s.title,
+          description: s.description,
+          icon: s.icon,
+        });
+      }
+    }
+
+    if (!combined.length) return [];
+
+    const search = (searchValue || "").toLowerCase();
+
+    return combined
+      .filter((item) => {
+        if (!search) return true;
+        return (
+          item.title.toLowerCase().includes(search) ||
+          item.name.toLowerCase().includes(search) ||
+          (item.description && item.description.toLowerCase().includes(search))
+        );
+      })
+      .slice(0, 20)
+      .map((item) => {
+        const id = JSON.stringify({
           type: "skill",
-          label: item.skill.title,
+          name: item.name,
+          skillId: item.id,
+          description: item.description,
+          icon: item.icon,
+        });
+        return {
+          id: item.id,
+          type: "skill",
+          label: item.title,
           onSelect: () =>
             onSelectMention({
-              label: `skill("${item.skill.title}")`,
+              label: `skill("${item.title}")`,
               id,
             }),
           icon: (
-            <span className="text-sm select-none">
-              {item.skill.icon || "✨"}
-            </span>
+            <span className="text-sm select-none">{item.icon || "✨"}</span>
           ),
           suffix: selectedIds?.includes(id) && (
             <CheckIcon className="size-3 ml-auto" />
           ),
         };
       });
-  }, [installedSkills, selectedIds, disabledType, searchValue]);
+  }, [installedSkills, publicSkills, selectedIds, disabledType, searchValue]);
 
   const mcpMentions = useMemo(() => {
     if (disabledType?.includes("mcp")) return [];

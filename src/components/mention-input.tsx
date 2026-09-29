@@ -89,6 +89,38 @@ export default function MentionInput({
 
   // Memoize editor configuration
   const editorConfig = useMemo<UseEditorOptions>(() => {
+    const createSuggestion = (triggerChar: string) => ({
+      char: triggerChar,
+      render: () => ({
+        onStart: (props: any) => {
+          if (fullWidthSuggestion) {
+            const containerRect = containerRef.current?.getBoundingClientRect();
+            if (containerRect) {
+              position.current = {
+                top: containerRect.top,
+                left: containerRect.left,
+                range: props.range,
+              };
+              setContainerWidth(containerRect.width);
+              setOpen(true);
+            }
+          } else {
+            const rect = props.clientRect?.();
+            if (rect) {
+              position.current = {
+                top: rect.top,
+                left: rect.left,
+                range: props.range,
+              };
+              setContainerWidth(undefined);
+              setOpen(true);
+            }
+          }
+        },
+        onExit: () => setOpen(false),
+      }),
+    });
+
     return {
       editable: !disabled,
       immediatelyRender: false,
@@ -115,41 +147,31 @@ export default function MentionInput({
               );
             return el;
           },
-          suggestion: {
-            char: suggestionChar,
-            render: () => {
-              return {
-                onStart: (props) => {
-                  if (fullWidthSuggestion) {
-                    const containerRect =
-                      containerRef.current?.getBoundingClientRect();
-                    if (containerRect) {
-                      position.current = {
-                        top: containerRect.top,
-                        left: containerRect.left,
-                        range: props.range,
-                      };
-                      setContainerWidth(containerRect.width);
-                      setOpen(true);
-                    }
-                  } else {
-                    const rect = props.clientRect?.();
-                    if (rect) {
-                      position.current = {
-                        top: rect.top,
-                        left: rect.left,
-                        range: props.range,
-                      };
-                      setContainerWidth(undefined);
-                      setOpen(true);
-                    }
-                  }
-                },
-                onExit: () => setOpen(false),
-              };
-            },
-          },
+          suggestion: createSuggestion(suggestionChar),
         }),
+        ...(suggestionChar !== "/"
+          ? [
+              Mention.extend({ name: "slashMention" }).configure({
+                HTMLAttributes: {
+                  class: "mention",
+                },
+                renderHTML: (props) => {
+                  const el = document.createElement("div");
+                  el.className = "inline-flex";
+                  const root = createRoot(el);
+                  if (MentionItem)
+                    root.render(
+                      <MentionItem
+                        label={props.node.attrs.label}
+                        id={props.node.attrs.id}
+                      />,
+                    );
+                  return el;
+                },
+                suggestion: createSuggestion("/"),
+              }),
+            ]
+          : []),
       ],
       content: defaultContent ?? content,
       autofocus: true,

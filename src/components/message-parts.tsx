@@ -1071,6 +1071,17 @@ const SkillCreatedCard = dynamic(
   },
 );
 
+const LoadedSkillCard = dynamic(
+  () =>
+    import("./tool-invocation/loaded-skill-card").then(
+      (mod) => mod.LoadedSkillCard,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 const DeploySiteCard = dynamic(
   () =>
     import("./tool-invocation/deploy-site-card").then(
@@ -1439,6 +1450,15 @@ export const ToolMessagePart = memo(
 
       if (toolName === DefaultToolName.CreateSkill) {
         return <SkillCreatedCard part={part} />;
+      }
+
+      if (
+        toolName === DefaultToolName.LoadSkill ||
+        toolName === "load_skill" ||
+        toolName === DefaultToolName.SearchSkills ||
+        toolName === "search_skills"
+      ) {
+        return <LoadedSkillCard part={part} />;
       }
 
       if (toolName === DefaultToolName.DeploySite) {
