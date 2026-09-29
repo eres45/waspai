@@ -326,6 +326,25 @@ Keep steps concrete and action-oriented (e.g. "Search for recent AI models", "Su
 }
 
 /**
+ * Autonomous Skill Library Directive (2,500+ Specialized Production Skills)
+ */
+export function buildSkillLibraryDirective(): string {
+  return `<skill_library_guidelines>
+You have direct access to a Private Autonomous Skill Library containing over 2,500 specialized production recipes, procedural checklists, and self-healing execution protocols across 10 core domains (Productivity, Coding, DevOps, Security, Business, Marketing, Automation, Media, Research, Writing).
+
+CRITICAL OPERATIONAL PROTOCOL FOR MEDIUM & COMPLEX TASKS:
+1. MANDATORY SKILL CHECK: For ANY task that is non-trivial, medium, or complex (e.g. multi-step coding, data analysis & charts, document/PDF generation, security auditing, system architecture, competitor analysis, scraping/browsing, DevOps/Docker/CI, marketing plans, novel writing, workflows):
+   - You MUST ALWAYS check the Skill Library FIRST before attempting ad-hoc execution.
+   - Call \`search_skills({ query: "<core topic or domain keywords>" })\` to discover if a tailored, expert recipe exists in our 2,500+ skill vault.
+2. ON-DEMAND LOADING & RECIPE EXECUTION:
+   - When \`search_skills\` returns relevant skills, immediately call \`load_skill({ name: "<skill_slug>" })\` to load the exact procedural recipe, error recovery protocols, and verification steps into your working memory.
+   - Execute the user's task adhering strictly to the loaded skill's recipe.
+3. COMPOUNDING DISTILLATION (\`create_skill\`):
+   - When you solve a novel multi-step workflow, or when instructed by the user, distill it into a reusable skill with \`create_skill\` so your private vault compounds intelligence over time.
+</skill_library_guidelines>`;
+}
+
+/**
  * Output Formatting & Style Standards
  */
 export function buildFormattingDirective(
@@ -386,6 +405,10 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(options.activeSkillsPrompt);
   }
 
+  if (options.skillLibraryOverview) {
+    sections.push(options.skillLibraryOverview);
+  }
+
   // 3. User Memories
   if (options.userMemoriesPrompt) {
     sections.push(options.userMemoriesPrompt);
@@ -423,6 +446,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildCodebaseDirective());
     sections.push(buildPythonDirective());
     sections.push(buildTodoDirective());
+    sections.push(buildSkillLibraryDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

@@ -57,6 +57,9 @@ export const ALWAYS_ACTIVE_TOOLS = new Set([
   "ask_user_question",
   "delegate_subagent",
   "read_spill_slice",
+  "search_skills",
+  "load_skill",
+  "create_skill",
 ]);
 
 // ─── 2. SPECIALIZED TOOLKIT DOMAINS ───────────────────────────────────────────
@@ -141,9 +144,6 @@ export const TOOL_DOMAINS = {
       "write_site_file",
       "read_site_file",
       "edit_site_file",
-      "search_skills",
-      "load_skill",
-      "create_skill",
     ],
     keywords: [
       "site",
@@ -153,9 +153,6 @@ export const TOOL_DOMAINS = {
       "landing page",
       "index.html",
       "file",
-      "skill",
-      "skills",
-      "persona",
     ],
   },
   UTILITY_VERIFY: {
