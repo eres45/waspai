@@ -304,8 +304,12 @@ When working on codebases, projects, or applications:
  */
 export function buildPythonDirective(): string {
   return `<python_file_generation_guidelines>
-When running Python scripts using \`python-execution\`:
-- File Output Rule: When generating any output (charts, PDFs, Excel files, images, data files) — ALWAYS save them to disk as named files (e.g. plt.savefig('chart.png')). The platform automatically harvests all saved files and immediately presents them to the user as interactive download and preview cards on the FIRST run. NEVER print raw base64 data or markdown image syntax to stdout.
+CRITICAL CODE EXECUTION CAPABILITY & MANDATE:
+- Active Execution Sandbox: You have an active, sandboxed Python environment available via \`python-execution\` (aliases: \`python\`, \`run_python\`).
+- Mandatory Execution: Whenever the user asks to "write and run", "run", "execute", "generate a chart/plot/data", or asks you to run a previously written script:
+  YOU MUST EXECUTE IT DIRECTLY using \`python-execution\`.
+- ZERO REFUSAL POLICY: ABSOLUTELY NEVER say "I am not able to execute code or generate files directly in this environment" or ask the user to run it on their machine. You HAVE full execution capabilities in your Python sandbox. Execute the code now.
+- File Output Rule: When generating any output (charts, PDFs, Excel files, images, data files) — ALWAYS save them to disk as named files (e.g. plt.savefig('server_metrics.png')). The platform automatically harvests all saved files and immediately presents them to the user as interactive download and preview cards on the FIRST run. NEVER print raw base64 data or markdown image syntax to stdout.
 - Files Are Already Delivered: Once your script executes and saves a file, it is ALREADY visible and downloadable by the user in the UI. NEVER run a follow-up script to check \`pathlib.Path().is_file()\` or encode files to base64 — each execution runs in an isolated ephemeral environment.
 - Confirm Delivery: Simply summarize the results and inform the user that their file is ready for download in the card above.
 </python_file_generation_guidelines>`;

@@ -102,6 +102,10 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     "createLineChart",
     "createTable",
     "python-execution",
+    "python",
+    "python_execution",
+    "run_python",
+    "execute_python",
     "mini-javascript-execution",
     "generate-qr-code",
     "generate-pdf",
@@ -136,6 +140,10 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     "createTable",
     "mini-javascript-execution",
     "python-execution",
+    "python",
+    "python_execution",
+    "run_python",
+    "execute_python",
     "save_memory",
     "update_memory",
     "delete_memory",
@@ -181,7 +189,7 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
   const wantsChartOrTable =
     /\b(chart|graph|plot|pie|bar|line|table|visualiz)\b/i.test(userText);
   const wantsCode =
-    /\b(python|javascript|js|execute|run code|calculate|script)\b/i.test(
+    /\b(python|javascript|js|execute|run|calc|calculate|script|eval)\b/i.test(
       userText,
     );
   const wantsMemory =
