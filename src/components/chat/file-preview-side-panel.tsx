@@ -923,19 +923,22 @@ export const FilePreviewSidePanel = memo(function FilePreviewSidePanel({
       className={cn(
         "h-full w-full lg:w-[48%] xl:w-[50%] shrink-0 flex flex-col",
         "bg-background/95 backdrop-blur-2xl border-l border-border/80 shadow-2xl",
-        "relative z-40 overflow-hidden",
+        "relative z-40 overflow-hidden pt-14",
         className,
       )}
     >
-      {/* ── Top Header ── */}
-      <div className="h-14 px-4 border-b border-border/60 bg-muted/30 flex items-center justify-between gap-3 shrink-0">
+      {/* ── Top Header / Toolbar (Positioned cleanly below AppHeader) ── */}
+      <div className="h-12 px-4 border-y border-border/60 bg-muted/30 flex items-center justify-between gap-3 shrink-0">
         {/* Left: file info */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className="size-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <FileTypeIcon types={types} />
           </div>
           <div className="min-w-0 flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs">
+            <span
+              className="text-sm font-semibold text-foreground truncate max-w-[180px] sm:max-w-xs"
+              title={fileName}
+            >
               {fileName}
             </span>
             <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-accent text-accent-foreground border border-border/40 shrink-0">
@@ -955,7 +958,7 @@ export const FilePreviewSidePanel = memo(function FilePreviewSidePanel({
             <button
               type="button"
               onClick={() => copy(file.content!)}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
               title="Copy Content"
             >
               {copied ? (
@@ -968,7 +971,7 @@ export const FilePreviewSidePanel = memo(function FilePreviewSidePanel({
           <button
             type="button"
             onClick={handleOpenNewTab}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
             title="Open in new window"
           >
             <ExternalLink className="size-4" />
@@ -985,7 +988,7 @@ export const FilePreviewSidePanel = memo(function FilePreviewSidePanel({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ml-1"
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ml-0.5"
             title="Close (Esc)"
           >
             <X className="size-4" />
