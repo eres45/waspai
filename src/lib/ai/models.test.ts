@@ -408,6 +408,57 @@ describe("sanitizeMessageToolCalls", () => {
     expect(result[1].parts.length).toBe(1);
   });
 
+  it("strips massive base64 dataUrl from tool results while preserving file metadata for LLM", () => {
+    const { sanitizeMessageToolCalls } = modelsModule;
+    const messages = [
+      {
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-invocation",
+            toolInvocation: {
+              state: "result",
+              toolName: "python-execution",
+              toolCallId: "call_python_1",
+              result: {
+                success: true,
+                files: [
+                  {
+                    name: "Server_Metrics_Report.pdf",
+                    size: 237568,
+                    mime_type: "application/pdf",
+                    dataUrl: "data:application/pdf;base64,JVBERi0xLjQ...",
+                  },
+                ],
+                logs: [
+                  {
+                    type: "log",
+                    args: [
+                      {
+                        type: "image",
+                        value: "data:image/png;base64,iVBORw0KGgo...",
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    ];
+
+    const sanitized = sanitizeMessageToolCalls(messages);
+    const resultPayload = sanitized[0].parts[0].toolInvocation.result;
+
+    expect(resultPayload.files[0].name).toBe("Server_Metrics_Report.pdf");
+    expect(resultPayload.files[0].size).toBe(237568);
+    expect(resultPayload.files[0].dataUrl).toBeUndefined();
+    expect(resultPayload.logs[0].args[0].value).toBe(
+      "[Image output generated and presented to user]",
+    );
+  });
+
   it("sets deepseek-v4.1-flash:free as default and configures Ultra tier models correctly", async () => {
     const {
       buildDynamicModelsInfo,

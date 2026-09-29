@@ -70,11 +70,7 @@ export const CodeExecutor = memo(function CodeExecutor({
       const result = await runCode(code, type);
 
       // Extract generated files and sanitize logs for LLM consumption (strip massive base64)
-      const harvestedFiles: {
-        name: string;
-        size?: number;
-        mime_type?: string;
-      }[] = [];
+      const harvestedFiles: PresentedFile[] = [];
       const sanitizedLogs: LogEntry[] = [];
 
       for (const log of result.logs || []) {
@@ -86,6 +82,9 @@ export const CodeExecutor = memo(function CodeExecutor({
               name: arg.value.name,
               size: arg.value.size,
               mime_type: arg.value.mime_type,
+              dataUrl: arg.value.dataUrl,
+              url: (arg.value as any)?.url,
+              content: (arg.value as any)?.content,
             });
             sanitizedArgs.push({
               type: "data",
@@ -128,6 +127,7 @@ export const CodeExecutor = memo(function CodeExecutor({
         executionTimeMs: result.executionTimeMs,
         error: result.error,
         filesGenerated: fileNames,
+        files: harvestedFiles,
         logs: sanitizedLogs,
         guide,
       });
@@ -146,8 +146,15 @@ export const CodeExecutor = memo(function CodeExecutor({
   }, []);
 
   const result = useMemo(() => {
-    if (part.state.startsWith("input")) return null;
-    return part.output as CodeRunnerResult;
+    if (part.state?.startsWith("input")) return null;
+    const raw =
+      (part as any).output ??
+      (part as any).result ??
+      (part as any).toolInvocation?.result;
+    return raw as CodeRunnerResult & {
+      files?: PresentedFile[];
+      filesGenerated?: string[];
+    };
   }, [part]);
 
   const logs = useMemo(() => {
@@ -230,6 +237,14 @@ export const CodeExecutor = memo(function CodeExecutor({
     );
   }, []);
 
+  const getCodeFromPart = useCallback(
+    (p: any): string => {
+      const inp = p?.input ?? p?.args ?? p?.toolInvocation?.args;
+      return getCodeFromInput(inp);
+    },
+    [getCodeFromInput],
+  );
+
   const reExecute = useCallback(async () => {
     if (isExecuting) return;
     setIsExecuting(true);
@@ -240,17 +255,48 @@ export const CodeExecutor = memo(function CodeExecutor({
         time: Date.now(),
       },
     ]);
-    const code = getCodeFromInput(part.input);
+    const code = getCodeFromPart(part);
 
-    safe(() => runCode(code, type)).watch(() => setIsExecuting(false));
-  }, [part.input, isExecuting, getCodeFromInput, runCode, type]);
+    safe(async () => {
+      await menualToolCall(code);
+    }).watch(() => setIsExecuting(false));
+  }, [part, isExecuting, getCodeFromPart, menualToolCall]);
+
+  const harvestedFiles = useMemo(() => {
+    // 1. Direct files from output/result (persisted in DB or onResult)
+    if (
+      result?.files &&
+      Array.isArray(result.files) &&
+      result.files.length > 0
+    ) {
+      return result.files;
+    }
+    // 2. Extracted from logs (realtime or persisted)
+    const list: PresentedFile[] = [];
+    const sourceLogs = realtimeLogs.length
+      ? realtimeLogs
+      : (result?.logs ?? []);
+    for (const log of sourceLogs) {
+      if (!log.args) continue;
+      for (const arg of log.args) {
+        if (arg.type === "file" && arg.value) {
+          list.push(arg.value);
+        }
+      }
+    }
+    return list;
+  }, [result, realtimeLogs]);
 
   const header = useMemo(() => {
     if (isRunning)
       return (
         <>
           <Loader className="size-3 animate-spin text-muted-foreground" />
-          <TextShimmer className="text-xs">Generating Code...</TextShimmer>
+          <TextShimmer className="text-xs">
+            {harvestedFiles.length === 0 && result
+              ? "Restoring files..."
+              : "Generating Code..."}
+          </TextShimmer>
         </>
       );
     return (
@@ -267,7 +313,7 @@ export const CodeExecutor = memo(function CodeExecutor({
         )}
       </>
     );
-  }, [part.state, result, isRunning]);
+  }, [result, isRunning, harvestedFiles.length, type]);
 
   const fallback = useMemo(() => {
     return <CodeFallback />;
@@ -296,24 +342,18 @@ export const CodeExecutor = memo(function CodeExecutor({
     );
   }, [logs, isRunning]);
 
-  const harvestedFiles = useMemo(() => {
-    const list: PresentedFile[] = [];
-    const sourceLogs = realtimeLogs.length
-      ? realtimeLogs
-      : (result?.logs ?? []);
-    for (const log of sourceLogs) {
-      if (!log.args) continue;
-      for (const arg of log.args) {
-        if (arg.type === "file" && arg.value) {
-          list.push(arg.value);
-        }
-      }
-    }
-    return list;
-  }, [result, realtimeLogs]);
+  const isCompleted = useMemo(() => {
+    return (
+      !isRunning &&
+      (part.state?.startsWith("output") ||
+        (part.state as string) === "result" ||
+        result !== null)
+    );
+  }, [isRunning, part.state, result]);
 
+  // Initial auto-execution when input is available
   useEffect(() => {
-    const code = getCodeFromInput(part.input);
+    const code = getCodeFromPart(part);
     if (
       onResult &&
       code &&
@@ -323,16 +363,55 @@ export const CodeExecutor = memo(function CodeExecutor({
       isRun.current = true;
       menualToolCall(code);
     }
-  }, [part.state, part.input, onResult, getCodeFromInput, menualToolCall]);
+  }, [part, onResult, getCodeFromPart, menualToolCall]);
+
+  // Auto-recover files if code was executed previously but files are missing from output (e.g. after page refresh)
+  useEffect(() => {
+    const code = getCodeFromPart(part);
+    const hasFiles = harvestedFiles.length > 0;
+    const isFinished =
+      part.state?.startsWith("output") ||
+      (part.state as string) === "result" ||
+      result !== null;
+
+    const needsRecovery =
+      isFinished &&
+      !hasFiles &&
+      !isRun.current &&
+      !isExecuting &&
+      code &&
+      (result?.filesGenerated?.length ||
+        result?.logs?.some((l) =>
+          l.args?.some(
+            (a) =>
+              a.type === "file" ||
+              (a.type === "data" &&
+                typeof a.value === "string" &&
+                a.value.includes("[File '")),
+          ),
+        ));
+
+    if (needsRecovery) {
+      isRun.current = true;
+      menualToolCall(code);
+    }
+  }, [
+    harvestedFiles.length,
+    isExecuting,
+    part,
+    result,
+    getCodeFromPart,
+    menualToolCall,
+  ]);
 
   useEffect(() => {
     if (isRunning) {
       const closeKey = setInterval(scrollToCode, 300);
       return () => clearInterval(closeKey);
-    } else if (part.state.startsWith("output") && isRun.current) {
+    } else if (isCompleted && isRun.current) {
       scrollToCode();
     }
-  }, [isRunning, scrollToCode]);
+  }, [isRunning, isCompleted, scrollToCode]);
 
   return (
     <div className="flex flex-col">
@@ -342,7 +421,7 @@ export const CodeExecutor = memo(function CodeExecutor({
             {header}
             <div className="flex-1" />
 
-            {part.state.startsWith("output") && (
+            {isCompleted && (
               <>
                 <div
                   className="flex items-center gap-1 text-[10px] text-muted-foreground px-2 py-1 transition-all rounded-sm cursor-pointer hover:bg-input hover:text-foreground font-semibold"
@@ -353,7 +432,7 @@ export const CodeExecutor = memo(function CodeExecutor({
                 </div>
                 <div
                   className="flex items-center gap-1 text-[10px] text-muted-foreground px-2 py-1 transition-all rounded-sm cursor-pointer hover:bg-input hover:text-foreground font-semibold"
-                  onClick={() => copy(getCodeFromInput(part.input))}
+                  onClick={() => copy(getCodeFromPart(part))}
                 >
                   {copied ? (
                     <CheckIcon className="size-2" />

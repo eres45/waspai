@@ -2681,6 +2681,64 @@ export const customModelProvider = {
   },
 };
 
+function sanitizeToolResultForModel(result: any): any {
+  if (!result || typeof result !== "object") return result;
+
+  const sanitized = { ...result };
+
+  // Strip massive base64 dataUrl from files array for LLM context
+  if (Array.isArray(sanitized.files)) {
+    sanitized.files = sanitized.files.map((f: any) => {
+      if (f && typeof f === "object") {
+        const { dataUrl, base64, content, ...rest } = f;
+        return rest;
+      }
+      return f;
+    });
+  }
+
+  // Strip massive base64 from logs
+  if (Array.isArray(sanitized.logs)) {
+    sanitized.logs = sanitized.logs.map((log: any) => {
+      if (!log?.args || !Array.isArray(log.args)) return log;
+      return {
+        ...log,
+        args: log.args.map((arg: any) => {
+          if (!arg) return arg;
+          if (
+            arg.type === "image" &&
+            typeof arg.value === "string" &&
+            arg.value.startsWith("data:image")
+          ) {
+            return {
+              type: "data",
+              value: "[Image output generated and presented to user]",
+            };
+          }
+          if (
+            arg.type === "file" &&
+            arg.value &&
+            typeof arg.value === "object"
+          ) {
+            const { dataUrl, base64, ...rest } = arg.value;
+            return { type: "file", value: rest };
+          }
+          if (
+            arg.type === "data" &&
+            typeof arg.value === "string" &&
+            arg.value.length > 2000
+          ) {
+            return { type: "data", value: `${arg.value.slice(0, 1997)}...` };
+          }
+          return arg;
+        }),
+      };
+    });
+  }
+
+  return sanitized;
+}
+
 export function sanitizeMessageToolCalls<
   T extends {
     role?: string;
@@ -2732,7 +2790,15 @@ export function sanitizeMessageToolCalls<
             ) {
               cleanArgs = {};
             }
-            return { ...inv, args: cleanArgs };
+
+            let cleanInv = { ...inv, args: cleanArgs };
+            if (cleanInv.result) {
+              cleanInv = {
+                ...cleanInv,
+                result: sanitizeToolResultForModel(cleanInv.result),
+              };
+            }
+            return cleanInv;
           }),
         };
       }
@@ -2775,11 +2841,39 @@ export function sanitizeMessageToolCalls<
         } else if (typeof cleanArgs !== "object" || Array.isArray(cleanArgs)) {
           cleanArgs = {};
         }
-        return {
+
+        let updatedPart = {
           ...part,
           args: cleanArgs,
           input: cleanArgs,
         };
+
+        // 2b. Sanitize tool results to strip massive base64 dataUrl payloads from LLM context
+        if (updatedPart.result) {
+          updatedPart = {
+            ...updatedPart,
+            result: sanitizeToolResultForModel(updatedPart.result),
+          };
+        }
+        if (updatedPart.output) {
+          updatedPart = {
+            ...updatedPart,
+            output: sanitizeToolResultForModel(updatedPart.output),
+          };
+        }
+        if (updatedPart.toolInvocation?.result) {
+          updatedPart = {
+            ...updatedPart,
+            toolInvocation: {
+              ...updatedPart.toolInvocation,
+              result: sanitizeToolResultForModel(
+                updatedPart.toolInvocation.result,
+              ),
+            },
+          };
+        }
+
+        return updatedPart;
       }
       return part;
     });
