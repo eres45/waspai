@@ -39,29 +39,11 @@ function condenseSystemPromptForGroq(
     ? `1. The \`web-search\` tool has ALREADY been executed for this turn and the live search results are in the conversation history below. Do NOT call \`web-search\` again, and NEVER claim that the \`web-search\` tool is unavailable or disabled. Answer the user's question directly using the provided search results.`
     : `1. TEMPORAL ANCHOR & SEARCH RULE (Operating Year: 2026): For ANY real-time data (models, tech, crypto/stock prices, exchange rates, news, current events, sports, weather, or facts that change), ALWAYS call the \`web-search\` tool immediately with a clear \`query\` parameter. You are operating in 2026: NEVER search for or append 2024 or 2023 to your search query; use 2026 or leave the year off.`;
 
-  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr} (Year: 2026).\nTEMPORAL ANCHOR: You operate in the year 2026. Never search for 2024 or treat 2024 as current when asked for latest or current info.\nCRITICAL TOOL, FORMATTING, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. ADAPTIVE EXECUTIVE FORMATTING:\n   - **If answering a Market / Crypto / Stock / Currency / Weather / Price query (with web-search)**:\n     a) Start with a bold **Headline Snapshot** (exact live rate/value in **bold**, date, and inline citation).\n     b) Include a **Markdown Comparison Table** (\`| Source / Platform | Live Rate / Metric | Key Details |\`) across top sources.\n     c) Add **\`### Key Takeaways & Market Context\`** with 3–4 **bold-lead** bullets and inline citations.\n   - **If answering a News / Tech / Sports / General Web Search query**:\n     a) Start with a bold **Executive Summary** directly answering the question with inline citations.\n     b) Organize details using clean \`###\` section headings, a structured **Summary Table** (\`| Topic / Development | Key Details | Source |\`), and **bold-lead** bullet points.\n   - **If answering a Coding / Math / Explanation / General Chat query (where no live web search is needed)**:\n     a) Do NOT call \`web-search\` for pure coding, math, or timeless concepts.\n     b) Present clean, well-structured Markdown with \`###\` headings, syntax-highlighted code blocks, and concise bullet points.\n3. INLINE CITATION SYNTAX (for web-search): Cite every source inline using ONLY standard ASCII Markdown links with NO space between \`]\` and \`(\`, e.g. \`[CoinMarketCap](https://...)\`, \`[Reuters](https://...)\`, \`[TechCrunch](https://...)\`. NEVER use CJK brackets \`【...】\` and NEVER output raw unlinked URLs.\n4. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
+  const coreSearchDirective = `\n\nCurrent Date: ${currentDateStr} (Year: 2026).\nTEMPORAL ANCHOR: You operate in the year 2026. Never search for 2024 or treat 2024 as current when asked for latest or current info.\nCRITICAL TOOL, FORMATTING, CITATION & PLAN LIMIT RULES:\n${stepSpecificSearchRule}\n2. ADAPTIVE EXECUTIVE FORMATTING:\n   - **If answering a Market / Crypto / Stock / Currency / Weather / Price query (with web-search)**:\n     a) Start with a bold **Headline Snapshot** (exact live rate/value in **bold**, date, and inline citation).\n     b) Include a **Markdown Comparison Table** (\`| Source / Platform | Live Rate / Metric | Key Details |\`) across top sources.\n     c) Add **\`### Key Takeaways & Market Context\`** with 3–4 **bold-lead** bullets and inline citations.\n   - **If answering a News / Tech / Sports / General Web Search query**:\n     a) Start with a bold **Executive Summary** directly answering the question with inline citations.\n     b) Organize details using clean \`###\` section headings, a structured **Summary Table** (\`| Topic / Development | Key Details | Source |\`), and **bold-lead** bullet points.\n   - **If answering a Coding / Math / Explanation / Specialized query**:\n     a) Do NOT call \`web-search\` for pure coding, math, or timeless concepts.\n     b) For multi-step, medium, or complex tasks: ALWAYS adhere to <skill_library_guidelines> and <live_plan_tracker_guidelines> — proactively call \`search_skills\` and \`todo_write\` before outputting final code or analysis.\n     c) Present clean, well-structured Markdown with \`###\` headings, syntax-highlighted code blocks, and concise bullet points.\n3. INLINE CITATION SYNTAX (for web-search): Cite every source inline using ONLY standard ASCII Markdown links with NO space between \`]\` and \`(\`, e.g. \`[CoinMarketCap](https://...)\`, \`[Reuters](https://...)\`, \`[TechCrunch](https://...)\`. NEVER use CJK brackets \`【...】\` and NEVER output raw unlinked URLs.\n4. PLAN LIMITS & UPGRADE GUIDANCE: If ANY tool result contains \`LIMIT_EXCEEDED\`, \`SYSTEM_LIMIT_REACHED\`, or \`isLimitExceeded: true\`, NEVER say "I don't have the ability to fetch real-time data". Explicitly inform the user which daily plan limit they reached (all daily limits reset at 4:00 AM IST) and invite them to upgrade at [Upgrade to WaspAI Pro](/subscription):\n   - Free Plan limits (resets daily at 4:00 AM IST): 10 web searches/day, 10 image generations/day, 5 file uploads/day, 50 chat messages/day, 5 mins/week Cloud Browser, 2 custom agents, 0 workflows.\n   - Pro Plan unlocks: Unlimited web searches, Unlimited file/PDF uploads, 300 chat messages/day, Pro image generation & editing, 30 mins/week Cloud Browser, 7 custom agents, 5 workflows.\n   - Ultra Plan unlocks: Unlimited everything (unlimited workflows, custom agents, skills, frontier models, and priority execution).`;
 
-  let condensed = prompt
-    .replace(
-      /<site_and_game_creation_guidelines>[\s\S]*?<\/site_and_game_creation_guidelines>/gi,
-      "",
-    )
-    .replace(
-      /<browser_automation_guidelines>[\s\S]*?<\/browser_automation_guidelines>/gi,
-      "",
-    )
-    .replace(/<system_capabilities>[\s\S]*?<\/system_capabilities>/gi, "")
-    .replace(
-      /<file_generation_guidelines>[\s\S]*?<\/file_generation_guidelines>/gi,
-      "",
-    )
-    .replace(
-      /<image_editing_guidelines>[\s\S]*?<\/image_editing_guidelines>/gi,
-      "",
-    );
-
-  if (condensed.length > 1800) {
-    condensed = condensed.substring(0, 1800);
+  let condensed = prompt;
+  if (condensed.length > 28000) {
+    condensed = condensed.substring(0, 28000);
   }
   return condensed + coreSearchDirective;
 }
@@ -132,6 +114,12 @@ function filterAndCompactToolsForGroq(tools: any[], messages: any[]): any[] {
     "image-manager",
     "web-content",
     "youtube-transcript",
+    "todo_write",
+    "exit_plan_mode",
+    "search_skills",
+    "load_skill",
+    "create_skill",
+    "steel-browser",
   ]);
 
   // All built-in default tools; any tool NOT in this set is a custom/MCP tool and will be kept

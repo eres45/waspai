@@ -1476,17 +1476,157 @@ CRITICAL INSTRUCTIONS:
           lastMessageText.length > 5
         ) {
           try {
-            // Extract clean search tokens from user query (support acronyms like AEO, SEO, SRE, etc.)
-            const searchTokens = lastMessageText
-              .replace(/[^a-zA-Z0-9\s-]/g, " ")
-              .split(/\s+/)
-              .filter((w) => w.length >= 2)
-              .slice(0, 4)
-              .join(" ");
+            const stopWords = new Set([
+              "a",
+              "about",
+              "above",
+              "after",
+              "again",
+              "against",
+              "all",
+              "am",
+              "an",
+              "and",
+              "any",
+              "are",
+              "as",
+              "at",
+              "be",
+              "because",
+              "been",
+              "before",
+              "being",
+              "below",
+              "between",
+              "both",
+              "but",
+              "by",
+              "can",
+              "could",
+              "did",
+              "do",
+              "does",
+              "doing",
+              "down",
+              "during",
+              "each",
+              "few",
+              "for",
+              "from",
+              "further",
+              "had",
+              "has",
+              "have",
+              "having",
+              "he",
+              "her",
+              "here",
+              "hers",
+              "him",
+              "his",
+              "how",
+              "i",
+              "if",
+              "in",
+              "into",
+              "is",
+              "it",
+              "its",
+              "itself",
+              "just",
+              "me",
+              "more",
+              "most",
+              "my",
+              "myself",
+              "no",
+              "nor",
+              "not",
+              "of",
+              "off",
+              "on",
+              "once",
+              "only",
+              "or",
+              "other",
+              "our",
+              "ours",
+              "out",
+              "over",
+              "own",
+              "same",
+              "she",
+              "should",
+              "so",
+              "some",
+              "such",
+              "than",
+              "that",
+              "the",
+              "their",
+              "theirs",
+              "them",
+              "then",
+              "there",
+              "these",
+              "they",
+              "this",
+              "those",
+              "through",
+              "to",
+              "too",
+              "under",
+              "until",
+              "up",
+              "very",
+              "was",
+              "we",
+              "were",
+              "what",
+              "when",
+              "where",
+              "which",
+              "while",
+              "who",
+              "whom",
+              "why",
+              "with",
+              "you",
+              "your",
+              "yours",
+              "yourself",
+              "conduct",
+              "make",
+              "create",
+              "build",
+              "write",
+              "give",
+              "show",
+              "tell",
+              "detail",
+              "provide",
+              "help",
+              "please",
+              "like",
+              "comprehensive",
+            ]);
 
-            if (searchTokens.length >= 2) {
+            const cleanTokens = lastMessageText
+              .toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, " ")
+              .split(/\s+/)
+              .filter((w) => w.length > 2 && !stopWords.has(w));
+
+            // Generate high-signal search queries: bigrams first, then individual domain keywords
+            const candidateQueries: string[] = [];
+            for (let i = 0; i < Math.min(cleanTokens.length - 1, 3); i++) {
+              candidateQueries.push(`${cleanTokens[i]} ${cleanTokens[i + 1]}`);
+            }
+            candidateQueries.push(...cleanTokens.slice(0, 4));
+
+            for (const query of candidateQueries) {
               const matchedSkills = await skillRepository.listSkills({
-                search: searchTokens,
+                search: query,
                 limit: 1,
               });
               if (matchedSkills && matchedSkills.length > 0) {
@@ -1498,8 +1638,9 @@ CRITICAL INSTRUCTIONS:
                     `<!-- EPHEMERAL_SKILL: ${fullMatched.name} -->\n${fullMatched.content}`,
                   );
                   logger.info(
-                    `Auto-activated on-demand skill '${fullMatched.name}' from private vault for active turn`,
+                    `Auto-activated on-demand skill '${fullMatched.name}' from private vault for query "${query}"`,
                   );
+                  break; // Found top matching skill, stop search
                 }
               }
             }
