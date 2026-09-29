@@ -59,6 +59,24 @@ export default () => {
       ],
     },
     webpack: (config, { isServer, webpack }) => {
+      if (isServer) {
+        // Prevent three.js / R3F from being bundled server-side (WebGL requires browser)
+        config.externals = [
+          ...(Array.isArray(config.externals)
+            ? config.externals
+            : [config.externals].filter(Boolean)),
+          (
+            { request }: { request?: string },
+            callback: (err?: Error | null, result?: string) => void,
+          ) => {
+            if (request && /^(three|@react-three\/)/.test(request)) {
+              return callback(null, `commonjs ${request}`);
+            }
+            callback();
+          },
+        ];
+      }
+
       if (!isServer) {
         config.resolve.fallback = {
           ...config.resolve.fallback,
