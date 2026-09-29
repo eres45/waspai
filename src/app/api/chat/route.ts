@@ -75,6 +75,7 @@ import {
 import { webSearchTool } from "@/lib/ai/tools/web/web-search";
 import { imageSearchTool } from "@/lib/ai/tools/web/image-search";
 import { writeSiteFileTool } from "@/lib/ai/tools/write-site-file";
+import { pythonExecutionTool } from "@/lib/ai/tools/code/python-run-tool";
 import { colorize } from "consola/utils";
 import {
   getModelContextLimit,
@@ -1680,6 +1681,11 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
           ask_user_question: askUserQuestionTool,
           delegate_subagent: subagentTool,
           read_spill_slice: readSpillSliceTool,
+          python: pythonExecutionTool,
+          python_execution: pythonExecutionTool,
+          run_python: pythonExecutionTool,
+          execute_python: pythonExecutionTool,
+          "python-execution": pythonExecutionTool,
           "convert-file": {
             ...fileConverterTool,
             execute: async (args: any, context: any) => {
@@ -1743,6 +1749,51 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
             ...readSiteFileTool,
             execute: async (args: any, options: any) => {
               return readSiteFileTool.execute!(
+                {
+                  ...args,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
+                },
+                options,
+              );
+            },
+          },
+          read_file: {
+            ...readSiteFileTool,
+            execute: async (args: any, options: any) => {
+              return readSiteFileTool.execute!(
+                {
+                  ...args,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
+                },
+                options,
+              );
+            },
+          },
+          write_file: {
+            ...writeSiteFileTool,
+            execute: async (args: any, options: any) => {
+              return writeSiteFileTool.execute!(
+                {
+                  ...args,
+                  threadId:
+                    !args.threadId || args.threadId === "current"
+                      ? thread!.id
+                      : args.threadId,
+                },
+                options,
+              );
+            },
+          },
+          edit_file: {
+            ...editSiteFileTool,
+            execute: async (args: any, options: any) => {
+              return editSiteFileTool.execute!(
                 {
                   ...args,
                   threadId:

@@ -181,6 +181,15 @@ export const CodeExecutor = memo(function CodeExecutor({
     });
   }, [part, realtimeLogs]);
 
+  const getCodeFromInput = useCallback((input: any): string => {
+    const inp = toAny(input);
+    if (!inp) return "";
+    if (typeof inp === "string") return inp;
+    return (
+      inp.code || inp.script || inp.command || inp.input || inp.python || ""
+    );
+  }, []);
+
   const reExecute = useCallback(async () => {
     if (isExecuting) return;
     setIsExecuting(true);
@@ -191,10 +200,10 @@ export const CodeExecutor = memo(function CodeExecutor({
         time: Date.now(),
       },
     ]);
-    const code = toAny(part.input)?.code;
+    const code = getCodeFromInput(part.input);
 
     safe(() => runCode(code, type)).watch(() => setIsExecuting(false));
-  }, [part.input, isExecuting]);
+  }, [part.input, isExecuting, getCodeFromInput, runCode, type]);
 
   const header = useMemo(() => {
     if (isRunning)
@@ -264,16 +273,17 @@ export const CodeExecutor = memo(function CodeExecutor({
   }, [result, realtimeLogs]);
 
   useEffect(() => {
+    const code = getCodeFromInput(part.input);
     if (
       onResult &&
-      part.input &&
-      part.state == "input-available" &&
+      code &&
+      part.state === "input-available" &&
       !isRun.current
     ) {
       isRun.current = true;
-      menualToolCall(toAny(part.input)?.code);
+      menualToolCall(code);
     }
-  }, [part.state, !!onResult]);
+  }, [part.state, part.input, onResult, getCodeFromInput, menualToolCall]);
 
   useEffect(() => {
     if (isRunning) {
@@ -282,7 +292,7 @@ export const CodeExecutor = memo(function CodeExecutor({
     } else if (part.state.startsWith("output") && isRun.current) {
       scrollToCode();
     }
-  }, [isRunning]);
+  }, [isRunning, scrollToCode]);
 
   return (
     <div className="flex flex-col">
@@ -303,7 +313,7 @@ export const CodeExecutor = memo(function CodeExecutor({
                 </div>
                 <div
                   className="flex items-center gap-1 text-[10px] text-muted-foreground px-2 py-1 transition-all rounded-sm cursor-pointer hover:bg-input hover:text-foreground font-semibold"
-                  onClick={() => copy(toAny(part.input)?.code ?? "")}
+                  onClick={() => copy(getCodeFromInput(part.input))}
                 >
                   {copied ? (
                     <CheckIcon className="size-2" />
@@ -326,7 +336,7 @@ export const CodeExecutor = memo(function CodeExecutor({
             >
               <CodeBlock
                 className="p-4 text-[10px] overflow-x-auto"
-                code={toAny(part.input)?.code}
+                code={getCodeFromInput(part.input)}
                 lang={type}
                 fallback={fallback}
               />

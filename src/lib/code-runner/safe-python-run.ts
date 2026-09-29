@@ -105,6 +105,56 @@ function detectRequiredHandlers(code: string): string[] {
   return handlers;
 }
 
+function detectBase64Image(
+  str: string,
+): { dataUrl: string; mime: string; ext: string } | null {
+  const trimmed = str.trim();
+  if (trimmed.startsWith("data:image/")) {
+    const extMatch = trimmed.match(/^data:(image\/(\w+));base64,/);
+    const mime = extMatch?.[1] ?? "image/png";
+    const ext = extMatch?.[2] ?? "png";
+    return { dataUrl: trimmed, mime, ext };
+  }
+
+  // PNG magic bytes in base64: iVBORw0KGgo
+  if (trimmed.startsWith("iVBORw0KGgo") && trimmed.length > 80) {
+    return {
+      dataUrl: `data:image/png;base64,${trimmed}`,
+      mime: "image/png",
+      ext: "png",
+    };
+  }
+
+  // JPEG magic bytes in base64: /9j/
+  if (trimmed.startsWith("/9j/") && trimmed.length > 80) {
+    return {
+      dataUrl: `data:image/jpeg;base64,${trimmed}`,
+      mime: "image/jpeg",
+      ext: "jpeg",
+    };
+  }
+
+  // GIF magic bytes in base64: R0lGOD
+  if (trimmed.startsWith("R0lGOD") && trimmed.length > 80) {
+    return {
+      dataUrl: `data:image/gif;base64,${trimmed}`,
+      mime: "image/gif",
+      ext: "gif",
+    };
+  }
+
+  // WebP magic bytes in base64: UklGR
+  if (trimmed.startsWith("UklGR") && trimmed.length > 80) {
+    return {
+      dataUrl: `data:image/webp;base64,${trimmed}`,
+      mime: "image/webp",
+      ext: "webp",
+    };
+  }
+
+  return null;
+}
+
 const SANDBOX_URL =
   process.env.NEXT_PUBLIC_SANDBOX_RUNNER_URL ||
   "https://waspai-sandbox.antideploy.app/execute";
@@ -176,27 +226,25 @@ async function executeViaCloudSandbox({
           continue;
         }
 
-        if (trimmed.startsWith("data:image/")) {
+        const detectedImg = detectBase64Image(trimmed);
+        if (detectedImg) {
           const imgEntry: LogEntry = {
             type: "log",
-            args: [{ type: "image", value: trimmed }],
+            args: [{ type: "image", value: detectedImg.dataUrl }],
           };
           logs.push(imgEntry);
           onLog?.(imgEntry);
-          // Also emit as file card so user can download/preview
-          const extMatch = trimmed.match(/^data:(image\/\w+);base64,/);
-          const mime = extMatch?.[1] ?? "image/png";
-          const ext = mime.split("/")[1] ?? "png";
+
           const fileEntry: LogEntry = {
             type: "info",
             args: [
               {
                 type: "file",
                 value: {
-                  name: `output.${ext}`,
-                  size: Math.round((trimmed.length * 3) / 4),
-                  mime_type: mime,
-                  dataUrl: trimmed,
+                  name: `traffic_chart.${detectedImg.ext}`,
+                  size: Math.round((detectedImg.dataUrl.length * 3) / 4),
+                  mime_type: detectedImg.mime,
+                  dataUrl: detectedImg.dataUrl,
                 },
               },
             ],
@@ -362,6 +410,34 @@ export async function safePythonRun({
                   size: Math.round((base64Data.length * 3) / 4),
                   mime_type: "application/pdf",
                   dataUrl,
+                },
+              },
+            ],
+          };
+          logs.push(fileEntry);
+          onLog?.(fileEntry);
+          return;
+        }
+
+        const detectedImg = detectBase64Image(trimmed);
+        if (detectedImg) {
+          const imgEntry: LogEntry = {
+            type: "log",
+            args: [{ type: "image", value: detectedImg.dataUrl }],
+          };
+          logs.push(imgEntry);
+          onLog?.(imgEntry);
+
+          const fileEntry: LogEntry = {
+            type: "info",
+            args: [
+              {
+                type: "file",
+                value: {
+                  name: `traffic_chart.${detectedImg.ext}`,
+                  size: Math.round((detectedImg.dataUrl.length * 3) / 4),
+                  mime_type: detectedImg.mime,
+                  dataUrl: detectedImg.dataUrl,
                 },
               },
             ],

@@ -9,8 +9,16 @@ export const pythonExecutionSchema: JSONSchema7 = {
       type: "string",
       description: `Execute Python code in an isolated execution sandbox with full internet access and disk storage.\n\nKey capabilities:\n- Web & APIs: httpx, requests, beautifulsoup4 (scrape any URL, download web images with follow_redirects=True).\n- Document & Media Generation: reportlab (build multi-page PDFs, albums), pillow/PIL (crop, resize, format images), openpyxl/pandas (Excel spreadsheets & CSVs), matplotlib (charts/graphs).\n- Automatic File Harvesting: ANY file saved to disk (e.g. output.pdf, album.pdf, data.xlsx, chart.png) is automatically harvested and displayed as an interactive download card in the chat UI.\n\nTips:\n- When creating image albums or multi-page PDFs: use reportlab.pdfgen.canvas or SimpleDocTemplate, download images using httpx.get(url, follow_redirects=True), and insert them onto each page.\n- Print helpful progress logs using print().`,
     },
+    script: {
+      type: "string",
+      description: "Alternative parameter name for the Python code to execute.",
+    },
+    command: {
+      type: "string",
+      description:
+        "Alternative parameter name for the Python code or command to execute.",
+    },
   },
-  required: ["code"],
 };
 
 export const pythonExecutionTool = createTool({

@@ -1412,7 +1412,13 @@ export const ToolMessagePart = memo(
         );
       }
 
-      if (toolName === DefaultToolName.PythonExecution) {
+      if (
+        toolName === DefaultToolName.PythonExecution ||
+        toolName === "python" ||
+        toolName === "python_execution" ||
+        toolName === "run_python" ||
+        toolName === "execute_python"
+      ) {
         return (
           <CodeExecutor
             part={part}

@@ -81,6 +81,10 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   [AppDefaultToolkit.Code]: {
     [DefaultToolName.JavascriptExecution]: jsExecutionTool,
     [DefaultToolName.PythonExecution]: pythonExecutionTool,
+    python: pythonExecutionTool,
+    python_execution: pythonExecutionTool,
+    run_python: pythonExecutionTool,
+    execute_python: pythonExecutionTool,
   },
   [AppDefaultToolkit.Memory]: {
     [DefaultToolName.SaveMemory]: saveMemoryTool,
