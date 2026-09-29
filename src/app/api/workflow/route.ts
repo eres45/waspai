@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error:
-            "Workflows are a Pro/Ultra feature. Please upgrade your subscription to create custom workflows.",
+            "Workflows are a Pro/Max feature. Please upgrade your subscription to create custom workflows.",
         },
         { status: 403 },
       );
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         return Response.json(
           {
             error:
-              "You have reached the limit of 5 workflows on the Pro plan. Please upgrade to Ultra for unlimited workflows.",
+              "You have reached the limit of 5 workflows on the Pro plan. Please upgrade to Max for unlimited workflows.",
           },
           { status: 403 },
         );

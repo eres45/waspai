@@ -61,6 +61,10 @@ const PRICING = {
     USD: { monthly: 32, annual: 320 },
     INR: { monthly: 999, annual: 9990 },
   },
+  max: {
+    USD: { monthly: 32, annual: 320 },
+    INR: { monthly: 999, annual: 9990 },
+  },
 };
 
 // Auto-detect currency based on user location
@@ -99,11 +103,11 @@ export default function SubscriptionPage() {
     }).format(amount);
   };
 
-  const getPrice = (tier: "pro" | "ultra") => {
+  const getPrice = (tier: "pro" | "ultra" | "max") => {
     return PRICING[tier][currency][billingPeriod];
   };
 
-  const getSavings = (tier: "pro" | "ultra") => {
+  const getSavings = (tier: "pro" | "ultra" | "max") => {
     const monthly = PRICING[tier][currency].monthly * 12;
     const annual = PRICING[tier][currency].annual;
     const savings = monthly - annual;
@@ -179,11 +183,11 @@ export default function SubscriptionPage() {
       savings: getSavings("pro"),
     },
     {
-      id: "ultra",
-      name: "Ultra",
+      id: "max",
+      name: "Max",
       icon: Crown,
-      price: getPrice("ultra"),
-      priceRaw: PRICING.ultra[currency][billingPeriod],
+      price: getPrice("max"),
+      priceRaw: PRICING.max[currency][billingPeriod],
       description:
         "Maximum power and limits for heavy users and professionals.",
       features: [
@@ -195,7 +199,7 @@ export default function SubscriptionPage() {
           ],
         },
         {
-          category: "Ultra Studio & Features",
+          category: "Max Studio & Features",
           items: [
             "All image generation models & advanced editing tools",
             "Priority Cloud Browser",
@@ -223,17 +227,17 @@ export default function SubscriptionPage() {
           ],
         },
       ],
-      cta: "Upgrade to Ultra",
+      cta: "Upgrade to Max",
       highlighted: false,
-      savings: getSavings("ultra"),
+      savings: getSavings("max"),
     },
   ];
 
   const handleUpgrade = (planId: string) => {
     if (planId === "pro") {
       window.location.href = "/checkout/pro";
-    } else if (planId === "ultra") {
-      window.location.href = "/checkout/ultra";
+    } else if (planId === "max" || planId === "ultra") {
+      window.location.href = "/checkout/max";
     }
   };
 
@@ -393,8 +397,8 @@ export default function SubscriptionPage() {
                       <p className="text-sm text-muted-foreground mt-2">
                         or{" "}
                         {formatPrice(
-                          PRICING[plan.id as "pro" | "ultra"][currency].annual /
-                            12,
+                          PRICING[plan.id as "pro" | "ultra" | "max"][currency]
+                            .annual / 12,
                         )}
                         /mo billed annually
                       </p>
@@ -505,7 +509,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How do I contact support?",
-    a: "Pro & Ultra subscribers get priority email support and live chat. Free users can reach us via community forums or our contact page. We typically respond within a few hours.",
+    a: "Pro & Max subscribers get priority email support and live chat. Free users can reach us via community forums or our contact page. We typically respond within a few hours.",
   },
 ];
 

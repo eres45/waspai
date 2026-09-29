@@ -59,8 +59,8 @@ const plans = [
     badge: "Most Popular",
   },
   {
-    id: "ultra",
-    name: "Ultra",
+    id: "max",
+    name: "Max",
     icon: Crown,
     price: { monthly: "32", annual: "320" },
     period: "/mo",
@@ -75,7 +75,7 @@ const plans = [
       "Priority support & dedicated assistance",
       "Early access to new features",
     ],
-    cta: "Upgrade to Ultra",
+    cta: "Upgrade to Max",
     highlighted: false,
   },
 ];
@@ -187,8 +187,8 @@ export function Pricing() {
                     onClick={() => {
                       if (plan.id === "pro")
                         window.location.href = "/checkout/pro";
-                      else if (plan.id === "ultra")
-                        window.location.href = "/checkout/ultra";
+                      else if (plan.id === "max" || plan.id === "ultra")
+                        window.location.href = "/checkout/max";
                       else window.location.href = "/auth";
                     }}
                     className={cn(

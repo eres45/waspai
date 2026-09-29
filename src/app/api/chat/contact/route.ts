@@ -63,14 +63,14 @@ Wasp AI is a unified AI interface that gives users access to 20+ frontier models
 |-------|-------------|----------------|
 | Free  | $0/mo       | All free-tier models, limited image gen, limited memory & web search, community support |
 | Pro   | $10/mo (USD) / ₹399/mo (INR) | All advanced Pro models, unlimited web search & code execution, unlimited file uploads, MCP Servers, long-term memory, limited agents & workflows, priority email support |
-| Ultra | $32/mo (USD) / ₹999/mo (INR) | All Frontier & Reasoning models (top priority), video & music generation, unlimited workflows/agents/storage, dedicated support, early feature access |
+| Max   | $32/mo (USD) / ₹999/mo (INR) | All Frontier & Reasoning models (top priority), video & music generation, unlimited workflows/agents/storage, dedicated support, early feature access |
 
 Annual billing saves 17%. Currency auto-detected (USD / INR).
 
 ## Model Access (examples)
 - **Free**: Llama 3.1 8B, Gemma 2, Phi-4, Qwen 2.5
 - **Pro**: Claude 3.5 Sonnet, GPT-4o Mini, Gemini Flash, Llama 4 Maverick, DeepSeek V3
-- **Ultra**: Claude 3 Opus, GPT-4o, Gemini Pro, DeepSeek R1, Llama 3.1 405B, QWQ Reasoning
+- **Max**: Claude 3 Opus, GPT-4o, Gemini Pro, DeepSeek R1, Llama 3.1 405B, QWQ Reasoning
 
 ## Key Features
 - **Long-term Memory** – AI remembers preferences & past sessions
@@ -79,8 +79,8 @@ Annual billing saves 17%. Currency auto-detected (USD / INR).
 - **Code Executor** – Sandboxed JS & Python execution in real-time
 - **Web Search** – Real-time search, YouTube analysis, MCP integration
 - **Image Gen** – Flux, SDXL, and advanced editing (background removal, 4K upscale)
-- **Video/Music Gen** – Ultra plan exclusive
-- **File Support** – PDF, documents, images (Pro/Ultra unlimited)
+- **Video/Music Gen** – Max plan exclusive
+- **File Support** – PDF, documents, images (Pro/Max unlimited)
 - **OCR** – High-fidelity text extraction from images & PDFs
 
 ## Navigation (use these @tags in replies to help users navigate)

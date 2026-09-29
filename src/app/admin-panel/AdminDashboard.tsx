@@ -104,7 +104,12 @@ export default function AdminDashboard({
 
   // Sort active subscriptions bought
   // Order definition for tier sorting
-  const tierOrder: Record<string, number> = { ultra: 3, pro: 2, free: 1 };
+  const tierOrder: Record<string, number> = {
+    max: 3,
+    ultra: 3,
+    pro: 2,
+    free: 1,
+  };
   const sortedSubscriptions = [...stats.subscriptions].sort((a, b) => {
     if (subSort === "tier") {
       const orderA = tierOrder[a.tier.toLowerCase()] ?? 0;
@@ -121,6 +126,7 @@ export default function AdminDashboard({
 
   // Pie chart colors for subscriptions
   const COLORS = {
+    max: "#ec4899", // pink-500
     ultra: "#ec4899", // pink-500
     pro: "#3b82f6", // blue-500
     free: "#6b7280", // gray-500
@@ -369,12 +375,14 @@ export default function AdminDashboard({
                       const percentage = Math.round(
                         (s.count / totalSubscribers) * 100,
                       );
-                      const colorClass =
-                        s.tier.toLowerCase() === "ultra"
-                          ? "bg-pink-500 text-pink-400"
-                          : s.tier.toLowerCase() === "pro"
-                            ? "bg-blue-500 text-blue-400"
-                            : "bg-[#71717a] text-[#a1a1aa]";
+                      const isMax =
+                        s.tier.toLowerCase() === "max" ||
+                        s.tier.toLowerCase() === "ultra";
+                      const colorClass = isMax
+                        ? "bg-pink-500 text-pink-400"
+                        : s.tier.toLowerCase() === "pro"
+                          ? "bg-blue-500 text-blue-400"
+                          : "bg-[#71717a] text-[#a1a1aa]";
 
                       return (
                         <div key={s.tier} className="space-y-1.5">
@@ -913,6 +921,7 @@ function UsersTable({ users }: { users: User[] }) {
                 <td className="py-3 px-3">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                      u.tier?.toLowerCase() === "max" ||
                       u.tier?.toLowerCase() === "ultra"
                         ? "bg-pink-500/10 text-pink-400 border border-pink-500/20"
                         : u.tier?.toLowerCase() === "pro"
@@ -920,7 +929,9 @@ function UsersTable({ users }: { users: User[] }) {
                           : "bg-[#27272a] text-[#a1a1aa] border border-transparent"
                     }`}
                   >
-                    {u.tier || "free"}
+                    {u.tier?.toLowerCase() === "ultra"
+                      ? "max"
+                      : u.tier || "free"}
                   </span>
                 </td>
                 <td className="py-3 px-3">
@@ -1168,8 +1179,8 @@ function UsersManagement() {
               <option value="pro" className="bg-[#18181b]">
                 Pro
               </option>
-              <option value="ultra" className="bg-[#18181b]">
-                Ultra
+              <option value="max" className="bg-[#18181b]">
+                Max
               </option>
             </select>
           </div>
@@ -1319,7 +1330,7 @@ function UsersManagement() {
                       >
                         <option value="free">free</option>
                         <option value="pro">pro</option>
-                        <option value="ultra">ultra</option>
+                        <option value="max">max</option>
                       </select>
                     </td>
                     {/* Status */}

@@ -70,7 +70,7 @@ describe("Workflow API POST endpoint", () => {
     const response = await POST(request);
     expect(response.status).toBe(403);
     const json = await response.json();
-    expect(json.error).toContain("Workflows are a Pro/Ultra feature");
+    expect(json.error).toContain("Workflows are a Pro/Max feature");
   });
 
   it("should return 403 limit warning for pro users exceeding 5 workflows", async () => {
@@ -123,24 +123,27 @@ describe("Workflow API POST endpoint", () => {
     expect(workflowRepository.save).toHaveBeenCalled();
   });
 
-  it("should allow ultra users unlimited workflows", async () => {
-    vi.mocked(getSession).mockResolvedValue({
-      user: { id: "user-1", tier: "ultra" },
-    } as any);
-    vi.mocked(canCreateWorkflow).mockResolvedValue(true);
-    vi.mocked(workflowRepository.save).mockResolvedValue({
-      id: "wf10",
-      name: "Test",
-    } as any);
+  it("should allow max and ultra users unlimited workflows", async () => {
+    for (const tier of ["max", "ultra"]) {
+      vi.clearAllMocks();
+      vi.mocked(getSession).mockResolvedValue({
+        user: { id: "user-1", tier },
+      } as any);
+      vi.mocked(canCreateWorkflow).mockResolvedValue(true);
+      vi.mocked(workflowRepository.save).mockResolvedValue({
+        id: "wf10",
+        name: "Test",
+      } as any);
 
-    const request = new Request("http://localhost/api/workflow", {
-      method: "POST",
-      body: JSON.stringify({ name: "Test Workflow" }),
-    });
+      const request = new Request("http://localhost/api/workflow", {
+        method: "POST",
+        body: JSON.stringify({ name: "Test Workflow" }),
+      });
 
-    const response = await POST(request);
-    expect(response.status).toBe(200);
-    expect(workflowRepository.save).toHaveBeenCalled();
-    expect(workflowRepository.selectAll).not.toHaveBeenCalled();
+      const response = await POST(request);
+      expect(response.status).toBe(200);
+      expect(workflowRepository.save).toHaveBeenCalled();
+      expect(workflowRepository.selectAll).not.toHaveBeenCalled();
+    }
   });
 });

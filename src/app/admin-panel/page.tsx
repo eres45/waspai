@@ -82,7 +82,7 @@ async function getDashboardStats() {
     // 3. Fetch subscription counts (safely fallback if SQL migration hasn't been executed yet)
     let freeCount = totalUsers ?? 0;
     let proCount = 0;
-    let ultraCount = 0;
+    let maxCount = 0;
 
     const { count: dbFreeCount, error: subError } = await supabaseRest
       .from("user")
@@ -91,7 +91,7 @@ async function getDashboardStats() {
 
     if (!subError) {
       freeCount = dbFreeCount ?? 0;
-      const [proRes, ultraRes] = await Promise.all([
+      const [proRes, ultraRes, maxRes] = await Promise.all([
         supabaseRest
           .from("user")
           .select("id", { count: "exact", head: true })
@@ -100,9 +100,13 @@ async function getDashboardStats() {
           .from("user")
           .select("id", { count: "exact", head: true })
           .eq("tier", "ultra"),
+        supabaseRest
+          .from("user")
+          .select("id", { count: "exact", head: true })
+          .eq("tier", "max"),
       ]);
       proCount = proRes.count ?? 0;
-      ultraCount = ultraRes.count ?? 0;
+      maxCount = (ultraRes.count ?? 0) + (maxRes.count ?? 0);
     }
 
     // 4. Fetch recent users list
@@ -236,7 +240,7 @@ async function getDashboardStats() {
       subscriptions: [
         { tier: "free", count: freeCount },
         { tier: "pro", count: proCount },
-        { tier: "ultra", count: ultraCount },
+        { tier: "max", count: maxCount },
       ],
       analytics: {
         registrations: registrationsOverTime,

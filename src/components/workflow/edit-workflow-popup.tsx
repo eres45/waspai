@@ -138,10 +138,12 @@ export function EditWorkflowPopup({
     } catch (err: any) {
       const errMsg = err.message || "";
       const isWorkflowProGate =
+        errMsg.includes("Workflows are a Pro/Max feature") ||
         errMsg.includes("Workflows are a Pro/Ultra feature") ||
         errMsg.includes("upgrade your subscription to create custom workflows");
       const isWorkflowUltraGate =
         errMsg.includes("limit of 5 workflows") ||
+        errMsg.includes("upgrade to Max for unlimited workflows") ||
         errMsg.includes("upgrade to Ultra for unlimited workflows");
 
       if (isWorkflowProGate || isWorkflowUltraGate) {

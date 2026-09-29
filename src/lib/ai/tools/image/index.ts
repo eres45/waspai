@@ -47,9 +47,10 @@ export const nanoBananaTool = createTool({
     const userId = session.user.id;
     const userTier = (session.user as any).tier ?? "free";
 
-    // Enforce daily limit of 10 for Free tier users (Pro/Ultra/Admin exempt)
+    // Enforce daily limit of 10 for Free tier users (Pro/Max/Admin exempt)
     const isExempt =
       userTier === "pro" ||
+      userTier === "max" ||
       userTier === "ultra" ||
       (session.user as any)?.role === "admin";
     if (!isExempt) {

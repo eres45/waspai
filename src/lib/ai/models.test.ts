@@ -78,6 +78,7 @@ describe("customModelProvider file support metadata", () => {
       "Mistral",
       "StepFun",
       "Z-AI",
+      "NVIDIA",
     ]);
 
     const allModels = modelsInfo.flatMap((p) => p.models);
@@ -100,8 +101,8 @@ describe("customModelProvider file support metadata", () => {
     expect(modelNames).toContain("step-3.7-flash");
     expect(modelNames).toContain("glm-5.3-flash");
 
-    // Tier checks (Ultra for DuckAI models, Free for worker catalog)
-    const ultraSet = new Set([
+    // Tier checks (Max for DuckAI models, Free for worker catalog)
+    const maxSet = new Set([
       "gpt-5.6-luna",
       "gpt-5.4-mini",
       "claude-haiku-4.5",
@@ -109,9 +110,9 @@ describe("customModelProvider file support metadata", () => {
       "gemma-4-31b",
     ]);
     for (const m of allModels) {
-      if (ultraSet.has(m.name)) {
-        expect(m.tier).toBe("Ultra");
-        expect(getModelTier(m.name)).toBe("Ultra");
+      if (maxSet.has(m.name)) {
+        expect(m.tier).toBe("Max");
+        expect(getModelTier(m.name)).toBe("Max");
       } else {
         expect(m.tier).toBe("Free");
         expect(getModelTier(m.name)).toBe("Free");
@@ -459,13 +460,14 @@ describe("sanitizeMessageToolCalls", () => {
     );
   });
 
-  it("sets deepseek-v4.1-flash:free as default and configures Ultra tier models correctly", async () => {
+  it("sets deepseek-v4.1-flash:free as default and configures Max tier models correctly", async () => {
     const {
       buildDynamicModelsInfo,
       customModelProvider,
       isToolCallUnsupportedModel,
       getModelTier,
       DEFAULT_CHAT_MODEL,
+      MAX_TIER_MODELS,
       ULTRA_TIER_MODELS,
     } = modelsModule;
 
@@ -475,12 +477,12 @@ describe("sanitizeMessageToolCalls", () => {
     });
 
     const modelsInfo = await buildDynamicModelsInfo();
-    expect(modelsInfo.length).toBe(9);
+    expect(modelsInfo.length).toBe(10);
     expect(modelsInfo[0].provider).toBe("OpenAI");
     expect(modelsInfo[0].models[0].name).toBe("gpt-5.6-luna");
 
-    // Ultra tier checks for all 5 DuckAI frontier models
-    const duckAIUltraModels = [
+    // Max tier checks for all 5 DuckAI frontier models
+    const duckAIMaxModels = [
       "claude-haiku-4.5",
       "mistral-small-4",
       "gpt-5.4-mini",
@@ -488,8 +490,9 @@ describe("sanitizeMessageToolCalls", () => {
       "gemma-4-31b",
     ];
 
-    for (const m of duckAIUltraModels) {
-      expect(getModelTier(m)).toBe("Ultra");
+    for (const m of duckAIMaxModels) {
+      expect(getModelTier(m)).toBe("Max");
+      expect(MAX_TIER_MODELS.has(m)).toBe(true);
       expect(ULTRA_TIER_MODELS.has(m)).toBe(true);
     }
 

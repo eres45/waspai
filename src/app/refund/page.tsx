@@ -137,8 +137,8 @@ export default function RefundPage() {
                 </div>
                 <div className="text-neutral-400 leading-relaxed space-y-4">
                   <p>
-                    You can cancel your active subscription (Pro or Ultra) at
-                    any time.
+                    You can cancel your active subscription (Pro or Max) at any
+                    time.
                   </p>
                   <ul className="list-disc pl-6 space-y-2">
                     <li>
@@ -330,11 +330,11 @@ export default function RefundPage() {
                 </div>
                 <div className="text-neutral-400 leading-relaxed space-y-4">
                   <p>
-                    If you choose to downgrade from the Ultra tier to the Pro
-                    tier in the middle of a billing cycle:
+                    If you choose to downgrade from the Max tier to the Pro tier
+                    in the middle of a billing cycle:
                   </p>
                   <p>
-                    You will retain access to the Ultra tier features until the
+                    You will retain access to the Max tier features until the
                     end of your current cycle. At the start of the next billing
                     cycle, you will be billed the lower rate for the Pro tier,
                     and your limits will adjust accordingly. Downgrades

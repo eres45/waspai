@@ -614,23 +614,25 @@ export function AdminDashboard({
         )
       : 0;
 
-  // Number of ultra tier users in database
-  const ultraUsersCount = useMemo(() => {
-    return users.filter((u) => (u.tier as string) === "ultra").length;
+  // Number of max tier users in database
+  const maxUsersCount = useMemo(() => {
+    return users.filter(
+      (u) => (u.tier as string) === "max" || (u.tier as string) === "ultra",
+    ).length;
   }, [users]);
 
   // Pro users count
   const actualProUsers = useMemo(() => {
-    return Math.max(0, stats.proUsers - ultraUsersCount);
-  }, [stats.proUsers, ultraUsersCount]);
+    return Math.max(0, stats.proUsers - maxUsersCount);
+  }, [stats.proUsers, maxUsersCount]);
 
   // Real MRR calculated from active paying tiers and selected currency
   const calculatedMrr = useMemo(() => {
     if (revenueCurrency === "INR") {
-      return actualProUsers * 399 + ultraUsersCount * 999;
+      return actualProUsers * 399 + maxUsersCount * 999;
     }
-    return actualProUsers * 10 + ultraUsersCount * 32;
-  }, [revenueCurrency, actualProUsers, ultraUsersCount]);
+    return actualProUsers * 10 + maxUsersCount * 32;
+  }, [revenueCurrency, actualProUsers, maxUsersCount]);
 
   const realMrr = calculatedMrr;
   const currencySymbol = revenueCurrency === "INR" ? "₹" : "$";
@@ -690,7 +692,10 @@ export function AdminDashboard({
   // Paying user records from users list
   const payingUsersList = useMemo(() => {
     return users.filter(
-      (u) => u.tier === "pro" || (u.tier as string) === "ultra",
+      (u) =>
+        u.tier === "pro" ||
+        (u.tier as string) === "max" ||
+        (u.tier as string) === "ultra",
     );
   }, [users]);
 
@@ -2720,7 +2725,7 @@ export function AdminDashboard({
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                      Ultra Plan
+                      Max Plan
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-amber-500/20 text-amber-300 font-semibold">
                       {currencySymbol}
@@ -2728,7 +2733,7 @@ export function AdminDashboard({
                     </span>
                   </div>
                   <div className="mt-3 text-[30px] font-bold text-white">
-                    {ultraUsersCount}
+                    {maxUsersCount}
                   </div>
                   <p className="mt-1 text-xs text-[#a1a1aa]">
                     Frontier models, priority cloud browser, video and audio
@@ -2740,7 +2745,7 @@ export function AdminDashboard({
                   <span className="font-mono font-bold text-emerald-400">
                     {currencySymbol}
                     {(
-                      ultraUsersCount * (revenueCurrency === "INR" ? 999 : 32)
+                      maxUsersCount * (revenueCurrency === "INR" ? 999 : 32)
                     ).toLocaleString()}
                     /mo
                   </span>
@@ -2847,9 +2852,13 @@ export function AdminDashboard({
                       : users.slice(0, 5)
                     ).map((u) => {
                       const isPaying =
-                        u.tier === "pro" || (u.tier as string) === "ultra";
-                      const isUltra = (u.tier as string) === "ultra";
-                      const rate = isUltra
+                        u.tier === "pro" ||
+                        (u.tier as string) === "max" ||
+                        (u.tier as string) === "ultra";
+                      const isMax =
+                        (u.tier as string) === "max" ||
+                        (u.tier as string) === "ultra";
+                      const rate = isMax
                         ? revenueCurrency === "INR"
                           ? "₹999/mo"
                           : "$32/mo"
@@ -2885,15 +2894,15 @@ export function AdminDashboard({
                           <td className="py-3 px-3">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                isUltra
+                                isMax
                                   ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
                                   : isPaying
                                     ? "bg-orange-500/15 border border-orange-500/30 text-orange-400"
                                     : "bg-white/[0.04] text-[#a1a1aa]"
                               }`}
                             >
-                              {isUltra
-                                ? "Ultra Member"
+                              {isMax
+                                ? "Max Member"
                                 : isPaying
                                   ? "Pro Member"
                                   : "Free Prospect"}

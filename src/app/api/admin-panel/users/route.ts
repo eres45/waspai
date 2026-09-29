@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "setTier": {
-        if (!["free", "pro", "ultra"].includes(value)) {
+        if (!["free", "pro", "ultra", "max"].includes(value)) {
           return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
         }
         const { error } = await supabaseRest
@@ -132,7 +132,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (tier) {
-      query = query.eq("tier", tier);
+      if (tier === "max" || tier === "ultra") {
+        query = query.in("tier", ["max", "ultra"]);
+      } else {
+        query = query.eq("tier", tier);
+      }
     }
 
     if (status === "banned") {

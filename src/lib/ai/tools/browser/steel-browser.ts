@@ -9,6 +9,7 @@ import { getSession } from "auth/server";
 const TIER_LIMITS_SECONDS: Record<string, number> = {
   free: 5 * 60, // 300 seconds (5 minutes)
   pro: 30 * 60, // 1800 seconds (30 minutes)
+  max: 120 * 60, // 7200 seconds (2 hours)
   ultra: 120 * 60, // 7200 seconds (2 hours)
 };
 

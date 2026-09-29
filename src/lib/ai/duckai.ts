@@ -13,7 +13,7 @@ export interface DuckAIModelDef {
   label: string;
   testid: string;
   provider: "OpenAI" | "Anthropic" | "Mistral" | "Google";
-  tier: "Ultra";
+  tier: "Max";
 }
 
 export const DUCKAI_MODELS: DuckAIModelDef[] = [
@@ -23,7 +23,7 @@ export const DUCKAI_MODELS: DuckAIModelDef[] = [
     label: "5.6 Luna",
     testid: "model-picker-row-gpt-5.6-luna",
     provider: "OpenAI",
-    tier: "Ultra",
+    tier: "Max",
   },
   {
     id: "gpt-5.4-mini",
@@ -31,7 +31,7 @@ export const DUCKAI_MODELS: DuckAIModelDef[] = [
     label: "5.4 mini",
     testid: "model-picker-row-gpt-5.4-mini",
     provider: "OpenAI",
-    tier: "Ultra",
+    tier: "Max",
   },
   {
     id: "claude-haiku-4.5",
@@ -39,7 +39,7 @@ export const DUCKAI_MODELS: DuckAIModelDef[] = [
     label: "Haiku 4.5",
     testid: "model-picker-row-claude-haiku-4-5",
     provider: "Anthropic",
-    tier: "Ultra",
+    tier: "Max",
   },
   {
     id: "mistral-small-4",
@@ -47,7 +47,7 @@ export const DUCKAI_MODELS: DuckAIModelDef[] = [
     label: "Mistral Small 4",
     testid: "model-picker-row-mistral-small-2603",
     provider: "Mistral",
-    tier: "Ultra",
+    tier: "Max",
   },
   {
     id: "gemma-4-31b",
@@ -55,7 +55,7 @@ export const DUCKAI_MODELS: DuckAIModelDef[] = [
     label: "Gemma 4 31B",
     testid: "model-picker-row-tinfoil/gemma4-31b",
     provider: "Google",
-    tier: "Ultra",
+    tier: "Max",
   },
 ];
 

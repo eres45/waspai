@@ -140,27 +140,30 @@ describe("Character API POST endpoint", () => {
     expect(characterRepository.createCharacter).toHaveBeenCalled();
   });
 
-  it("should allow ultra users unlimited agents", async () => {
-    vi.mocked(getSession).mockResolvedValue({
-      user: { id: "user-1", tier: "ultra" },
-    } as any);
-    vi.mocked(characterRepository.createCharacter).mockResolvedValue({
-      id: "char100",
-      name: "Test",
-    } as any);
-
-    const request = new NextRequest("http://localhost/api/character", {
-      method: "POST",
-      body: JSON.stringify({
+  it("should allow max and ultra users unlimited agents", async () => {
+    for (const tier of ["max", "ultra"]) {
+      vi.clearAllMocks();
+      vi.mocked(getSession).mockResolvedValue({
+        user: { id: "user-1", tier },
+      } as any);
+      vi.mocked(characterRepository.createCharacter).mockResolvedValue({
+        id: "char100",
         name: "Test",
-        description: "Desc",
-        personality: "Pers",
-      }),
-    });
+      } as any);
 
-    const response = await POST(request);
-    expect(response.status).toBe(201);
-    expect(characterRepository.createCharacter).toHaveBeenCalled();
-    expect(characterRepository.getCharactersByUserId).not.toHaveBeenCalled();
+      const request = new NextRequest("http://localhost/api/character", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Test",
+          description: "Desc",
+          personality: "Pers",
+        }),
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(201);
+      expect(characterRepository.createCharacter).toHaveBeenCalled();
+      expect(characterRepository.getCharactersByUserId).not.toHaveBeenCalled();
+    }
   });
 });

@@ -330,7 +330,7 @@ export default function TermsPage() {
                 </div>
                 <div className="text-neutral-400 leading-relaxed space-y-4">
                   <p>
-                    Paid subscription plans (Pro, Ultra) are structured as
+                    Paid subscription plans (Pro, Max) are structured as
                     follows:
                   </p>
                   <ul className="list-disc pl-6 space-y-2">

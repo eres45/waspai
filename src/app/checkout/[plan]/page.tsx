@@ -32,21 +32,24 @@ export default function CheckoutPage() {
     "summary",
   );
 
+  const maxPlan = {
+    name: "Max Plan",
+    price: "₹999/mo",
+    features: [
+      "Everything in Pro",
+      "Frontier Models",
+      "Video & Voice Generation",
+    ],
+  };
+
   const PLAN_DETAILS = {
     pro: {
       name: "Pro Plan",
       price: "₹399/mo",
       features: ["Unlimited Tools", "Pro Models", "Priority Support"],
     },
-    ultra: {
-      name: "Ultra Plan",
-      price: "₹999/mo",
-      features: [
-        "Everything in Pro",
-        "Frontier Models",
-        "Video & Voice Generation",
-      ],
-    },
+    max: maxPlan,
+    ultra: maxPlan,
   };
 
   const currentPlan = PLAN_DETAILS[plan as keyof typeof PLAN_DETAILS];

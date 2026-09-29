@@ -216,7 +216,7 @@ const FAQS = [
   },
   {
     q: "How many agents can I create?",
-    a: "Free accounts can create a limited number of agents. Pro users can build up to 5 agents, while Ultra tier accounts have access to unlimited agent creations.",
+    a: "Free accounts can create a limited number of agents. Pro users can build up to 5 agents, while Max tier accounts have access to unlimited agent creations.",
   },
 ];
 
@@ -355,7 +355,7 @@ export default function AiAgentsPage() {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-purple-500/15 bg-purple-500/5 px-4.5 py-1 text-[13px] font-medium text-purple-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
             >
               <Bot className="w-3.5 h-3.5" />
-              Pro &amp; Ultra Feature
+              Pro &amp; Max Feature
             </motion.div>
 
             <motion.h1

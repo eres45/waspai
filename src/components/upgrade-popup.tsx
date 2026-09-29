@@ -102,8 +102,7 @@ export function UpgradePopup() {
             onClick={handleViewAllPlans}
             className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors flex items-center justify-center gap-1"
           >
-            Compare other plans (Ultra / Free){" "}
-            <ChevronRight className="size-3" />
+            Compare other plans (Max / Free) <ChevronRight className="size-3" />
           </Button>
         </div>
       </DialogContent>

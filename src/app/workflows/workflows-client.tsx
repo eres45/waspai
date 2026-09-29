@@ -162,7 +162,7 @@ const FAQS = [
   },
   {
     q: "Which subscription tier supports workflows?",
-    a: "Workflow creation and editor access require a Pro or Ultra subscription. Free tier accounts can execute workflows that have been shared with them.",
+    a: "Workflow creation and editor access require a Pro or Max subscription. Free tier accounts can execute workflows that have been shared with them.",
   },
 ];
 

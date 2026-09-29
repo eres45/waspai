@@ -194,12 +194,12 @@ export default function UsageLimitBestPractices() {
               </div>
             </div>
 
-            {/* Ultra Plan */}
+            {/* Max Plan */}
             <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-6 hover:border-zinc-800 transition-colors relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-800/10 rounded-full blur-2xl pointer-events-none" />
               <div className="flex items-center gap-3 mb-4">
                 <Crown className="w-5 h-5 text-zinc-300" />
-                <h3 className="text-lg font-bold text-white">Ultra Plan</h3>
+                <h3 className="text-lg font-bold text-white">Max Plan</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-4 text-xs text-zinc-400 leading-relaxed">
                 <div>

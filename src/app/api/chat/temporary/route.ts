@@ -45,7 +45,10 @@ export async function POST(request: Request) {
     const modelTier = getModelTier(chatModel?.model || "");
     const isRestricted =
       (modelTier === "Pro" && userTier === "free") ||
-      (modelTier === "Ultra" && (userTier === "free" || userTier === "pro"));
+      ((modelTier === "Max" || modelTier === "Ultra") &&
+        userTier !== "max" &&
+        userTier !== "ultra" &&
+        (session?.user as any)?.role !== "admin");
 
     if (isRestricted) {
       return new Response(

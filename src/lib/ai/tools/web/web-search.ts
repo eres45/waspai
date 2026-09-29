@@ -718,6 +718,7 @@ export const webSearchToolForWorkflow = createTool({
     const userTier = (session?.user as any)?.tier ?? "free";
     const isExempt =
       userTier === "pro" ||
+      userTier === "max" ||
       userTier === "ultra" ||
       (session?.user as any)?.role === "admin";
 
@@ -798,6 +799,7 @@ export const webSearchTool = createTool({
       const userTier = (session?.user as any)?.tier ?? "free";
       const isExempt =
         userTier === "pro" ||
+        userTier === "max" ||
         userTier === "ultra" ||
         (session?.user as any)?.role === "admin";
 

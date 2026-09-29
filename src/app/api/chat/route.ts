@@ -210,6 +210,7 @@ export async function POST(request: Request) {
       const user = await userRepository.getUserById(session.user.id);
       const isPro =
         user?.tier === "pro" ||
+        user?.tier === "max" ||
         user?.tier === "ultra" ||
         user?.role === "admin";
       const dailyCap = isPro ? 300 : 50;
@@ -405,7 +406,10 @@ export async function POST(request: Request) {
     const modelTier = getModelTier(modelToUse?.model || "");
     const isRestricted =
       (modelTier === "Pro" && userTier === "free") ||
-      (modelTier === "Ultra" && (userTier === "free" || userTier === "pro"));
+      ((modelTier === "Max" || modelTier === "Ultra") &&
+        userTier !== "max" &&
+        userTier !== "ultra" &&
+        (session?.user as any)?.role !== "admin");
 
     if (isRestricted) {
       return new Response(

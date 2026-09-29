@@ -9,15 +9,18 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || "aFwoz8pYgrF89xLrQhKP9LnO",
 });
 
+const MAX_PLAN_CONFIG = {
+  monthly: { amount: 99900, currency: "INR" }, // 999 INR in paise
+  annual: { amount: 999000, currency: "INR" }, // 9,990 INR in paise
+};
+
 const SUBSCRIPTION_PLANS = {
   pro: {
     monthly: { amount: 39900, currency: "INR" }, // 399 INR in paise
     annual: { amount: 399000, currency: "INR" }, // 3,990 INR in paise
   },
-  ultra: {
-    monthly: { amount: 99900, currency: "INR" }, // 999 INR in paise
-    annual: { amount: 999000, currency: "INR" }, // 9,990 INR in paise
-  },
+  max: MAX_PLAN_CONFIG,
+  ultra: MAX_PLAN_CONFIG,
 };
 
 export async function POST(req: NextRequest) {

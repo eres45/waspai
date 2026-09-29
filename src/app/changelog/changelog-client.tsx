@@ -130,19 +130,19 @@ const RELEASES: Release[] = [
       {
         title: "Tier-based model gating",
         description:
-          "Free users are now blocked from selecting or calling Pro/Ultra models — a focused upgrade popup with the model name surfaces instead.",
+          "Free users are now blocked from selecting or calling Pro/Max models — a focused upgrade popup with the model name surfaces instead.",
         tags: ["New", "Billing", "AI"],
       },
       {
         title: "Weekly Cloud Browser limits",
         description:
-          "Cloud Browser usage is now limited by subscription tier — 5 min (Free), 30 min (Pro), 120 min (Ultra) — tracked and enforced per week.",
+          "Cloud Browser usage is now limited by subscription tier — 5 min (Free), 30 min (Pro), 120 min (Max) — tracked and enforced per week.",
         tags: ["New", "Billing", "Web"],
       },
       {
         title: "Workflow and agent creation limits",
         description:
-          "Enforced tier-based creation caps: Free users cannot create workflows or agents; Pro gets up to 5 of each; Ultra is unlimited.",
+          "Enforced tier-based creation caps: Free users cannot create workflows or agents; Pro gets up to 5 of each; Max is unlimited.",
         tags: ["New", "Billing", "Workflows", "Agents"],
       },
       {

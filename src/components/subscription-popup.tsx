@@ -66,8 +66,8 @@ const plans = [
     savings: "60% cheaper than competitors",
   },
   {
-    id: "ultra",
-    name: "Ultra",
+    id: "max",
+    name: "Max",
     icon: Crown,
     price: "₹999",
     period: "/month",
@@ -82,7 +82,7 @@ const plans = [
       "Priority support & dedicated assistance",
       "Early access to new features",
     ],
-    cta: "Upgrade to Ultra",
+    cta: "Upgrade to Max",
     highlighted: false,
   },
 ];
@@ -99,8 +99,8 @@ export function SubscriptionPopup() {
   const handleUpgrade = (planId: string) => {
     if (planId === "pro") {
       window.location.href = "/checkout/pro";
-    } else if (planId === "ultra") {
-      window.location.href = "/checkout/ultra";
+    } else if (planId === "max" || planId === "ultra") {
+      window.location.href = "/checkout/max";
     } else {
       // Redirect to full plans page
       window.location.href = "/subscription";

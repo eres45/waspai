@@ -39,7 +39,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
   const [open, setOpen] = useState(false);
   const { data: providers } = useChatModels();
   const [model, setModel] = useState(props.currentModel);
-  const [filter, setFilter] = useState<"All" | "Free" | "Pro" | "Ultra">("All");
+  const [filter, setFilter] = useState<"All" | "Free" | "Pro" | "Max">("All");
   const { data: session } = authClient.useSession();
 
   useEffect(() => {
@@ -54,7 +54,10 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
     ?.map((provider) => ({
       ...provider,
       models: provider.models.filter(
-        (m) => filter === "All" || (m as any).tier === filter,
+        (m) =>
+          filter === "All" ||
+          (m as any).tier === filter ||
+          (filter === "Max" && (m as any).tier === "Ultra"),
       ),
     }))
     .filter((p) => p.models.length > 0);
@@ -138,9 +141,9 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       <CheckIcon className="ml-auto h-4 w-4" />
                     )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("Ultra")}>
-                    Ultra Models
-                    {filter === "Ultra" && (
+                  <DropdownMenuItem onClick={() => setFilter("Max")}>
+                    Max Models
+                    {filter === "Max" && (
                       <CheckIcon className="ml-auto h-4 w-4" />
                     )}
                   </DropdownMenuItem>
@@ -176,10 +179,13 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       onSelect={() => {
                         const modelTier = (item as any).tier || "Free";
                         const userTier = (session?.user as any)?.tier ?? "free";
+                        const isMaxModel =
+                          modelTier === "Max" || modelTier === "Ultra";
+                        const hasMaxAccess =
+                          userTier === "max" || userTier === "ultra";
                         const isRestricted =
                           (modelTier === "Pro" && userTier === "free") ||
-                          (modelTier === "Ultra" &&
-                            (userTier === "free" || userTier === "pro"));
+                          (isMaxModel && !hasMaxAccess);
 
                         if (isRestricted) {
                           setOpen(false);
@@ -219,7 +225,8 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       {(item as any).tier !== "Free" ||
                       (item as any).tier === "Free" ? (
                         <div className="relative mr-1 h-fit">
-                          {(item as any).tier === "Ultra" && (
+                          {((item as any).tier === "Max" ||
+                            (item as any).tier === "Ultra") && (
                             <div className="absolute inset-0 rounded-sm overflow-hidden p-[1px]">
                               <div className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#00000000_50%,#00000000_50%,#ffffff_100%)] opacity-100 blur-[2px]" />
                             </div>
@@ -227,12 +234,15 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                           <div
                             className={cn(
                               "relative px-1.5 py-0.5 rounded-sm text-[10px] uppercase font-semibold flex items-center justify-center backface-visible",
-                              (item as any).tier === "Ultra"
+                              (item as any).tier === "Max" ||
+                                (item as any).tier === "Ultra"
                                 ? "bg-background/90 backdrop-blur-xl text-foreground border border-transparent"
                                 : "bg-muted text-muted-foreground",
                             )}
                           >
-                            {(item as any).tier}
+                            {(item as any).tier === "Ultra"
+                              ? "Max"
+                              : (item as any).tier}
                           </div>
                         </div>
                       ) : null}

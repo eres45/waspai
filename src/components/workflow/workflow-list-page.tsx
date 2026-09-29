@@ -53,10 +53,12 @@ const createWithExample = async (exampleWorkflow: {
     const errorMsg =
       errorData.error || errorData.message || "Error creating workflow";
     const isWorkflowProGate =
+      errorMsg.includes("Workflows are a Pro/Max feature") ||
       errorMsg.includes("Workflows are a Pro/Ultra feature") ||
       errorMsg.includes("upgrade your subscription to create custom workflows");
     const isWorkflowUltraGate =
       errorMsg.includes("limit of 5 workflows") ||
+      errorMsg.includes("upgrade to Max for unlimited workflows") ||
       errorMsg.includes("upgrade to Ultra for unlimited workflows");
 
     if (isWorkflowProGate || isWorkflowUltraGate) {
