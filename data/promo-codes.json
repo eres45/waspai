@@ -1,0 +1,30 @@
+[
+  {
+    "id": "promo-seed-1",
+    "code": "WELCOME-PRO-1M",
+    "plan": "pro",
+    "durationMonths": 1,
+    "maxUses": 100,
+    "timesRedeemed": 0,
+    "isActive": true,
+    "expiresAt": null,
+    "notes": "Default community starter code",
+    "createdBy": "System",
+    "createdAt": "2026-09-29T10:42:06.186Z",
+    "updatedAt": "2026-09-29T10:42:06.187Z"
+  },
+  {
+    "id": "promo-seed-2",
+    "code": "WASP-MAX-VIP",
+    "plan": "max",
+    "durationMonths": 1,
+    "maxUses": 50,
+    "timesRedeemed": 0,
+    "isActive": true,
+    "expiresAt": null,
+    "notes": "VIP 1-Month Max Plan access voucher",
+    "createdBy": "System",
+    "createdAt": "2026-09-29T10:42:06.187Z",
+    "updatedAt": "2026-09-29T10:42:06.187Z"
+  }
+]

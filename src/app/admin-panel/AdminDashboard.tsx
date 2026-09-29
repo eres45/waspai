@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { PromoManagement } from "@/components/admin/promo-management";
 import {
   AreaChart,
   Area,
@@ -54,6 +55,7 @@ type Stats = {
 const NAV_ITEMS = [
   { id: "overview", label: "Overview", icon: "📊" },
   { id: "users", label: "Users", icon: "👥" },
+  { id: "promos", label: "Promo Codes", icon: "🎟️" },
   { id: "analytics", label: "Analytics", icon: "📈" },
   { id: "errors", label: "System Errors", icon: "⚠️" },
   { id: "status", label: "System Status", icon: "🌐" },
@@ -68,9 +70,7 @@ export default function AdminDashboard({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [tab, setTab] = useState<
-    "overview" | "users" | "analytics" | "errors" | "status"
-  >("overview");
+  const [tab, setTab] = useState<(typeof NAV_ITEMS)[number]["id"]>("overview");
   const [mounted, setMounted] = useState(false);
   const [subSort, setSubSort] = useState<"tier" | "count">("tier");
 
@@ -206,6 +206,7 @@ export default function AdminDashboard({
             <h1 className="text-xl font-semibold text-[#fafafa]">
               {tab === "overview" && "Overview"}
               {tab === "users" && "Users"}
+              {tab === "promos" && "Promo Codes & Vouchers"}
               {tab === "analytics" && "Analytics"}
               {tab === "errors" && "System Errors"}
               {tab === "status" && "System Status & Uptime"}
@@ -213,6 +214,8 @@ export default function AdminDashboard({
             <p className="text-sm text-[#a1a1aa] mt-0.5">
               {tab === "overview" && "Live metrics and active totals"}
               {tab === "users" && "User directory and system roles"}
+              {tab === "promos" &&
+                "Generate, monitor, and manage subscription promo vouchers"}
               {tab === "analytics" &&
                 "Real-time usage and traffic analytics charts"}
               {tab === "errors" &&
@@ -468,6 +471,13 @@ export default function AdminDashboard({
 
         {/* ── Users Tab ─────────────────────────────────────────────────── */}
         {tab === "users" && <UsersManagement />}
+
+        {/* ── Promos Tab ────────────────────────────────────────────────── */}
+        {tab === "promos" && (
+          <div className="animate-in fade-in duration-300">
+            <PromoManagement />
+          </div>
+        )}
 
         {/* ── Analytics Tab ─────────────────────────────────────────────── */}
         {tab === "analytics" && (

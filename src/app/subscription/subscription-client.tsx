@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Footer } from "@/components/landing/footer";
+import { PromoRedeemCard } from "@/components/subscription/promo-redeem-card";
 import {
   Select,
   SelectContent,
@@ -291,8 +292,13 @@ export default function SubscriptionPage() {
               .
             </p>
 
+            {/* Promo Code Redeem Line & Box */}
+            <div className="pt-2">
+              <PromoRedeemCard />
+            </div>
+
             {/* Billing Toggle & Currency Selector */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
               {/* Billing Period Toggle */}
               <div className="inline-flex items-center rounded-lg bg-muted p-1">
                 <button

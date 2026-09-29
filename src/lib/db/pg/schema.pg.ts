@@ -777,3 +777,57 @@ export const BrowserUsageTable = pgTable(
 );
 
 export type BrowserUsageEntity = typeof BrowserUsageTable.$inferSelect;
+
+export const PromoCodeTable = pgTable(
+  "promo_code",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    code: text("code").notNull().unique(),
+    plan: text("plan").notNull(),
+    durationMonths: integer("duration_months").notNull().default(1),
+    maxUses: integer("max_uses").notNull().default(1),
+    timesRedeemed: integer("times_redeemed").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    expiresAt: timestamp("expires_at"),
+    notes: text("notes"),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("promo_code_code_idx").on(table.code)],
+);
+
+export type PromoCodeEntity = typeof PromoCodeTable.$inferSelect;
+
+export const PromoRedemptionTable = pgTable(
+  "promo_redemption",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    promoId: uuid("promo_id").references(() => PromoCodeTable.id, {
+      onDelete: "cascade",
+    }),
+    promoCode: text("promo_code").notNull(),
+    userId: uuid("user_id").references(() => UserTable.id, {
+      onDelete: "cascade",
+    }),
+    userEmail: text("user_email").notNull(),
+    userName: text("user_name"),
+    plan: text("plan").notNull(),
+    durationMonths: integer("duration_months").notNull().default(1),
+    previousTier: text("previous_tier"),
+    newExpiresAt: timestamp("new_expires_at").notNull(),
+    redeemedAt: timestamp("redeemed_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("promo_redemption_user_id_idx").on(table.userId),
+    index("promo_redemption_promo_id_idx").on(table.promoId),
+  ],
+);
+
+export type PromoRedemptionEntity = typeof PromoRedemptionTable.$inferSelect;
