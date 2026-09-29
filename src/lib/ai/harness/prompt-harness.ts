@@ -304,6 +304,20 @@ When running Python scripts using \`python-execution\`:
 }
 
 /**
+ * Live Plan Tracker Directive (todo_write)
+ */
+export function buildTodoDirective(): string {
+  return `<live_plan_tracker_guidelines>
+For any request that involves two or more distinct steps or actions:
+1. Before doing any work, call \`todo_write\` with the complete list of planned steps — all set to "pending". This gives the user a live plan to follow.
+2. As you begin each step, call \`todo_write\` again with that step marked "in_progress" and the rest unchanged.
+3. When a step finishes, mark it "completed" and set the next step to "in_progress" in a single \`todo_write\` call.
+4. After all steps are done, call \`todo_write\` one final time with every step marked "completed".
+Keep steps concrete and action-oriented (e.g. "Search for recent AI models", "Summarize findings"). Send the ENTIRE list on every call — it replaces the previous state.
+</live_plan_tracker_guidelines>`;
+}
+
+/**
  * Output Formatting & Style Standards
  */
 export function buildFormattingDirective(
@@ -400,6 +414,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildAgentAutonomyDirective());
     sections.push(buildCodebaseDirective());
     sections.push(buildPythonDirective());
+    sections.push(buildTodoDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

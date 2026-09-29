@@ -972,6 +972,14 @@ const CodeExecutor = dynamic(
   },
 );
 
+const TodoCard = dynamic(
+  () => import("./tool-invocation/todo-card").then((mod) => mod.TodoCard),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 const ReadFileCard = dynamic(
   () =>
     import("./tool-invocation/read-file-card").then((mod) => mod.ReadFileCard),
@@ -1385,6 +1393,12 @@ export const ToolMessagePart = memo(
             instructions={inp?.instructions || out?.instructions}
           />
         );
+      }
+
+      if (toolName === "todo_write") {
+        const inp = (part as any).args || (part as any).input;
+        const todos = Array.isArray(inp?.todos) ? inp.todos : [];
+        return <TodoCard todos={todos} isExecuting={isExecuting} />;
       }
 
       if (toolName === DefaultToolName.JavascriptExecution) {
