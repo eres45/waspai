@@ -68,31 +68,71 @@ export const CodeExecutor = memo(function CodeExecutor({
   const menualToolCall = useCallback(
     async (code: string) => {
       const result = await runCode(code, type);
-      const logstring = JSON.stringify(result.logs);
+
+      // Extract generated files and sanitize logs for LLM consumption (strip massive base64)
+      const harvestedFiles: {
+        name: string;
+        size?: number;
+        mime_type?: string;
+      }[] = [];
+      const sanitizedLogs: LogEntry[] = [];
+
+      for (const log of result.logs || []) {
+        const sanitizedArgs: LogEntry["args"] = [];
+
+        for (const arg of log.args || []) {
+          if (arg.type === "file" && arg.value) {
+            harvestedFiles.push({
+              name: arg.value.name,
+              size: arg.value.size,
+              mime_type: arg.value.mime_type,
+            });
+            sanitizedArgs.push({
+              type: "data",
+              value: `[File '${arg.value.name}' (${Math.round((arg.value.size || 0) / 1024)} KB) successfully generated and presented to user with preview & download card]`,
+            });
+          } else if (arg.type === "image") {
+            sanitizedArgs.push({
+              type: "data",
+              value:
+                "[Image output rendered successfully and displayed in chat UI]",
+            });
+          } else if (arg.type === "data") {
+            const valStr = isString(arg.value)
+              ? arg.value
+              : JSON.stringify(arg.value);
+            sanitizedArgs.push({
+              type: "data",
+              value:
+                valStr.length > 2000 ? `${valStr.slice(0, 1997)}...` : valStr,
+            });
+          } else {
+            sanitizedArgs.push(arg);
+          }
+        }
+
+        sanitizedLogs.push({
+          ...log,
+          args: sanitizedArgs,
+        });
+      }
+
+      const fileNames = harvestedFiles.map((f) => f.name);
+      const guide =
+        harvestedFiles.length > 0
+          ? `Execution finished successfully. File(s) [${fileNames.join(", ")}] were automatically captured and are ALREADY displayed and presented to the user with interactive preview and download cards in the UI. The user can see and download them right now. DO NOT run another script to re-read or base64-encode these files, and DO NOT claim the files were not generated. Provide a clean summary of what was generated.`
+          : "Execution finished. Provide: 1) Main results/outputs 2) Key insights or findings 3) Error explanations if any. Don't repeat code or raw logs - interpret and summarize for the user.";
+
       onResult?.({
-        ...toAny({
-          ...result,
-          logs:
-            logstring.length > 5000
-              ? [
-                  {
-                    type: "info",
-                    args: [
-                      {
-                        type: "data",
-                        value:
-                          "Log output exceeded storage limit (10KB). Full output was displayed to user but truncated for server storage.",
-                      },
-                    ],
-                  },
-                ]
-              : result.logs,
-        }),
-        guide:
-          "Execution finished. Provide: 1) Main results/outputs 2) Key insights or findings 3) Error explanations if any. Don't repeat code or raw logs - interpret and summarize for the user.",
+        success: result.success,
+        executionTimeMs: result.executionTimeMs,
+        error: result.error,
+        filesGenerated: fileNames,
+        logs: sanitizedLogs,
+        guide,
       });
     },
-    [onResult],
+    [runCode, type, onResult],
   );
   const isRunning = useMemo(() => {
     return isExecuting || part.state.startsWith("input");

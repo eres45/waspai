@@ -203,6 +203,18 @@ export const TOOL_DOMAINS = {
       "http",
       "fetch url",
       "curl",
+      "http://",
+      "https://",
+      "www.",
+      "url",
+      "link",
+      "website",
+      "webpage",
+      "clone",
+      "replicate",
+      "screenshot",
+      "inspect page",
+      "open page",
     ],
   },
   CHAT_EXPORT: {
@@ -285,6 +297,14 @@ export function selectActiveToolsForTurn(
     if (!allTools["web-scrape"]) allTools["web-scrape"] = scraper;
     if (!allTools["web_scrape"]) allTools["web_scrape"] = scraper;
   }
+  if (allTools["steel-browser"]) {
+    const browser = allTools["steel-browser"];
+    if (!allTools["browser"]) allTools["browser"] = browser;
+    if (!allTools["steel_browser"]) allTools["steel_browser"] = browser;
+    if (!allTools["cloud_browser"]) allTools["cloud_browser"] = browser;
+    if (!allTools["web_browser"]) allTools["web_browser"] = browser;
+    if (!allTools["screenshot"]) allTools["screenshot"] = browser;
+  }
   if (allTools["generate-presentation"]) {
     if (!allTools["create-presentation"]) {
       allTools["create-presentation"] = allTools["generate-presentation"];
@@ -295,6 +315,7 @@ export function selectActiveToolsForTurn(
   }
 
   const userQuery = (context.userText || "").toLowerCase();
+  const hasUrl = /https?:\/\/[^\s]+|www\.[^\s]+/i.test(context.userText || "");
   const priorCalls = new Set(
     (context.priorToolCalls || []).map((t) => t.toLowerCase()),
   );
@@ -340,7 +361,10 @@ export function selectActiveToolsForTurn(
   }
 
   // 5. Context Triggers: Site Deployment & Skills
-  if (TOOL_DOMAINS.SITE_AND_CODE.keywords.some((k) => userQuery.includes(k))) {
+  if (
+    hasUrl ||
+    TOOL_DOMAINS.SITE_AND_CODE.keywords.some((k) => userQuery.includes(k))
+  ) {
     for (const tool of TOOL_DOMAINS.SITE_AND_CODE.tools) {
       if (allTools[tool]) activeNames.add(tool);
     }
@@ -355,6 +379,7 @@ export function selectActiveToolsForTurn(
 
   // 7. Context Triggers: Web Browser / Scraping / Youtube
   if (
+    hasUrl ||
     TOOL_DOMAINS.WEB_BROWSER_EXTRA.keywords.some((k) => userQuery.includes(k))
   ) {
     for (const tool of TOOL_DOMAINS.WEB_BROWSER_EXTRA.tools) {

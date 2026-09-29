@@ -221,9 +221,15 @@ You have persistent long-term memory across sessions (\`save_memory\`, \`update_
  */
 export function buildBrowserDirective(): string {
   return `<browser_automation_guidelines>
-- Session Continuity: When an \`activeSessionId\` exists in tool outputs, ALWAYS reuse it for subsequent actions (\`navigate\`, \`click\`, \`type\`, \`extract\`). Never call \`launch\` when an active session is already open.
-- Task Awareness: Treat follow-ups as continuations toward the user's primary browsing objective.
-- Auto-Recovery: If a session expires, automatically launch a new session and resume without unnecessary stalling.
+- Website Inspection & App/Clone Generation: When a user provides a website URL to inspect, clone, replicate, or turn into an app:
+  1. Call \`todo_write\` to set up the execution plan (e.g. 1. Open URL & capture screenshot, 2. Scrape structure & color palette, 3. Build app with html_preview).
+  2. Call \`steel-browser\` with \`action: "navigate", url: "<url>"\` to open the live site.
+  3. Call \`steel-browser\` with \`action: "screenshot"\` to capture and display a real screenshot in chat so you and the user can visually inspect it.
+  4. Call \`steel-browser\` with \`action: "extract"\` or \`scrape-web-page\` to extract the real page copy, links, and structure.
+  5. Inspect the visual tokens (exact brand colors, fonts, card layouts, navigation hierarchy).
+  6. Build the high-fidelity app/clone using \`write_site_file\` and \`html_preview\`, incorporating any requested style (e.g. native iOS feel, glassmorphism, responsive components, smooth animations).
+- Session Continuity: When an \`activeSessionId\` exists in tool outputs, ALWAYS reuse it for subsequent actions (\`navigate\`, \`screenshot\`, \`click\`, \`type\`, \`extract\`). Never call \`launch\` when an active session is already open.
+- Auto-Recovery: If a session expires, automatically launch a new session and resume without stalling.
 </browser_automation_guidelines>`;
 }
 
@@ -299,8 +305,9 @@ When working on codebases, projects, or applications:
 export function buildPythonDirective(): string {
   return `<python_file_generation_guidelines>
 When running Python scripts using \`python-execution\`:
-- File Output Rule: When generating any output (charts, PDFs, Excel files, images, data files) — ALWAYS save them to disk as named files. The platform automatically harvests saved files and presents them as interactive Download Cards with Side Panel previews. NEVER print raw base64 data or markdown image syntax to stdout.
-- Native UI: Do not fabricate markdown download links. The UI renders native file cards automatically from saved files.
+- File Output Rule: When generating any output (charts, PDFs, Excel files, images, data files) — ALWAYS save them to disk as named files (e.g. plt.savefig('chart.png')). The platform automatically harvests all saved files and immediately presents them to the user as interactive download and preview cards on the FIRST run. NEVER print raw base64 data or markdown image syntax to stdout.
+- Files Are Already Delivered: Once your script executes and saves a file, it is ALREADY visible and downloadable by the user in the UI. NEVER run a follow-up script to check \`pathlib.Path().is_file()\` or encode files to base64 — each execution runs in an isolated ephemeral environment.
+- Confirm Delivery: Simply summarize the results and inform the user that their file is ready for download in the card above.
 </python_file_generation_guidelines>`;
 }
 

@@ -5,6 +5,8 @@ import {
   MousePointer2Icon,
   LockIcon,
   UnlockIcon,
+  CameraIcon,
+  DownloadIcon,
 } from "lucide-react";
 import { memo, useMemo, useState, useCallback, useEffect } from "react";
 import { TextShimmer } from "ui/text-shimmer";
@@ -42,6 +44,23 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
     url.searchParams.set("interactive", isInteractive ? "true" : "false");
     return url.toString();
   }, [output, isInteractive]);
+
+  const input = (part.input || (part as any).args) as
+    | { action?: string; url?: string; intent?: string; selector?: string }
+    | undefined;
+
+  const screenshotSrc = useMemo(() => {
+    const out = output as any;
+    if (out?.screenshot && typeof out.screenshot === "string")
+      return out.screenshot;
+    if (out?.screenshot_base64 && typeof out.screenshot_base64 === "string") {
+      return out.screenshot_base64.startsWith("data:")
+        ? out.screenshot_base64
+        : `data:image/jpeg;base64,${out.screenshot_base64}`;
+    }
+    if (out?.image && typeof out.image === "string") return out.image;
+    return null;
+  }, [output]);
 
   const [isExpired, setIsExpired] = useState(false);
 
@@ -115,7 +134,53 @@ export const SteelBrowserPreview = memo(function SteelBrowserPreview({
     );
   }
 
+  if (screenshotSrc) {
+    return (
+      <div className="flex flex-col gap-2.5 my-3 p-3.5 bg-card/60 backdrop-blur-sm border rounded-xl shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <CameraIcon className="size-3.5 text-blue-500" />
+            <span>Screenshot Captured</span>
+            {input?.url && (
+              <span className="text-muted-foreground text-[11px] truncate max-w-[260px]">
+                · {input.url}
+              </span>
+            )}
+          </div>
+          <a
+            href={screenshotSrc}
+            download="screenshot.jpg"
+            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded bg-muted/40 hover:bg-muted font-medium"
+          >
+            <DownloadIcon className="size-3" />
+            Download
+          </a>
+        </div>
+        <div className="relative rounded-lg overflow-hidden border bg-black/5 aspect-video flex items-center justify-center group">
+          <img
+            src={screenshotSrc}
+            alt={input?.url ? `Screenshot of ${input.url}` : "Screenshot"}
+            className="w-full h-full object-cover object-top hover:object-contain transition-all duration-300"
+          />
+        </div>
+        {output?.message && (
+          <p className="text-[11px] text-muted-foreground/70 italic px-0.5">
+            {output.message}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   if (!sessionUrl) {
+    if (output?.message) {
+      return (
+        <div className="flex items-center gap-2 py-1.5 px-3 my-2 text-xs text-muted-foreground bg-muted/30 border border-border/50 rounded-lg w-fit">
+          <MonitorIcon className="size-3 text-blue-500" />
+          <span>{output.message}</span>
+        </div>
+      );
+    }
     return null;
   }
 

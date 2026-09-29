@@ -387,8 +387,11 @@ export const steelBrowserTool: Tool = {
 
         case "screenshot":
           const buffer = await page.screenshot({ type: "jpeg", quality: 80 });
-          result.screenshot_base64 = buffer.toString("base64");
-          actionMessage = `Screenshot captured.`;
+          const b64 = buffer.toString("base64");
+          result.screenshot_base64 = b64;
+          result.screenshot = `data:image/jpeg;base64,${b64}`;
+          result.image = `data:image/jpeg;base64,${b64}`;
+          actionMessage = `Screenshot captured successfully.`;
           break;
 
         case "launch":
