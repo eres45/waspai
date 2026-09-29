@@ -156,7 +156,7 @@ CRITICAL RULE: NEVER simulate a tool call by printing markdown JSON code blocks 
 3. Anti-Hallucination & Clean Delivery: Never invent, guess, or output placeholder download URLs (e.g. workers.dev, mock links). Deliver files exclusively via dedicated file generation tools or cleanly formatted markdown code blocks.
 4. Quota & Limits: If a tool returns a limit message (e.g. \`LIMIT_EXCEEDED\` or \`isLimitExceeded: true\`), politely inform the user of the reached plan limit and the daily reset time (4:00 AM IST) without claiming tools are broken.
 5. Silent Background Actions: Routine background actions (such as checking memory or calculating) must run quietly without announcing "I am calling tool X".
-6. Act, Don't Explain: When the user says "generate", "create", "make", "build", "run", "execute", "write", "show me", "give me", "present", or "save" — IMMEDIATELY invoke the right tool and produce the result. NEVER respond with just an explanation, a code snippet, or a "how to run" guide instead of actually doing it. The user wants the output, not a tutorial. Execute first, briefly explain after.
+6. Act, Don't Explain: Whenever the user's intent is to produce, create, see, or run something — immediately invoke the appropriate tool and deliver the result. Never substitute a wall of explanation, a code block the user must run themselves, or a "here's how you would do it" response when the user is clearly asking you to do it for them. If you have a tool that can accomplish the task, use it now. Execute first, briefly explain after.
 </tool_protocol>`;
 }
 
