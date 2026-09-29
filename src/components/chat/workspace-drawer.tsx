@@ -1,24 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { appStore } from "@/app/store";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useCopy } from "@/hooks/use-copy";
+import { cn } from "@/lib/utils";
 import { UIMessage } from "ai";
 import {
-  Folder,
-  FileText,
-  Download,
-  Copy,
   Check,
+  Copy,
+  Download,
   Eye,
   FileCode2,
+  FileText,
+  Folder,
   Image as ImageIcon,
   Zap,
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { appStore } from "@/app/store";
-import { useShallow } from "zustand/shallow";
-import { cn } from "@/lib/utils";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useCopy } from "@/hooks/use-copy";
+import { useShallow } from "zustand/shallow";
 
 export interface WorkspaceArtifactItem {
   id: string;
@@ -133,6 +133,70 @@ export function WorkspaceFilesDrawer({ messages }: WorkspaceDrawerProps) {
             });
           }
         }
+
+        // 4. Code runner files from output.files or output.logs
+        if (output?.files && Array.isArray(output.files)) {
+          for (const f of output.files) {
+            const path = f.name || "generated-file";
+            const ext = path.split(".").pop() || "bin";
+            if (!seenPaths.has(path)) {
+              seenPaths.add(path);
+              list.push({
+                id: `${toolCallId}-${path}`,
+                name: path,
+                path: path,
+                url: f.dataUrl || f.url,
+                content: f.content,
+                type: "download",
+                extension: ext.toUpperCase(),
+                size: f.size,
+                stepId: toolCallId,
+              });
+            }
+          }
+        }
+
+        if (output?.logs && Array.isArray(output.logs)) {
+          for (const log of output.logs) {
+            if (!log?.args) continue;
+            for (const arg of log.args) {
+              if (arg?.type === "file" && arg.value) {
+                const f = arg.value;
+                const path = f.name || "file";
+                const ext = path.split(".").pop() || "bin";
+                if (!seenPaths.has(path)) {
+                  seenPaths.add(path);
+                  list.push({
+                    id: `${toolCallId}-${path}`,
+                    name: path,
+                    path: path,
+                    url: f.dataUrl || f.url,
+                    content: f.content,
+                    type: "download",
+                    extension: ext.toUpperCase(),
+                    size: f.size,
+                    stepId: toolCallId,
+                  });
+                }
+              } else if (arg?.type === "image" && arg.value) {
+                const imgUrl = arg.value;
+                const path = `plot-${list.length + 1}.png`;
+                if (!seenPaths.has(imgUrl)) {
+                  seenPaths.add(imgUrl);
+                  list.push({
+                    id: `${toolCallId}-${list.length}`,
+                    name: "Generated Plot",
+                    path,
+                    url: imgUrl,
+                    type: "screenshot",
+                    extension: "PNG",
+                    stepId: toolCallId,
+                  });
+                }
+              }
+            }
+          }
+        }
       }
     }
 
@@ -170,6 +234,26 @@ export function WorkspaceFilesDrawer({ messages }: WorkspaceDrawerProps) {
       URL.revokeObjectURL(url);
       toast.success(`Downloaded ${item.name}`);
     }
+  };
+
+  const handlePreview = (item: WorkspaceArtifactItem) => {
+    appStoreMutate({
+      openWorkspaceDrawer: false,
+      previewFile: {
+        name: item.name,
+        url: item.url,
+        dataUrl: item.url?.startsWith("data:") ? item.url : undefined,
+        content: item.content,
+        size: item.size,
+        mimeType:
+          item.extension === "PDF"
+            ? "application/pdf"
+            : item.type === "screenshot" ||
+                ["PNG", "JPG", "JPEG", "WEBP", "GIF"].includes(item.extension)
+              ? "image/png"
+              : undefined,
+      },
+    });
   };
 
   const scrollToStep = (stepId?: string) => {
@@ -282,19 +366,23 @@ export function WorkspaceFilesDrawer({ messages }: WorkspaceDrawerProps) {
                 key={item.id}
                 className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-card/60 hover:bg-muted/30 transition-all gap-3"
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="size-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <div
+                  className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group/item"
+                  onClick={() => handlePreview(item)}
+                  title="Click to preview file"
+                >
+                  <div className="size-9 rounded-lg bg-muted flex items-center justify-center shrink-0 group-hover/item:bg-primary/10 group-hover/item:text-primary transition-colors">
                     {item.type === "screenshot" ? (
-                      <ImageIcon className="size-4.5 text-muted-foreground" />
+                      <ImageIcon className="size-4.5 text-muted-foreground group-hover/item:text-primary" />
                     ) : item.type === "download" ? (
                       <Download className="size-4.5 text-primary" />
                     ) : (
-                      <FileText className="size-4.5 text-foreground" />
+                      <FileText className="size-4.5 text-foreground group-hover/item:text-primary" />
                     )}
                   </div>
 
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-foreground truncate font-mono">
+                    <span className="text-xs font-semibold text-foreground group-hover/item:text-primary transition-colors truncate font-mono">
                       {item.name}
                     </span>
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
@@ -317,6 +405,16 @@ export function WorkspaceFilesDrawer({ messages }: WorkspaceDrawerProps) {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handlePreview(item)}
+                    title="Preview file in side panel"
+                    className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer text-[11px] flex items-center gap-1 font-medium"
+                  >
+                    <Eye className="size-3.5" />
+                    <span className="hidden sm:inline">Preview</span>
+                  </button>
+
                   {item.stepId && (
                     <button
                       type="button"
@@ -324,7 +422,6 @@ export function WorkspaceFilesDrawer({ messages }: WorkspaceDrawerProps) {
                       title="Jump to execution step"
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer text-[11px] flex items-center gap-1"
                     >
-                      <Eye className="size-3.5" />
                       <span className="hidden sm:inline">Jump</span>
                     </button>
                   )}

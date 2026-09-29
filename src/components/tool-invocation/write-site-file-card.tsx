@@ -1,28 +1,29 @@
 "use client";
 
-import { useState, useMemo, useEffect, Fragment } from "react";
-import type { JSX } from "react";
+import { appStore } from "@/app/store";
+import { useCopy } from "@/hooks/use-copy";
 import { ToolUIPart } from "ai";
+import { motion } from "framer-motion";
+import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import {
-  Copy,
   Check,
+  Copy,
   Download,
+  ExternalLink,
   Eye,
   RotateCw,
-  ExternalLink,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { Dialog, DialogContent } from "ui/dialog";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import type { JSX } from "react";
+import { jsx, jsxs } from "react/jsx-runtime";
 import {
+  type BundledLanguage,
   bundledLanguages,
   codeToHast,
-  type BundledLanguage,
 } from "shiki/bundle/web";
-import { jsx, jsxs } from "react/jsx-runtime";
-import { toJsxRuntime } from "hast-util-to-jsx-runtime";
-import { useCopy } from "@/hooks/use-copy";
-import { ActionStrip } from "./action-strip";
 import { toast } from "sonner";
+import { Dialog, DialogContent } from "ui/dialog";
+import { ActionStrip } from "./action-strip";
 
 interface WriteSiteFileCardProps {
   part: ToolUIPart;
@@ -147,6 +148,7 @@ function CodeHighlighter({ code, lang }: CodeHighlighterProps) {
 }
 
 export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
+  const appStoreMutate = appStore((state) => state.mutate);
   const { state, output, input, toolName, toolCallId } = part as any;
   const [showFull, setShowFull] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -313,8 +315,23 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
       {/* 2. File Output Card (matches index.html / Code · HTML · 10 KB with download tray) */}
       {!isLoading && (
         <div className="w-full rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:bg-card/80 transition-all p-3.5 flex items-center justify-between gap-3 shadow-xs">
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-sm font-semibold text-foreground truncate font-mono">
+          <div
+            className="flex flex-col min-w-0 flex-1 cursor-pointer group/title"
+            onClick={() => {
+              if (isHtml) {
+                setIsPreviewOpen(true);
+              } else if (fileContent) {
+                appStoreMutate({
+                  previewFile: {
+                    name: fileName,
+                    content: fileContent,
+                    size: fileSize,
+                  },
+                });
+              }
+            }}
+          >
+            <span className="text-sm font-semibold text-foreground truncate font-mono group-hover/title:text-primary transition-colors">
               {fileName}
             </span>
             <span className="text-xs text-muted-foreground mt-0.5">
@@ -330,6 +347,26 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
                 onClick={() => setIsPreviewOpen(true)}
                 title="Open live interactive preview"
                 className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+              >
+                <Eye className="size-4" />
+              </button>
+            )}
+
+            {/* Side panel preview for non-HTML files */}
+            {!isHtml && fileContent && (
+              <button
+                type="button"
+                onClick={() => {
+                  appStoreMutate({
+                    previewFile: {
+                      name: fileName,
+                      content: fileContent,
+                      size: fileSize,
+                    },
+                  });
+                }}
+                title="Preview file in side panel"
+                className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer"
               >
                 <Eye className="size-4" />
               </button>

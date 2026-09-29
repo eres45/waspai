@@ -1,20 +1,22 @@
 "use client";
 
+import { appStore } from "@/app/store";
 import { ToolUIPart } from "ai";
 import {
-  FileIcon,
-  ArrowRight,
-  Download,
-  Loader2,
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
-  Image as ImageIcon,
-  FileText,
+  Download,
+  Eye,
+  FileIcon,
   FileSpreadsheet,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "ui/button";
 import { Badge } from "ui/badge";
+import { Button } from "ui/button";
 
 interface FileConverterCardProps {
   part: ToolUIPart;
@@ -64,6 +66,7 @@ function formatSize(bytes?: number): string {
 }
 
 export function FileConverterCard({ part }: FileConverterCardProps) {
+  const appStoreMutate = appStore((state) => state.mutate);
   const input = part.input as any;
   const { state } = part;
 
@@ -224,16 +227,37 @@ export function FileConverterCard({ part }: FileConverterCardProps) {
             </Badge>
           </div>
 
-          <Button
-            size="sm"
-            className="w-full sm:w-auto h-9 gap-2 bg-primary hover:bg-primary/90 shadow-sm transition-colors text-xs font-semibold"
-            asChild
-          >
-            <a href={downloadUrl} download={finalFilename}>
-              <Download className="size-3.5" />
-              Download {targetFormat}
-            </a>
-          </Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 sm:flex-initial h-9 gap-1.5 text-xs font-semibold"
+              onClick={() => {
+                appStoreMutate({
+                  previewFile: {
+                    name: finalFilename,
+                    url: downloadUrl,
+                    size: result?.size,
+                    mimeType:
+                      targetFormat === "PDF" ? "application/pdf" : undefined,
+                  },
+                });
+              }}
+            >
+              <Eye className="size-3.5" />
+              Preview
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1 sm:flex-initial h-9 gap-2 bg-primary hover:bg-primary/90 shadow-sm transition-colors text-xs font-semibold"
+              asChild
+            >
+              <a href={downloadUrl} download={finalFilename}>
+                <Download className="size-3.5" />
+                Download {targetFormat}
+              </a>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

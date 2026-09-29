@@ -144,7 +144,48 @@ async function executeViaCloudSandbox({
     if (data.stdout) {
       const lines = data.stdout.split("\n");
       for (const line of lines) {
-        if (!line.trim()) continue;
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        // Auto-detect base64 PDF or data URLs in stdout
+        if (
+          trimmed.startsWith("data:application/pdf;base64,") ||
+          trimmed.startsWith("JVBERi0x")
+        ) {
+          const base64Data = trimmed.startsWith("data:application/pdf;base64,")
+            ? trimmed.replace("data:application/pdf;base64,", "")
+            : trimmed;
+          const dataUrl = `data:application/pdf;base64,${base64Data}`;
+          const approxSize = Math.round((base64Data.length * 3) / 4);
+          const fileEntry: LogEntry = {
+            type: "info",
+            args: [
+              {
+                type: "file",
+                value: {
+                  name: "watermarked_document.pdf",
+                  size: approxSize,
+                  mime_type: "application/pdf",
+                  dataUrl,
+                },
+              },
+            ],
+          };
+          logs.push(fileEntry);
+          onLog?.(fileEntry);
+          continue;
+        }
+
+        if (trimmed.startsWith("data:image/")) {
+          const imgEntry: LogEntry = {
+            type: "log",
+            args: [{ type: "image", value: trimmed }],
+          };
+          logs.push(imgEntry);
+          onLog?.(imgEntry);
+          continue;
+        }
+
         const entry: LogEntry = {
           type: "log",
           args: [{ type: "data", value: line }],
@@ -247,6 +288,34 @@ export async function safePythonRun({
     // Set up stdout capture
     pyodide.setStdout({
       batched: (output: string) => {
+        const trimmed = output.trim();
+        if (
+          trimmed.startsWith("data:application/pdf;base64,") ||
+          trimmed.startsWith("JVBERi0x")
+        ) {
+          const base64Data = trimmed.startsWith("data:application/pdf;base64,")
+            ? trimmed.replace("data:application/pdf;base64,", "")
+            : trimmed;
+          const dataUrl = `data:application/pdf;base64,${base64Data}`;
+          const fileEntry: LogEntry = {
+            type: "info",
+            args: [
+              {
+                type: "file",
+                value: {
+                  name: "watermarked_document.pdf",
+                  size: Math.round((base64Data.length * 3) / 4),
+                  mime_type: "application/pdf",
+                  dataUrl,
+                },
+              },
+            ],
+          };
+          logs.push(fileEntry);
+          onLog?.(fileEntry);
+          return;
+        }
+
         const type = output.startsWith("data:image/png;base64")
           ? "image"
           : "data";
@@ -279,6 +348,69 @@ export async function safePythonRun({
       setTimeout(() => reject(new Error("Timeout")), timeout),
     );
     const returnValue = await Promise.race([execution, timer]);
+
+    // Harvest any files written to Pyodide virtual filesystem
+    try {
+      if (pyodide.FS) {
+        const entries = pyodide.FS.readdir(".");
+        for (const fname of entries) {
+          if (fname === "." || fname === "..") continue;
+          const lower = fname.toLowerCase();
+          if (
+            lower.endsWith(".pdf") ||
+            lower.endsWith(".png") ||
+            lower.endsWith(".jpg") ||
+            lower.endsWith(".jpeg") ||
+            lower.endsWith(".xlsx") ||
+            lower.endsWith(".csv")
+          ) {
+            try {
+              const fileData = pyodide.FS.readFile(fname);
+              const b64 = btoa(
+                Array.from(fileData, (b: number) =>
+                  String.fromCharCode(b),
+                ).join(""),
+              );
+              let mime = "application/octet-stream";
+              if (lower.endsWith(".pdf")) mime = "application/pdf";
+              else if (lower.endsWith(".png")) mime = "image/png";
+              else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg"))
+                mime = "image/jpeg";
+              else if (lower.endsWith(".xlsx"))
+                mime =
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+              else if (lower.endsWith(".csv")) mime = "text/csv";
+
+              const dataUrl = `data:${mime};base64,${b64}`;
+              const fileEntry: LogEntry = {
+                type: "info",
+                args: [
+                  {
+                    type: "file",
+                    value: {
+                      name: fname,
+                      size: fileData.length,
+                      mime_type: mime,
+                      dataUrl,
+                    },
+                  },
+                ],
+              };
+              logs.push(fileEntry);
+              onLog?.(fileEntry);
+            } catch (readErr) {
+              console.warn(
+                "Failed reading harvested file from Pyodide:",
+                fname,
+                readErr,
+              );
+            }
+          }
+        }
+      }
+    } catch (fsErr) {
+      console.warn("Pyodide FS scanning skipped:", fsErr);
+    }
 
     return {
       success: true,

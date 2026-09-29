@@ -1,11 +1,11 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { AgentSummary } from "app-types/agent";
+import { ArchiveWithItemCount } from "app-types/archive";
 import { ChatMention, ChatModel, ChatThread } from "app-types/chat";
 import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
 import { WorkflowSummary } from "app-types/workflow";
 import { AppDefaultToolkit } from "lib/ai/tools";
-import { AgentSummary } from "app-types/agent";
-import { ArchiveWithItemCount } from "app-types/archive";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface UploadedFile {
   id: string;
@@ -79,6 +79,14 @@ export interface AppState {
   openSubscription: boolean;
   openUpgrade: boolean;
   openWorkspaceDrawer: boolean;
+  previewFile?: {
+    name: string;
+    dataUrl?: string;
+    url?: string;
+    mimeType?: string;
+    size?: number;
+    content?: string;
+  } | null;
   upgradeReason?: string;
   mcpCustomizationPopup?: MCPServerInfo & { id: string };
   temporaryChat: {
@@ -127,6 +135,7 @@ const initialState: AppState = {
   openSubscription: false,
   openUpgrade: false,
   openWorkspaceDrawer: false,
+  previewFile: null,
   upgradeReason: undefined,
   allowedAppDefaultToolkit: [
     AppDefaultToolkit.Code,

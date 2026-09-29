@@ -13,8 +13,6 @@ import {
   CheckIcon,
   ChevronRight,
   CopyIcon,
-  Download,
-  FileText,
   Loader,
   Percent,
   PlayIcon,
@@ -22,6 +20,10 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { safe } from "ts-safe";
 
+import {
+  PresentedFile,
+  PresentedFileCard,
+} from "@/components/chat/presented-file-card";
 import { CodeBlock } from "ui/CodeBlock";
 import { Skeleton } from "ui/skeleton";
 import { TextShimmer } from "ui/text-shimmer";
@@ -159,40 +161,9 @@ export const CodeExecutor = memo(function CodeExecutor({
               }
               if (arg.type == "file") {
                 const file = arg.value;
-                const formatSize = (bytes: number) => {
-                  if (!bytes) return "0 B";
-                  const k = 1024;
-                  const sizes = ["B", "KB", "MB", "GB"];
-                  const idx = Math.floor(Math.log(bytes) / Math.log(k));
-                  return `${parseFloat((bytes / Math.pow(k, idx)).toFixed(1))} ${sizes[idx]}`;
-                };
-
                 return (
-                  <div
-                    key={i}
-                    className="my-2 p-3 bg-muted/60 hover:bg-muted border border-border/80 rounded-xl flex items-center justify-between gap-3 max-w-md transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-                        <FileText className="size-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">
-                          {file.name}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {formatSize(file.size)}
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={file.dataUrl}
-                      download={file.name}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-medium transition-colors shrink-0 shadow-xs"
-                    >
-                      <Download className="size-3" />
-                      <span>Download</span>
-                    </a>
+                  <div key={i} className="my-1.5 max-w-lg">
+                    <PresentedFileCard file={file} showCategoryLabel={false} />
                   </div>
                 );
               }
@@ -276,6 +247,22 @@ export const CodeExecutor = memo(function CodeExecutor({
     );
   }, [logs, isRunning]);
 
+  const harvestedFiles = useMemo(() => {
+    const list: PresentedFile[] = [];
+    const sourceLogs = realtimeLogs.length
+      ? realtimeLogs
+      : (result?.logs ?? []);
+    for (const log of sourceLogs) {
+      if (!log.args) continue;
+      for (const arg of log.args) {
+        if (arg.type === "file" && arg.value) {
+          list.push(arg.value);
+        }
+      }
+    }
+    return list;
+  }, [result, realtimeLogs]);
+
   useEffect(() => {
     if (
       onResult &&
@@ -347,6 +334,18 @@ export const CodeExecutor = memo(function CodeExecutor({
           </div>
           {logContainer}
         </div>
+
+        {harvestedFiles.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {harvestedFiles.map((file, idx) => (
+              <PresentedFileCard
+                key={idx}
+                file={file}
+                showCategoryLabel={true}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

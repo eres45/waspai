@@ -6,10 +6,10 @@
  * and dynamically adapts prompt directives based on model cognitive profile (Reasoning vs Standard vs Voice).
  */
 
-import { format } from "date-fns";
-import type { User } from "better-auth";
 import type { Agent } from "app-types/agent";
 import type { UserPreferences } from "app-types/user";
+import type { User } from "better-auth";
+import { format } from "date-fns";
 
 export interface ModelCognitiveProfile {
   isReasoning: boolean;
@@ -292,6 +292,18 @@ When working on codebases, projects, or applications:
 }
 
 /**
+ * Python Execution & File Output Directive
+ */
+export function buildPythonDirective(): string {
+  return `<python_file_generation_guidelines>
+When running Python scripts using \`python-execution\`:
+- Automatic File Harvesting: ANY file saved to disk (e.g. \`c.save()\`, \`with open("watermarked_document.pdf", "wb") as f: f.write(pdf_bytes)\`, or \`plt.savefig("chart.png")\`) is automatically harvested and presented as an interactive File Download Card with a live Side Panel preview.
+- File Output Rule: ALWAYS save generated documents, PDFs, Excel sheets, or images directly to files on disk. NEVER print raw base64 data to stdout.
+- Native UI Cards: Do not fabricate markdown download links like \`[Download PDF](#)\` — the chat UI renders native download cards and interactive side-panel previews automatically.
+</python_file_generation_guidelines>`;
+}
+
+/**
  * Output Formatting & Style Standards
  */
 export function buildFormattingDirective(
@@ -387,6 +399,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
     sections.push(buildQrDirective());
     sections.push(buildAgentAutonomyDirective());
     sections.push(buildCodebaseDirective());
+    sections.push(buildPythonDirective());
 
     // Document Reading Context
     if (options.hasUploadedFiles) {

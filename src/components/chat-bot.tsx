@@ -1,43 +1,44 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { toast } from "sonner";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import PromptInput from "./prompt-input";
-import clsx from "clsx";
 import { appStore } from "@/app/store";
+import { useChat } from "@ai-sdk/react";
+import clsx from "clsx";
 import { cn, generateUUID, truncateString } from "lib/utils";
-import { ErrorMessage, PreviewMessage } from "./message";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { ChatGreeting } from "./chat-greeting";
+import { ErrorMessage, PreviewMessage } from "./message";
+import PromptInput from "./prompt-input";
 
-import { useShallow } from "zustand/shallow";
 import {
   DefaultChatTransport,
-  isToolUIPart,
-  lastAssistantMessageIsCompleteWithToolCalls,
   TextUIPart,
   UIMessage,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
 } from "ai";
+import { useShallow } from "zustand/shallow";
 
-import { safe } from "ts-safe";
-import { mutate } from "swr";
+import {
+  deleteThreadAction,
+  saveInterruptedMessageAction,
+} from "@/app/api/chat/actions";
+import { useGenerateThreadTitle } from "@/hooks/queries/use-generate-thread-title";
+import { useToRef } from "@/hooks/use-latest";
+import { useMounted } from "@/hooks/use-mounted";
 import {
   ChatApiSchemaRequestBody,
   ChatAttachment,
   ChatModel,
 } from "app-types/chat";
-import { useToRef } from "@/hooks/use-latest";
-import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
-import { Button } from "ui/button";
-import {
-  deleteThreadAction,
-  saveInterruptedMessageAction,
-} from "@/app/api/chat/actions";
+import { Shortcuts, isShortcutEvent } from "lib/keyboard-shortcuts";
+import { ArrowDown, ArrowUp, FilePlus, LayoutGrid, Loader } from "lucide-react";
+import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Loader, FilePlus, LayoutGrid } from "lucide-react";
-import { WorkspaceStatusDock } from "./chat/workspace-status-dock";
-import { WorkspaceFilesDrawer } from "./chat/workspace-drawer";
-import { StepProgressBanner } from "./chat/step-progress-banner";
+import { mutate } from "swr";
+import { safe } from "ts-safe";
+import { Button } from "ui/button";
 import {
   Dialog,
   DialogContent,
@@ -46,15 +47,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "ui/dialog";
-import { useTranslations } from "next-intl";
 import { Think } from "ui/think";
-import { useGenerateThreadTitle } from "@/hooks/queries/use-generate-thread-title";
-import dynamic from "next/dynamic";
-import { useMounted } from "@/hooks/use-mounted";
+import { FilePreviewSidePanel } from "./chat/file-preview-side-panel";
+import { StepProgressBanner } from "./chat/step-progress-banner";
+import { WorkspaceFilesDrawer } from "./chat/workspace-drawer";
+import { WorkspaceStatusDock } from "./chat/workspace-status-dock";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
 import { useFileDragOverlay } from "@/hooks/use-file-drag-overlay";
+import { useThreadFileUploader } from "@/hooks/use-thread-file-uploader";
+import { AnimatePresence, motion } from "framer-motion";
 
 type Props = {
   threadId: string;
@@ -99,6 +100,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
     threadImageToolModel,
     editImageState,
     voiceChat,
+    previewFile,
   ] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -112,6 +114,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
       state.threadImageToolModel,
       state.editImageState,
       state.voiceChat,
+      state.previewFile,
     ]),
   );
 
@@ -517,142 +520,158 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
   return (
     <>
       {particle}
-      <div
-        className={cn(
-          emptyMessage && "justify-center pb-24",
-          "flex flex-col min-w-0 relative h-full z-40",
-        )}
-      >
-        {isDragging && (
-          <div className="absolute inset-0 z-40 bg-background/70 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-            <div className="rounded-2xl px-6 py-5 bg-background/80 shadow-xl border border-border flex items-center gap-3">
-              <div className="rounded-full bg-primary/10 p-2 text-primary">
-                <FilePlus className="size-6" />
-              </div>
-              <span className="text-sm text-muted-foreground">
-                Drop files to upload
-              </span>
-            </div>
-          </div>
-        )}
-        {emptyMessage ? (
-          <ChatGreeting />
-        ) : (
-          <>
-            <div
-              className={"flex flex-col gap-2 overflow-y-auto pt-16 pb-6 z-10"}
-              ref={containerRef}
-              onScroll={handleScroll}
-            >
-              {messages.map((message, index) => {
-                const isLastMessage = messages.length - 1 === index;
-                return (
-                  <PreviewMessage
-                    threadId={threadId}
-                    messageIndex={index}
-                    prevMessage={messages[index - 1]}
-                    key={message.id}
-                    message={message}
-                    status={status}
-                    addToolResult={addToolResult}
-                    isLoading={isLoading || isPendingToolCall}
-                    isLastMessage={isLastMessage}
-                    setMessages={setMessages}
-                    sendMessage={sendMessage}
-                    className={
-                      isLastMessage &&
-                      message.role != "user" &&
-                      !space &&
-                      (message.parts?.length ?? 0) > 1
-                        ? "min-h-[calc(55dvh-40px)]"
-                        : ""
-                    }
-                  />
-                );
-              })}
-              {space && (
-                <>
-                  <div className="w-full mx-auto max-w-3xl px-6 relative">
-                    <div className={space == "space" ? "opacity-0" : ""}>
-                      <Think />
-                    </div>
-                  </div>
-                  <div className="min-h-[calc(55dvh-56px)]" />
-                </>
-              )}
-
-              {error && <ErrorMessage error={error} />}
-              <div className="min-w-0 min-h-52" />
-            </div>
-          </>
-        )}
-
+      <div className="flex h-full w-full overflow-hidden relative">
         <div
-          className={clsx(
-            messages.length && "absolute bottom-4 sm:bottom-8",
-            "w-full z-10",
+          className={cn(
+            emptyMessage && "justify-center pb-24",
+            "flex flex-col min-w-0 relative h-full z-30 transition-all duration-300 ease-in-out",
+            previewFile ? "w-full lg:w-[52%] xl:w-[50%]" : "w-full",
           )}
         >
-          <div className="max-w-3xl mx-auto relative flex justify-between items-center px-4 -top-2">
-            <div>
-              <button
-                type="button"
-                onClick={() => appStoreMutate({ openWorkspaceDrawer: true })}
-                title="Project Files & Workspace Artifacts"
-                className="size-7 sm:size-8 rounded-lg bg-card/80 border border-border/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shadow-xs cursor-pointer active:scale-95"
+          {isDragging && (
+            <div className="absolute inset-0 z-40 bg-background/70 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+              <div className="rounded-2xl px-6 py-5 bg-background/80 shadow-xl border border-border flex items-center gap-3">
+                <div className="rounded-full bg-primary/10 p-2 text-primary">
+                  <FilePlus className="size-6" />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  Drop files to upload
+                </span>
+              </div>
+            </div>
+          )}
+          {emptyMessage ? (
+            <ChatGreeting />
+          ) : (
+            <>
+              <div
+                className={
+                  "flex flex-col gap-2 overflow-y-auto pt-16 pb-6 z-10"
+                }
+                ref={containerRef}
+                onScroll={handleScroll}
               >
-                <LayoutGrid className="size-4 stroke-[1.75]" />
-              </button>
+                {messages.map((message, index) => {
+                  const isLastMessage = messages.length - 1 === index;
+                  return (
+                    <PreviewMessage
+                      threadId={threadId}
+                      messageIndex={index}
+                      prevMessage={messages[index - 1]}
+                      key={message.id}
+                      message={message}
+                      status={status}
+                      addToolResult={addToolResult}
+                      isLoading={isLoading || isPendingToolCall}
+                      isLastMessage={isLastMessage}
+                      setMessages={setMessages}
+                      sendMessage={sendMessage}
+                      className={
+                        isLastMessage &&
+                        message.role != "user" &&
+                        !space &&
+                        (message.parts?.length ?? 0) > 1
+                          ? "min-h-[calc(55dvh-40px)]"
+                          : ""
+                      }
+                    />
+                  );
+                })}
+                {space && (
+                  <>
+                    <div className="w-full mx-auto max-w-3xl px-6 relative">
+                      <div className={space == "space" ? "opacity-0" : ""}>
+                        <Think />
+                      </div>
+                    </div>
+                    <div className="min-h-[calc(55dvh-56px)]" />
+                  </>
+                )}
+
+                {error && <ErrorMessage error={error} />}
+                <div className="min-w-0 min-h-52" />
+              </div>
+            </>
+          )}
+
+          <div
+            className={clsx(
+              messages.length && "absolute bottom-4 sm:bottom-8",
+              "w-full z-10",
+            )}
+          >
+            <div className="max-w-3xl mx-auto relative flex justify-between items-center px-4 -top-2">
+              <div>
+                <button
+                  type="button"
+                  onClick={() => appStoreMutate({ openWorkspaceDrawer: true })}
+                  title="Project Files & Workspace Artifacts"
+                  className="size-7 sm:size-8 rounded-lg bg-card/80 border border-border/40 hover:bg-muted/70 text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <LayoutGrid className="size-4 stroke-[1.75]" />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <StepJumpButtons />
+                <ScrollToBottomButton
+                  show={!isAtBottom && messages.length > 0}
+                  onClick={scrollToBottom}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <StepJumpButtons />
-              <ScrollToBottomButton
-                show={!isAtBottom && messages.length > 0}
-                onClick={scrollToBottom}
-              />
-            </div>
+
+            <StepProgressBanner
+              messages={messages}
+              isLoading={isLoading || isPendingToolCall}
+            />
+
+            <PromptInput
+              input={input}
+              threadId={threadId}
+              sendMessageAction={sendMessage}
+              setInputAction={setInput}
+              isLoading={isLoading || isPendingToolCall}
+              onStopAction={handleStop}
+              onFocus={handleFocus}
+              isVoiceActive={voiceChat.isOpen}
+              isVoiceListening={voiceChat.isOpen}
+              onStartVoice={() => {
+                const activeAgentId = threadMentions[threadId]?.find(
+                  (m) => m.type === "agent",
+                )?.agentId;
+                appStoreMutate((prev) => ({
+                  voiceChat: {
+                    ...prev.voiceChat,
+                    isOpen: true,
+                    agentId: activeAgentId,
+                  },
+                }));
+              }}
+              onStopVoice={async () => {
+                appStoreMutate((prev) => ({
+                  voiceChat: {
+                    ...prev.voiceChat,
+                    isOpen: false,
+                  },
+                }));
+              }}
+            />
+
+            <WorkspaceStatusDock messages={messages} />
+            <WorkspaceFilesDrawer messages={messages} />
           </div>
-
-          <StepProgressBanner
-            messages={messages}
-            isLoading={isLoading || isPendingToolCall}
-          />
-
-          <PromptInput
-            input={input}
-            threadId={threadId}
-            sendMessageAction={sendMessage}
-            setInputAction={setInput}
-            isLoading={isLoading || isPendingToolCall}
-            onStopAction={handleStop}
-            onFocus={handleFocus}
-            isVoiceActive={voiceChat.isOpen}
-            isVoiceListening={voiceChat.isOpen}
-            onStartVoice={() => {
-              const activeAgentId = threadMentions[threadId]?.find(
-                (m) => m.type === "agent",
-              )?.agentId;
-              appStoreMutate((prev) => ({
-                voiceChat: {
-                  ...prev.voiceChat,
-                  isOpen: true,
-                  agentId: activeAgentId,
-                },
-              }));
-            }}
-            onStopVoice={async () => {
-              appStoreMutate((prev) => ({
-                voiceChat: {
-                  ...prev.voiceChat,
-                  isOpen: false,
-                },
-              }));
-            }}
-          />
-
-          <WorkspaceStatusDock messages={messages} />
-          <WorkspaceFilesDrawer messages={messages} />
         </div>
+
+        <AnimatePresence>
+          {previewFile && (
+            <FilePreviewSidePanel
+              file={previewFile}
+              onClose={() => appStoreMutate({ previewFile: null })}
+              className="fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-30"
+            />
+          )}
+        </AnimatePresence>
+
         <DeleteThreadPopup
           threadId={threadId}
           onClose={() => setIsDeleteThreadPopupOpen(false)}
