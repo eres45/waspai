@@ -21,6 +21,7 @@ import {
 } from "./tool-invocation/action-strip";
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { ContextCompactionPill } from "./chat/context-compaction-pill";
 import { ChatMetadata } from "app-types/chat";
 import {
   stripReasoning,
@@ -265,8 +266,13 @@ const PurePreviewMessage = ({
   }
   if (!partsForDisplay.length) return null;
 
+  const compaction = (message.metadata as ChatMetadata)?.contextCompacted;
+
   return (
     <div className="w-full mx-auto max-w-3xl px-6 group/message">
+      {compaction && (
+        <ContextCompactionPill compaction={compaction} className="mb-3" />
+      )}
       <div
         className={cn(
           "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",

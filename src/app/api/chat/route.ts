@@ -80,6 +80,7 @@ import {
   getModelContextLimit,
   truncateTextToLimit,
 } from "lib/ai/context-limits";
+import { compactConversationContext } from "lib/ai/context-compactor";
 import { compactPriorTurnToolInvocations } from "lib/ai/harness/agent-harness";
 import {
   createGatedHarnessedToolkit,
@@ -2026,11 +2027,36 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
 
                   if (remainingChars < 0) remainingChars = 0; // Safety first
 
-                  // 3. Fill History Backwards
-                  const historyMessages: any[] = [];
-                  const pastMessages = messages.slice(0, -1).reverse();
+                  // 3. Conversation Memory Compaction & Context Allocation
+                  // If the conversation thread is getting long or approaches token budget,
+                  // older turns are condensed into a high-signal digest so context is never lost.
+                  const rawHistoryAndCurrent = [
+                    ...messages.slice(0, -1),
+                    currentMessage,
+                  ];
+                  const {
+                    messages: candidateCompactedMessages,
+                    compactionInfo,
+                  } = compactConversationContext({
+                    messages: rawHistoryAndCurrent,
+                    modelId,
+                    systemPromptLength: systemPromptSize,
+                  });
 
-                  for (const msg of pastMessages) {
+                  if (compactionInfo) {
+                    metadata.contextCompacted = compactionInfo;
+                    logger.info(
+                      `Context Memory Compacted: ~${compactionInfo.originalTokens} -> ~${compactionInfo.compactedTokens} tokens (${compactionInfo.compactedMsgCount} msgs).`,
+                    );
+                  }
+
+                  // 3.1. Fit backwards within remaining character budget as an additional safety guard
+                  const historyMessages: any[] = [];
+                  const candidatePast = candidateCompactedMessages
+                    .slice(0, -1)
+                    .reverse();
+
+                  for (const msg of candidatePast) {
                     const size = estimateSize(msg);
                     if (remainingChars >= size) {
                       historyMessages.unshift(msg);
@@ -2117,7 +2143,10 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
             const uiStream = result.toUIMessageStream({
               sendReasoning: true,
               messageMetadata: ({ part }) => {
-                if (part.type == "finish") {
+                if (part.type === "start") {
+                  return metadata;
+                }
+                if (part.type === "finish") {
                   metadata.usage = part.totalUsage;
                   return metadata;
                 }

@@ -4,6 +4,13 @@ import { AllowedMCPServerZodSchema } from "./mcp";
 import { UserPreferences } from "./user";
 import { tag } from "lib/tag";
 
+export type ContextCompactionInfo = {
+  originalTokens: number;
+  compactedTokens: number;
+  compactedMsgCount: number;
+  digest?: string;
+};
+
 export type ChatMetadata = {
   usage?: LanguageModelUsage;
   chatModel?: ChatModel;
@@ -13,6 +20,7 @@ export type ChatMetadata = {
   isVoice?: boolean;
   userVoiceDuration?: string;
   assistantVoiceDuration?: string;
+  contextCompacted?: ContextCompactionInfo;
 };
 
 export type ChatModel = {
