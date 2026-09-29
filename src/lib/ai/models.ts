@@ -15,6 +15,7 @@ export const CLAUDE_WORKER_URL = MULTIMODAL_WORKER_URL;
 
 export const GROQ_WORKER_URL = "https://groq-worker.revai.workers.dev";
 export const NVIDIA_WORKER_URL =
+  process.env.NVIDIA_WORKER_URL ||
   "https://nvidia-nim-worker.hhhlproxy.workers.dev";
 
 function condenseSystemPromptForGroq(
@@ -1612,12 +1613,29 @@ const groqWorkerProvider = createOpenAICompatible({
 });
 
 // Dedicated NVIDIA NIM Worker Provider (with 4-key rotation, failover, and smart parsing)
+export const NVIDIA_DEFAULT_KEYS = [
+  "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",
+  "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",
+  "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",
+  "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",
+];
+
+export function getNvidiaKeys(): string[] {
+  const envKeys = process.env.NVIDIA_API_KEY || process.env.NVIDIA_API_KEYS;
+  if (!envKeys) return NVIDIA_DEFAULT_KEYS;
+  const split = envKeys
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  return split.length > 0 ? split : NVIDIA_DEFAULT_KEYS;
+}
+
 const nvidiaWorkerProvider = createOpenAICompatible({
   name: "NVIDIAWorker",
   apiKey: "dummy",
   baseURL: `${NVIDIA_WORKER_URL}/v1`,
   fetch: createSmartOpenAICompatibleFetch(
-    () => ["dummy"],
+    getNvidiaKeys,
     "nvidia/nemotron-3-ultra-550b-a55b",
   ),
 });
