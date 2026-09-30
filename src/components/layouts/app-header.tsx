@@ -6,9 +6,11 @@ import {
   AudioWaveformIcon,
   ChevronDown,
   ChevronLeft,
+  CreditCard,
   Folder,
   MessageCircleDashed,
   PanelLeft,
+  Settings,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -247,6 +249,7 @@ export function AppHeader() {
 
 function UserProfileDropdown() {
   const { data: session } = authClient.useSession();
+  const appStoreMutate = appStore((state) => state.mutate);
 
   if (!session?.user) return null;
 
@@ -263,10 +266,11 @@ function UserProfileDropdown() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="outline-none">
+      <DropdownMenuTrigger asChild>
         <Button
+          type="button"
           variant="ghost"
-          className="size-8 rounded-full p-0 border border-border/40 hover:border-border/80 transition-all overflow-hidden group"
+          className="size-8 rounded-full p-0 border border-border/40 hover:border-border/80 transition-all overflow-hidden group outline-none"
         >
           <Avatar className="size-full">
             <AvatarImage src={session.user.image || undefined} />
@@ -289,6 +293,27 @@ function UserProfileDropdown() {
             </p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+          onClick={() => {
+            setTimeout(() => {
+              appStoreMutate({ openUserSettings: true });
+            }, 150);
+          }}
+        >
+          <Settings className="size-4 text-foreground" />
+          <span className="text-sm font-medium">User Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link
+            href="/subscription"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
+          >
+            <CreditCard className="size-4 text-foreground" />
+            <span className="text-sm font-medium">Subscription</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 cursor-pointer transition-colors text-destructive hover:text-destructive"

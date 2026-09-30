@@ -15,6 +15,7 @@ import { useArchives } from "@/hooks/queries/use-archives";
 import { BasicUser } from "app-types/user";
 import { Shortcuts, getShortcutKeyList } from "lib/keyboard-shortcuts";
 import { getIsUserAdmin } from "lib/user/utils";
+import { generateUUID } from "lib/utils";
 import {
   FolderOpenIcon,
   FolderSearchIcon,
@@ -59,7 +60,7 @@ export function AppSidebarMenus({ user }: { user?: BasicUser }) {
                   onClick={(e) => {
                     e.preventDefault();
                     setOpenMobile(false);
-                    router.push(`/chat`);
+                    router.push(`/chat/${generateUUID()}`);
                   }}
                 >
                   <WriteIcon className="size-4" />

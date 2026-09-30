@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "ui/button";
 import {
   Download,
@@ -45,7 +45,12 @@ function SlidePreviewCard({
   isActive: boolean;
   onClick: () => void;
 }) {
-  const slideType = slide?.type || (idx === 0 ? "cover" : "bullet-list");
+  const slideType =
+    typeof slide?.type === "string"
+      ? slide.type
+      : idx === 0
+        ? "cover"
+        : "bullet-list";
   const slideTitle = slide?.title || slide?.heading || `Slide ${idx + 1}`;
   const points =
     slide?.points && Array.isArray(slide.points)
@@ -53,7 +58,11 @@ function SlidePreviewCard({
       : typeof slide?.content === "string"
         ? slide.content
             .split("\n")
-            .map((s) => s.trim().replace(/^[-*•]\s*/, ""))
+            .map((s) =>
+              typeof s === "string"
+                ? s.trim().replace(/^[-*•]\s*/, "")
+                : String(s || ""),
+            )
             .filter(Boolean)
         : Array.isArray(slide?.content)
           ? slide.content
@@ -94,7 +103,7 @@ function SlidePreviewCard({
         className="absolute bottom-1 left-1.5 text-[6px] uppercase tracking-widest font-medium opacity-50"
         style={{ color: theme.muted }}
       >
-        {slideType.replace(/-/g, " ")}
+        {typeof slideType === "string" ? slideType.replace(/-/g, " ") : ""}
       </div>
       {/* Slide title */}
       <div className="absolute inset-0 flex flex-col justify-center px-2 pt-2.5">
@@ -152,7 +161,12 @@ function SlideDetailView({
   total: number;
   theme: ReturnType<typeof resolvePresentationTheme>;
 }) {
-  const slideType = slide?.type || (idx === 0 ? "cover" : "bullet-list");
+  const slideType =
+    typeof slide?.type === "string"
+      ? slide.type
+      : idx === 0
+        ? "cover"
+        : "bullet-list";
   const slideTitle = slide?.title || slide?.heading || `Slide ${idx + 1}`;
   const points =
     slide?.points && Array.isArray(slide.points) && slide.points.length > 0
@@ -160,7 +174,11 @@ function SlideDetailView({
       : typeof slide?.content === "string"
         ? slide.content
             .split("\n")
-            .map((s) => s.trim().replace(/^[-*•]\s*/, ""))
+            .map((s) =>
+              typeof s === "string"
+                ? s.trim().replace(/^[-*•]\s*/, "")
+                : String(s || ""),
+            )
             .filter(Boolean)
         : Array.isArray(slide?.content)
           ? slide.content
@@ -549,14 +567,6 @@ export function PresentationGeneratorToolInvocation({
       setIsGenerating(false);
     }
   };
-
-  // Auto-trigger download
-  useEffect(() => {
-    if (result?.success && !hasDownloaded && !isGenerating) {
-      handleExport();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result?.success]);
 
   if (!data) return null;
 

@@ -12,6 +12,7 @@ import { SidebarHeaderShared } from "./sidebar-header";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 import { AppSidebarUser } from "./app-sidebar-user";
 import { BasicUser } from "app-types/user";
+import { generateUUID } from "lib/utils";
 
 export function AppSidebar({
   user,
@@ -26,7 +27,7 @@ export function AppSidebar({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
-        router.push("/chat");
+        router.push(`/chat/${generateUUID()}`);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -43,7 +44,7 @@ export function AppSidebar({
         href="/chat"
         enableShortcuts={true}
         onLinkClick={() => {
-          router.push("/chat");
+          router.push(`/chat/${generateUUID()}`);
         }}
       />
 

@@ -1,20 +1,15 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { generateUUID } from "lib/utils";
-import { getSession } from "auth/server";
-import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export default function ChatPage() {
+  const router = useRouter();
 
-export default async function ChatPage() {
-  console.log("[DEBUG CHAT] Getting session...");
-  const session = await getSession();
-  console.log("[DEBUG CHAT] Session result:", session);
+  useEffect(() => {
+    router.replace(`/chat/${generateUUID()}`);
+  }, [router]);
 
-  if (!session) {
-    console.log("[DEBUG CHAT] No session found, redirecting to /sign-in");
-    redirect("/sign-in");
-  }
-
-  console.log("[DEBUG CHAT] Session found, redirecting to stable new thread");
-  const id = generateUUID();
-  redirect(`/chat/${id}`);
+  return null;
 }

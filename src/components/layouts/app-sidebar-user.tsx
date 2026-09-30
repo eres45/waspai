@@ -273,11 +273,12 @@ function SelectLanguage() {
   );
   const handleOnChange = useCallback(
     (locale: string) => {
+      if (!locale || locale === currentLocale) return;
       document.cookie = `${COOKIE_KEY_LOCALE}=${locale}; path=/;`;
       mutate(locale, false);
       router.refresh();
     },
-    [mutate, router],
+    [currentLocale, mutate, router],
   );
 
   return (
@@ -292,9 +293,9 @@ function SelectLanguage() {
             {t("language")}
           </DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={currentLocale}
+            value={currentLocale || SUPPORTED_LOCALES[0].code}
             onValueChange={(val) => {
-              if (val && val !== currentLocale) {
+              if (val && currentLocale && val !== currentLocale) {
                 handleOnChange(val);
               }
             }}
