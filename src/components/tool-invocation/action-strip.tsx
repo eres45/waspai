@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useMemo } from "react";
+import { ReactNode, useState, useMemo, useEffect } from "react";
 import {
   Plus,
   Pencil,
@@ -45,6 +45,53 @@ export interface ActionStripProps {
   stepId?: string;
   className?: string;
   defaultExpanded?: boolean;
+}
+
+function AnimatedCount({
+  value,
+  prefix = "+",
+}: {
+  value: number;
+  prefix?: string;
+}) {
+  const [current, setCurrent] = useState(() => (value > 20 ? 1 : value));
+
+  useEffect(() => {
+    if (value <= 1) {
+      setCurrent(value);
+      return;
+    }
+
+    const start = 1;
+    const startTime = performance.now();
+    const duration = Math.min(800, Math.max(300, Math.log10(value) * 250));
+
+    let frameId: number;
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Fast start with smooth deceleration
+      const ease = 1 - Math.pow(1 - progress, 4);
+      const nextVal = Math.round(start + (value - start) * ease);
+      setCurrent(nextVal);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      } else {
+        setCurrent(value);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [value]);
+
+  return (
+    <span>
+      {prefix}
+      {current}
+    </span>
+  );
 }
 
 export function ActionStrip({
@@ -258,15 +305,15 @@ export function ActionStrip({
             </span>
           )}
 
-          {/* Line Diff Badges (+401 -1380) */}
+          {/* Line Diff Badges with Smooth Live Count Animation (+401 -1380) */}
           {addedLines !== undefined && addedLines > 0 && (
             <span className="text-[11px] font-mono font-medium text-emerald-500 shrink-0">
-              +{addedLines}
+              <AnimatedCount value={addedLines} prefix="+" />
             </span>
           )}
           {deletedLines !== undefined && deletedLines > 0 && (
             <span className="text-[11px] font-mono font-medium text-rose-500 shrink-0">
-              -{deletedLines}
+              <AnimatedCount value={deletedLines} prefix="-" />
             </span>
           )}
         </div>

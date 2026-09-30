@@ -11,8 +11,10 @@ import {
   Download,
   ExternalLink,
   Eye,
+  Loader2,
   RotateCw,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
@@ -313,11 +315,18 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
       </ActionStrip>
 
       {/* 2. File Output Card (matches index.html / Code · HTML · 10 KB with download tray) */}
-      {!isLoading && (
-        <div className="w-full rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm hover:bg-card/80 transition-all p-3.5 flex items-center justify-between gap-3 shadow-xs">
-          <div
-            className="flex flex-col min-w-0 flex-1 cursor-pointer group/title"
-            onClick={() => {
+      <div
+        className={cn(
+          "w-full rounded-2xl border bg-card/60 backdrop-blur-sm p-3.5 flex items-center justify-between gap-3 shadow-xs transition-all",
+          isLoading
+            ? "border-primary/40 bg-card/40 animate-pulse"
+            : "border-border/60 hover:bg-card/80",
+        )}
+      >
+        <div
+          className="flex flex-col min-w-0 flex-1 cursor-pointer group/title"
+          onClick={() => {
+            if (!isLoading) {
               if (isHtml) {
                 setIsPreviewOpen(true);
               } else if (fileContent) {
@@ -329,63 +338,74 @@ export function WriteSiteFileCard({ part }: WriteSiteFileCardProps) {
                   },
                 });
               }
-            }}
-          >
+            }
+          }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            {isLoading && (
+              <Loader2 className="size-3.5 text-primary animate-spin shrink-0" />
+            )}
             <span className="text-sm font-semibold text-foreground truncate font-mono group-hover/title:text-primary transition-colors">
               {fileName}
             </span>
-            <span className="text-xs text-muted-foreground mt-0.5">
-              {category} · {ext || "FILE"} · {formatBytes(fileSize)}
-            </span>
           </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Live Preview Button for HTML files */}
-            {isHtml && fileContent && (
-              <button
-                type="button"
-                onClick={() => setIsPreviewOpen(true)}
-                title="Open live interactive preview"
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-              >
-                <Eye className="size-4" />
-              </button>
+          <span className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+            {isLoading ? (
+              <span className="text-primary font-medium">
+                Writing code... {addedLines > 0 ? `+${addedLines} lines` : ""}
+              </span>
+            ) : (
+              `${category} · ${ext || "FILE"} · ${formatBytes(fileSize)}`
             )}
-
-            {/* Side panel preview for non-HTML files */}
-            {!isHtml && fileContent && (
-              <button
-                type="button"
-                onClick={() => {
-                  appStoreMutate({
-                    previewFile: {
-                      name: fileName,
-                      content: fileContent,
-                      size: fileSize,
-                    },
-                  });
-                }}
-                title="Preview file in side panel"
-                className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer"
-              >
-                <Eye className="size-4" />
-              </button>
-            )}
-
-            {/* Download File Tray Button */}
-            {fileContent && (
-              <button
-                type="button"
-                onClick={() => downloadFile(fileName, fileContent)}
-                title="Download file"
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-              >
-                <Download className="size-4.5 stroke-[1.75]" />
-              </button>
-            )}
-          </div>
+          </span>
         </div>
-      )}
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Live Preview Button for HTML files */}
+          {isHtml && fileContent && (
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              title="Open live interactive preview"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            >
+              <Eye className="size-4" />
+            </button>
+          )}
+
+          {/* Side panel preview for non-HTML files */}
+          {!isHtml && fileContent && (
+            <button
+              type="button"
+              onClick={() => {
+                appStoreMutate({
+                  previewFile: {
+                    name: fileName,
+                    content: fileContent,
+                    size: fileSize,
+                  },
+                });
+              }}
+              title="Preview file in side panel"
+              className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+            >
+              <Eye className="size-4" />
+            </button>
+          )}
+
+          {/* Download File Tray Button */}
+          {fileContent && (
+            <button
+              type="button"
+              onClick={() => downloadFile(fileName, fileContent)}
+              title="Download file"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            >
+              <Download className="size-4.5 stroke-[1.75]" />
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* 3. Live Interactive Sandbox Preview Dialog */}
       {isHtml && fileContent && (

@@ -1481,114 +1481,195 @@ function createSmartOpenAICompatibleFetch(
       }
 
       const modelLabel = parsedBodyObj?.model || defaultModelName || json.model;
-      const chunks: string[] = [];
-      if (reasoning) {
-        chunks.push(
-          "data: " +
-            JSON.stringify({
-              id: json.id || "chatcmpl-smart",
-              object: "chat.completion.chunk",
-              created: Math.floor(Date.now() / 1000),
-              model: modelLabel,
-              choices: [
-                {
-                  index: 0,
-                  delta: { role: "assistant", reasoning_content: reasoning },
-                  finish_reason: null,
-                },
-              ],
-            }) +
-            "\n\n",
-        );
-      }
-      if (toolCalls && toolCalls.length > 0) {
-        const indexedCalls = toolCalls.map((tc: any, i: number) => ({
-          index: i,
-          id: mapToolId(tc.id, i),
-          type: tc.type || "function",
-          function: {
-            name: tc.function?.name,
-            arguments:
-              typeof tc.function?.arguments === "string"
-                ? tc.function.arguments
-                : JSON.stringify(tc.function?.arguments || {}),
-          },
-        }));
-        chunks.push(
-          "data: " +
-            JSON.stringify({
-              id: json.id || "chatcmpl-smart",
-              object: "chat.completion.chunk",
-              created: Math.floor(Date.now() / 1000),
-              model: modelLabel,
-              choices: [
-                {
-                  index: 0,
-                  delta: { role: "assistant", tool_calls: indexedCalls },
-                  finish_reason: null,
-                },
-              ],
-            }) +
-            "\n\n",
-        );
-        chunks.push(
-          "data: " +
-            JSON.stringify({
-              id: json.id || "chatcmpl-smart",
-              object: "chat.completion.chunk",
-              created: Math.floor(Date.now() / 1000),
-              model: modelLabel,
-              choices: [
-                {
-                  index: 0,
-                  delta: {},
-                  finish_reason: "tool_calls",
-                },
-              ],
-              usage: json.usage,
-            }) +
-            "\n\n",
-        );
-      } else if (effectiveContent) {
-        chunks.push(
-          "data: " +
-            JSON.stringify({
-              id: json.id || "chatcmpl-smart",
-              object: "chat.completion.chunk",
-              created: Math.floor(Date.now() / 1000),
-              model: modelLabel,
-              choices: [
-                {
-                  index: 0,
-                  delta: { role: "assistant", content: effectiveContent },
-                  finish_reason: null,
-                },
-              ],
-            }) +
-            "\n\n",
-        );
-        chunks.push(
-          "data: " +
-            JSON.stringify({
-              id: json.id || "chatcmpl-smart",
-              object: "chat.completion.chunk",
-              created: Math.floor(Date.now() / 1000),
-              model: modelLabel,
-              choices: [
-                {
-                  index: 0,
-                  delta: {},
-                  finish_reason: upstreamFinishReason || "stop",
-                },
-              ],
-              usage: json.usage,
-            }) +
-            "\n\n",
-        );
-      }
-      chunks.push("data: [DONE]\n\n");
+      const encoder = new TextEncoder();
 
-      return new Response(chunks.join(""), {
+      const sseStream = new ReadableStream({
+        async start(controller) {
+          // 1. Progressively stream reasoning tokens so thoughts animate across the screen
+          if (reasoning) {
+            const words = reasoning.split(" ");
+            const batchSize = 4;
+            for (let i = 0; i < words.length; i += batchSize) {
+              const piece =
+                words.slice(i, i + batchSize).join(" ") +
+                (i + batchSize < words.length ? " " : "");
+              controller.enqueue(
+                encoder.encode(
+                  "data: " +
+                    JSON.stringify({
+                      id: json.id || "chatcmpl-smart",
+                      object: "chat.completion.chunk",
+                      created: Math.floor(Date.now() / 1000),
+                      model: modelLabel,
+                      choices: [
+                        {
+                          index: 0,
+                          delta: {
+                            role: "assistant",
+                            reasoning_content: piece,
+                          },
+                          finish_reason: null,
+                        },
+                      ],
+                    }) +
+                    "\n\n",
+                ),
+              );
+              if (words.length > 8) {
+                await new Promise((r) => setTimeout(r, 12));
+              }
+            }
+          }
+
+          // 2. Progressively stream tool calls and arguments
+          // Emitting tool headers first followed by argument slices enables Vercel AI SDK
+          // to emit tool-input-start and tool-input-delta so the file creation card appears immediately!
+          if (toolCalls && toolCalls.length > 0) {
+            for (let i = 0; i < toolCalls.length; i++) {
+              const tc = toolCalls[i];
+              const normId = mapToolId(tc.id, i);
+              const normName = tc.function?.name;
+              const rawArgs =
+                typeof tc.function?.arguments === "string"
+                  ? tc.function.arguments
+                  : JSON.stringify(tc.function?.arguments || {});
+
+              // Emit tool header with empty arguments
+              controller.enqueue(
+                encoder.encode(
+                  "data: " +
+                    JSON.stringify({
+                      id: json.id || "chatcmpl-smart",
+                      object: "chat.completion.chunk",
+                      created: Math.floor(Date.now() / 1000),
+                      model: modelLabel,
+                      choices: [
+                        {
+                          index: 0,
+                          delta: {
+                            role: "assistant",
+                            tool_calls: [
+                              {
+                                index: i,
+                                id: normId,
+                                type: "function",
+                                function: { name: normName, arguments: "" },
+                              },
+                            ],
+                          },
+                          finish_reason: null,
+                        },
+                      ],
+                    }) +
+                    "\n\n",
+                ),
+              );
+
+              // Stream arguments in chunks with small delay
+              const chunkSize = 250;
+              for (let c = 0; c < rawArgs.length; c += chunkSize) {
+                const slice = rawArgs.slice(c, c + chunkSize);
+                controller.enqueue(
+                  encoder.encode(
+                    "data: " +
+                      JSON.stringify({
+                        id: json.id || "chatcmpl-smart",
+                        object: "chat.completion.chunk",
+                        created: Math.floor(Date.now() / 1000),
+                        model: modelLabel,
+                        choices: [
+                          {
+                            index: 0,
+                            delta: {
+                              tool_calls: [
+                                {
+                                  index: i,
+                                  function: { arguments: slice },
+                                },
+                              ],
+                            },
+                            finish_reason: null,
+                          },
+                        ],
+                      }) +
+                      "\n\n",
+                  ),
+                );
+                if (rawArgs.length > 500) {
+                  await new Promise((r) => setTimeout(r, 18));
+                }
+              }
+            }
+
+            // Finish tool calls
+            controller.enqueue(
+              encoder.encode(
+                "data: " +
+                  JSON.stringify({
+                    id: json.id || "chatcmpl-smart",
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: modelLabel,
+                    choices: [
+                      {
+                        index: 0,
+                        delta: {},
+                        finish_reason: "tool_calls",
+                      },
+                    ],
+                    usage: json.usage,
+                  }) +
+                  "\n\n",
+              ),
+            );
+          } else if (effectiveContent) {
+            controller.enqueue(
+              encoder.encode(
+                "data: " +
+                  JSON.stringify({
+                    id: json.id || "chatcmpl-smart",
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: modelLabel,
+                    choices: [
+                      {
+                        index: 0,
+                        delta: { role: "assistant", content: effectiveContent },
+                        finish_reason: null,
+                      },
+                    ],
+                  }) +
+                  "\n\n",
+              ),
+            );
+            controller.enqueue(
+              encoder.encode(
+                "data: " +
+                  JSON.stringify({
+                    id: json.id || "chatcmpl-smart",
+                    object: "chat.completion.chunk",
+                    created: Math.floor(Date.now() / 1000),
+                    model: modelLabel,
+                    choices: [
+                      {
+                        index: 0,
+                        delta: {},
+                        finish_reason: upstreamFinishReason || "stop",
+                      },
+                    ],
+                    usage: json.usage,
+                  }) +
+                  "\n\n",
+              ),
+            );
+          }
+
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        },
+      });
+
+      return new Response(sseStream, {
         status: 200,
         headers: {
           "Content-Type": "text/event-stream; charset=utf-8",
