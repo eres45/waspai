@@ -465,27 +465,40 @@ export function normalizePresentationPayload(raw: any) {
   };
 }
 
-export const presentationInputSchema = z
-  .object({
-    title: z.string().optional().describe("Overall presentation title"),
-    description: z.string().optional().describe("Brief tagline/summary"),
-    topic: z.string().optional().describe("Topic of the presentation"),
-    theme: z
-      .string()
-      .optional()
-      .describe(
-        "Aesthetic theme: bento-modern, acid-brutalist, black-gold, soft-editorial, editorial-forest, cobalt-grid, block-frame, sakura-chroma, 8-bit-orbit, broadside, emerald-editorial, studio, capsule, vellum, monochrome, neo-grid-bold, pink-script, pin-and-paper, warm-gradient, minimal-corporate, cyber-neon",
-      ),
-    slides: z
-      .array(z.any())
-      .optional()
-      .describe("Array of slides (6 to 10 slides recommended)"),
-    sections: z
-      .array(z.any())
-      .optional()
-      .describe("Alternative format: array of sections/slides"),
-  })
-  .transform((data) => normalizePresentationPayload(data));
+export const presentationInputSchema = z.object({
+  title: z.string().optional().describe("Overall presentation title"),
+  description: z.string().optional().describe("Brief tagline/summary"),
+  topic: z.string().optional().describe("Topic of the presentation"),
+  theme: z
+    .string()
+    .optional()
+    .describe(
+      "Aesthetic theme: bento-modern, acid-brutalist, black-gold, soft-editorial, editorial-forest, cobalt-grid, block-frame, sakura-chroma, 8-bit-orbit, broadside, emerald-editorial, studio, capsule, vellum, monochrome, neo-grid-bold, pink-script, pin-and-paper, warm-gradient, minimal-corporate, cyber-neon",
+    ),
+  slides: z
+    .array(z.any())
+    .optional()
+    .describe("Array of slides (6 to 10 slides recommended)"),
+  sections: z
+    .array(z.any())
+    .optional()
+    .describe("Alternative format: array of sections/slides"),
+});
+
+const origParse = presentationInputSchema.parse.bind(presentationInputSchema);
+(presentationInputSchema as any).parse = (data: any, ...rest: any[]) => {
+  const parsed = origParse(data, ...rest);
+  return normalizePresentationPayload(parsed);
+};
+
+const origSafeParse = presentationInputSchema.safeParse.bind(
+  presentationInputSchema,
+);
+(presentationInputSchema as any).safeParse = (data: any, ...rest: any[]) => {
+  const result = origSafeParse(data, ...rest);
+  if (!result.success) return result;
+  return { success: true, data: normalizePresentationPayload(result.data) };
+};
 
 export const presentationGeneratorTool = createTool({
   description:
