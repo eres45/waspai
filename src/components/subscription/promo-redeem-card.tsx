@@ -15,6 +15,9 @@ import { Input } from "@/components/ui/input";
 import { authClient } from "auth/client";
 import { toast } from "sonner";
 import Link from "next/link";
+import useSWR from "swr";
+import { fetcher } from "lib/utils";
+import type { BasicUser } from "app-types/user";
 
 interface PromoRedeemCardProps {
   onSuccess?: (plan: string) => void;
@@ -32,7 +35,15 @@ export function PromoRedeemCard({ onSuccess }: PromoRedeemCardProps) {
     expiresAt: string;
   } | null>(null);
 
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const { data: userDetails, isLoading: userDetailsLoading } =
+    useSWR<BasicUser>(isOpen ? "/api/user/details" : null, fetcher, {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+    });
+
+  const currentUser = session?.user || userDetails;
+  const isCheckingAuth = (sessionLoading || userDetailsLoading) && !currentUser;
 
   const handleRedeem = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -43,7 +54,7 @@ export function PromoRedeemCard({ onSuccess }: PromoRedeemCardProps) {
       return;
     }
 
-    if (!session?.user) {
+    if (!currentUser) {
       setError("Please sign in first to redeem a promo code on your account.");
       return;
     }
@@ -139,7 +150,12 @@ export function PromoRedeemCard({ onSuccess }: PromoRedeemCardProps) {
                 Syncing your account perks...
               </p>
             </div>
-          ) : !session?.user ? (
+          ) : isCheckingAuth ? (
+            <div className="flex flex-col items-center justify-center py-6 gap-2 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-xs">Checking account...</p>
+            </div>
+          ) : !currentUser ? (
             <div className="text-center py-2 space-y-3">
               <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 <AlertCircle className="w-4 h-4" />
