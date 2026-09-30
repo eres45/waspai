@@ -1475,7 +1475,11 @@ export const ToolMessagePart = memo(
 
       if (
         toolName === DefaultToolName.WriteSiteFile ||
-        toolName === DefaultToolName.EditSiteFile
+        toolName === DefaultToolName.EditSiteFile ||
+        toolName === "write_site_file" ||
+        toolName === "write_file" ||
+        toolName === "edit_site_file" ||
+        toolName === "edit_file"
       ) {
         return <WriteSiteFileCard part={part} />;
       }
@@ -1605,19 +1609,19 @@ export const ToolMessagePart = memo(
           detail: inp?.title || "",
         };
       }
-      if (toolName === "write_site_file") {
+      if (toolName === "write_site_file" || toolName === "write_file") {
         return {
           action: isExecuting ? "Writing file" : "Wrote file",
           detail: inp?.path || "",
         };
       }
-      if (toolName === "edit_site_file") {
+      if (toolName === "edit_site_file" || toolName === "edit_file") {
         return {
           action: isExecuting ? "Editing file" : "Edited file",
           detail: inp?.path || "",
         };
       }
-      if (toolName === "read_site_file") {
+      if (toolName === "read_site_file" || toolName === "read_file") {
         return {
           action: isExecuting ? "Reading file" : "Read file",
           detail: inp?.path || "",

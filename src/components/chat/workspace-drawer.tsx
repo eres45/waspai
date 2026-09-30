@@ -65,7 +65,12 @@ export function WorkspaceFilesDrawer({ messages }: WorkspaceDrawerProps) {
         const toolCallId = part.toolCallId || part.toolInvocation?.toolCallId;
 
         // 1. Files created/edited via write_site_file / edit_site_file
-        if (toolName === "write_site_file" || toolName === "edit_site_file") {
+        if (
+          toolName === "write_site_file" ||
+          toolName === "edit_site_file" ||
+          toolName === "write_file" ||
+          toolName === "edit_file"
+        ) {
           const path = output?.path || input?.path || "file";
           const content =
             output?.content ||

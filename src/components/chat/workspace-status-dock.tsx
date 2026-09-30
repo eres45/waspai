@@ -42,7 +42,7 @@ export function WorkspaceStatusDock({
           part.output || part.result || part.toolInvocation?.result;
         const toolCallId = part.toolCallId || part.toolInvocation?.toolCallId;
 
-        if (toolName === "write_site_file") {
+        if (toolName === "write_site_file" || toolName === "write_file") {
           const path = output?.path || input?.path || "index.html";
           const content = output?.content || input?.content || "";
           const added = content ? content.split("\n").length : 1;
@@ -57,7 +57,7 @@ export function WorkspaceStatusDock({
             type: "file",
             stepId: toolCallId,
           });
-        } else if (toolName === "edit_site_file") {
+        } else if (toolName === "edit_site_file" || toolName === "edit_file") {
           const path = output?.path || input?.path || "file";
           const added = input?.replacementContent
             ? input.replacementContent.split("\n").length

@@ -35,12 +35,15 @@ unique, visually stunning website as a single self-contained HTML file.
 - Contact/CTA
 - Footer
 
-## Output Format
+## Output Format & File Delivery (MANDATORY)
 
-Output ONLY the complete HTML file. Start with `<!DOCTYPE html>`. No
-explanation before or after.
-After generating, call `html_preview` tool with the complete HTML to show a
-live preview.
+CRITICAL: NEVER print the complete HTML code block directly as markdown text in chat.
+Always deliver the website through the workbench file tools:
+
+1. **Step 1: Write File**: Call `write_site_file` with `path: "index.html"` and the complete, self-contained HTML/Tailwind/JS code.
+   - This automatically creates the interactive file card (`index.html`, size, download button, code drawer) and registers the file in the workspace status dock.
+2. **Step 2: Live Sandbox Preview**: Call `html_preview` with the complete HTML content to open the sandboxed visual preview.
+3. Keep conversational text minimal — confirm the creation and highlight key design choices made.
 
 ## Style Seed Usage
 

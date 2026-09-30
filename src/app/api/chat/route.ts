@@ -2367,11 +2367,15 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                 break;
               }
 
-              // Wait until an actual text-delta or tool-* call arrives before committing the stream.
-              // Any preceding reasoning-start / reasoning-delta chunks remain in `buffer` and are flushed
-              // immediately once text or tool execution begins, preventing reasoning-only empty responses.
+              // Stream immediately when text-delta, tool-* execution, or reasoning begins.
+              // This allows thinking/reasoning thoughts to stream in real-time to the user interface.
               const partType = String((value as any).type || "");
-              if (partType === "text-delta" || partType.startsWith("tool-")) {
+              if (
+                partType === "text-delta" ||
+                partType.startsWith("tool-") ||
+                partType === "reasoning-delta" ||
+                partType === "reasoning-start"
+              ) {
                 hasRealContent = true;
                 break;
               }

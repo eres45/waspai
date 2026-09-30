@@ -116,10 +116,10 @@ export const getWebsiteContextTool = tool({
       instruction:
         `Website Creator mode activated. Style seed: "${selectedSeed.name}" ` +
         `(${selectedSeed.mood}). Creativity seed: ${creativitySeed}. ` +
-        `${effectNote}\n\nNow ask the user 3 quick questions before ` +
-        `generating: (1) Brand/business name, (2) which sections to include ` +
-        `(show options), (3) any specific colors or "let AI choose". ` +
-        `Then generate the complete HTML.`,
+        `${effectNote}\n\n` +
+        `Immediately generate the complete website code using \`write_site_file\` with \`path: "index.html"\`. ` +
+        `This renders the file card and live code drawer for the user. Then call \`html_preview\` to display the live interactive preview. ` +
+        `Do NOT print raw HTML code into chat text.`,
     };
   },
 });
