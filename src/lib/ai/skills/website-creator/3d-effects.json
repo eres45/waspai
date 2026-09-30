@@ -1,0 +1,110 @@
+[
+  {
+    "id": "starfield-canvas",
+    "name": "Starfield Canvas",
+    "description": "An infinite canvas starfield where stars drift past with cursor gravity pulling nearby stars and shooting stars streak across at random intervals.",
+    "implementation": "Canvas API",
+    "complexity": "high",
+    "bestFor": ["cosmic", "dark", "space", "immersive", "gaming"],
+    "aiHint": "Create a full-viewport <canvas> element with position:fixed and z-index:-1. In requestAnimationFrame loop, draw 200+ stars as white circles with varying radii. Apply cursor gravity by computing vector from each star to mouse position and nudging star velocity. Spawn shooting-star objects that travel across the canvas in ~0.8s and fade out. Reset stars that leave bounds by wrapping them to the opposite edge."
+  },
+  {
+    "id": "aurora-veil",
+    "name": "Aurora Veil",
+    "description": "Layered translucent aurora curtains in pastel greens, purples, and pinks drift vertically behind the page content like the northern lights.",
+    "implementation": "CSS animations + SVG",
+    "complexity": "medium",
+    "bestFor": ["gradient", "aurora", "nature", "mystical", "wellness"],
+    "aiHint": "Stack 4-5 full-width SVG <feTurbulence>+<feDisplacementMap> filter blobs in an absolutely positioned container. Animate each layer's translateY and opacity with different durations (12s–28s) and easing curves using CSS keyframes. Use mix-blend-mode:screen on a dark background to produce luminous aurora colors. Keep z-index below content."
+  },
+  {
+    "id": "orb-field-parallax",
+    "name": "Orb Field Parallax",
+    "description": "A depth-sorted field of translucent glass orbs of varying sizes float at different parallax speeds creating a 3D sense of layered space.",
+    "implementation": "CSS 3D transforms",
+    "complexity": "medium",
+    "bestFor": ["glassmorphism", "modern", "saas", "startup", "3d"],
+    "aiHint": "Generate 15-20 div orbs with backdrop-filter:blur, border:1px solid rgba(255,255,255,0.2), and radial-gradient backgrounds. Use CSS custom properties (--depth: 0.3 to 1.0) to set translate3d parallax offsets on scroll via a single JS listener that reads window.scrollY and applies inline transform. Larger orbs have --depth closer to 1.0 (faster) to sell the depth illusion."
+  },
+  {
+    "id": "gradient-mesh-drift",
+    "name": "Gradient Mesh Drift",
+    "description": "A soft multi-point radial gradient mesh slowly breathes and shifts hue like a living organism behind the page.",
+    "implementation": "CSS + JS",
+    "complexity": "low",
+    "bestFor": ["soft", "pastel", "minimal", "saas", "landing"],
+    "aiHint": "Place a fixed full-viewport div with a CSS background using multiple radial-gradient() layers at percentage positions. In a setInterval every 4-8 seconds, use JS to smoothly lerp the gradient center positions and hue-rotate filter (0–360deg) via CSS transitions of 6s ease-in-out. No libraries required — pure CSS property animation gives a fluid living-gradient feel."
+  },
+  {
+    "id": "neon-ribbon-flow",
+    "name": "Neon Ribbon Flow",
+    "description": "Glowing neon ribbons are drawn as animated SVG strokes that flow and undulate continuously like bioluminescent tendrils.",
+    "implementation": "SVG animated",
+    "complexity": "medium",
+    "bestFor": ["neon", "dark", "club", "nightlife", "cyberpunk"],
+    "aiHint": "Create an inline SVG with 5-8 <path> elements using sinusoidal bezier curves. Apply stroke-dasharray equal to path length and animate stroke-dashoffset from 0 to full length in 4-8s infinite loops with staggered delays. Use filter:drop-shadow(0 0 8px <neon-color>) on each path. Vary stroke colors across the accent palette and animate path d attribute slightly for organic movement using a SMIL <animateTransform> or small JS morph loop."
+  },
+  {
+    "id": "ember-drift",
+    "name": "Ember Drift",
+    "description": "Warm glowing ember particles rise slowly from the bottom of the screen, fading and flickering as they ascend through darkness.",
+    "implementation": "Canvas API",
+    "complexity": "medium",
+    "bestFor": ["warm", "dark", "cinematic", "atmospheric", "cozy"],
+    "aiHint": "Create a particle system on a full-viewport canvas. Each particle has: x (random), y (starts at bottom), vy (-0.3 to -1.5), vx (±0.2 sinusoidal drift), life (0 to 1), radius (1-3px). In the RAF loop, draw each particle as a radial gradient from rgba(255,150,50,particle.life) to transparent. Decrement life by 0.003 each frame; respawn when life<=0. Keep 60-80 particles alive simultaneously for a continuous gentle ember rise."
+  },
+  {
+    "id": "cursor-spotlight-reveal",
+    "name": "Cursor Spotlight Reveal",
+    "description": "The cursor acts as a spotlight that reveals a hidden layer beneath — text, art, or a contrasting scene is exposed only within the circular cursor radius.",
+    "implementation": "Canvas API + CSS clip-path",
+    "complexity": "high",
+    "bestFor": ["interactive", "portfolio", "reveal", "dark", "creative"],
+    "aiHint": "Stack two full-viewport layers: a dark top layer and a bright/colored bottom layer. Use CSS clip-path: circle(120px at var(--mx) var(--my)) on the top layer, updated via JS mousemove listener setting --mx and --my CSS custom properties. Add CSS transition:clip-path 0.1s ease-out for smooth cursor tracking. The bottom layer's content (alternate version of hero text/image) shows through wherever the cursor is positioned."
+  },
+  {
+    "id": "scroll-cinematic",
+    "name": "Scroll Cinematic",
+    "description": "Scroll-scrubbed cinematic scene transitions where sections enter with dramatic scale, blur, and opacity orchestrated to the scroll position.",
+    "implementation": "GSAP ScrollTrigger CDN",
+    "complexity": "high",
+    "bestFor": ["cinematic", "premium", "portfolio", "storytelling", "luxury"],
+    "aiHint": "Load GSAP and ScrollTrigger from CDN. For each section, create a ScrollTrigger timeline: pin the section, then tween from scale(1.1) blur(20px) opacity(0) to scale(1) blur(0) opacity(1) scrubbed to scroll progress. Add a parallax tween on the hero image (y: -200 over the full scroll). Use gsap.set on initial states and gsap.timeline({scrollTrigger:{trigger, start:'top top', end:'+=800', scrub:1}}) for buttery smooth cinematic feel."
+  },
+  {
+    "id": "particle-field-three",
+    "name": "Particle Field Three.js",
+    "description": "A Three.js BufferGeometry particle field of thousands of points that ripple and react to mouse movement in 3D space.",
+    "implementation": "Three.js CDN",
+    "complexity": "high",
+    "bestFor": ["3d", "tech", "saas", "dark", "immersive", "sci-fi"],
+    "aiHint": "Load Three.js from CDN. Create a WebGLRenderer (alpha:true) sized to the viewport. Build a BufferGeometry with 5000 vertices scattered in a ±15 cube. Add mouse event listener to update a target rotation offset. In the RAF loop, lerp camera or mesh rotation toward mouse target (damping 0.05). Color particles with the brand accent color using PointsMaterial with size:0.05, transparent:true. Mount the canvas as a fixed background layer."
+  },
+  {
+    "id": "terminal-typed",
+    "name": "Terminal Typed",
+    "description": "A developer-aesthetic terminal window with a blinking cursor that types out compelling copy line by line as if executing live commands.",
+    "implementation": "CSS + vanilla JS",
+    "complexity": "low",
+    "bestFor": ["developer", "tech", "open-source", "api", "devtools"],
+    "aiHint": "Build a styled div mimicking a terminal (dark background, monospace font, green/cyan text, fake terminal header with colored dots). Store an array of strings to type. Use a recursive setTimeout with a 50-80ms character interval to append each character to a <span>. After each line completes wait 400ms then start the next. Add a CSS blinking-cursor pseudo-element (animation: blink 1s step-end infinite) after the last typed character. Include fake prompt symbols ($ or >) before each line."
+  },
+  {
+    "id": "cloud-drift",
+    "name": "Cloud Drift",
+    "description": "Soft pillowy cloudscapes built from stacked blurred gradient ellipses that slowly drift horizontally across a sky gradient background.",
+    "implementation": "CSS",
+    "complexity": "low",
+    "bestFor": ["soft", "light", "airy", "calm", "travel", "kids"],
+    "aiHint": "Set the page background to a sky gradient (light blue to white). Create 8-12 cloud divs with position:absolute, each built with multiple stacked box-shadow or pseudo-element white blobs using border-radius:50% and filter:blur(8-20px). Animate each cloud div with a translateX keyframe from 110vw to -30vw at different speeds (40s–90s, infinite linear). Stagger start positions with animation-delay to ensure clouds are always visible across the sky."
+  },
+  {
+    "id": "liquid-glass-morph",
+    "name": "Liquid Glass Morph",
+    "description": "Liquid glassmorphism blobs with organic shapes morph and interpolate smoothly on hover, creating a fluid iridescent material effect.",
+    "implementation": "CSS filter + JS",
+    "complexity": "medium",
+    "bestFor": ["glassmorphism", "premium", "modern", "ui", "saas", "luxury"],
+    "aiHint": "Create 3-4 large div blobs with border-radius using 8+ control points (e.g. 60% 40% 30% 70% / 50% 60% 40% 50%). Apply backdrop-filter:blur(20px), background:rgba(255,255,255,0.12), and border:1px solid rgba(255,255,255,0.3). On page load, animate each blob's border-radius using CSS keyframes with different shapes at 0%/33%/66%/100%. On mouse hover near a blob, use JS to apply an additional rapid morph keyframe override via inline style animation-duration:0.4s. Add subtle hue-rotate animation for the iridescent sheen."
+  }
+]

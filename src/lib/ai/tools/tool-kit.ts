@@ -57,6 +57,7 @@ import { exitPlanModeTool } from "./plan-tools";
 import { askUserQuestionTool } from "./ask-user";
 import { subagentTool } from "./subagent-tool";
 import { readSpillSliceTool } from "./spill-tools";
+import { getWebsiteContextTool } from "./website-creator-tool";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -110,6 +111,7 @@ export const APP_DEFAULT_TOOL_KIT: Record<
     [DefaultToolName.AskUserQuestion]: askUserQuestionTool,
     [DefaultToolName.DelegateSubagent]: subagentTool,
     [DefaultToolName.ReadSpillSlice]: readSpillSliceTool,
+    [DefaultToolName.GetWebsiteContext]: getWebsiteContextTool,
   },
   [AppDefaultToolkit.Media]: {
     [DefaultToolName.VideoPlayer]: videoPlayerTool,

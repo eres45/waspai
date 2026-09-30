@@ -60,6 +60,7 @@ export const ALWAYS_ACTIVE_TOOLS = new Set([
   "search_skills",
   "load_skill",
   "create_skill",
+  "get_website_context",
 ]);
 
 // ─── 2. SPECIALIZED TOOLKIT DOMAINS ───────────────────────────────────────────

@@ -76,6 +76,7 @@ export enum DefaultToolName {
   AskUserQuestion = "ask_user_question",
   DelegateSubagent = "delegate_subagent",
   ReadSpillSlice = "read_spill_slice",
+  GetWebsiteContext = "get_website_context",
 }
 
 export const SequentialThinkingToolName = "sequential-thinking";
