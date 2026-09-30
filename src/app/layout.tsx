@@ -88,20 +88,30 @@ export const metadata: Metadata = {
       "Unlock the ultimate all-in-one AI companion. Chat, generate code, write, analyze files, and build projects with the world's most advanced AI models in a single workspace.",
     images: [
       {
-        url: "https://waspai.in/wasp-ai-logo.png",
-        width: 512,
-        height: 512,
-        alt: "Wasp AI Logo",
+        url: "https://waspai.in/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Wasp AI - Your All-In-One AI Workspace",
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Wasp AI | Advanced Multi-Model AI Assistant",
     description:
       "Unlock the ultimate all-in-one AI companion. Chat, generate code, write, analyze files, and build projects with the world's most advanced AI models in a single workspace.",
     creator: "@waspai",
-    images: ["https://waspai.in/wasp-ai-logo.png"],
+    images: ["https://waspai.in/og-image.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "48x48" },
+      { url: "/wasp-ai-logo.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   appleWebApp: {
     capable: true,

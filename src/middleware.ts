@@ -23,7 +23,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/site") ||
     pathname === "/favicon.ico" ||
     pathname === "/icon" ||
+    pathname === "/icon.png" ||
+    pathname === "/apple-touch-icon.png" ||
     pathname === "/wasp-ai-logo.png" ||
+    pathname === "/wasp-logo.svg" ||
+    pathname.startsWith("/wasp-") ||
+    pathname.startsWith("/icon-") ||
+    pathname === "/og-image.png" ||
+    pathname === "/logo.png" ||
     pathname === "/sitemap.xml" ||
     pathname === "/robots.txt";
 
@@ -93,6 +100,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icon|wasp-ai-logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing|subscription|contact).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon|icon.png|icon-.*|apple-touch-icon.png|wasp-.*|og-image.png|logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing|subscription|contact).*)",
   ],
 };

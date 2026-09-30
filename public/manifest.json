@@ -1,25 +1,25 @@
 {
   "name": "Wasp AI",
   "short_name": "Wasp AI",
-  "description": "Wasp AI is an intelligent chatbot that uses advanced tools to answer your questions.",
+  "description": "Unlock the ultimate all-in-one AI companion and workspace.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#000000",
-  "background_color": "#ffffff",
+  "background_color": "#09090b",
   "icons": [
     {
-      "src": "/wasp-ai-logo.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/wasp-ai-logo.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/wasp-ai-logo.png",
@@ -30,17 +30,10 @@
   ],
   "screenshots": [
     {
-      "src": "/wasp-ai-logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/wasp-ai-logo.png",
-      "sizes": "512x512",
+      "src": "/og-image.png",
+      "sizes": "1200x630",
       "type": "image/png",
       "form_factor": "wide"
     }
   ]
 }
-

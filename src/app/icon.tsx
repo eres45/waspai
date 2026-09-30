@@ -38,8 +38,6 @@ export default function Icon() {
             width: "100%",
             height: "100%",
             objectFit: "contain",
-            // Scale up to remove padding. 1.5 is a good starting point based on "looking small"
-            transform: "scale(1.5)",
           }}
         />
       </div>,
@@ -52,19 +50,20 @@ export default function Icon() {
     return new ImageResponse(
       <div
         style={{
-          fontSize: 32,
-          background: "black",
+          fontSize: 22,
+          background: "#09090b",
           width: "100%",
           height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           color: "white",
-          borderRadius: "12px",
-          fontWeight: "bold",
+          borderRadius: "10px",
+          fontWeight: "800",
+          letterSpacing: "-0.5px",
         }}
       >
-        W
+        WA
       </div>,
       {
         ...size,
