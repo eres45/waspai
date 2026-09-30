@@ -65,6 +65,12 @@ const TodoRow = memo(function TodoRow({
   const isPending = todo.status === "pending";
   const isInProgress = todo.status === "in_progress";
   const isCompleted = todo.status === "completed";
+  const contentText =
+    typeof todo.content === "string"
+      ? todo.content
+      : typeof (todo as any).text === "string"
+        ? (todo as any).text
+        : "";
 
   return (
     <motion.div
@@ -97,7 +103,7 @@ const TodoRow = memo(function TodoRow({
             className="text-sm font-medium leading-snug"
             duration={1.5}
           >
-            {todo.content}
+            {contentText}
           </TextShimmer>
         ) : (
           <span
@@ -108,7 +114,7 @@ const TodoRow = memo(function TodoRow({
               isPending && "text-muted-foreground/60",
             )}
           >
-            {todo.content}
+            {contentText}
           </span>
         )}
 
@@ -228,7 +234,15 @@ export const TodoCard = memo(function TodoCard({
       <div className="flex flex-col gap-0 px-2.5 py-2">
         <AnimatePresence initial={false}>
           {todos.map((todo, idx) => (
-            <TodoRow key={todo.id ?? todo.content} todo={todo} index={idx} />
+            <TodoRow
+              key={
+                todo.id ||
+                (typeof todo.content === "string" ? todo.content : undefined) ||
+                `todo-${idx}`
+              }
+              todo={todo}
+              index={idx}
+            />
           ))}
         </AnimatePresence>
       </div>

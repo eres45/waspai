@@ -1309,6 +1309,14 @@ export const ToolMessagePart = memo(
       [result],
     );
 
+    const isExecuting = useMemo(() => {
+      if (isWorkflowTool)
+        return (
+          (result as VercelAIWorkflowToolStreamingResult)?.status == "running"
+        );
+      return !isCompleted && isLast;
+    }, [isWorkflowTool, isCompleted, result, isLast]);
+
     const sanitizedInput = useMemo(() => sanitizeSensitiveUrls(input), [input]);
     const sanitizedResult = useMemo(
       () => sanitizeSensitiveUrls(result),
@@ -1508,19 +1516,11 @@ export const ToolMessagePart = memo(
         }
       }
       return null;
-    }, [toolName, state, onToolCallDirect, result, input]);
+    }, [toolName, state, onToolCallDirect, result, input, isExecuting]);
 
     const { serverName: mcpServerName, toolName: mcpToolName } = useMemo(() => {
       return extractMCPToolId(toolName);
     }, [toolName]);
-
-    const isExecuting = useMemo(() => {
-      if (isWorkflowTool)
-        return (
-          (result as VercelAIWorkflowToolStreamingResult)?.status == "running"
-        );
-      return !isCompleted && isLast;
-    }, [isWorkflowTool, isCompleted, result, isLast]);
 
     const toolDisplay = useMemo(() => {
       const inp = input as any;
