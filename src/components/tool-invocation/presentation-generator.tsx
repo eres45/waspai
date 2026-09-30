@@ -18,8 +18,8 @@ import { ToolUIPart } from "ai";
 import { resolvePresentationTheme } from "lib/ai/tools/presentation-themes";
 
 interface SlideContent {
-  type: string;
-  title: string;
+  type?: string;
+  title?: string;
   [key: string]: any;
 }
 
@@ -45,8 +45,23 @@ function SlidePreviewCard({
   isActive: boolean;
   onClick: () => void;
 }) {
+  const slideType = slide?.type || (idx === 0 ? "cover" : "bullet-list");
+  const slideTitle = slide?.title || slide?.heading || `Slide ${idx + 1}`;
+  const points =
+    slide?.points && Array.isArray(slide.points)
+      ? slide.points
+      : typeof slide?.content === "string"
+        ? slide.content
+            .split("\n")
+            .map((s) => s.trim().replace(/^[-*•]\s*/, ""))
+            .filter(Boolean)
+        : Array.isArray(slide?.content)
+          ? slide.content
+          : [];
+
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         "relative flex-shrink-0 rounded-lg overflow-hidden transition-all duration-200 cursor-pointer",
@@ -79,19 +94,19 @@ function SlidePreviewCard({
         className="absolute bottom-1 left-1.5 text-[6px] uppercase tracking-widest font-medium opacity-50"
         style={{ color: theme.muted }}
       >
-        {slide.type.replace(/-/g, " ")}
+        {slideType.replace(/-/g, " ")}
       </div>
       {/* Slide title */}
       <div className="absolute inset-0 flex flex-col justify-center px-2 pt-2.5">
         <p
           className="text-[8px] font-bold leading-tight line-clamp-2"
           style={{
-            color: slide.type === "cover" ? theme.text : theme.accent,
+            color: slideType === "cover" ? theme.text : theme.accent,
           }}
         >
-          {slide.title}
+          {slideTitle}
         </p>
-        {slide.subtitle && (
+        {slide?.subtitle && (
           <p
             className="text-[6.5px] mt-0.5 leading-tight opacity-70 truncate"
             style={{ color: theme.muted }}
@@ -99,7 +114,7 @@ function SlidePreviewCard({
             {slide.subtitle}
           </p>
         )}
-        {slide.stat && (
+        {slide?.stat && (
           <p
             className="text-[14px] font-black leading-none mt-0.5"
             style={{ color: theme.accent }}
@@ -107,15 +122,15 @@ function SlidePreviewCard({
             {slide.stat}
           </p>
         )}
-        {slide.points && (
+        {points.length > 0 && (
           <div className="mt-0.5 flex flex-col gap-[2px]">
-            {(slide.points as string[]).slice(0, 2).map((p, pIdx) => (
+            {points.slice(0, 2).map((p: any, pIdx: number) => (
               <p
                 key={pIdx}
                 className="text-[6px] truncate opacity-70"
                 style={{ color: theme.text }}
               >
-                · {p}
+                · {typeof p === "string" ? p : JSON.stringify(p)}
               </p>
             ))}
           </div>
@@ -137,8 +152,22 @@ function SlideDetailView({
   total: number;
   theme: ReturnType<typeof resolvePresentationTheme>;
 }) {
+  const slideType = slide?.type || (idx === 0 ? "cover" : "bullet-list");
+  const slideTitle = slide?.title || slide?.heading || `Slide ${idx + 1}`;
+  const points =
+    slide?.points && Array.isArray(slide.points) && slide.points.length > 0
+      ? slide.points
+      : typeof slide?.content === "string"
+        ? slide.content
+            .split("\n")
+            .map((s) => s.trim().replace(/^[-*•]\s*/, ""))
+            .filter(Boolean)
+        : Array.isArray(slide?.content)
+          ? slide.content
+          : [];
+
   const renderContent = () => {
-    switch (slide.type) {
+    switch (slideType) {
       case "cover":
         return (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
@@ -146,14 +175,14 @@ function SlideDetailView({
               className="text-2xl font-black leading-tight"
               style={{ color: theme.text }}
             >
-              {slide.title}
+              {slideTitle}
             </p>
-            {slide.subtitle && (
+            {slide?.subtitle && (
               <p className="text-sm" style={{ color: theme.muted }}>
                 {slide.subtitle}
               </p>
             )}
-            {slide.tagline && (
+            {slide?.tagline && (
               <div
                 className="mt-1 px-4 py-1.5 rounded-full text-xs font-semibold border"
                 style={{
@@ -175,12 +204,12 @@ function SlideDetailView({
               className="text-xs uppercase tracking-widest"
               style={{ color: theme.muted }}
             >
-              {slide.title}
+              {slideTitle}
             </p>
             <p className="text-6xl font-black" style={{ color: theme.accent }}>
-              {slide.stat}
+              {slide?.stat}
             </p>
-            {slide.description && (
+            {slide?.description && (
               <p className="text-sm max-w-xs" style={{ color: theme.text }}>
                 {slide.description}
               </p>
@@ -201,9 +230,9 @@ function SlideDetailView({
               className="text-base font-semibold italic leading-relaxed"
               style={{ color: theme.text }}
             >
-              &ldquo;{slide.quote}&rdquo;
+              &ldquo;{slide?.quote}&rdquo;
             </p>
-            {slide.attribution && (
+            {slide?.attribution && (
               <p className="text-xs" style={{ color: theme.muted }}>
                 — {slide.attribution}
               </p>
@@ -215,10 +244,10 @@ function SlideDetailView({
         return (
           <div className="flex flex-col h-full px-4 pt-3 pb-2 gap-2">
             <p className="text-sm font-bold" style={{ color: theme.text }}>
-              {slide.title}
+              {slideTitle}
             </p>
             <div className="flex gap-3 flex-1">
-              {[slide.left, slide.right].map(
+              {[slide?.left, slide?.right].map(
                 (col: any, cIdx: number) =>
                   col && (
                     <div
@@ -259,10 +288,10 @@ function SlideDetailView({
         return (
           <div className="flex flex-col h-full px-4 pt-3 pb-2 gap-2">
             <p className="text-sm font-bold" style={{ color: theme.text }}>
-              {slide.title}
+              {slideTitle}
             </p>
             <div className="flex gap-2 flex-1">
-              {(slide.columns || [])
+              {(slide?.columns || [])
                 .slice(0, 3)
                 .map((col: any, cIdx: number) => (
                   <div
@@ -300,14 +329,14 @@ function SlideDetailView({
         return (
           <div className="flex flex-col h-full px-4 pt-3 pb-2 gap-2">
             <p className="text-sm font-bold" style={{ color: theme.text }}>
-              {slide.title}
+              {slideTitle}
             </p>
             <div className="flex gap-2 flex-1 items-center relative">
               <div
                 className="absolute left-0 right-0 h-[2px]"
                 style={{ background: theme.accent, top: "50%" }}
               />
-              {(slide.timeline || [])
+              {(slide?.timeline || [])
                 .slice(0, 5)
                 .map((item: any, tIdx: number) => (
                   <div
@@ -343,10 +372,10 @@ function SlideDetailView({
         return (
           <div className="flex flex-col h-full px-4 pt-3 pb-2 gap-2">
             <p className="text-sm font-bold" style={{ color: theme.text }}>
-              {slide.title}
+              {slideTitle}
             </p>
             <div className="flex flex-col gap-1.5 flex-1 justify-center">
-              {(slide.items || [])
+              {(slide?.items || [])
                 .slice(0, 5)
                 .map((item: any, iIdx: number) => (
                   <div
@@ -375,9 +404,9 @@ function SlideDetailView({
         return (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
             <p className="text-xl font-black" style={{ color: theme.accent }}>
-              {slide.heading || slide.title}
+              {slide?.heading || slideTitle}
             </p>
-            {slide.description && (
+            {slide?.description && (
               <p className="text-xs max-w-xs" style={{ color: theme.text }}>
                 {slide.description}
               </p>
@@ -386,7 +415,7 @@ function SlideDetailView({
               className="px-5 py-2 rounded-full text-sm font-bold"
               style={{ background: theme.accent, color: theme.bg }}
             >
-              {slide.cta || "Get Started"}
+              {slide?.cta || "Get Started"}
             </div>
           </div>
         );
@@ -400,30 +429,28 @@ function SlideDetailView({
                 style={{ background: theme.accent }}
               />
               <p className="text-sm font-bold" style={{ color: theme.text }}>
-                {slide.title}
+                {slideTitle}
               </p>
             </div>
             <div className="flex flex-col gap-1.5 flex-1 justify-center">
-              {(slide.points || [slide.content].filter(Boolean))
-                .slice(0, 5)
-                .map((p: string, pIdx: number) => (
+              {points.slice(0, 5).map((p: any, pIdx: number) => (
+                <div
+                  key={pIdx}
+                  className="flex items-start gap-2 rounded-md px-2.5 py-1.5"
+                  style={{ background: theme.surface }}
+                >
                   <div
-                    key={pIdx}
-                    className="flex items-start gap-2 rounded-md px-2.5 py-1.5"
-                    style={{ background: theme.surface }}
+                    className="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0"
+                    style={{ background: theme.accent }}
+                  />
+                  <p
+                    className="text-[10px] leading-snug"
+                    style={{ color: theme.text }}
                   >
-                    <div
-                      className="w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0"
-                      style={{ background: theme.accent }}
-                    />
-                    <p
-                      className="text-[10px] leading-snug"
-                      style={{ color: theme.text }}
-                    >
-                      {p}
-                    </p>
-                  </div>
-                ))}
+                    {typeof p === "string" ? p : JSON.stringify(p)}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -533,7 +560,9 @@ export function PresentationGeneratorToolInvocation({
 
   if (!data) return null;
 
-  const slides = data.slides || [];
+  const slides = (data.slides || []).filter(Boolean);
+  if (slides.length === 0) return null;
+
   const activeSlide = slides[activeSlideIdx] || slides[0];
   const isDark = theme.scheme === "dark";
 

@@ -31,10 +31,16 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/icon-") ||
     pathname === "/og-image.png" ||
     pathname === "/logo.png" ||
+    pathname === "/manifest.json" ||
+    pathname === "/manifest.webmanifest" ||
     pathname === "/sitemap.xml" ||
     pathname === "/robots.txt";
 
-  if (subdomain && subdomain !== "www" && !isInternalOrStatic) {
+  if (isInternalOrStatic) {
+    return NextResponse.next();
+  }
+
+  if (subdomain && subdomain !== "www") {
     const rewriteUrl = new URL(`/site/${subdomain}${pathname}`, request.url);
     return NextResponse.rewrite(rewriteUrl);
   }
@@ -100,6 +106,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|icon|icon.png|icon-.*|apple-touch-icon.png|wasp-.*|og-image.png|logo.png|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing|subscription|contact).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon|icon.png|icon-.*|apple-touch-icon.png|wasp-.*|og-image.png|logo.png|manifest.json|manifest.webmanifest|sitemap.xml|robots.txt|dashboard-preview.gif|api/.*|auth/callback|export|sign-in|sign-up|forgot-password|reset-password|status|landing|subscription|contact).*)",
   ],
 };

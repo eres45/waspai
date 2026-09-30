@@ -51,6 +51,11 @@ export function parseRoleString(role: string | undefined | null): RoleName {
   // Normalize to lowercase for comparison, then return proper case
   const normalizedRole = cleanRole.toLowerCase();
 
+  // Handle standard OAuth/Supabase authenticated roles silently
+  if (normalizedRole === "authenticated" || normalizedRole === "member") {
+    return "user";
+  }
+
   if (!normalizedRole || !validRoles.includes(normalizedRole as RoleName)) {
     console.warn(`Invalid role detected: ${role}, defaulting to user`);
     return "user";
