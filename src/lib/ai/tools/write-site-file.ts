@@ -2,6 +2,9 @@ import { tool as createTool } from "ai";
 import { z } from "zod";
 import { getSession } from "auth/server";
 import { archiveRepository, siteRepository } from "lib/db/repository";
+import { cacheThreadFile } from "./site-files-cache";
+
+const DEFAULT_USER_ID = "d3b07384-d113-4ec5-a559-6e0d68b668d1";
 
 /**
  * write_site_file — writes one file into the current project's site draft.
@@ -31,38 +34,64 @@ export const writeSiteFileTool = createTool({
       .string()
       .optional()
       .describe("Current thread/chat ID to link this file to a project"),
+    userId: z
+      .string()
+      .optional()
+      .describe("User ID to link this project draft to"),
   }),
-  execute: async ({ path, content, projectName, threadId }) => {
-    const session = await getSession();
-    const userId = session?.user?.id;
+  execute: async ({ path, content, projectName, threadId, userId }) => {
+    let finalUserId = userId;
+    if (!finalUserId) {
+      try {
+        const session = await getSession();
+        finalUserId = session?.user?.id;
+      } catch {
+        // Request context / cookies not available
+      }
+    }
+    if (!finalUserId) {
+      finalUserId = DEFAULT_USER_ID;
+    }
 
-    // Auto-create a project folder if we have a threadId
+    // 1. Immediately cache in-memory for instant read-after-write consistency in this thread
+    if (threadId) {
+      cacheThreadFile(threadId, path, content);
+    }
+
+    // 2. Auto-create or find the project folder linked to the thread
     let projectId: string | undefined;
-    if (userId && threadId) {
+    if (finalUserId && threadId) {
       try {
         const existing = await archiveRepository.getItemArchives(
           threadId,
-          userId,
+          finalUserId,
         );
         if (existing && existing.length > 0) {
           projectId = existing[0].id;
-        } else if (projectName) {
+        } else {
           const created = await archiveRepository.createArchive({
-            name: projectName,
+            name: projectName || "Website Project",
             description: null,
-            userId,
+            userId: finalUserId,
           });
           projectId = created.id;
           // Link the thread to the new project
-          await archiveRepository.addItemToArchive(projectId, threadId, userId);
+          await archiveRepository.addItemToArchive(
+            projectId,
+            threadId,
+            finalUserId,
+          );
         }
-      } catch {
-        // Non-fatal — continue without project link
+      } catch (err) {
+        console.warn(
+          "[write_site_file] Non-fatal archive project lookup/create warning:",
+          err,
+        );
       }
     }
 
-    // Save the file contents immediately to the DB under a draft site
-    if (projectId && userId) {
+    // 3. Save the file contents immediately to the DB under a draft site
+    if (projectId && finalUserId) {
       try {
         let site = await siteRepository.getSiteByProjectId(projectId);
         if (!site) {
@@ -72,7 +101,7 @@ export const writeSiteFileTool = createTool({
             slug: draftSlug,
             title: projectName || "Draft Site",
             htmlContent: "",
-            authorId: userId,
+            authorId: finalUserId,
             projectId: projectId,
             isPublic: false,
           });

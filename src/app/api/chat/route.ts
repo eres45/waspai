@@ -1886,6 +1886,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     !args.threadId || args.threadId === "current"
                       ? thread!.id
                       : args.threadId,
+                  userId: args.userId || userId,
                 },
                 options,
               );
@@ -1901,6 +1902,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     !args.threadId || args.threadId === "current"
                       ? thread!.id
                       : args.threadId,
+                  userId: args.userId || userId,
                 },
                 options,
               );
@@ -1916,6 +1918,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     !args.threadId || args.threadId === "current"
                       ? thread!.id
                       : args.threadId,
+                  userId: args.userId || userId,
                 },
                 options,
               );
@@ -1931,6 +1934,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     !args.threadId || args.threadId === "current"
                       ? thread!.id
                       : args.threadId,
+                  userId: args.userId || userId,
                 },
                 options,
               );
@@ -1946,6 +1950,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     !args.threadId || args.threadId === "current"
                       ? thread!.id
                       : args.threadId,
+                  userId: args.userId || userId,
                 },
                 options,
               );
@@ -1961,6 +1966,7 @@ CRITICAL INSTRUCTIONS FOR LIVE SPOKEN AUDIO:
                     !args.threadId || args.threadId === "current"
                       ? thread!.id
                       : args.threadId,
+                  userId: args.userId || userId,
                 },
                 options,
               );

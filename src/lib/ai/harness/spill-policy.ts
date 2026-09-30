@@ -18,7 +18,22 @@ const logger = globalLogger.withDefaults({
   message: colorize("cyan", "SpillPolicy: "),
 });
 
-export const DEFAULT_MAX_INLINE_BYTES = 12_000; // ~3,000 tokens
+export const DEFAULT_MAX_INLINE_BYTES = 80_000; // ~20,000 tokens
+
+export const NO_SPILL_TOOLS = new Set([
+  "read_spill_slice",
+  "read_site_file",
+  "read_file",
+  "write_site_file",
+  "write_file",
+  "edit_site_file",
+  "edit_file",
+  "html_preview",
+  "presentation_generator",
+  "get_website_context",
+  "todo_write",
+  "exit_plan_mode",
+]);
 
 export interface SpillRef {
   locator: string;
@@ -104,8 +119,8 @@ export async function applySpillPolicy(
   result: any,
   options?: SpillOptions,
 ): Promise<any> {
-  // Never spill the spill-reader tool itself to avoid read -> spill -> read loop
-  if (toolName === "read_spill_slice" || !result) {
+  // Never spill tools that require full content in LLM context (e.g. site file readers/writers, previewers)
+  if (NO_SPILL_TOOLS.has(toolName) || !result) {
     return result;
   }
 

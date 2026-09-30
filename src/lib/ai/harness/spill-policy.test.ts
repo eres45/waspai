@@ -78,4 +78,31 @@ describe("Spill Policy & Spill Tools (DeepSeek Harness)", () => {
       "Line 10\nLine 11\nLine 12\nLine 13\nLine 14",
     );
   });
+
+  it("never spills site/file authoring tools even if they exceed maxInlineBytes", async () => {
+    const largeCode = "<div>" + "Hello World ".repeat(10000) + "</div>";
+    const readSiteRes = await applySpillPolicy(
+      "read_site_file",
+      { success: true, path: "index.html", content: largeCode },
+      { maxInlineBytes: 1000, spillRoot: customSpillRoot },
+    );
+    expect(readSiteRes._spilled).toBeUndefined();
+    expect(readSiteRes.content).toBe(largeCode);
+
+    const readFileRes = await applySpillPolicy(
+      "read_file",
+      { success: true, path: "index.html", content: largeCode },
+      { maxInlineBytes: 1000, spillRoot: customSpillRoot },
+    );
+    expect(readFileRes._spilled).toBeUndefined();
+    expect(readFileRes.content).toBe(largeCode);
+
+    const editSiteRes = await applySpillPolicy(
+      "edit_site_file",
+      { success: true, path: "index.html", content: largeCode },
+      { maxInlineBytes: 1000, spillRoot: customSpillRoot },
+    );
+    expect(editSiteRes._spilled).toBeUndefined();
+    expect(editSiteRes.content).toBe(largeCode);
+  });
 });

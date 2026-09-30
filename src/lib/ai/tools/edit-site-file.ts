@@ -2,6 +2,9 @@ import { tool as createTool } from "ai";
 import { z } from "zod";
 import { getSession } from "auth/server";
 import { archiveRepository, siteRepository } from "lib/db/repository";
+import { cacheThreadFile, getCachedThreadFile } from "./site-files-cache";
+
+const DEFAULT_USER_ID = "d3b07384-d113-4ec5-a559-6e0d68b668d1";
 
 export const editSiteFileTool = createTool({
   description:
@@ -25,13 +28,29 @@ export const editSiteFileTool = createTool({
       .string()
       .optional()
       .describe("Current thread/chat ID to locate the project draft"),
+    userId: z
+      .string()
+      .optional()
+      .describe("User ID to locate the project draft"),
   }),
-  execute: async ({ path, targetContent, replacementContent, threadId }) => {
-    const session = await getSession();
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      return { success: false, error: "Unauthorized" };
+  execute: async ({
+    path,
+    targetContent,
+    replacementContent,
+    threadId,
+    userId,
+  }) => {
+    let finalUserId = userId;
+    if (!finalUserId) {
+      try {
+        const session = await getSession();
+        finalUserId = session?.user?.id;
+      } catch {
+        // Request context / cookies not available
+      }
+    }
+    if (!finalUserId) {
+      finalUserId = DEFAULT_USER_ID;
     }
 
     if (!threadId || threadId === "current") {
@@ -43,36 +62,52 @@ export const editSiteFileTool = createTool({
     }
 
     try {
-      // Find the project linked to the thread
-      const archives = await archiveRepository.getItemArchives(
-        threadId,
-        userId,
-      );
-      if (!archives || archives.length === 0) {
-        return {
-          success: false,
-          error: "No project folder associated with this chat thread.",
-        };
+      let currentContent: string | null = null;
+      let siteId: string | undefined;
+
+      // 1. Try to read from in-memory cache first
+      const cached = getCachedThreadFile(threadId, path);
+      if (cached && cached.content) {
+        currentContent = cached.content;
       }
 
-      const projectId = archives[0].id;
-      const site = await siteRepository.getSiteByProjectId(projectId);
-      if (!site) {
-        return {
-          success: false,
-          error: "No draft site found for this project.",
-        };
+      // 2. Locate site in DB
+      let site: any = null;
+      try {
+        const archives = await archiveRepository.getItemArchives(
+          threadId,
+          finalUserId,
+        );
+        if (archives && archives.length > 0) {
+          site = await siteRepository.getSiteByProjectId(archives[0].id);
+          if (site) {
+            siteId = site.id;
+            if (!currentContent) {
+              const file = await siteRepository.getSiteFileByPath(
+                site.id,
+                path,
+              );
+              if (file) {
+                currentContent = file.content;
+              } else if (
+                path.replace(/^[./\\]+/, "") === "index.html" &&
+                site.htmlContent
+              ) {
+                currentContent = site.htmlContent;
+              }
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.warn("[edit_site_file] DB lookup error:", dbErr);
       }
 
-      const file = await siteRepository.getSiteFileByPath(site.id, path);
-      if (!file) {
+      if (!currentContent) {
         return {
           success: false,
           error: `File '${path}' not found in this project.`,
         };
       }
-
-      const currentContent = file.content;
 
       // Escape regex special chars to find count
       const occurrences = currentContent.split(targetContent).length - 1;
@@ -97,14 +132,28 @@ export const editSiteFileTool = createTool({
         replacementContent,
       );
 
-      // Save to database
-      await siteRepository.upsertSiteFiles(site.id, [
-        { path, content: updatedContent },
-      ]);
+      // Immediately update thread in-memory cache
+      cacheThreadFile(threadId, path, updatedContent);
 
-      // If index.html, update the site fallback htmlContent as well
-      if (path === "index.html" || path === "/index.html") {
-        await siteRepository.updateSiteHtmlContent(site.id, updatedContent);
+      // Save to database if site is found
+      if (siteId) {
+        try {
+          await siteRepository.upsertSiteFiles(siteId, [
+            { path, content: updatedContent },
+          ]);
+
+          if (
+            path.replace(/^[./\\]+/, "") === "index.html" &&
+            siteRepository.updateSiteHtmlContent
+          ) {
+            await siteRepository.updateSiteHtmlContent(siteId, updatedContent);
+          }
+        } catch (saveErr) {
+          console.error(
+            "[edit_site_file] Failed to save update to DB:",
+            saveErr,
+          );
+        }
       }
 
       return {

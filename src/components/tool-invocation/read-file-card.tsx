@@ -161,9 +161,12 @@ export function ReadFileCard({ part }: ReadFileCardProps) {
     "file";
 
   const fileContent =
-    result?.content || (typeof output === "string" ? output : "");
+    result?.content ||
+    (result as any)?.preview ||
+    (typeof output === "string" ? output : "");
   const fileSize =
     result?.size ??
+    (result as any)?.totalBytes ??
     (fileContent ? new TextEncoder().encode(fileContent).byteLength : 0);
 
   const fileName = filePath.split("/").pop() ?? filePath;
