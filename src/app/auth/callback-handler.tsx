@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import logger from "@/lib/logger";
 
 /**
@@ -9,7 +8,6 @@ import logger from "@/lib/logger";
  * Only processes token if it exists in URL hash
  */
 export function AuthCallbackHandler() {
-  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -61,22 +59,20 @@ export function AuthCallbackHandler() {
         }
 
         logger.info(`User authenticated: ${result.email}`);
-        // Clear the hash from URL
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname,
-        );
-        // Redirect to chat dashboard
-        router.push("/chat");
+        // Use hard navigation instead of router.push to ensure the Set-Cookie
+        // header from the callback-handler POST is fully committed to the
+        // browser's cookie jar before the /chat page makes any API calls.
+        // router.push() can race with cookie propagation and cause 401s on
+        // the first load.
+        window.location.href = "/chat";
       } catch (error) {
         logger.error("Auth callback handler error:", error);
-        router.push("/auth/error?error=callback_error");
+        window.location.href = "/auth/error?error=callback_error";
       }
     };
 
     handleCallback();
-  }, [router]);
+  }, []);
 
   if (!isProcessing) {
     return null;
