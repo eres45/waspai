@@ -1,7 +1,7 @@
 "use client";
 import { Sidebar, SidebarContent, SidebarFooter } from "ui/sidebar";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { AppSidebarMenus } from "./app-sidebar-menus";
 import { AppSidebarAgents } from "./app-sidebar-agents";
@@ -21,18 +21,24 @@ export function AppSidebar({
 }) {
   const userRole = user?.role;
   const router = useRouter();
+  // Keep a stable ref to router to avoid re-adding the listener on every
+  // render (Next.js `router` is not referentially stable between renders).
+  const routerRef = useRef(router);
+  useEffect(() => {
+    routerRef.current = router;
+  });
 
   // Handle new chat shortcut (specific to main app)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
-        router.push(`/chat/${generateUUID()}`);
+        routerRef.current.push(`/chat/${generateUUID()}`);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [router]);
+  }, []);
 
   return (
     <Sidebar
