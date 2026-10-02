@@ -30,7 +30,7 @@ export function AuthCallbackHandler() {
 
         if (!accessToken) {
           logger.error("No access token in URL hash");
-          router.push("/auth/error?error=no_token");
+          window.location.href = "/auth/error?error=no_token";
           return;
         }
 
@@ -52,9 +52,7 @@ export function AuthCallbackHandler() {
 
         if (!response.ok) {
           logger.error("Failed to process callback:", result.error);
-          router.push(
-            `/auth/error?error=session_error&description=${result.error}`,
-          );
+          window.location.href = `/auth/error?error=session_error&description=${result.error}`;
           return;
         }
 
